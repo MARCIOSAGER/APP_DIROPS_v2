@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l \"d:/VSCode_Claude/01-Projetos/APP_DIROPS/app_dirops/functions/\"*.ts)",
+      "Bash(gh auth login --hostname github.com --git-protocol https --web)",
+      "Bash(gh repo create MARCIOSAGER/APP_DIROPS_v2 --public --description \"DIROPS-SGA v2 - Sistema de Gestão Aeroportuária \\(self-hosted, sem Base44\\)\")"
+    ]
+  }
+}

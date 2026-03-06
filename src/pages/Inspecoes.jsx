@@ -1,0 +1,247 @@
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Plus, ClipboardCheck, FileText, CheckCircle, Clock } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+import { Inspecao } from '@/entities/Inspecao';
+import { TipoInspecao } from '@/entities/TipoInspecao';
+import { Aeroporto } from '@/entities/Aeroporto';
+import { User } from '@/entities/User'; // Added User import
+
+import InspecoesList from '../components/inspecoes/InspecoesList';
+import FormInspecao from '../components/inspecoes/FormInspecao';
+import TiposInspecaoConfig from '../components/inspecoes/TiposInspecaoConfig';
+
+export default function Inspecoes() {
+  const [currentUser, setCurrentUser] = useState(null); // Added currentUser state
+  const [inspecoes, setInspecoes] = useState([]);
+  const [tiposInspecao, setTiposInspecao] = useState([]);
+  const [aeroportos, setAeroportos] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedTipo, setSelectedTipo] = useState(null);
+  const [activeTab, setActiveTab] = useState('inspecoes');
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const user = await User.me(); // Fetch current user
+      setCurrentUser(user); // Set current user
+
+      const [inspecoesData, tiposData, aeroportosData] = await Promise.all([
+        Inspecao.list('-data_inspecao'),
+        TipoInspecao.list(),
+        Aeroporto.list()
+      ]);
+      
+      // Filtrar apenas aeroportos de Angola
+      const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
+
+      // Filtrar aeroportos pelos aeroportos de acesso do utilizador
+      let aeroportosFiltrados = aeroportosAngola;
+      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
+        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
+          const userIcaoCodes = new Set(user.aeroportos_acesso.map(code => code.trim().toUpperCase()));
+          aeroportosFiltrados = aeroportosAngola.filter(a => userIcaoCodes.has(a.codigo_icao?.trim().toUpperCase()));
+        } else {
+          aeroportosFiltrados = [];
+        }
+      }
+
+      setAeroportos(aeroportosFiltrados);
+      setTiposInspecao(tiposData);
+
+      // Filtrar inspeções pelos aeroportos de acesso do utilizador
+      let inspecoesFiltradas = inspecoesData;
+      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
+        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
+          const aeroportosIds = aeroportosFiltrados.map(a => a.id);
+          inspecoesFiltradas = inspecoesData.filter(i => aeroportosIds.includes(i.aeroporto_id));
+        } else {
+          inspecoesFiltradas = [];
+        }
+      }
+
+      setInspecoes(inspecoesFiltradas);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNovaInspecao = (tipo) => {
+    setSelectedTipo(tipo);
+    setIsFormOpen(true);
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setSelectedTipo(null);
+    loadData();
+  };
+
+  return (
+    <div className="p-6 bg-slate-50 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Inspeções Operacionais</h1>
+            <p className="text-slate-600 mt-1">Gestão de inspeções e verificações de conformidade</p>
+          </div>
+        </div>
+
+        {/* Estatísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Total de Inspeções</p>
+                  <p className="text-3xl font-bold text-slate-900">{inspecoes.length}</p>
+                </div>
+                <ClipboardCheck className="h-8 w-8 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Concluídas</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {inspecoes.filter(i => i.status === 'concluida').length}
+                  </p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Em Andamento</p>
+                  <p className="text-3xl font-bold text-orange-600">
+                    {inspecoes.filter(i => i.status === 'em_andamento').length}
+                  </p>
+                </div>
+                <Clock className="h-8 w-8 text-orange-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Taxa de Conformidade</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {inspecoes.length > 0 ? 
+                      `${Math.round((inspecoes.filter(i => i.status === 'aprovada').length / inspecoes.length) * 100)}%`
+                      : '0%'}
+                  </p>
+                </div>
+                <FileText className="h-8 w-8 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Tabs defaultValue="inspecoes" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="inspecoes" className="flex items-center gap-2">
+              <ClipboardCheck className="w-4 h-4" />
+              Inspeções
+            </TabsTrigger>
+            <TabsTrigger value="nova" className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Nova Inspeção
+            </TabsTrigger>
+            <TabsTrigger value="configurar" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Configurar Tipos
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="inspecoes" className="space-y-6">
+            <InspecoesList 
+              inspecoes={inspecoes}
+              tiposInspecao={tiposInspecao}
+              aeroportos={aeroportos}
+              isLoading={isLoading}
+              onReload={loadData}
+            />
+          </TabsContent>
+
+          <TabsContent value="nova" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tiposInspecao.filter(t => t.status === 'ativo').map((tipo) => (
+                <Card key={tipo.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleNovaInspecao(tipo)}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ClipboardCheck className="w-5 h-5 text-blue-600" />
+                      {tipo.nome}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-slate-600 text-sm mb-3">{tipo.descricao}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-slate-500 capitalize">
+                        Frequência: {tipo.frequencia.replace('_', ' ')}
+                      </span>
+                      <Button size="sm">
+                        Iniciar Inspeção
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            {tiposInspecao.filter(t => t.status === 'ativo').length === 0 && (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <ClipboardCheck className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                    Nenhum tipo de inspeção configurado
+                  </h3>
+                  <p className="text-slate-500 mb-4">
+                    Configure os tipos de inspeção na aba "Configurar Tipos" primeiro.
+                  </p>
+                  <Button onClick={() => document.querySelector('button[data-state="inactive"][value="configurar"]')?.click()}>
+                    Configurar Tipos
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="configurar" className="space-y-6">
+            <TiposInspecaoConfig 
+              tiposInspecao={tiposInspecao}
+              onUpdate={loadData}
+            />
+          </TabsContent>
+        </Tabs>
+
+        {isFormOpen && selectedTipo && (
+          <FormInspecao
+            isOpen={isFormOpen}
+            onClose={handleFormClose}
+            tipoInspecao={selectedTipo}
+            aeroportos={aeroportos}
+          />
+        )}
+      </div>
+    </div>
+  );
+}

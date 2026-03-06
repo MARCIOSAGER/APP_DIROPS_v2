@@ -1,0 +1,26 @@
+// Lista completa de aeroportos em Angola
+export const AEROPORTOS_ANGOLA = [
+  { codigo_icao: 'FNBC', codigo_iata: 'SSY', nome: 'Aeroporto Camarapeu', cidade: 'Mbanza Congo' },
+  { codigo_icao: 'FNUE', codigo_iata: 'LUO', nome: 'Aeroporto Cavungo Ngueveu', cidade: 'Luena' },
+  { codigo_icao: 'FNME', codigo_iata: 'SPP', nome: 'Aeroporto Cunavanalele Menongue', cidade: 'Menongue' },
+  { codigo_icao: 'FNBG', codigo_iata: 'BUG', nome: 'Aeroporto de Benguela', cidade: 'Benguela' },
+  { codigo_icao: 'FNCA', codigo_iata: 'CAB', nome: 'Aeroporto de Cabinda', cidade: 'Cabinda' },
+  { codigo_icao: 'FNCC', codigo_iata: 'CTI', nome: 'Aeroporto de Cuíto Cuanavale', cidade: 'Cuíto Cuanavale' },
+  { codigo_icao: 'FNDU', codigo_iata: 'DUE', nome: 'Aeroporto de Dundo', cidade: 'Dundo' },
+  { codigo_icao: 'FNHU', codigo_iata: 'NOV', nome: 'Aeroporto de Huambo', cidade: 'Huambo' },
+  { codigo_icao: 'FNKU', codigo_iata: 'SVP', nome: 'Aeroporto de Kuito', cidade: 'Kuito' },
+  { codigo_icao: 'FNUA', codigo_iata: 'UAL', nome: 'Aeroporto de Luau', cidade: 'Luau' },
+  { codigo_icao: 'FNUB', codigo_iata: 'SDD', nome: 'Aeroporto de Lubango', cidade: 'Lubango' },
+  { codigo_icao: 'FNMA', codigo_iata: 'MEG', nome: 'Aeroporto de Malanje', cidade: 'Malanje' },
+  { codigo_icao: 'FNMO', codigo_iata: 'MSZ', nome: 'Aeroporto de Namibe', cidade: 'Namibe' },
+  { codigo_icao: 'FNND', codigo_iata: 'NDF', nome: 'Aeroporto de Ndalatando', cidade: 'Ndalatando' },
+  { codigo_icao: 'FNGI', codigo_iata: 'VPE', nome: 'Aeroporto de Ondjiva', cidade: 'Ondjiva' },
+  { codigo_icao: 'FNPA', codigo_iata: 'PBN', nome: 'Aeroporto de Porto Amboim', cidade: 'Porto Amboim' },
+  { codigo_icao: 'FNSA', codigo_iata: 'VHC', nome: 'Aeroporto de Saurimo', cidade: 'Saurimo' },
+  { codigo_icao: 'FNSU', codigo_iata: 'NDD', nome: 'Aeroporto de Sumbe', cidade: 'Sumbe' },
+  { codigo_icao: 'FNUG', codigo_iata: 'UGO', nome: 'Aeroporto de Uíge', cidade: 'Uíge' },
+  { codigo_icao: 'FNWK', codigo_iata: 'CEO', nome: 'Aeroporto de Waku Kungo', cidade: 'Waku Kungo' },
+  { codigo_icao: 'FNLU', codigo_iata: 'LAD', nome: 'Aeroporto Internacional 4 de Fevereiro', cidade: 'Luanda' },
+  { codigo_icao: 'FNCT', codigo_iata: 'CTI', nome: 'Aeroporto Internacional de Catumbela', cidade: 'Catumbela' },
+  { codigo_icao: 'FNSO', codigo_iata: 'SZA', nome: 'Sambiri Aeroporto Cabinda', cidade: 'Soyo' }
+];

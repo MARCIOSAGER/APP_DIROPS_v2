@@ -1,0 +1,145 @@
+
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+const FormTarifaPouso = ({ isOpen, onClose, onSubmit, tarifa }) => {
+  const [formData, setFormData] = useState({
+    faixa_min: '',
+    faixa_max: '',
+    tarifa_domestica: '',
+    tarifa_internacional: '',
+    categoria_aeroporto: 'categoria_1',
+    status: 'ativa'
+  });
+
+  useEffect(() => {
+    if (tarifa) {
+      setFormData(tarifa);
+    } else {
+      setFormData({
+        faixa_min: '',
+        faixa_max: '',
+        tarifa_domestica: '',
+        tarifa_internacional: '',
+        categoria_aeroporto: 'categoria_1',
+        status: 'ativa'
+      });
+    }
+  }, [tarifa, isOpen]);
+  
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await onSubmit(formData);
+  };
+
+  const categoriaOptions = [
+    { value: 'categoria_1', label: 'Categoria 1' },
+    { value: 'categoria_2', label: 'Categoria 2' },
+    { value: 'categoria_3', label: 'Categoria 3' },
+    { value: 'categoria_4', label: 'Categoria 4' }
+  ];
+
+  const statusOptions = [
+    { value: 'ativa', label: 'Ativa' },
+    { value: 'inativa', label: 'Inativa' }
+  ];
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{tarifa ? 'Editar' : 'Nova'} Tarifa de Pouso</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="faixa_min">Faixa Mínima (kg)</Label>
+              <Input 
+                id="faixa_min" 
+                type="number" 
+                value={formData.faixa_min} 
+                onChange={e => handleChange('faixa_min', Number(e.target.value))} 
+                required 
+              />
+            </div>
+            <div>
+              <Label htmlFor="faixa_max">Faixa Máxima (kg)</Label>
+              <Input 
+                id="faixa_max" 
+                type="number" 
+                value={formData.faixa_max} 
+                onChange={e => handleChange('faixa_max', Number(e.target.value))} 
+                required 
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="tarifa_domestica">Tarifa Doméstica (USD)</Label>
+              <Input 
+                id="tarifa_domestica" 
+                type="number" 
+                step="0.01" 
+                value={formData.tarifa_domestica} 
+                onChange={e => handleChange('tarifa_domestica', Number(e.target.value))} 
+                required 
+              />
+            </div>
+            <div>
+              <Label htmlFor="tarifa_internacional">Tarifa Internacional (USD)</Label>
+              <Input 
+                id="tarifa_internacional" 
+                type="number" 
+                step="0.01" 
+                value={formData.tarifa_internacional} 
+                onChange={e => handleChange('tarifa_internacional', Number(e.target.value))} 
+                required 
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="categoria_aeroporto">Categoria do Aeroporto</Label>
+              <select
+                id="categoria_aeroporto"
+                value={formData.categoria_aeroporto}
+                onChange={(e) => handleChange('categoria_aeroporto', e.target.value)}
+                className="w-full h-10 px-3 py-2 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 border-slate-200"
+              >
+                {categoriaOptions.map(option => 
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                )}
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                value={formData.status}
+                onChange={(e) => handleChange('status', e.target.value)}
+                className="w-full h-10 px-3 py-2 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 border-slate-200"
+              >
+                {statusOptions.map(option => 
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                )}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button type="submit">Salvar</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default FormTarifaPouso;

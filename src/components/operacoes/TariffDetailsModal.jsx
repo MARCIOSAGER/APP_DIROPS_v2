@@ -1,0 +1,1020 @@
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Building2, Download, Mail } from 'lucide-react';
+import SendEmailModal from '../shared/SendEmailModal';
+import SuccessModal from '../shared/SuccessModal';
+import AlertModal from '../shared/AlertModal';
+import { sendEmailDirect } from '@/functions/sendEmailDirect';
+import { TarifaPouso } from '@/entities/TarifaPouso';
+import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
+
+// Helper para obter o label da categoria
+const getCategoriaLabel = (categoria) => {
+  const labels = {
+    'categoria_1': 'Categoria 1',
+    'categoria_2': 'Categoria 2',
+    'categoria_3': 'Categoria 3',
+    'categoria_4': 'Categoria 4'
+  };
+  return labels[categoria] || categoria;
+};
+
+export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation, voos, voosLigados, aeroportos, onExportPDF }) {
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
+  const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'error', title: '', message: '' });
+  const [tarifasPouso, setTarifasPouso] = useState([]);
+  const [companhias, setCompanhias] = useState([]); // New state
+
+  // Effect to load tarifasPouso and companhias when the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadTarifasPouso();
+      loadCompanhias(); // New call
+    }
+  }, [isOpen]);
+
+  // Function to load tarifasPouso
+  const loadTarifasPouso = async () => {
+    try {
+      const tarifas = await TarifaPouso.list();
+      setTarifasPouso(tarifas);
+    } catch (error) {
+      console.error('Erro ao carregar tarifas de pouso:', error);
+      // Optionally set an alert if loading fails
+      setAlertInfo({
+        isOpen: true,
+        type: 'error',
+        title: 'Erro de Carregamento',
+        message: 'Não foi possível carregar as tarifas de pouso para exibição completa.'
+      });
+    }
+  };
+
+  // Function to load companhias
+  const loadCompanhias = async () => {
+    try {
+      const companhiasData = await CompanhiaAerea.list();
+      setCompanhias(companhiasData);
+    } catch (error) {
+      console.error('Erro ao carregar companhias:', error);
+      // Optionally set an alert if loading fails
+      setAlertInfo({
+        isOpen: true,
+        type: 'error',
+        title: 'Erro de Carregamento',
+        message: 'Não foi possível carregar as informações das companhias aéreas.'
+      });
+    }
+  };
+
+  if (!tariffCalculation) return null;
+
+  const vooDep = voos.find(v => v.id === tariffCalculation.voo_id);
+  const vooLigado = vooDep ? voosLigados.find(vl => vl.id_voo_dep === vooDep.id) : null;
+  const vooArr = vooLigado ? voos.find(v => v.id === vooLigado.id_voo_arr) : null;
+  const aeroporto = aeroportos.find(a => a.id === tariffCalculation.aeroporto_id);
+  const detalhes = tariffCalculation.detalhes_calculo || {};
+
+  // Buscar companhia pelo código
+  const companhia = companhias.find(c => c.codigo_icao === vooDep?.companhia_aerea);
+  const nomeCompanhia = companhia ? companhia.nome : vooDep?.companhia_aerea || 'N/A';
+
+  // Determinar tipo de voo (Doméstico/Internacional)
+  const getTipoVoo = () => {
+    if (!vooArr || !vooDep) return 'N/A';
+    
+    // Find the airport entities based on ICAO codes from the flight segments
+    const aeroportoOrigem = aeroportos.find(a => a.codigo_icao === vooArr.aeroporto_origem_destino);
+    const aeroportoOperacao = aeroportos.find(a => a.codigo_icao === vooArr.aeroporto_operacao);
+    const aeroportoDestino = aeroportos.find(a => a.codigo_icao === vooDep.aeroporto_origem_destino);
+    
+    // Check if any of the involved airports are outside 'AO' (Angola)
+    const isInternational = 
+      (aeroportoOrigem && aeroportoOrigem.pais !== 'AO') ||
+      (aeroportoOperacao && aeroportoOperacao.pais !== 'AO') ||
+      (aeroportoDestino && aeroportoDestino.pais !== 'AO');
+    
+    return isInternational ? 'Internacional' : 'Doméstico';
+  };
+
+  const formatCurrency = (value) => {
+    // Formato: separador de milhares = ".", separador de decimais = ","
+    const formatted = new Intl.NumberFormat('pt-PT', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value || 0);
+    return `${formatted} Kz`;
+  };
+
+  const formatUSD = (value) => {
+    // Formato: separador de milhares = ".", separador de decimais = ","
+    return `$${new Intl.NumberFormat('pt-PT', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value || 0)}`;
+  };
+
+  const formatToneladas = (value) => {
+    // Remover zeros desnecessários: 30t em vez de 30.000t
+    return `${Math.round(value || 0)}t`;
+  };
+
+  const categoriaAeroporto = tariffCalculation.categoria_aeroporto || detalhes.categoria_aeroporto || aeroporto?.categoria || 'N/A';
+
+  // Helper para obter faixa de peso em toneladas (improved logic)
+  const getFaixaPesoToneladas = (detalhesPouso) => {
+    if (!detalhesPouso) return 'N/A';
+
+    // 1. Tentar usar os valores já em toneladas salvos nos detalhes do cálculo
+    if (detalhesPouso.faixa_min_ton && detalhesPouso.faixa_max_ton) {
+      return `${detalhesPouso.faixa_min_ton} - ${detalhesPouso.faixa_max_ton} toneladas`;
+    }
+
+    // 2. Se não existirem, calcular a partir dos valores em kg salvos nos detalhes do cálculo
+    if (detalhesPouso.faixa_min_kg && detalhesPouso.faixa_max_kg) {
+      const minTon = Math.ceil(detalhesPouso.faixa_min_kg / 1000);
+      const maxTon = Math.ceil(detalhesPouso.faixa_max_kg / 1000);
+      return `${minTon} - ${maxTon} toneladas`;
+    }
+
+    // 3. Se os detalhes do cálculo não tiverem a faixa, tentar buscar da tarifa configurada
+    //    baseado no MTOW e categoria do aeroporto, se tarifasPouso estiver carregado.
+    if (tariffCalculation.mtow_kg && tarifasPouso.length > 0 && categoriaAeroporto !== 'N/A') {
+      const mtow = parseFloat(tariffCalculation.mtow_kg);
+      if (!isNaN(mtow)) {
+        const tarifaAplicavel = tarifasPouso.find(t =>
+          mtow >= t.faixa_min &&
+          mtow <= t.faixa_max &&
+          t.categoria_aeroporto === categoriaAeroporto &&
+          t.status === 'ativa'
+        );
+
+        if (tarifaAplicavel) {
+          const minTon = Math.ceil(tarifaAplicavel.faixa_min / 1000);
+          const maxTon = Math.ceil(tarifaAplicavel.faixa_max / 1000);
+          return `${minTon} - ${maxTon} toneladas`;
+        }
+      }
+    }
+
+    return 'N/A';
+  };
+
+  const arrivalTime = vooArr?.horario_real || vooArr?.horario_previsto || '00:00';
+  const departureTime = vooDep?.horario_real || vooDep?.horario_previsto || '00:00';
+  const arrivalDateTimeStr = vooArr ? new Date(`${vooArr.data_operacao}T${arrivalTime}`).toLocaleString('pt-AO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+  const departureDateTimeStr = vooDep ? new Date(`${vooDep.data_operacao}T${departureTime}`).toLocaleString('pt-AO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+  const rotaCompleta = vooArr && vooDep ? `${vooArr.aeroporto_origem_destino} - ${vooArr.aeroporto_operacao} - ${vooDep.aeroporto_origem_destino}` : 'N/A';
+
+  const infoGerais = [
+    ['Companhia Aérea:', vooDep?.companhia_aerea ? `${vooDep.companhia_aerea} - ${nomeCompanhia}` : nomeCompanhia],
+    ['Tipo de Operação:', getTipoVoo()],
+    ['Tipo de Voo:', vooDep?.tipo_voo || 'N/A'],
+    ['Rota Completa:', rotaCompleta],
+    ['Matrícula:', vooDep?.registo_aeronave || 'N/A'],
+    ['MTOW:', tariffCalculation.mtow_kg ? `${new Intl.NumberFormat('pt-PT').format(tariffCalculation.mtow_kg)} kg` : 'N/A'],
+    ['Aterragem:', arrivalDateTimeStr],
+    ['Descolagem:', departureDateTimeStr],
+    ['Estacionamento:', tariffCalculation.tempo_permanencia_horas ? `${tariffCalculation.tempo_permanencia_horas.toFixed(2)}h` : 'N/A'],
+    ['Categoria do Aeroporto:', getCategoriaLabel(categoriaAeroporto)],
+    ['Taxa de Câmbio:', `1 USD = ${tariffCalculation.taxa_cambio_usd_aoa || 850} AOA`],
+    ['Data do Cálculo:', new Date(tariffCalculation.data_calculo).toLocaleString('pt-AO')],
+  ];
+
+  const renderDetailSection = (title, items, showUSD = false, formula = null) => (
+    <div className="space-y-3 pb-4 border-b border-slate-200 last:border-b-0">
+      <h3 className="text-base font-semibold text-blue-700 flex items-center gap-2">
+        {title}
+        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+          {getCategoriaLabel(categoriaAeroporto)}
+        </Badge>
+      </h3>
+      
+      {/* Campos principais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+        {items.map(([label, value]) => (
+          <div key={label} className="flex">
+            <span className="font-medium text-slate-700 w-40 flex-shrink-0">{label}</span>
+            <span className="text-slate-600 flex-grow">{value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Fórmula (se fornecida) */}
+      {formula && (
+        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded">
+          <span className="font-medium text-amber-900 text-sm">Fórmula: </span>
+          <span className="text-amber-800 text-sm font-mono">
+            {formula.replace(/(\d+\.\d{3})\s*ton/g, (match, num) => {
+              const tons = Math.round(parseFloat(num));
+              return `${tons} ton`;
+            })}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
+  const handleSendEmail = async (emailData) => {
+    setIsSendingEmail(true);
+    try {
+      // Carregar companhias se ainda não estiverem carregadas
+      if (companhias.length === 0) {
+        await loadCompanhias();
+      }
+      // Construir seções detalhadas de cada tarifa
+      let detalhesPouso = '';
+      if (detalhes.pouso && typeof detalhes.pouso === 'object' && !detalhes.pouso.erro) {
+        detalhesPouso = `
+          <h3 style="color: #2563eb; margin-top: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">Detalhes - Tarifa de Pouso</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Tipo de Voo:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.pouso.tipoVoo || 'N/A'}</td>
+            </tr>
+            ${getFaixaPesoToneladas(detalhes.pouso) !== 'N/A' ? `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Faixa de Peso:</td>
+              <td style="padding: 8px; color: #64748b;">${getFaixaPesoToneladas(detalhes.pouso)}</td>
+            </tr>
+            ` : ''}
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Tarifa Aplicada (USD):</td>
+              <td style="padding: 8px; color: #64748b;">$${detalhes.pouso.tarifaAplicada || 'N/A'}/tonelada</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">MTOW (Toneladas):</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.pouso.mtowTonnes || 'N/A'}t</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Operações:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.pouso.operacoes || 'N/A'}</td>
+            </tr>
+            ${detalhes.pouso.formula ? `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px; font-weight: bold; color: #475569;">Fórmula:</td>
+                <td style="padding: 8px; color: #64748b;">${detalhes.pouso.formula}</td>
+            </tr>
+            ` : ''}
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Valor USD:</td>
+              <td style="padding: 8px; color: #64748b;">$${detalhes.pouso.valor?.toFixed(2) || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: bold; color: #166534;">Total AOA:</td>
+              <td style="padding: 8px; font-weight: bold; color: #166534;">${formatCurrency(tariffCalculation.tarifa_pouso)}</td>
+            </tr>
+          </table>
+        `;
+      }
+
+      let detalhesPermanencia = '';
+      if (detalhes.permanencia && typeof detalhes.permanencia === 'object' && !detalhes.permanencia.erro && tariffCalculation.tarifa_permanencia > 0) {
+        detalhesPermanencia = `
+          <h3 style="color: #2563eb; margin-top: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">Detalhes - Tarifa de Estacionamento</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Tipo:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.permanencia.tipo || 'N/A'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Tarifa Base USD:</td>
+              <td style="padding: 8px; color: #64748b;">$${detalhes.permanencia.tarifaBase || 'N/A'}/tonelada/hora</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">MTOW (Toneladas):</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.permanencia.mtowTonnes || 'N/A'}t</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Tempo Estacionamento:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.permanencia.tempoPermanencia || 'N/A'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Horas Isentas:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.permanencia.horasIsentas || 0}h</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Horas Cobradas:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.permanencia.horasCobradas || 0}h</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Fórmula:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.permanencia.formula || 'N/A'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Valor USD:</td>
+              <td style="padding: 8px; color: #64748b;">$${detalhes.permanencia.valor?.toFixed(2) || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: bold; color: #166534;">Total AOA:</td>
+              <td style="padding: 8px; font-weight: bold; color: #166534;">${formatCurrency(tariffCalculation.tarifa_permanencia)}</td>
+            </tr>
+          </table>
+        `;
+      }
+
+      let detalhesPassageiros = '';
+      if (detalhes.passageiros && typeof detalhes.passageiros === 'object' && !detalhes.passageiros.erro) {
+        detalhesPassageiros = `
+          <h3 style="color: #2563eb; margin-top: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">Detalhes - Tarifas de Passageiros</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Tipo de Voo:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.passageiros.tipoVoo || 'N/A'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Descrição:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.passageiros.descricao_tarifa || 'Tarifa de Embarque'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Tarifa por Pax:</td>
+              <td style="padding: 8px; color: #64748b;">$${detalhes.passageiros.tarifaPorPassageiro?.toFixed(2) || 'N/A'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Passageiros ARR (Isento):</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.passageiros.passageirosArr || 0}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Passageiros DEP (Tributável):</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.passageiros.passageirosDep || 0}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Total Cobrado:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.passageiros.totalPassageirosCobranca || 0} Pax</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Trânsito Direto (Isento):</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.passageiros.transitoDireto || 0}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Trânsito c/ Transbordo (Isento):</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.passageiros.transitoTransbordo || 0}</td>
+            </tr>
+            ${detalhes.passageiros.formula ? `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px; font-weight: bold; color: #475569;">Fórmula:</td>
+                <td style="padding: 8px; color: #64748b;">${detalhes.passageiros.formula}</td>
+            </tr>
+            ` : `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px; font-weight: bold; color: #475569;">Cálculo:</td>
+                <td style="padding: 8px; color: #64748b;">${detalhes.passageiros.totalPassageirosCobranca || 0} Pax × $${detalhes.passageiros.tarifaPorPassageiro?.toFixed(2) || 0}</td>
+            </tr>
+            `}
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Valor USD:</td>
+              <td style="padding: 8px; color: #64748b;">$${detalhes.passageiros.valor?.toFixed(2) || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: bold; color: #166534;">Total AOA:</td>
+              <td style="padding: 8px; font-weight: bold; color: #166534;">${formatCurrency(tariffCalculation.tarifa_passageiros)}</td>
+            </tr>
+          </table>
+          ${detalhes.passageiros.observacao ? `
+          <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #1e40af; font-size: 14px;"><strong>Observação:</strong> ${detalhes.passageiros.observacao}</p>
+          </div>
+          ` : ''}
+        `;
+      }
+
+      let detalhesCarga = '';
+      if (detalhes.carga && typeof detalhes.carga === 'object' && !detalhes.carga.erro && tariffCalculation.tarifa_carga > 0) {
+        detalhesCarga = `
+          <h3 style="color: #2563eb; margin-top: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">Detalhes - Tarifa de Carga</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Descrição:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.carga.descricao_tarifa || detalhes.carga.tipo || 'N/A'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Tarifa Por Ton USD:</td>
+              <td style="padding: 8px; color: #64748b;">$${detalhes.carga.tarifaPorTon || 'N/A'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Carga ARR:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.carga.cargaArr || 0} kg</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Carga DEP:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.carga.cargaDep || 0} kg</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Total Carga Kg:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.carga.totalCargaKg || 0} kg</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Total Carga Ton:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.carga.totalCargaTon || 0}t</td>
+            </tr>
+            ${detalhes.carga.formula ? `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px; font-weight: bold; color: #475569;">Fórmula:</td>
+                <td style="padding: 8px; color: #64748b;">${detalhes.carga.formula}</td>
+            </tr>
+            ` : ''}
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Valor USD:</td>
+              <td style="padding: 8px; color: #64748b;">$${detalhes.carga.valor?.toFixed(2) || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: bold; color: #166534;">Total AOA:</td>
+              <td style="padding: 8px; font-weight: bold; color: #166534;">${formatCurrency(tariffCalculation.tarifa_carga)}</td>
+            </tr>
+          </table>
+        `;
+      }
+
+      let detalhesImpostos = '';
+      if (detalhes.impostos && detalhes.impostos.length > 0) {
+        detalhes.impostos.forEach((imposto, index) => {
+          detalhesImpostos += `
+            <h3 style="color: #2563eb; margin-top: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">Detalhes - Imposto: ${imposto.tipo}</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px; font-weight: bold; color: #475569;">Tipo:</td>
+                <td style="padding: 8px; color: #64748b;">${imposto.tipo}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px; font-weight: bold; color: #475569;">Percentagem:</td>
+                <td style="padding: 8px; color: #64748b;">${imposto.valor_configurado}%</td>
+              </tr>
+              ${imposto.formula ? `
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 8px; font-weight: bold; color: #475569;">Fórmula:</td>
+                  <td style="padding: 8px; color: #64748b;">${imposto.formula}</td>
+              </tr>
+              ` : ''}
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px; font-weight: bold; color: #475569;">Valor USD:</td>
+                <td style="padding: 8px; color: #64748b;">$${imposto.valor_usd?.toFixed(2) || 'N/A'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; font-weight: bold; color: #dc2626;">Valor AOA:</td>
+                <td style="padding: 8px; font-weight: bold; color: #dc2626;">${formatCurrency(imposto.valor_aoa)}</td>
+              </tr>
+            </table>
+            ${imposto.descricao ? `
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px; margin-bottom: 20px;">
+              <p style="margin: 0; color: #1e40af; font-size: 14px;"><strong>Descrição:</strong> ${imposto.descricao}</p>
+            </div>
+            ` : ''}
+          `;
+        });
+      }
+
+      let detalhesIluminacao = '';
+      if (detalhes.iluminacao && typeof detalhes.iluminacao === 'object' && !detalhes.iluminacao.erro && tariffCalculation.outras_tarifas > 0) {
+        detalhesIluminacao = `
+          <h3 style="color: #2563eb; margin-top: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">Detalhes - Outras Tarifas (Iluminação)</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Descrição:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.iluminacao.descricao_tarifa || detalhes.iluminacao.descricao || 'N/A'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Período:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.iluminacao.periodo || 'N/A'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">ARR Noturno:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.iluminacao.arrNoturno ? 'Sim' : 'Não'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">DEP Noturno:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.iluminacao.depNoturno ? 'Sim' : 'Não'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Operações Noturnas:</td>
+              <td style="padding: 8px; color: #64748b;">${detalhes.iluminacao.operacoesNoturnas || 0}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Tarifa Por Operacao USD:</td>
+              <td style="padding: 8px; color: #64748b;">$${detalhes.iluminacao.tarifaPorOperacao || 'N/A'}</td>
+            </tr>
+            ${detalhes.iluminacao.formula ? `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px; font-weight: bold; color: #475569;">Fórmula:</td>
+                <td style="padding: 8px; color: #64748b;">${detalhes.iluminacao.formula}</td>
+            </tr>
+            ` : ''}
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: bold; color: #475569;">Valor USD:</td>
+              <td style="padding: 8px; color: #64748b;">$${detalhes.iluminacao.valor?.toFixed(2) || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: bold; color: #166534;">Total AOA:</td>
+              <td style="padding: 8px; font-weight: bold; color: #166534;">${formatCurrency(tariffCalculation.outras_tarifas)}</td>
+            </tr>
+          </table>
+        `;
+      }
+
+      // Gerar corpo do email HTML completo
+      const emailBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+          ${emailData.message ? `
+            <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 20px;">
+              <p style="margin: 0; color: #92400e;"><strong>Mensagem do Remetente:</strong></p>
+              <p style="margin: 5px 0 0 0; color: #92400e;">${emailData.message}</p>
+            </div>
+          ` : ''}
+          
+          <h2 style="color: #2563eb;">Relatório de Cálculo de Tarifas</h2>
+          
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <p><strong>Voo de Partida:</strong> ${vooDep?.numero_voo || 'N/A'}</p>
+            <p><strong>Aeroporto:</strong> ${aeroporto?.codigo_icao || 'N/A'} - ${aeroporto?.nome || 'N/A'}</p>
+            <p><strong>Companhia Aérea:</strong> ${nomeCompanhia}</p>
+            <p><strong>Data de Geração:</strong> ${new Date().toLocaleDateString('pt-AO')}</p>
+          </div>
+
+          <h3 style="color: #2563eb; margin-top: 20px;">Informações Gerais</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            ${infoGerais.map(([label, value]) => `
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px; font-weight: bold; color: #475569;">${label}</td>
+                <td style="padding: 8px; color: #64748b;">${value}</td>
+              </tr>
+            `).join('')}
+          </table>
+
+          <h3 style="color: #2563eb; margin-top: 20px;">Resumo das Tarifas</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="background-color: #f1f5f9;">
+              <td style="padding: 10px; font-weight: bold;">Componente</td>
+              <td style="padding: 10px; font-weight: bold; text-align: right;">Valor (AOA)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 10px;">Tarifa de Pouso</td>
+              <td style="padding: 10px; text-align: right;">${formatCurrency(tariffCalculation.tarifa_pouso)}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 10px;">Tarifa de Estacionamento</td>
+              <td style="padding: 10px; text-align: right;">${formatCurrency(tariffCalculation.tarifa_permanencia)}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 10px;">Tarifas de Passageiros</td>
+              <td style="padding: 10px; text-align: right;">${formatCurrency(tariffCalculation.tarifa_passageiros)}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 10px;">Tarifa de Carga</td>
+              <td style="padding: 10px; text-align: right;">${formatCurrency(tariffCalculation.tarifa_carga)}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 10px;">Outras Tarifas (Iluminação)</td>
+              <td style="padding: 10px; text-align: right;">${formatCurrency(tariffCalculation.outras_tarifas)}</td>
+            </tr>
+            ${detalhes.subtotal_sem_impostos_aoa ? `
+            <tr style="border-bottom: 1px solid #e2e8f0; background-color: #f8fafc;">
+              <td style="padding: 10px; font-weight: bold;">Subtotal (sem impostos)</td>
+              <td style="padding: 10px; text-align: right; font-weight: bold;">${formatCurrency(detalhes.subtotal_sem_impostos_aoa)}</td>
+            </tr>
+            ` : ''}
+            ${detalhes.total_impostos_aoa && detalhes.total_impostos_aoa > 0 ? `
+            <tr style="border-bottom: 1px solid #e2e8f0; background-color: #fef2f2;">
+              <td style="padding: 10px; font-weight: bold; color: #dc2626;">Total Impostos</td>
+              <td style="padding: 10px; text-align: right; font-weight: bold; color: #dc2626;">${formatCurrency(detalhes.total_impostos_aoa)}</td>
+            </tr>
+            ` : ''}
+          </table>
+
+          ${detalhesPouso}
+          ${detalhesPermanencia}
+          ${detalhesPassageiros}
+          ${detalhesCarga}
+          ${detalhesImpostos}
+          ${detalhesIluminacao}
+
+          <div style="background-color: #dcfce7; padding: 15px; border-radius: 8px; margin-top: 30px;">
+            <p style="font-size: 18px; font-weight: bold; color: #166534; margin: 0;">
+              TOTAL GERAL: ${formatCurrency(tariffCalculation.total_tarifa)}
+            </p>
+            <p style="font-size: 14px; color: #166534; margin: 5px 0 0 0;">
+              Equivalente a $${(tariffCalculation.total_tarifa_usd || 0).toFixed(2)}
+            </p>
+          </div>
+
+          <p style="margin-top: 30px; color: #64748b; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+            Este relatório foi gerado automaticamente pelo Sistema DIROPS.<br>
+            Sociedade Gestora de Aeroportos, S.A.
+          </p>
+        </div>
+      `;
+
+      const response = await sendEmailDirect({
+        to: emailData.to,
+        subject: emailData.subject,
+        body: emailBody
+      });
+
+      console.log('Resposta do envio de email:', response);
+
+      setIsEmailModalOpen(false);
+      setSuccessInfo({
+        isOpen: true,
+        title: 'Email Enviado com Sucesso!',
+        message: `O relatório completo de tarifas foi enviado para ${emailData.to}`
+      });
+    } catch (error) {
+      console.error('Erro ao enviar email:', error);
+      setAlertInfo({
+        isOpen: true,
+        type: 'error',
+        title: 'Erro ao Enviar Email',
+        message: `Não foi possível enviar o email. ${error.message || 'Tente novamente mais tarde.'}`
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <DialogTitle className="text-2xl">Cálculo de Tarifas Aeroportuárias</DialogTitle>
+
+                {/* Informações de Voos ARR e DEP */}
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+                    <div>
+                      <span className="font-semibold text-blue-900">Voo ARR:</span>{' '}
+                      <span className="text-blue-700">{vooArr?.numero_voo || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-900">Data:</span>{' '}
+                      <span className="text-blue-700">{vooArr?.data_operacao ? new Date(vooArr.data_operacao).toLocaleDateString('pt-AO') : 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-900">Voo DEP:</span>{' '}
+                      <span className="text-blue-700">{vooDep?.numero_voo || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-900">Data:</span>{' '}
+                      <span className="text-blue-700">{vooDep?.data_operacao ? new Date(vooDep.data_operacao).toLocaleDateString('pt-AO') : 'N/A'}</span>
+                    </div>
+                    <div className="md:col-span-2">
+                      <span className="font-semibold text-blue-900">Aeroporto:</span>{' '}
+                      <span className="text-blue-700">{aeroporto?.nome ? `${aeroporto.nome} - ${aeroporto.codigo_icao}` : 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-900">Companhia:</span>{' '}
+                      <span className="text-blue-700">{vooDep?.companhia_aerea ? `${vooDep.companhia_aerea} - ${nomeCompanhia}` : nomeCompanhia}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-900">Registo:</span>{' '}
+                      <span className="text-blue-700">{vooDep?.registo_aeronave || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {renderDetailSection('Informações Gerais', infoGerais)}
+
+            {/* TARIFA DE POUSO */}
+            {detalhes.pouso && typeof detalhes.pouso === 'object' && !detalhes.pouso.erro && renderDetailSection('Tarifa de Pouso', [
+              ['Tipo de Voo', detalhes.pouso.tipoVoo || 'N/A'],
+              ['Faixa de Peso', getFaixaPesoToneladas(detalhes.pouso)],
+              ['Tarifa Aplicada', detalhes.pouso.tarifaAplicada ? formatUSD(detalhes.pouso.tarifaAplicada) + '/tonelada' : 'N/A'],
+              ['MTOW (Toneladas)', detalhes.pouso.mtowTonnes ? formatToneladas(detalhes.pouso.mtowTonnes) : 'N/A'],
+              ['Operações', detalhes.pouso.operacoes || 'N/A'],
+              ['Valor USD', formatUSD(detalhes.pouso.valor)],
+              ['Valor AOA', formatCurrency(tariffCalculation.tarifa_pouso)],
+            ], true, detalhes.pouso.formula)}
+
+            {/* TARIFA DE ESTACIONAMENTO */}
+            {detalhes.permanencia && typeof detalhes.permanencia === 'object' && !detalhes.permanencia.erro && tariffCalculation.tarifa_permanencia > 0 && renderDetailSection('Tarifa de Estacionamento', [
+              ['Tipo', detalhes.permanencia.tipo || 'N/A'],
+              ['Tarifa Base USD', detalhes.permanencia.tarifaBase ? formatUSD(detalhes.permanencia.tarifaBase) + '/tonelada/hora' : 'N/A'],
+              ['MTOW (Toneladas)', detalhes.permanencia.mtowTonnes ? formatToneladas(detalhes.permanencia.mtowTonnes) : 'N/A'],
+              ['Tempo Estacionamento', detalhes.permanencia.tempoPermanencia || 'N/A'],
+              ['Horas Isentas', `${detalhes.permanencia.horasIsentas || 0}h`],
+              ['Horas Cobradas', `${detalhes.permanencia.horasCobradas || 0}h`],
+              ['Valor USD', formatUSD(detalhes.permanencia.valor)],
+              ['Valor AOA', formatCurrency(tariffCalculation.tarifa_permanencia)],
+            ], true, detalhes.permanencia.formula)}
+
+            {/* TARIFA DE PASSAGEIROS */}
+            {detalhes.passageiros && typeof detalhes.passageiros === 'object' && !detalhes.passageiros.erro && (
+              <>
+                {renderDetailSection('Tarifas de Passageiros', [
+                  ['Tipo de Voo', detalhes.passageiros.tipoVoo || 'N/A'],
+                  ['Descrição', detalhes.passageiros.descricao_tarifa || 'Tarifa de Embarque'],
+                  ['Tarifa por Pax', formatUSD(detalhes.passageiros.tarifaPorPassageiro)],
+                  ['Passageiros ARR', detalhes.passageiros.passageirosArr || 0],
+                  ['Passageiros DEP', detalhes.passageiros.passageirosDep || 0],
+                  ['Total Cobrado', detalhes.passageiros.totalPassageirosCobranca || 0],
+                  ['Trânsito Direto (Isento)', detalhes.passageiros.transitoDireto || 0],
+                  ['Trânsito c/ Transbordo (Isento)', detalhes.passageiros.transitoTransbordo || 0],
+                  ['Valor USD', formatUSD(detalhes.passageiros.valor)],
+                  ['Valor AOA', formatCurrency(tariffCalculation.tarifa_passageiros)],
+                ], true, detalhes.passageiros.formula)}
+
+                {detalhes.passageiros.observacao && (
+                  <div className="text-sm bg-blue-50 border border-blue-200 rounded p-3 text-blue-800 -mt-3">
+                    <strong>Observação:</strong> {detalhes.passageiros.observacao}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* TARIFA DE CARGA */}
+            {detalhes.carga && typeof detalhes.carga === 'object' && !detalhes.carga.erro && tariffCalculation.tarifa_carga > 0 && renderDetailSection('Tarifa de Carga', [
+              ['Descrição', detalhes.carga.descricao_tarifa || detalhes.carga.tipo || 'N/A'],
+              ['Tarifa Por Ton USD', formatUSD(detalhes.carga.tarifaPorTon)],
+              ['Carga ARR', detalhes.carga.cargaArr ? `${new Intl.NumberFormat('pt-PT').format(detalhes.carga.cargaArr)} kg` : 'N/A'],
+              ['Carga DEP', detalhes.carga.cargaDep ? `${new Intl.NumberFormat('pt-PT').format(detalhes.carga.cargaDep)} kg` : 'N/A'],
+              ['Total Carga Kg', detalhes.carga.totalCargaKg ? `${new Intl.NumberFormat('pt-PT').format(detalhes.carga.totalCargaKg)} kg` : 'N/A'],
+              ['Total Carga Ton', detalhes.carga.totalCargaTon ? formatToneladas(detalhes.carga.totalCargaTon) : 'N/A'],
+              ['Valor USD', formatUSD(detalhes.carga.valor)],
+              ['Valor AOA', formatCurrency(tariffCalculation.tarifa_carga)],
+            ], true, detalhes.carga.formula)}
+
+            {/* IMPOSTOS */}
+            {detalhes.impostos && detalhes.impostos.length > 0 && (
+              <>
+                {detalhes.impostos.map((imposto, index) => (
+                  <React.Fragment key={index}>
+                    {renderDetailSection(`Imposto - ${imposto.tipo}`, [
+                      ['Tipo', imposto.tipo],
+                      ['Percentagem', `${imposto.valor_configurado}%`],
+                      ['Valor USD', formatUSD(imposto.valor_usd)],
+                      ['Valor AOA', formatCurrency(imposto.valor_aoa)],
+                    ], true, imposto.formula)}
+                    {imposto.descricao && (
+                      <div className="text-sm bg-blue-50 border border-blue-200 rounded p-3 text-blue-800 -mt-3">
+                        <strong>Descrição:</strong> {imposto.descricao}
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </>
+            )}
+
+            {/* OUTRAS TARIFAS (ILUMINAÇÃO) */}
+            {detalhes.iluminacao && typeof detalhes.iluminacao === 'object' && !detalhes.iluminacao.erro && tariffCalculation.outras_tarifas > 0 && renderDetailSection('Outras Tarifas (Iluminação)', [
+              ['Descrição', detalhes.iluminacao.descricao_tarifa || detalhes.iluminacao.descricao || 'N/A'],
+              ['ARR Noturno', detalhes.iluminacao.arrNoturno ? 'Sim' : 'Não'],
+              ['DEP Noturno', detalhes.iluminacao.depNoturno ? 'Sim' : 'Não'],
+              ['Operações Noturnas', detalhes.iluminacao.operacoesNoturnas || 0],
+              ['Tarifa Por Operacao USD', formatUSD(detalhes.iluminacao.tarifaPorOperacao)],
+              ['Período', detalhes.iluminacao.periodo || 'N/A'],
+              ['Valor USD', formatUSD(detalhes.iluminacao.valor)],
+              ['Valor AOA', formatCurrency(tariffCalculation.outras_tarifas)],
+            ], true, detalhes.iluminacao.formula)}
+
+            {/* TOTAL GERAL */}
+            <div className="pt-4 border-t-2 border-slate-300 space-y-2">
+              {detalhes.subtotal_sem_impostos_usd && (
+                <div className="flex justify-between items-center text-slate-600">
+                  <h3 className="text-lg font-semibold">SUBTOTAL (sem impostos):</h3>
+                  <span className="text-lg font-semibold">
+                    {formatUSD(detalhes.subtotal_sem_impostos_usd)} = {formatCurrency(detalhes.subtotal_sem_impostos_aoa)}
+                  </span>
+                </div>
+              )}
+              {detalhes.total_impostos_usd && detalhes.total_impostos_usd > 0 && (
+                <div className="flex justify-between items-center text-red-600">
+                  <h3 className="text-lg font-semibold">IMPOSTOS:</h3>
+                  <span className="text-lg font-semibold">
+                    {formatUSD(detalhes.total_impostos_usd)} = {formatCurrency(detalhes.total_impostos_aoa)}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                <h3 className="text-xl font-bold text-green-700">TOTAL:</h3>
+                <span className="text-2xl font-bold text-green-700">
+                  {formatUSD(tariffCalculation.total_tarifa_usd)} = {formatCurrency(tariffCalculation.total_tarifa)}
+                </span>
+              </div>
+              <div className="text-right text-sm text-slate-600 mt-2">
+                Taxa de Câmbio: 1 USD = {tariffCalculation.taxa_cambio_usd_aoa} AOA
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Fechar
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEmailModalOpen(true)}
+              className="gap-2"
+            >
+              <Mail className="w-4 h-4" />
+              Enviar por Email
+            </Button>
+            <Button onClick={async () => {
+              try {
+                console.log('🔄 Gerando PDF no frontend...');
+                
+                // Gerar PDF direto no frontend
+                const { jsPDF } = await import('jspdf');
+                const doc = new jsPDF();
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                let yPos = 20;
+                const lineHeight = 7;
+                
+                // Logo
+                try {
+                  const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png';
+                  const logoResponse = await fetch(logoUrl);
+                  if (logoResponse.ok) {
+                    const logoBlob = await logoResponse.blob();
+                    const reader = new FileReader();
+                    await new Promise((resolve) => {
+                      reader.onloadend = () => {
+                        doc.addImage(reader.result, 'PNG', 14, 10, 30, 15);
+                        resolve();
+                      };
+                      reader.readAsDataURL(logoBlob);
+                    });
+                  }
+                } catch (e) {
+                  console.warn('Logo não carregado');
+                }
+
+                // Título
+                doc.setFontSize(18);
+                doc.setFont(undefined, 'bold');
+                doc.text('Cálculo de Tarifas Aeroportuárias', 105, yPos, { align: 'center' });
+                yPos += 15;
+
+                // Info dos voos ARR e DEP
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+
+                if (vooArr) {
+                  doc.text(`Voo ARR: ${vooArr.numero_voo || 'N/A'}`, 14, yPos);
+                  yPos += 6;
+                  doc.setFont(undefined, 'normal');
+                  doc.text(`Data: ${vooArr.data_operacao ? new Date(vooArr.data_operacao).toLocaleDateString('pt-AO') : 'N/A'}`, 14, yPos);
+                  yPos += 8;
+                }
+
+                doc.setFont(undefined, 'bold');
+                doc.text(`Voo DEP: ${vooDep?.numero_voo || 'N/A'}`, 14, yPos);
+                yPos += 6;
+                doc.setFont(undefined, 'normal');
+                doc.text(`Data: ${vooDep?.data_operacao ? new Date(vooDep.data_operacao).toLocaleDateString('pt-AO') : 'N/A'}`, 14, yPos);
+                yPos += 8;
+
+                doc.text(`Aeroporto: ${aeroporto?.nome ? `${aeroporto.nome} - ${aeroporto.codigo_icao}` : 'N/A'}`, 14, yPos);
+                yPos += 6;
+                doc.text(`Companhia: ${vooDep?.companhia_aerea ? `${vooDep.companhia_aerea} - ${nomeCompanhia}` : nomeCompanhia}`, 14, yPos);
+                yPos += 6;
+                doc.text(`Registo: ${vooDep?.registo_aeronave || 'N/A'}`, 14, yPos);
+                yPos += 10;
+
+                doc.line(14, yPos, 196, yPos);
+                yPos += 8;
+
+                // Seções
+                const addSection = (title, items) => {
+                  // Verificar se há espaço suficiente para a seção (título + pelo menos 3 linhas)
+                  if (yPos > pageHeight - 50) {
+                    doc.addPage();
+                    yPos = 20;
+                  }
+
+                  doc.setFontSize(12);
+                  doc.setFont(undefined, 'bold');
+                  doc.setTextColor(0, 74, 153);
+                  doc.text(title, 14, yPos);
+                  yPos += 7;
+
+                  doc.setFontSize(9);
+                  doc.setFont(undefined, 'normal');
+                  doc.setTextColor(0, 0, 0);
+
+                  items.forEach(([label, value]) => {
+                    if (yPos > pageHeight - 30) {
+                      doc.addPage();
+                      yPos = 20;
+                    }
+                    doc.text(`${label}:`, 20, yPos);
+                    doc.text(String(value), 90, yPos);
+                    yPos += 6;
+                  });
+                  yPos += 4;
+                };
+
+                addSection('Informações Gerais', infoGerais);
+                
+                if (detalhes.pouso) {
+                  addSection('Tarifa de Pouso', [
+                    ['Tipo', detalhes.pouso.tipoVoo || 'N/A'],
+                    ['MTOW', formatToneladas(detalhes.pouso.mtowTonnes)],
+                    ['Valor USD', formatUSD(tariffCalculation.tarifa_pouso_usd)],
+                    ['Valor AOA', formatCurrency(tariffCalculation.tarifa_pouso)]
+                  ]);
+                }
+
+                if (detalhes.permanencia) {
+                  addSection('Tarifa de Estacionamento', [
+                    ['Tempo', detalhes.permanencia.tempoPermanencia || '0h'],
+                    ['Valor USD', formatUSD(tariffCalculation.tarifa_permanencia_usd)],
+                    ['Valor AOA', formatCurrency(tariffCalculation.tarifa_permanencia)]
+                  ]);
+                }
+
+                if (detalhes.passageiros) {
+                  addSection('Tarifas de Passageiros', [
+                    ['Total Cobrado', `${detalhes.passageiros.totalPassageirosCobranca || 0} pax`],
+                    ['Valor USD', formatUSD(tariffCalculation.tarifa_passageiros_usd)],
+                    ['Valor AOA', formatCurrency(tariffCalculation.tarifa_passageiros)]
+                  ]);
+                }
+
+                // Total - verificar se há espaço
+                if (yPos > pageHeight - 40) {
+                  doc.addPage();
+                  yPos = 20;
+                }
+
+                yPos += 8;
+                doc.line(14, yPos, 196, yPos);
+                yPos += 10;
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(0, 128, 0);
+                doc.text('TOTAL:', 14, yPos);
+                doc.text(`${formatUSD(tariffCalculation.total_tarifa_usd)} = ${formatCurrency(tariffCalculation.total_tarifa)}`, 196, yPos, { align: 'right' });
+
+                // Rodapé com informações do documento - sempre na mesma página do total
+                yPos += 12;
+                doc.setFontSize(8);
+                doc.setFont(undefined, 'italic');
+                doc.setTextColor(100, 100, 100);
+                const dataGeracao = new Date().toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                // Buscar informações do usuário
+                const { User } = await import('@/entities/User');
+                const currentUser = await User.me();
+                const nomeUsuario = currentUser?.full_name || currentUser?.email || 'Usuário';
+
+                doc.text(`Gerado em ${dataGeracao} por ${nomeUsuario}`, 14, yPos);
+
+                // Download
+                doc.save(`detalhes_tarifas_${vooDep?.numero_voo || 'voo'}_${new Date().toISOString().split('T')[0]}.pdf`);
+                
+                setSuccessInfo({
+                  isOpen: true,
+                  title: 'PDF Gerado',
+                  message: 'PDF exportado com sucesso!'
+                });
+              } catch (error) {
+                console.error('❌ Erro ao exportar PDF:', error);
+                setAlertInfo({
+                  isOpen: true,
+                  type: 'error',
+                  title: 'Erro',
+                  message: 'Erro ao gerar PDF.'
+                });
+              }
+            }} className="gap-2">
+              <Download className="w-4 h-4" />
+              Exportar PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <SendEmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        onSend={handleSendEmail}
+        isSending={isSendingEmail}
+        defaultSubject={`Relatório de Tarifas - Voo ${vooDep?.numero_voo || 'N/A'} - ${aeroporto?.codigo_icao || 'N/A'}`}
+      />
+
+      <SuccessModal
+        isOpen={successInfo.isOpen}
+        onClose={() => setSuccessInfo({ isOpen: false, title: '', message: '' })}
+        title={successInfo.title}
+        message={successInfo.message}
+      />
+
+      <AlertModal
+        isOpen={alertInfo.isOpen}
+        onClose={() => setAlertInfo({ ...alertInfo, isOpen: false })}
+        type={alertInfo.type}
+        title={alertInfo.title}
+        message={alertInfo.message}
+      />
+    </>
+  );
+}
