@@ -28,3 +28,6 @@ dist-ssr
 *.sw?
 
 .env
+
+# Migration data (contains sensitive production data)
+scripts/data/
