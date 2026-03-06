@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -2461,7 +2462,7 @@ export default function GestaoNotificacoes() {
                           </div>
                           <div 
                             className="bg-white p-4 rounded-lg text-sm"
-                            dangerouslySetInnerHTML={{ __html: renderPreview(formData.mensagem_template_email_corpo) }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderPreview(formData.mensagem_template_email_corpo)) }}
                           />
                         </div>
                       )}
@@ -2515,15 +2516,15 @@ export default function GestaoNotificacoes() {
                             <div key={key} className="bg-white p-3 rounded-lg border border-slate-200">
                               <div className="text-xs font-medium text-slate-600 mb-2">{template.nome}</div>
                               <div 
-                                dangerouslySetInnerHTML={{ 
-                                  __html: (template.html || '')
+                                dangerouslySetInnerHTML={{
+                                  __html: sanitizeHtml((template.html || '')
                                     .replace(/\{\{codigo_icao\}\}/g, 'FNLU')
                                     .replace(/\{\{nome\}\}/g, 'Quatro de Fevereiro')
                                     .replace(/\{\{total_voos\}\}/g, '45')
                                     .replace(/\{\{total_passageiros\}\}/g, '3,250')
                                     .replace(/\{\{total_carga\}\}/g, '12,500')
                                     .replace(/\{\{total_faturacao_usd\}\}/g, '45,250.00')
-                                    .replace(/\{\{total_faturacao_aoa\}\}/g, '38,462,500')
+                                    .replace(/\{\{total_faturacao_aoa\}\}/g, '38,462,500'))
                                 }}
                               />
                             </div>
@@ -2592,15 +2593,15 @@ export default function GestaoNotificacoes() {
                         <h4 className="font-semibold text-slate-900 mb-3">👁️ Pré-visualização Individual (1 aeroporto):</h4>
                         <div 
                           className="bg-white p-4 rounded border border-slate-200"
-                          dangerouslySetInnerHTML={{ 
-                            __html: ((formData.template_html_aeroportos || '') || '')
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizeHtml(((formData.template_html_aeroportos || '') || '')
                               .replace(/\{\{codigo_icao\}\}/g, 'FNLU')
                               .replace(/\{\{nome\}\}/g, 'Aeroporto Quatro de Fevereiro')
                               .replace(/\{\{total_voos\}\}/g, '45')
                               .replace(/\{\{total_passageiros\}\}/g, '3,250')
                               .replace(/\{\{total_carga\}\}/g, '12,500')
                               .replace(/\{\{total_faturacao_usd\}\}/g, '45,250.00')
-                              .replace(/\{\{total_faturacao_aoa\}\}/g, '38,462,500')
+                              .replace(/\{\{total_faturacao_aoa\}\}/g, '38,462,500'))
                           }}
                         />
                       </div>
@@ -2694,7 +2695,7 @@ export default function GestaoNotificacoes() {
                                   // Substituir o placeholder dos aeroportos
                                   emailCompleto = emailCompleto.replace(/\{\{detalhes_aeroportos_html\}\}/g, detalhesAeroportosHtml);
 
-                                  return emailCompleto;
+                                  return sanitizeHtml(emailCompleto);
                                 })()
                               }}
                             />

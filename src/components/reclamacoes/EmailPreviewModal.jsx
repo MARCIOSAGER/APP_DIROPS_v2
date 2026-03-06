@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Eye, X } from 'lucide-react';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 export default function EmailPreviewModal({ isOpen, onClose, title, body }) {
   return (
@@ -18,7 +19,7 @@ export default function EmailPreviewModal({ isOpen, onClose, title, body }) {
         <ScrollArea className="max-h-[60vh] w-full rounded border p-4">
           <div 
             className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: body }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(body) }}
           />
         </ScrollArea>
 

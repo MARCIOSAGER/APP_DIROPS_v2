@@ -8,6 +8,7 @@ import BottomTabs from '@/components/shared/BottomTabs';
 import { useI18n } from '@/components/lib/i18n';
 import { Button } from "@/components/ui/button";
 import { User as UserEntity } from '@/entities/User';
+import { useAuth } from '@/lib/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,13 +112,14 @@ function LayoutContent({ children, currentPageName }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { language, setLanguage, t } = useI18n();
+  const { user: authUser, isLoadingAuth } = useAuth();
   const isRootPage = rootPages.includes(currentPageName);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [user, setUser] = React.useState(null);
   const [isLoadingUser, setIsLoadingUser] = React.useState(true);
         const [permissions, setPermissions] = React.useState(PERFIL_PERMISSIONS_DEFAULT);
         const [isLoadingPermissions, setIsLoadingPermissions] = React.useState(true);
-        const [hasRedirected, setHasRedirected] = React.useState(false); // New state for redirection tracking
+        const [hasRedirected, setHasRedirected] = React.useState(false);
         const [globalLoading, setGlobalLoading] = React.useState(false);
         const [showTour, setShowTour] = React.useState(false);
 
@@ -161,25 +163,18 @@ function LayoutContent({ children, currentPageName }) {
   }, []);
 
   React.useEffect(() => {
-    const checkUser = async () => {
-      setIsLoadingUser(true);
-      try {
-        let currentUser = await UserEntity.me();
-        currentUser = ensureUserProfilesExist(currentUser);
-        setUser(currentUser);
-      } catch (error) {
-        setUser(null);
-      } finally {
-        setIsLoadingUser(false);
-      }
-    };
+    if (isLoadingAuth) return;
 
     if (!unprotectedPages.includes(currentPageName)) {
-      checkUser();
-    } else {
-      setIsLoadingUser(false);
+      if (authUser) {
+        const userWithProfiles = ensureUserProfilesExist({ ...authUser });
+        setUser(userWithProfiles);
+      } else {
+        setUser(null);
+      }
     }
-  }, [location.pathname, currentPageName]);
+    setIsLoadingUser(false);
+  }, [authUser, isLoadingAuth, currentPageName]);
 
   // Efeito para redirecionamento automático quando não tem acesso
   React.useEffect(() => {
@@ -222,10 +217,10 @@ function LayoutContent({ children, currentPageName }) {
     try {
       await UserEntity.logout();
       setUser(null);
-      window.location.href = createPageUrl('ValidacaoAcesso');
+      window.location.href = '/login';
     } catch (error) {
       console.error('Erro durante o logout:', error);
-      window.location.href = createPageUrl('ValidacaoAcesso');
+      window.location.href = '/login';
     }
   };
 

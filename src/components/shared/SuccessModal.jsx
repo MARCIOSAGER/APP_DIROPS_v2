@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, ArrowRight } from 'lucide-react';
+import { safeRedirectUrl } from '@/lib/sanitize';
 
 export default function SuccessModal({ 
   isOpen, 
@@ -13,7 +14,7 @@ export default function SuccessModal({
 }) {
   const handleClose = () => {
     if (redirectPath) {
-      window.location.href = redirectPath;
+      window.location.href = safeRedirectUrl(redirectPath, '/');
     } else if (onClose) {
       onClose();
     }

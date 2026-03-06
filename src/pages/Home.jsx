@@ -189,13 +189,13 @@ export default function DashboardInterno() {
       console.error("❌ Erro geral no Dashboard:", error);
 
       if (error.response?.status === 401 || error.message?.includes('401') || error.message?.includes('not authenticated')) {
-        console.log('Utilizador não autenticado, redirecionando para ValidacaoAcesso');
-        window.location.href = createPageUrl('ValidacaoAcesso');
+        console.log('Utilizador não autenticado, redirecionando para login');
+        window.location.href = '/login';
         return;
       }
 
       if (String(error.message).includes('403')) {
-        if (user && hasUserProfile(user, 'gestor_empresa')) {
+        if (currentUser && hasUserProfile(currentUser, 'gestor_empresa')) {
           window.location.href = createPageUrl('Credenciamento');
           return;
         }
@@ -282,8 +282,8 @@ export default function DashboardInterno() {
               <RefreshCw className="h-4 w-4" />
               Tentar Novamente
             </Button>
-            <Button variant="outline" onClick={() => window.location.href = createPageUrl('ValidacaoAcesso')}>
-              Voltar
+            <Button variant="outline" onClick={() => window.location.href = '/Home'}>
+              Tentar Novamente
             </Button>
           </div>
         </div>

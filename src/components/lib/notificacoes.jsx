@@ -1,11 +1,32 @@
 import { User } from '@/entities/User';
+import { supabase } from '@/lib/supabaseClient';
 
 /**
  * Obtém os e-mails de todos os administradores cadastrados na aplicação
  */
 export async function getAdminEmails() {
-  // Retorna uma lista estática de e-mails
-  return ['marciosager@gmail.com'];
+  try {
+    // First try: read from configuracao_sistema
+    const { data: config } = await supabase
+      .from('configuracao_sistema')
+      .select('email_notificacao_acessos')
+      .limit(1)
+      .single();
+    if (config?.email_notificacao_acessos) {
+      return config.email_notificacao_acessos.split(',').map(e => e.trim()).filter(Boolean);
+    }
+    // Fallback: get all users with admin role
+    const { data: admins } = await supabase
+      .from('users')
+      .select('email')
+      .or('role.eq.admin,perfis.cs.{administrador}');
+    if (admins?.length) {
+      return admins.map(a => a.email).filter(Boolean);
+    }
+  } catch (err) {
+    console.warn('[getAdminEmails] Erro ao buscar admins:', err.message);
+  }
+  return [];
 }
 
 /**
@@ -29,7 +50,7 @@ async function sendNotificationEmail(to, subject, body) {
   try {
     const { sendNotificationEmail } = await import('@/functions/sendNotificationEmail');
     const response = await sendNotificationEmail({ to, subject, body });
-    return response.data;
+    return response?.data || response;
   } catch (error) {
     console.error('Erro ao enviar e-mail de notificação:', error);
     throw error;

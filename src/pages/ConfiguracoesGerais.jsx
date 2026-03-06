@@ -3,48 +3,37 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, RefreshCw, Settings, Tag, MessageSquare, Send } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { ConfiguracaoNotificacoes } from '@/entities/ConfiguracaoNotificacoes';
+import { Save, RefreshCw, Settings, Mail, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 import { User } from '@/entities/User';
 import AlertModal from '@/components/shared/AlertModal';
 import SuccessModal from '@/components/shared/SuccessModal';
 import { createPageUrl } from '@/utils';
-import PlaceholderManagement from '@/components/configuracoes/PlaceholderManagement';
-import ZAPIInstanciaManagement from '@/components/configuracoes/ZAPIInstanciaManagement';
-import ZAPIOptInConfig from '@/components/configuracoes/ZAPIOptInConfig';
+import { emailTemplates } from '@/lib/emailTemplates';
 
 export default function ConfiguracoesGerais() {
-  const [configuracao, setConfiguracao] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  
-  const [formData, setFormData] = useState({
-    numero_whatsapp_oficial: '',
-    content_template_sid: '',
+  const [configId, setConfigId] = useState(null);
+  const [activeTab, setActiveTab] = useState('smtp');
+
+  const [smtpData, setSmtpData] = useState({
+    smtp_host: '',
+    smtp_port: '587',
+    smtp_user: '',
+    smtp_password: '',
+    smtp_from_name: 'DIROPS-SGA',
+    smtp_from_email: '',
+    smtp_secure: true,
     email_notificacoes_padrao: '',
-    provedor_whatsapp: 'twilio'
   });
 
-  const [alertInfo, setAlertInfo] = useState({ 
-    isOpen: false, 
-    type: 'info', 
-    title: '', 
-    message: '' 
-  });
-  
-  const [successInfo, setSuccessInfo] = useState({ 
-    isOpen: false, 
-    title: '', 
-    message: '' 
-  });
+  const [showSmtpPassword, setShowSmtpPassword] = useState(false);
+  const [smtpTestStatus, setSmtpTestStatus] = useState(null);
+  const [isTesting, setIsTesting] = useState(false);
 
-  const [activeTab, setActiveTab] = useState('notificacoes');
-  const [zapiSubTab, setZapiSubTab] = useState('instancia');
-  const [provedorAtivo, setProvedorAtivo] = useState('twilio');
-  const [numeroTeste, setNumeroTeste] = useState('');
-  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
+  const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
 
   useEffect(() => {
     loadData();
@@ -54,171 +43,152 @@ export default function ConfiguracoesGerais() {
     setIsLoading(true);
     try {
       const user = await User.me();
-      setCurrentUser(user);
 
-      // Verificar se o usuário é administrador
       if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
         setAlertInfo({
           isOpen: true,
           type: 'error',
           title: 'Acesso Negado',
-          message: 'Apenas administradores podem aceder a esta página.'
+          message: 'Apenas administradores podem aceder a esta pagina.'
         });
-        setTimeout(() => {
-          window.location.href = createPageUrl('Home');
-        }, 2000);
+        setTimeout(() => { window.location.href = createPageUrl('Home'); }, 2000);
         return;
       }
 
-      const configs = await ConfiguracaoNotificacoes.list();
-      
-      if (configs.length > 0) {
+      // Load config from configuracao_sistema table
+      const { data: configs, error } = await supabase
+        .from('configuracao_sistema')
+        .select('*')
+        .limit(1);
+
+      if (error) {
+        console.error('Erro ao carregar configuracao_sistema:', error);
+        // Table might not exist or RLS blocks - just show empty form
+      }
+
+      if (configs && configs.length > 0) {
         const config = configs[0];
-        setConfiguracao(config);
-        setProvedorAtivo(config.provedor_whatsapp || 'twilio');
-        setFormData({
-          numero_whatsapp_oficial: config.numero_whatsapp_oficial || '',
-          content_template_sid: config.content_template_sid || '',
+        setConfigId(config.id);
+        setSmtpData({
+          smtp_host: config.smtp_host || '',
+          smtp_port: config.smtp_port || '587',
+          smtp_user: config.smtp_user || '',
+          smtp_password: config.smtp_password || '',
+          smtp_from_name: config.smtp_from_name || 'DIROPS-SGA',
+          smtp_from_email: config.smtp_from_email || '',
+          smtp_secure: config.smtp_secure !== false,
           email_notificacoes_padrao: config.email_notificacoes_padrao || '',
-          provedor_whatsapp: config.provedor_whatsapp || 'twilio'
-        });
-      } else {
-        // Criar configuração padrão se não existir
-        const defaultConfig = {
-          numero_whatsapp_oficial: 'whatsapp:+14155238886',
-          content_template_sid: '',
-          email_notificacoes_padrao: '',
-          ativo: true
-        };
-        const created = await ConfiguracaoNotificacoes.create(defaultConfig);
-        setConfiguracao(created);
-        setProvedorAtivo(created.provedor_whatsapp || 'twilio');
-        setFormData({
-          numero_whatsapp_oficial: created.numero_whatsapp_oficial,
-          content_template_sid: created.content_template_sid || '',
-          email_notificacoes_padrao: created.email_notificacoes_padrao || '',
-          provedor_whatsapp: created.provedor_whatsapp || 'twilio'
         });
       }
     } catch (error) {
-      console.error('Erro ao carregar configurações:', error);
+      console.error('Erro ao carregar configuracoes:', error);
       setAlertInfo({
         isOpen: true,
         type: 'error',
         title: 'Erro ao Carregar',
-        message: 'Não foi possível carregar as configurações.'
+        message: 'Nao foi possivel carregar as configuracoes: ' + error.message
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleSmtpChange = (field, value) => {
+    setSmtpData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = async () => {
-    // Validação apenas para Twilio
-    if (formData.provedor_whatsapp === 'twilio') {
-      if (!formData.numero_whatsapp_oficial.trim()) {
-        setAlertInfo({
-          isOpen: true,
-          type: 'error',
-          title: 'Campo Obrigatório',
-          message: 'O número oficial do WhatsApp é obrigatório para Twilio.'
-        });
-        return;
-      }
-
-      if (!formData.content_template_sid.trim()) {
-        setAlertInfo({
-          isOpen: true,
-          type: 'error',
-          title: 'Campo Obrigatório',
-          message: 'O SID do template de conteúdo é obrigatório para Twilio.'
-        });
-        return;
-      }
-
-      if (!formData.numero_whatsapp_oficial.startsWith('whatsapp:+')) {
-        setAlertInfo({
-          isOpen: true,
-          type: 'error',
-          title: 'Formato Inválido',
-          message: 'Para Twilio, o número deve estar no formato: whatsapp:+244XXXXXXXXX'
-        });
-        return;
-      }
+  const handleSaveSmtp = async () => {
+    if (!smtpData.smtp_host.trim()) {
+      setAlertInfo({ isOpen: true, type: 'error', title: 'Campo Obrigatorio', message: 'O servidor SMTP e obrigatorio.' });
+      return;
+    }
+    if (!smtpData.smtp_from_email.trim()) {
+      setAlertInfo({ isOpen: true, type: 'error', title: 'Campo Obrigatorio', message: 'O email de envio e obrigatorio.' });
+      return;
     }
 
     setIsSaving(true);
     try {
       const updateData = {
-        ...formData,
-        ativo: true
+        smtp_host: smtpData.smtp_host,
+        smtp_port: smtpData.smtp_port,
+        smtp_user: smtpData.smtp_user,
+        smtp_password: smtpData.smtp_password,
+        smtp_from_name: smtpData.smtp_from_name,
+        smtp_from_email: smtpData.smtp_from_email,
+        smtp_secure: smtpData.smtp_secure,
+        email_notificacoes_padrao: smtpData.email_notificacoes_padrao,
       };
 
-      if (configuracao) {
-        await ConfiguracaoNotificacoes.update(configuracao.id, updateData);
+      if (configId) {
+        const { error } = await supabase
+          .from('configuracao_sistema')
+          .update(updateData)
+          .eq('id', configId);
+        if (error) throw error;
       } else {
-        const created = await ConfiguracaoNotificacoes.create(updateData);
-        setConfiguracao(created);
+        const { data, error } = await supabase
+          .from('configuracao_sistema')
+          .insert(updateData)
+          .select()
+          .single();
+        if (error) throw error;
+        setConfigId(data.id);
       }
 
       setSuccessInfo({
         isOpen: true,
-        title: 'Configurações Salvas!',
-        message: 'As configurações de notificações foram atualizadas com sucesso.'
+        title: 'Configuracoes Salvas!',
+        message: 'As configuracoes SMTP foram atualizadas com sucesso.'
       });
-
-      await loadData();
     } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
+      console.error('Erro ao salvar:', error);
       setAlertInfo({
         isOpen: true,
         type: 'error',
         title: 'Erro ao Salvar',
-        message: error.message || 'Não foi possível salvar as configurações.'
+        message: error.message || 'Nao foi possivel salvar as configuracoes.'
       });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleSendTest = async () => {
-    if (!numeroTeste.trim()) {
-      setAlertInfo({
-        isOpen: true,
-        type: 'error',
-        title: 'Número Obrigatório',
-        message: 'Por favor, insira um número de WhatsApp para o teste.'
-      });
+  const handleTestSmtp = async () => {
+    if (!smtpData.smtp_host || !smtpData.smtp_from_email) {
+      setAlertInfo({ isOpen: true, type: 'error', title: 'Configuracao Incompleta', message: 'Configure o servidor SMTP e email de envio antes de testar.' });
       return;
     }
 
-    setIsSendingTest(true);
+    setIsTesting(true);
+    setSmtpTestStatus(null);
     try {
-      const response = await base44.functions.invoke('sendWhatsAppMessageZAPI', {
-        to: numeroTeste,
-        body: '🧪 Teste de envio via Z-API - DIROPS-SGA. Esta é uma mensagem de teste para verificar a integração.'
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: smtpData.smtp_from_email,
+          subject: 'Teste SMTP - DIROPS-SGA',
+          html: emailTemplates.smtp_test(),
+        },
       });
 
+      if (error) throw error;
+      setSmtpTestStatus('success');
       setSuccessInfo({
         isOpen: true,
-        title: 'Mensagem Enviada!',
-        message: `Mensagem de teste enviada com sucesso para ${numeroTeste}.`
+        title: 'Email de Teste Enviado!',
+        message: `Email de teste enviado para ${smtpData.smtp_from_email}. Verifique a caixa de entrada.`
       });
-      setNumeroTeste('');
     } catch (error) {
-      console.error('Erro ao enviar mensagem de teste:', error);
+      console.error('Erro no teste SMTP:', error);
+      setSmtpTestStatus('error');
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Enviar',
-        message: error.message || 'Não foi possível enviar a mensagem de teste.'
+        title: 'Falha no Teste',
+        message: 'Para testar o envio de email, e necessario fazer deploy da Edge Function "send-email" no Supabase. Consulte supabase/functions/send-email/index.ts'
       });
     } finally {
-      setIsSendingTest(false);
+      setIsTesting(false);
     }
   };
 
@@ -227,7 +197,7 @@ export default function ConfiguracoesGerais() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-700">A carregar configurações...</p>
+          <p className="text-slate-700">A carregar configuracoes...</p>
         </div>
       </div>
     );
@@ -237,344 +207,203 @@ export default function ConfiguracoesGerais() {
     <div className="p-6 bg-slate-50 min-h-screen">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Configurações Gerais</h1>
-          <p className="text-slate-600 mt-1">Gerir configurações do sistema</p>
+          <h1 className="text-3xl font-bold text-slate-900">Configuracoes Gerais</h1>
+          <p className="text-slate-600 mt-1">Gerir configuracoes do sistema</p>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-2 border-b border-slate-300 bg-white rounded-t-lg p-4">
           <button
-            onClick={() => setActiveTab('notificacoes')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'notificacoes' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
+            onClick={() => setActiveTab('smtp')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'smtp' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
+          >
+            <Mail className="w-4 h-4 inline mr-2" />
+            Email (SMTP)
+          </button>
+          <button
+            onClick={() => setActiveTab('geral')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'geral' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
           >
             <Settings className="w-4 h-4 inline mr-2" />
-            Notificações
-          </button>
-          <button
-            onClick={() => setActiveTab('placeholders')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'placeholders' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
-          >
-            <Tag className="w-4 h-4 inline mr-2" />
-            Placeholders
-          </button>
-          <button
-            onClick={() => setActiveTab('zapi')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'zapi' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
-          >
-            <MessageSquare className="w-4 h-4 inline mr-2" />
-            Z-API
+            Geral
           </button>
         </div>
 
-        {/* Tab: Notificações */}
-        {activeTab === 'notificacoes' && (
+        {/* Tab: SMTP */}
+        {activeTab === 'smtp' && (
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
-                Configurações de Notificações
+                <Mail className="w-5 h-5" />
+                Configuracoes de Email (SMTP)
               </CardTitle>
-            <CardDescription>
-              Configure o número oficial do WhatsApp e outras definições para envio de notificações
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              {/* Seletor de Provedor */}
-              <div>
-                <Label htmlFor="provedor_whatsapp">
-                  Provedor de WhatsApp <span className="text-red-500">*</span>
-                </Label>
-                <div className="flex gap-4 mt-2">
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('provedor_whatsapp', 'twilio')}
-                    className={`flex-1 p-4 border-2 rounded-lg transition-all ${
-                      formData.provedor_whatsapp === 'twilio' 
-                        ? 'border-blue-600 bg-blue-50' 
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <MessageSquare className={`w-5 h-5 ${formData.provedor_whatsapp === 'twilio' ? 'text-blue-600' : 'text-slate-500'}`} />
-                      <span className={`font-medium ${formData.provedor_whatsapp === 'twilio' ? 'text-blue-900' : 'text-slate-700'}`}>
-                        Twilio
-                      </span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('provedor_whatsapp', 'zapi')}
-                    className={`flex-1 p-4 border-2 rounded-lg transition-all ${
-                      formData.provedor_whatsapp === 'zapi' 
-                        ? 'border-green-600 bg-green-50' 
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <MessageSquare className={`w-5 h-5 ${formData.provedor_whatsapp === 'zapi' ? 'text-green-600' : 'text-slate-500'}`} />
-                      <span className={`font-medium ${formData.provedor_whatsapp === 'zapi' ? 'text-green-900' : 'text-slate-700'}`}>
-                        Z-API
-                      </span>
-                    </div>
-                  </button>
+              <CardDescription>
+                Configure o servidor SMTP para envio de emails de notificacao, alertas e recuperacao de senha.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Server config */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Servidor SMTP <span className="text-red-500">*</span></Label>
+                  <Input
+                    value={smtpData.smtp_host}
+                    onChange={(e) => handleSmtpChange('smtp_host', e.target.value)}
+                    placeholder="smtp.gmail.com"
+                  />
+                  <p className="text-xs text-slate-500">Ex: smtp.gmail.com, smtp.office365.com, mail.dominio.com</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Porta</Label>
+                  <Input
+                    value={smtpData.smtp_port}
+                    onChange={(e) => handleSmtpChange('smtp_port', e.target.value)}
+                    placeholder="587"
+                  />
+                  <p className="text-xs text-slate-500">587 (TLS) ou 465 (SSL) - Recomendado: 587</p>
                 </div>
               </div>
 
-              {formData.provedor_whatsapp === 'twilio' ? (
-                <div>
-                  <Label htmlFor="numero_whatsapp">
-                    Número Oficial do WhatsApp <span className="text-red-500">*</span>
-                  </Label>
+              {/* Auth */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Usuario / Email de Login</Label>
                   <Input
-                    id="numero_whatsapp"
-                    value={formData.numero_whatsapp_oficial}
-                    onChange={(e) => handleInputChange('numero_whatsapp_oficial', e.target.value)}
-                    placeholder="whatsapp:+244XXXXXXXXX"
-                    className="mt-1"
+                    value={smtpData.smtp_user}
+                    onChange={(e) => handleSmtpChange('smtp_user', e.target.value)}
+                    placeholder="seu@email.com"
                   />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Formato Twilio: whatsapp:+244XXXXXXXXX (incluir o prefixo "whatsapp:")
-                  </p>
                 </div>
-              ) : (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                    📱 Número de Envio Z-API
-                  </h4>
-                  <p className="text-sm text-blue-800">
-                    O número que envia as mensagens é o conectado à instância Z-API configurada no sistema.
-                  </p>
-                  <p className="text-sm text-blue-800 mt-2">
-                    Para alterar o número, aceda à plataforma Z-API e reconecte a instância com o novo número.
-                  </p>
+                <div className="space-y-2">
+                  <Label>Senha / App Password</Label>
+                  <div className="relative">
+                    <Input
+                      type={showSmtpPassword ? 'text' : 'password'}
+                      value={smtpData.smtp_password}
+                      onChange={(e) => handleSmtpChange('smtp_password', e.target.value)}
+                      placeholder="Senha do SMTP"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSmtpPassword(!showSmtpPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showSmtpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500">Para Gmail, use uma "Senha de App" gerada nas configuracoes de seguranca</p>
                 </div>
-              )}
+              </div>
 
-              {formData.provedor_whatsapp === 'twilio' && (
-                <div>
-                  <Label htmlFor="content_template_sid">
-                    Content Template SID (Twilio) <span className="text-red-500">*</span>
-                  </Label>
+              {/* From config */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nome do Remetente</Label>
                   <Input
-                    id="content_template_sid"
-                    value={formData.content_template_sid}
-                    onChange={(e) => handleInputChange('content_template_sid', e.target.value)}
-                    placeholder="HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                    className="mt-1"
+                    value={smtpData.smtp_from_name}
+                    onChange={(e) => handleSmtpChange('smtp_from_name', e.target.value)}
+                    placeholder="DIROPS-SGA"
                   />
-                  <p className="text-xs text-slate-500 mt-1">
-                    SID do template de conteúdo aprovado no Twilio para mensagens WhatsApp
-                  </p>
                 </div>
-              )}
+                <div className="space-y-2">
+                  <Label>Email de Envio <span className="text-red-500">*</span></Label>
+                  <Input
+                    type="email"
+                    value={smtpData.smtp_from_email}
+                    onChange={(e) => handleSmtpChange('smtp_from_email', e.target.value)}
+                    placeholder="noreply@sga.co.ao"
+                  />
+                </div>
+              </div>
 
-              {formData.provedor_whatsapp === 'zapi' && (
-                <>
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
-                      🔗 Webhook Z-API
-                    </h4>
-                    <p className="text-sm text-amber-800 mb-2">
-                      Configure este URL como webhook na plataforma Z-API:
-                    </p>
-                    <div className="bg-white border border-amber-300 rounded p-3 font-mono text-sm break-all">
-                      https://dirops.base44.app/api/apps/6870dc26cbf5444a4fbe6aa9/functions/zapiWebhook
-                    </div>
-                    <p className="text-xs text-amber-700 mt-2">
-                      Este webhook receberá eventos como mensagens recebidas e confirmações de opt-in.
-                    </p>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                      🧪 Enviar Mensagem de Teste
-                    </h4>
-                    <div className="flex gap-2">
-                      <Input
-                        value={numeroTeste}
-                        onChange={(e) => setNumeroTeste(e.target.value)}
-                        placeholder="+244XXXXXXXXX"
-                        className="flex-1"
-                      />
-                      <Button
-                        onClick={handleSendTest}
-                        disabled={isSendingTest}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        {isSendingTest ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                            A enviar...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="w-4 h-4 mr-2" />
-                            Enviar Teste
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-blue-700 mt-2">
-                      Envie uma mensagem de teste para verificar a integração Z-API.
-                    </p>
-                  </div>
-                </>
-              )}
-
-              <div>
-                <Label htmlFor="email_notificacoes">
-                  Email de Notificações (Opcional)
-                </Label>
-                <Input
-                  id="email_notificacoes"
-                  type="email"
-                  value={formData.email_notificacoes_padrao}
-                  onChange={(e) => handleInputChange('email_notificacoes_padrao', e.target.value)}
-                  placeholder="notificacoes@sga.co.ao"
-                  className="mt-1"
+              {/* TLS toggle */}
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="smtp_secure"
+                  checked={smtpData.smtp_secure}
+                  onChange={(e) => handleSmtpChange('smtp_secure', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded border-slate-300"
                 />
-                <p className="text-xs text-slate-500 mt-1">
-                  Email padrão para envio de notificações (caso seja necessário no futuro)
-                </p>
+                <Label htmlFor="smtp_secure" className="cursor-pointer">
+                  Usar conexao segura (TLS/SSL)
+                </Label>
               </div>
-            </div>
 
-            <div className="flex gap-3 pt-4 border-t">
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {isSaving ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    A guardar...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Guardar Configurações
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={loadData}
-                disabled={isSaving}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Recarregar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              {/* Extra email */}
+              <div className="space-y-2">
+                <Label>Email padrao para notificacoes do sistema</Label>
+                <Input
+                  type="email"
+                  value={smtpData.email_notificacoes_padrao}
+                  onChange={(e) => handleSmtpChange('email_notificacoes_padrao', e.target.value)}
+                  placeholder="admin@sga.co.ao"
+                />
+                <p className="text-xs text-slate-500">Email que recebera notificacoes administrativas (novos usuarios, alertas, etc.)</p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-wrap gap-3 pt-4 border-t">
+                <Button onClick={handleSaveSmtp} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                  {isSaving ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> A guardar...</> : <><Save className="w-4 h-4 mr-2" /> Guardar Configuracoes</>}
+                </Button>
+                <Button variant="outline" onClick={handleTestSmtp} disabled={isTesting}>
+                  {isTesting ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> A testar...</> : <><Mail className="w-4 h-4 mr-2" /> Enviar Email de Teste</>}
+                </Button>
+                <Button variant="outline" onClick={loadData} disabled={isSaving}>
+                  <RefreshCw className="w-4 h-4 mr-2" /> Recarregar
+                </Button>
+              </div>
+
+              {/* Test status */}
+              {smtpTestStatus === 'success' && (
+                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                  <CheckCircle2 className="w-4 h-4" /> Email de teste enviado com sucesso!
+                </div>
+              )}
+              {smtpTestStatus === 'error' && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  <AlertCircle className="w-4 h-4" /> Falha ao enviar email de teste. Verifique as configuracoes.
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
-        {activeTab === 'notificacoes' && (
+        {/* Info card SMTP */}
+        {activeTab === 'smtp' && (
           <Card className="shadow-sm bg-blue-50 border-blue-200">
             <CardContent className="pt-6">
-              <h3 className="font-semibold text-blue-900 mb-2">ℹ️ Informação Importante</h3>
+              <h3 className="font-semibold text-blue-900 mb-2">Informacao Importante</h3>
               <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                <li>Estas configurações afetam todas as notificações enviadas pelo sistema</li>
-                <li><strong>Twilio:</strong> O número deve ser verificado e o Content Template SID aprovado</li>
-                <li><strong>Z-API:</strong> Configure TOKEN_ZAPI e ID_INSTANCIA_ZAPI nos segredos do sistema</li>
-                <li>Alterações nas configurações entram em vigor imediatamente</li>
+                <li><strong>Gmail:</strong> Use smtp.gmail.com, porta 587, e gere uma "Senha de App" em myaccount.google.com</li>
+                <li><strong>Outlook/Office 365:</strong> Use smtp.office365.com, porta 587</li>
+                <li><strong>Servidor proprio:</strong> Consulte o administrador do seu servidor de email</li>
+                <li>A senha SMTP e armazenada de forma segura no banco de dados</li>
+                <li>O email de teste sera enviado para o endereco configurado como "Email de Envio"</li>
               </ul>
             </CardContent>
           </Card>
         )}
 
-        {/* Tab: Placeholders */}
-        {activeTab === 'placeholders' && (
+        {/* Tab: Geral */}
+        {activeTab === 'geral' && (
           <Card className="shadow-sm">
-            <CardContent className="pt-6">
-              <PlaceholderManagement
-                onError={(msg) => setAlertInfo({
-                  isOpen: true,
-                  type: 'error',
-                  title: 'Erro',
-                  message: msg
-                })}
-                onSuccess={(msg) => setSuccessInfo({
-                  isOpen: true,
-                  title: 'Sucesso!',
-                  message: msg
-                })}
-              />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Tab: Z-API */}
-        {activeTab === 'zapi' && provedorAtivo === 'zapi' && (
-          <div className="space-y-4">
-            {/* Sub-tabs Z-API */}
-            <div className="flex gap-2 bg-white border-b border-slate-200 p-2 rounded-lg">
-              <button
-                onClick={() => setZapiSubTab('instancia')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  zapiSubTab === 'instancia' 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                Instância
-              </button>
-              <button
-                onClick={() => setZapiSubTab('optin')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  zapiSubTab === 'optin' 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                Opt-in
-              </button>
-            </div>
-
-            {/* Conteúdo das sub-tabs */}
-            {zapiSubTab === 'instancia' && (
-              <ZAPIInstanciaManagement
-                onError={(msg) => setAlertInfo({
-                  isOpen: true,
-                  type: 'error',
-                  title: 'Erro',
-                  message: msg
-                })}
-                onSuccess={(msg) => setSuccessInfo({
-                  isOpen: true,
-                  title: 'Sucesso!',
-                  message: msg
-                })}
-              />
-            )}
-
-            {zapiSubTab === 'optin' && (
-              <ZAPIOptInConfig
-                onError={(msg) => setAlertInfo({
-                  isOpen: true,
-                  type: 'error',
-                  title: 'Erro',
-                  message: msg
-                })}
-                onSuccess={(msg) => setSuccessInfo({
-                  isOpen: true,
-                  title: 'Sucesso!',
-                  message: msg
-                })}
-              />
-            )}
-          </div>
-        )}
-
-        {activeTab === 'zapi' && provedorAtivo !== 'zapi' && (
-          <Card className="shadow-sm border-amber-200 bg-amber-50">
-            <CardContent className="pt-6 text-center">
-              <MessageSquare className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-amber-900 mb-2">Z-API não está ativo</h3>
-              <p className="text-amber-700">
-                Para configurar o Z-API, primeiro selecione Z-API como provedor de WhatsApp na aba "Notificações".
-              </p>
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Configuracoes Gerais
+              </CardTitle>
+              <CardDescription>
+                Outras configuracoes do sistema.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-slate-500">
+                <Settings className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>Outras configuracoes serao adicionadas aqui conforme necessario.</p>
+              </div>
             </CardContent>
           </Card>
         )}

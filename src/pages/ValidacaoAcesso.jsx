@@ -1,81 +1,36 @@
 
-import React, { useState, useEffect } from 'react';
-import { User } from '@/entities/User';
-import { SolicitacaoAcesso } from '@/entities/SolicitacaoAcesso'; // Added import for SolicitacaoAcesso
+import React from 'react';
 import { createPageUrl } from '@/utils';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 import { ensureUserProfilesExist } from '@/components/lib/userUtils';
 
 export default function ValidacaoAcesso() {
-  const [status, setStatus] = useState('validating');
+  const { user: authUser, isLoadingAuth, isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    validateAccess();
-  }, []);
+  React.useEffect(() => {
+    if (isLoadingAuth) return;
 
-  const validateAccess = async () => {
-    try {
-      let user = await User.me();
-      
-      // Garantir que o usuário tem o array de perfis
-      user = ensureUserProfilesExist(user);
-      
-      console.log('🔍 Validando acesso do usuário:', {
-        email: user.email,
-        status: user.status,
-        perfis: user.perfis,
-        role: user.role,
-        id: user.id // Log user ID for debugging SolicitacaoAcesso filter
-      });
-
-      // Se o usuário está ativo e tem perfis, redirecionar para Home
-      if (user.status === 'ativo' && user.perfis && Array.isArray(user.perfis) && user.perfis.length > 0) {
-        console.log('➡️ Usuário ativo com perfis, redirecionando para Home');
-        window.location.href = createPageUrl('Home');
-        return;
-      }
-
-      // Verificar se existe uma solicitação pendente para este usuário
-      const solicitacoesPendentes = await SolicitacaoAcesso.filter({ 
-        user_id: user.id, // Assuming user.id is available after User.me()
-        status: 'pendente'
-      });
-
-      if (solicitacoesPendentes && solicitacoesPendentes.length > 0) {
-        console.log('➡️ Solicitação pendente encontrada, redirecionando para AguardandoAprovacao');
-        window.location.href = createPageUrl('AguardandoAprovacao');
-        return;
-      }
-
-      // Se não tem perfis (ou não está ativo) e não tem solicitação pendente, redirecionar para SolicitacaoPerfil
-      // Esta condição abrange usuários sem status, com status 'pendente', ou 'inativo' que não tenham perfis e nenhuma solicitação pendente
-      console.log('➡️ Usuário sem perfis ou sem status ativo e sem solicitação pendente, redirecionando para SolicitacaoPerfil');
-      window.location.href = createPageUrl('SolicitacaoPerfil');
-      
-    } catch (error) {
-      console.error('❌ Erro na validação de acesso:', error);
-      
-      // Se erro 401 (não autenticado), fazer login com redirect de volta
-      if (error.response?.status === 401 || error.message?.includes('401') || error.message?.includes('not authenticated')) {
-        console.log('➡️ Usuário não autenticado, iniciando login');
-        try {
-          // Redirecionar para login, e após login volta para ValidacaoAcesso
-          await User.loginWithRedirect(window.location.href);
-        } catch (loginError) {
-          console.error('❌ Erro ao iniciar login:', loginError);
-        }
-        return;
-      }
-
-      // Para outros erros, tentar fazer login também (pode ser um token expirado, etc.)
-      console.log('➡️ Erro desconhecido na validação de acesso, tentando fazer login');
-      try {
-        await User.loginWithRedirect(window.location.href);
-      } catch (loginError) {
-        console.error('❌ Erro ao iniciar login após erro desconhecido:', loginError);
-      }
+    if (!isAuthenticated) {
+      console.log('[VALIDACAO] Não autenticado, indo para login');
+      window.location.href = '/login';
+      return;
     }
-  };
+
+    if (!authUser) return;
+
+    const user = ensureUserProfilesExist({ ...authUser });
+    console.log('[VALIDACAO] User:', { email: user.email, status: user.status, perfis: user.perfis, role: user.role });
+
+    if (user.status === 'ativo' && user.perfis && user.perfis.length > 0) {
+      console.log('[VALIDACAO] Ativo com perfis, indo para Home');
+      window.location.href = createPageUrl('Home');
+      return;
+    }
+
+    console.log('[VALIDACAO] Sem perfis, indo para SolicitacaoPerfil');
+    window.location.href = createPageUrl('SolicitacaoPerfil');
+  }, [isLoadingAuth, isAuthenticated, authUser]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">

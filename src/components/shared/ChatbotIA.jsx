@@ -3,6 +3,7 @@ import { MessageCircle, X, Send, Bot, User, Loader2, Plus, AlertCircle } from "l
 import { Button } from "@/components/ui/button";
 import { chatbotIA } from "@/functions/chatbotIA";
 import { enviarTicketSuporte } from "@/functions/enviarTicketSuporte";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 const TICKET_DATA_PREFIX = "TICKET_DATA:";
 
@@ -37,7 +38,7 @@ export default function ChatbotIA({ user }) {
 
     try {
       const res = await chatbotIA({ messages: newMessages });
-      const reply = res.data?.reply || "Desculpa, não consegui processar a tua mensagem.";
+      const reply = res?.reply || res?.data?.reply || "Desculpa, nao consegui processar a tua mensagem.";
 
       // Check if reply contains ticket data
       if (reply.includes(TICKET_DATA_PREFIX)) {
@@ -76,7 +77,7 @@ export default function ChatbotIA({ user }) {
         categoria: ticketPending.categoria || "outro",
         mensagem: ticketPending.mensagem,
       });
-      const numero = res.data?.numero_ticket || "N/A";
+      const numero = res?.numero_ticket || res?.data?.numero_ticket || "N/A";
       setTicketSuccess(numero);
       setTicketPending(null);
       setMessages(prev => [...prev, {
@@ -92,7 +93,12 @@ export default function ChatbotIA({ user }) {
   };
 
   const renderMessage = (content) => {
-    return content
+    // Escape HTML first, then apply safe markdown formatting
+    const escaped = content
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return escaped
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n/g, '<br/>');
   };
