@@ -31,10 +31,8 @@ import { pt } from 'date-fns/locale';
 import Select from '@/components/ui/select';
 
 import { Proforma } from '@/entities/Proforma';
-import { CalculoTarifa } from '@/entities/CalculoTarifa';
 import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 import { Aeroporto } from '@/entities/Aeroporto';
-import { Voo } from '@/entities/Voo';
 import { User } from '@/entities/User';
 import { downloadAsCSV } from '@/components/lib/export';
 import { base44 } from '@/api/base44Client';
@@ -53,10 +51,8 @@ const STATUS_CONFIG = {
 
 export default function ProformaPage() {
   const [proformas, setProformas] = useState([]);
-  const [calculosTarifa, setCalculosTarifa] = useState([]);
   const [companhias, setCompanhias] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
-  const [voos, setVoos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -88,19 +84,15 @@ export default function ProformaPage() {
       const user = await User.me();
       setCurrentUser(user);
 
-      const [proformasData, calculosData, companhiasData, aeroportosData, voosData] = await Promise.all([
-      Proforma.list(),
-      CalculoTarifa.list(),
-      CompanhiaAerea.list(),
-      Aeroporto.list(),
-      Voo.list()]
-      );
+      const [proformasData, companhiasData, aeroportosData] = await Promise.all([
+        Proforma.list(),
+        CompanhiaAerea.list(),
+        Aeroporto.list(),
+      ]);
 
       setProformas(proformasData);
-      setCalculosTarifa(calculosData);
       setCompanhias(companhiasData);
       setAeroportos(aeroportosData);
-      setVoos(voosData);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setAlertInfo({
