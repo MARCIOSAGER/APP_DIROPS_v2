@@ -84,9 +84,12 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
   };
 
   const handleSelectAllAeroportos = (checked) => {
+    const aeroportosDaEmpresa = formData.empresa_id
+      ? aeroportos.filter(a => a.empresa_id === formData.empresa_id)
+      : aeroportos;
     setFormData(prev => ({
       ...prev,
-      aeroportos_acesso: checked ? aeroportos.map(a => a.codigo_icao) : []
+      aeroportos_acesso: checked ? aeroportosDaEmpresa.map(a => a.codigo_icao) : []
     }));
   };
 
@@ -113,7 +116,12 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
 
   const currentPerfis = Array.isArray(formData.perfis) ? formData.perfis : [];
   const currentAeroportos = Array.isArray(formData.aeroportos_acesso) ? formData.aeroportos_acesso : [];
-  const allAeroportosSelected = aeroportos.length > 0 && currentAeroportos.length === aeroportos.length;
+
+  // Filtrar aeroportos pela empresa selecionada
+  const aeroportosFiltrados = formData.empresa_id
+    ? aeroportos.filter(a => a.empresa_id === formData.empresa_id)
+    : aeroportos;
+  const allAeroportosSelected = aeroportosFiltrados.length > 0 && currentAeroportos.length === aeroportosFiltrados.length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -204,7 +212,11 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
                 <select
                   id="empresa"
                   value={formData.empresa_id || ''}
-                  onChange={(e) => handleChange('empresa_id', e.target.value)}
+                  onChange={(e) => {
+                    handleChange('empresa_id', e.target.value);
+                    // Limpar aeroportos ao mudar empresa
+                    setFormData(prev => ({ ...prev, empresa_id: e.target.value, aeroportos_acesso: [] }));
+                  }}
                   className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
                   {empresaOptions.map((option) => (
@@ -231,9 +243,9 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
                   </Label>
                 </div>
                 
-                {/* Lista de aeroportos individuais */}
+                {/* Lista de aeroportos individuais (filtrado por empresa) */}
                 <div className="grid grid-cols-1 gap-2 pt-2">
-                  {aeroportos.map(aeroporto => (
+                  {aeroportosFiltrados.map(aeroporto => (
                     <div key={aeroporto.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={`edit-aeroporto-${aeroporto.id}`}

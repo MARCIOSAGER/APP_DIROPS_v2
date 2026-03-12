@@ -11,6 +11,7 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
+import { createPdfDoc, addHeader, addFooter, addTable, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
 
 import ManutencaoStats from '../components/manutencao/ManutencaoStats';
 import ManutencaoList from '../components/manutencao/ManutencaoList';
@@ -20,6 +21,7 @@ import AtribuirOSModal from '../components/manutencao/AtribuirOSModal';
 import ResponderOSModal from '../components/manutencao/ResponderOSModal';
 import SuccessModal from '../components/shared/SuccessModal';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
+import { getAeroportosPermitidos, filtrarDadosPorAeroportoId } from '@/components/lib/userUtils';
 
 export default function Manutencao() {
   const [currentUser, setCurrentUser] = useState(null); // Added state for current user
@@ -49,22 +51,9 @@ export default function Manutencao() {
   useEffect(() => {
     loadData();
     // Pre-fetch logo when component mounts for PDF generation
-    const fetchLogo = async () => {
-      try {
-        const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png';
-        const logoResponse = await fetch(logoUrl);
-        if (logoResponse.ok) {
-          const logoBlob = await logoResponse.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(logoBlob)));
-          setLogoBase64(`data:image/png;base64,${base64}`);
-        } else {
-          console.warn('Failed to fetch logo for PDF:', logoResponse.status);
-        }
-      } catch (logoError) {
-        console.warn('Error fetching logo for PDF:', logoError);
-      }
-    };
-    fetchLogo();
+    loadImageAsBase64('/logo-dirops.svg')
+      .then(b64 => setLogoBase64(b64))
+      .catch(err => console.warn('Error fetching logo for PDF:', err));
   }, []);
 
   const loadData = async () => {
@@ -80,31 +69,12 @@ export default function Manutencao() {
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
 
-      // Filtrar aeroportos pelos aeroportos de acesso do utilizador
-      let aeroportosFiltrados = aeroportosAngola;
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
-        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(user.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-          aeroportosFiltrados = aeroportosAngola.filter(a => userIcaoCodes.has(a.codigo_icao?.trim().toUpperCase()));
-        } else {
-          aeroportosFiltrados = [];
-        }
-      }
-
+      // Filtrar aeroportos pelos aeroportos de acesso do utilizador (empresa-based)
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola);
       setAeroportos(aeroportosFiltrados);
 
-      // Filtrar ordens de serviço pelos aeroportos de acesso do utilizador
-      let ordensFiltradas = ordensData;
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
-        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-          // Collect the IDs of the filtered airports
-          const aeroportosIds = aeroportosFiltrados.map(a => a.id);
-          ordensFiltradas = ordensData.filter(os => os.aeroporto_id && aeroportosIds.includes(os.aeroporto_id));
-        } else {
-          ordensFiltradas = [];
-        }
-      }
-
+      // Filtrar ordens de serviço pelos aeroportos de acesso do utilizador (empresa-based)
+      const ordensFiltradas = filtrarDadosPorAeroportoId(user, ordensData, 'aeroporto_id', aeroportosAngola);
       setOrdensDeServico(ordensFiltradas);
       setUsers([]);
     } catch (error) {
@@ -178,8 +148,8 @@ export default function Manutencao() {
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d2870b_logoSGA.png" alt="SGA Logo" style="height: 60px;">
-            <h1 style="color: #1e40af; margin-top: 20px;">DIROPS-SGA</h1>
+            <img src="/logo-dirops.svg" alt="DIROPS Logo" style="height: 60px;">
+            <h1 style="color: #1e40af; margin-top: 20px;">DIROPS</h1>
             <h2 style="color: #1e40af; margin: 10px 0 0 0;">Notificação de Ordem de Serviço: #${ordem.numero_ordem}</h2>
           </div>
 
@@ -228,7 +198,7 @@ export default function Manutencao() {
           </div>
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b;">
-            <p><strong>Sistema DIROPS-SGA</strong><br>
+            <p><strong>Sistema DIROPS</strong><br>
             Direcção de Operações - Serviços de Gestão Aeroportuária</p>
           </div>
         </div>
@@ -236,7 +206,7 @@ export default function Manutencao() {
 
       await sendEmailDirect({
         to: recipient,
-        subject: subject || `DIROPS-SGA: Ordem de Serviço ${ordem.numero_ordem}`,
+        subject: subject || `DIROPS: Ordem de Serviço ${ordem.numero_ordem}`,
         body: emailBody
       });
 
@@ -289,113 +259,44 @@ export default function Manutencao() {
         return;
       }
 
-      // Importar jsPDF dinamicamente
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
+      const doc = await createPdfDoc({ orientation: 'portrait' });
 
-      let pageNumber = 1;
-
-      const addHeaderAndLogo = (docInstance, currentPageNumber) => {
-        // Tentar adicionar logo
-        try {
-          if (logoBase64) { // This refers to the logoBase64 state variable
-            docInstance.addImage(logoBase64, 'PNG', 160, 10, 30, 15);
-          }
-        } catch (logoError) {
-          console.warn('Logo not available for PDF. Ensure it\'s pre-fetched.', logoError);
-        }
-
-        // Cabeçalho
-        docInstance.setFontSize(18);
-        docInstance.setFont(undefined, 'bold');
-        docInstance.text('DIROPS-SGA', 20, 20);
-        docInstance.setFontSize(16);
-        docInstance.text('Relatório de Ordens de Serviço', 20, 30);
-
-        docInstance.setFontSize(12);
-        docInstance.setFont(undefined, 'normal');
-        docInstance.text(`Data de Geração: ${new Date().toLocaleDateString('pt-AO')}`, 20, 40);
-        docInstance.text(`Total de Ordens: ${ordensParaExportar.length}`, 20, 47);
-        docInstance.text(`Página ${currentPageNumber}`, 180, 280);
+      const headerOpts = {
+        title: 'Relatório de Ordens de Serviço',
+        logoBase64,
+        date: new Date().toLocaleDateString('pt-AO'),
+        meta: [`Total de Ordens: ${ordensParaExportar.length}`],
       };
 
-      let yPosition = 60;
-      addHeaderAndLogo(doc, pageNumber);
+      let y = addHeader(doc, headerOpts);
 
-      // Cabeçalhos da tabela
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Protocolo', 20, yPosition);
-      doc.text('Título', 60, yPosition);
-      doc.text('Status', 120, yPosition);
-      doc.text('Prioridade', 150, yPosition);
-      doc.text('Data', 180, yPosition);
-      doc.setFont(undefined, 'normal');
-      yPosition += 5;
+      // Build table columns and rows
+      const columns = [
+        { label: 'Protocolo', width: 30 },
+        { label: 'Título', width: 50 },
+        { label: 'Status', width: 28 },
+        { label: 'Prioridade', width: 25 },
+        { label: 'Data', width: 22 },
+        { label: 'Descrição', width: 25 },
+      ];
 
-      // Linha horizontal abaixo dos cabeçalhos
-      doc.line(20, yPosition, 200, yPosition);
-      yPosition += 8; // Adjusted spacing
+      const rows = ordensParaExportar.map(ordem => [
+        ordem.numero_ordem || 'N/A',
+        ordem.titulo || 'N/A',
+        ordem.status || 'N/A',
+        ordem.prioridade || 'N/A',
+        new Date(ordem.data_abertura || ordem.created_date).toLocaleDateString('pt-AO'),
+        ordem.descricao_problema
+          ? (ordem.descricao_problema.substring(0, 40) + (ordem.descricao_problema.length > 40 ? '...' : ''))
+          : '',
+      ]);
 
-      // Dados das ordens
-      ordensParaExportar.forEach((ordem, index) => {
-        // Verificar se precisa de nova página (considerando espaço para descrição)
-        const espacoNecessario = ordem.descricao_problema ? 20 : 12; // Estimate space needed for an entry
-        if (yPosition + espacoNecessario > 270) { // If remaining space is less than approx height of one entry
-          doc.addPage();
-          pageNumber++;
-          yPosition = 30; // Reset y position for new page content start
-          addHeaderAndLogo(doc, pageNumber); // Add header and logo to new page
+      y = addTable(doc, y, { columns, rows, headerOpts });
 
-          // Re-add table headers on new page
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'bold');
-          doc.text('Protocolo', 20, yPosition);
-          doc.text('Título', 60, yPosition);
-          doc.text('Status', 120, yPosition);
-          doc.text('Prioridade', 150, yPosition);
-          doc.text('Data', 180, yPosition);
-          doc.setFont(undefined, 'normal');
-          yPosition += 5;
-          doc.line(20, yPosition, 200, yPosition);
-          yPosition += 8; // Adjusted spacing
-        }
-
-        const aeroportoNome = aeroportos.find(a => a.id === ordem.aeroporto_id)?.nome || 'N/A';
-        
-        // Linha principal da ordem
-        doc.setFontSize(9);
-        doc.setFont(undefined, 'normal');
-        doc.text(`${ordem.numero_ordem || 'N/A'}`, 20, yPosition);
-        doc.text(`${(ordem.titulo || '').substring(0, 25)}${ordem.titulo && ordem.titulo.length > 25 ? '...' : ''}`, 60, yPosition);
-        doc.text(`${ordem.status || 'N/A'}`, 120, yPosition);
-        doc.text(`${ordem.prioridade || 'N/A'}`, 150, yPosition);
-        doc.text(`${new Date(ordem.data_abertura || ordem.created_date).toLocaleDateString('pt-AO')}`, 180, yPosition);
-
-        yPosition += 7;
-
-        // Adicionar descrição se existir
-        if (ordem.descricao_problema) {
-          doc.setFontSize(8);
-          doc.setTextColor(100, 100, 100);
-          const descricaoTexto = `Descrição: ${(ordem.descricao_problema || '').substring(0, 80)}${(ordem.descricao_problema || '').length > 80 ? '...' : ''}`;
-          doc.text(descricaoTexto, 20, yPosition);
-          doc.setTextColor(0, 0, 0);
-          yPosition += 5;
-        }
-
-        // Adicionar linha separadora entre ordens (exceto a última)
-        if (index < ordensParaExportar.length - 1) {
-          yPosition += 3;
-          doc.setDrawColor(220, 220, 220); // Light gray color for separator
-          doc.line(20, yPosition, 200, yPosition);
-          doc.setDrawColor(0, 0, 0); // Reset color to black
-          yPosition += 5;
-        }
-      });
+      addFooter(doc, { generatedBy: currentUser?.full_name || currentUser?.email });
 
       doc.save(`relatorio_manutencao_${new Date().toISOString().split('T')[0]}.pdf`);
-      
+
       setSuccessInfo({
         isOpen: true,
         title: 'Relatório Exportado!',

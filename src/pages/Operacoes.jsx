@@ -23,7 +23,7 @@ import { OutraTarifa } from '@/entities/OutraTarifa';
 import { Imposto } from '@/entities/Imposto';
 import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
-import { hasUserProfile } from '@/components/lib/userUtils';
+import { hasUserProfile, getAeroportosPermitidos, filtrarDadosPorAcesso, isSuperAdmin } from '@/components/lib/userUtils';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
 import { useAeroportos, useCompanhias, useAeronaves, useModelosAeronave } from '@/components/lib/useStaticData';
 
@@ -220,26 +220,9 @@ export default function Operacoes() {
       const modelosData = modelosCache;
 
       const allAngolanAeroportos = allAeroportosData.filter(a => a.pais === 'AO');
-      let userAccessibleAngolanAeroportos = allAngolanAeroportos;
+      const userAccessibleAngolanAeroportos = getAeroportosPermitidos(user, allAngolanAeroportos);
 
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
-        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(user.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-          userAccessibleAngolanAeroportos = allAngolanAeroportos.filter(aeroporto => userIcaoCodes.has(aeroporto.codigo_icao?.trim().toUpperCase()));
-        } else {
-          userAccessibleAngolanAeroportos = [];
-        }
-      }
-
-      let filteredVoosData = voosData.filter(v => !v.deleted_at);
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
-        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(user.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-          filteredVoosData = filteredVoosData.filter(voo => userIcaoCodes.has(voo.aeroporto_operacao?.trim().toUpperCase()));
-        } else {
-          filteredVoosData = [];
-        }
-      }
+      const filteredVoosData = filtrarDadosPorAcesso(user, voosData.filter(v => !v.deleted_at), 'aeroporto_operacao', allAeroportosData);
 
       const configuracaoSistema = configData.length > 0 ? configData[0] : { taxa_cambio_usd_aoa: 850 };
 
@@ -321,16 +304,7 @@ export default function Operacoes() {
           const { type, data } = result.value;
           switch (type) {
             case 'voos':
-              let filteredVoos = data.filter(v => !v.deleted_at);
-              if (currentUser && currentUser.role !== 'admin' && !(currentUser.perfis && currentUser.perfis.includes('administrador'))) {
-                  if (currentUser.aeroportos_acesso && Array.isArray(currentUser.aeroportos_acesso) && currentUser.aeroportos_acesso.length > 0) {
-                      const userIcaoCodes = new Set(currentUser.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-                      filteredVoos = filteredVoos.filter(voo => userIcaoCodes.has(voo.aeroporto_operacao?.trim().toUpperCase()));
-                  } else {
-                      filteredVoos = [];
-                  }
-              }
-              setVoos(filteredVoos);
+              setVoos(filtrarDadosPorAcesso(currentUser, data.filter(v => !v.deleted_at), 'aeroporto_operacao', todosAeroportos));
               break;
             case 'voosLigados':
               setVoosLigados(data);
@@ -344,16 +318,7 @@ export default function Operacoes() {
             case 'aeroportos':
               setTodosAeroportos(data);
               const allAngolanAeroportos = data.filter(a => a.pais === 'AO');
-              let userAccessibleAngolanAeroportos = allAngolanAeroportos;
-              if (currentUser && currentUser.role !== 'admin' && !(currentUser.perfis && currentUser.perfis.includes('administrador'))) {
-                  if (currentUser.aeroportos_acesso && Array.isArray(currentUser.aeroportos_acesso) && currentUser.aeroportos_acesso.length > 0) {
-                      const userIcaoCodes = new Set(currentUser.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-                      userAccessibleAngolanAeroportos = allAngolanAeroportos.filter(aeroporto => userIcaoCodes.has(aeroporto.codigo_icao?.trim().toUpperCase()));
-                  } else {
-                      userAccessibleAngolanAeroportos = [];
-                  }
-              }
-              setAeroportos(userAccessibleAngolanAeroportos);
+              setAeroportos(getAeroportosPermitidos(currentUser, allAngolanAeroportos));
               break;
             case 'aeronaves':
               setAeronaves(data);
@@ -435,15 +400,7 @@ export default function Operacoes() {
         console.log(`📊 Total: ${allVoos.length} voos carregados`);
         const voosFiltered = allVoos;
 
-        let filteredVoos = voosFiltered;
-        if (currentUser && currentUser.role !== 'admin' && !(currentUser.perfis && currentUser.perfis.includes('administrador'))) {
-          if (currentUser.aeroportos_acesso && Array.isArray(currentUser.aeroportos_acesso) && currentUser.aeroportos_acesso.length > 0) {
-            const userIcaoCodes = new Set(currentUser.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-            filteredVoos = voosFiltered.filter(voo => userIcaoCodes.has(voo.aeroporto_operacao?.trim().toUpperCase()));
-          } else {
-            filteredVoos = [];
-          }
-        }
+        const filteredVoos = filtrarDadosPorAcesso(currentUser, voosFiltered, 'aeroporto_operacao', todosAeroportos);
 
         setVoos(filteredVoos);
         console.log(`✅ ${filteredVoos.length} voo(s) encontrado(s) para o período`);
@@ -1084,7 +1041,7 @@ export default function Operacoes() {
   };
 
   const handleExcluirPermanentemente = async (voo) => {
-    if (currentUser?.role !== 'admin' && !(currentUser?.perfis?.includes('administrador'))) {
+    if (!isSuperAdmin(currentUser)) {
       setAlertInfo({
         isOpen: true,
         type: 'error',

@@ -28,6 +28,8 @@ import { User } from '@/entities/User';
 import { downloadAsCSV } from '../components/lib/export';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { base44 } from '@/api/base44Client';
+import { getAeroportosPermitidos, filtrarDadosPorAcesso, isSuperAdmin, getEmpresaLogoByUser } from '@/components/lib/userUtils';
+import { Empresa } from '@/entities/Empresa';
 
 import ReclamacoesStats from '../components/reclamacoes/ReclamacoesStats';
 import ReclamacoesList from '../components/reclamacoes/ReclamacoesList';
@@ -38,6 +40,7 @@ import ConfiguracaoReclamacoes from '../components/reclamacoes/ConfiguracaoRecla
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
 import { classificarReclamacaoIA } from '@/functions/classificarReclamacaoIA';
+import { createPdfDoc, addHeader, addFooter, addTable, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
 
 const STATUS_OPTIONS = [
   { value: 'todos', label: 'Todos os Status' },
@@ -87,6 +90,7 @@ export default function Reclamacoes() {
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '', details: [] });
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'error', title: '', message: '' }); // New state for general alerts
   const [user, setUser] = useState(null); // New state for current user
+  const [empresas, setEmpresas] = useState([]);
 
   const [filtros, setFiltros] = useState({
     busca: '',
@@ -104,29 +108,20 @@ export default function Reclamacoes() {
       const currentUser = await User.me();
       setUser(currentUser);
 
-      const [reclamacoesData, aeroportosData] = await Promise.all([
+      const [reclamacoesData, aeroportosData, empresasData] = await Promise.all([
         Reclamacao.list('-data_recebimento'),
-        Aeroporto.list()
+        Aeroporto.list(),
+        Empresa.list()
       ]);
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
 
-      // FILTRO CRÍTICO: Filtrar reclamações por aeroportos do utilizador
-      let reclamacoesFiltradas = reclamacoesData;
-      
-      if (currentUser.role !== 'admin' && !currentUser.perfis?.includes('administrador')) {
-        if (currentUser.aeroportos_acesso && Array.isArray(currentUser.aeroportos_acesso) && currentUser.aeroportos_acesso.length > 0) {
-          // Assuming reclamacao.aeroporto_id stores the ICAO code directly
-          reclamacoesFiltradas = reclamacoesData.filter(r => 
-            currentUser.aeroportos_acesso.includes(r.aeroporto_id)
-          );
-        } else {
-          reclamacoesFiltradas = [];
-        }
-      }
+      // FILTRO CRÍTICO: Filtrar reclamações por aeroportos do utilizador (empresa-based)
+      const reclamacoesFiltradas = filtrarDadosPorAcesso(currentUser, reclamacoesData, 'aeroporto_id', aeroportosAngola);
 
       setReclamacoes(reclamacoesFiltradas);
       setAeroportos(aeroportosAngola);
+      setEmpresas(empresasData || []);
 
     } catch (error) {
       console.error("Erro ao carregar dados de reclamações:", error);
@@ -243,10 +238,11 @@ export default function Reclamacoes() {
     try {
       const aeroporto = aeroportos.find(a => a.codigo_icao === reclamacaoParaProtocolo.aeroporto_id);
 
+      const logoUrl = getEmpresaLogoByUser(user, empresas);
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="https://qtrypzzcjebvfciynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="DIROPS-SGA" style="height: 60px;">
+            <img src="${logoUrl}" alt="DIROPS" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">Protocolo de Reclamação</h1>
           </div>
 
@@ -274,16 +270,16 @@ export default function Reclamacoes() {
           ` : ''}
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280;">
-            <p><strong>DIROPS-SGA</strong><br>Direcção de Operações - Serviços de Gestão Aeroportuária</p>
+            <p><strong>DIROPS</strong><br>Direcção de Operações - Serviços de Gestão Aeroportuária</p>
           </div>
         </div>
       `;
 
       const result = await sendEmailDirect({
         to: recipient,
-        subject: `Protocolo de Reclamação ${reclamacaoParaProtocolo.protocolo_numero} - DIROPS-SGA`,
+        subject: `Protocolo de Reclamação ${reclamacaoParaProtocolo.protocolo_numero} - DIROPS`,
         body: emailBody,
-        from_name: 'DIROPS-SGA'
+        from_name: 'DIROPS'
       });
 
       if (result.status === 200) {
@@ -302,7 +298,7 @@ export default function Reclamacoes() {
       });
       return false;
     }
-  }, [aeroportos, reclamacaoParaProtocolo, showSuccess, setAlertInfo]);
+  }, [aeroportos, reclamacaoParaProtocolo, showSuccess, setAlertInfo, user, empresas]);
 
   const handleExportCSV = useCallback(async () => {
     const dataToExport = (selectedReclamacoes.length > 0 ?
@@ -346,140 +342,54 @@ export default function Reclamacoes() {
         return;
       }
 
-      // Importar jsPDF dinamicamente
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF('p', 'mm', 'a4'); // 'p' for portrait, 'mm' for millimeters, 'a4' for A4 size
+      const doc = await createPdfDoc({ orientation: 'portrait' });
 
-      let pageNumber = 1;
-
-      const addHeaderAndLogo = (docInstance, currentPageNumber) => {
-        // Tentar adicionar logo
-        try {
-          if (logoBase64) {
-            docInstance.addImage(logoBase64, 'PNG', 160, 10, 30, 15);
-          }
-        } catch (logoError) {
-          console.log('Logo não adicionado:', logoError);
-        }
-
-        // Cabeçalho
-        docInstance.setFontSize(18);
-        docInstance.setFont(undefined, 'bold');
-        docInstance.text('DIROPS-SGA', 20, 20);
-        docInstance.setFontSize(16);
-        docInstance.text('Relatório de Reclamações', 20, 30);
-
-        docInstance.setFontSize(12);
-        docInstance.setFont(undefined, 'normal');
-        docInstance.text(`Data de Geração: ${new Date().toLocaleDateString('pt-AO')}`, 20, 40);
-        docInstance.text(`Total de Reclamações: ${reclamacoesToExport.length}`, 20, 47);
-        docInstance.text(`Página ${currentPageNumber}`, 180, 280);
-      };
-
+      // Pre-carregar logo
       let logoBase64 = null;
-      
-      // Pre-carregar logo uma vez
       try {
-        const logoUrl = 'https://qtrypzzcjebvfciynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png';
-        const logoResponse = await fetch(logoUrl);
-        if (logoResponse.ok) {
-          const logoBlob = await logoResponse.arrayBuffer();
-          const binary = Array.from(new Uint8Array(logoBlob)).map(b => String.fromCharCode(b)).join('');
-          logoBase64 = `data:image/png;base64,${btoa(binary)}`;
-        }
+        const logoUrl = getEmpresaLogoByUser(user, empresas);
+        logoBase64 = await loadImageAsBase64(logoUrl);
       } catch (logoError) {
         console.log('Logo não carregado:', logoError);
       }
 
-      let yPosition = 60;
-      addHeaderAndLogo(doc, pageNumber);
+      const headerOpts = {
+        title: 'Relatório de Reclamações',
+        logoBase64,
+        date: new Date().toLocaleDateString('pt-AO'),
+        meta: [`Total de Reclamações: ${reclamacoesToExport.length}`],
+      };
 
-      // Cabeçalhos da tabela
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Protocolo', 20, yPosition);
-      doc.text('Título', 50, yPosition);
-      doc.text('Status', 90, yPosition);
-      doc.text('Prior.', 120, yPosition);
-      doc.text('Aeroporto', 140, yPosition);
-      doc.text('Data', 180, yPosition);
-      doc.setFont(undefined, 'normal');
-      yPosition += 5;
+      let y = addHeader(doc, headerOpts);
 
-      // Linha horizontal abaixo dos cabeçalhos
-      doc.line(20, yPosition, 200, yPosition);
-      yPosition += 8;
+      // Preparar colunas e linhas para a tabela
+      const columns = [
+        { label: 'Protocolo', width: 28 },
+        { label: 'Título', width: 40 },
+        { label: 'Status', width: 24 },
+        { label: 'Prior.', width: 18 },
+        { label: 'Aeroporto', width: 38 },
+        { label: 'Data', width: 32 },
+      ];
 
-      // Dados das reclamações
-      reclamacoesToExport.forEach((reclamacao, index) => {
-        // Verificar se precisa de nova página (considerando espaço para descrição e reclamante)
-        const espacoNecessario = 20; // Espaço para linha principal + descrição + reclamante
-        if (yPosition + espacoNecessario > 270) {
-          doc.addPage();
-          pageNumber++;
-          yPosition = 30;
-          addHeaderAndLogo(doc, pageNumber);
-
-          // Re-adicionar cabeçalhos na nova página
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'bold');
-          doc.text('Protocolo', 20, yPosition);
-          doc.text('Título', 50, yPosition);
-          doc.text('Status', 90, yPosition);
-          doc.text('Prior.', 120, yPosition);
-          doc.text('Aeroporto', 140, yPosition);
-          doc.text('Data', 180, yPosition);
-          doc.setFont(undefined, 'normal');
-          yPosition += 5;
-          doc.line(20, yPosition, 200, yPosition);
-          yPosition += 8;
-        }
-
-        const aeroporto = aeroportos.find(a => a.codigo_icao === reclamacao.aeroporto_id);
-        
-        // Linha principal da reclamação
-        doc.setFontSize(8);
-        doc.setFont(undefined, 'normal');
-        doc.text(`${reclamacao.protocolo_numero || 'N/A'}`, 20, yPosition);
-        doc.text(`${(reclamacao.titulo || '').substring(0, 15)}${reclamacao.titulo && reclamacao.titulo.length > 15 ? '...' : ''}`, 50, yPosition);
-        doc.text(`${(reclamacao.status || '').replace('_', ' ').substring(0, 8)}`, 90, yPosition);
-        doc.text(`${(reclamacao.prioridade || 'N/A').substring(0, 5)}`, 120, yPosition);
-        doc.text(`${aeroporto?.nome?.substring(0, 12) || 'N/A'}${aeroporto?.nome?.length > 12 ? '...' : ''}`, 140, yPosition);
-        doc.text(`${new Date(reclamacao.data_recebimento).toLocaleDateString('pt-AO')}`, 180, yPosition);
-
-        yPosition += 6;
-
-        // Adicionar descrição se existir
-        if (reclamacao.descricao) {
-          doc.setFontSize(7);
-          doc.setTextColor(100, 100, 100);
-          const descricaoTexto = `Descrição: ${reclamacao.descricao.substring(0, 90)}${reclamacao.descricao.length > 90 ? '...' : ''}`;
-          doc.text(descricaoTexto, 20, yPosition);
-          yPosition += 4;
-        }
-
-        // Adicionar informações do reclamante se existir
-        if (reclamacao.reclamante_nome) {
-          doc.setFontSize(7);
-          doc.setTextColor(100, 100, 100);
-          const reclamanteTexto = `Reclamante: ${reclamacao.reclamante_nome}${reclamacao.reclamante_contacto ? ` (${reclamacao.reclamante_contacto})` : ''}`;
-          doc.text(reclamanteTexto, 20, yPosition);
-          doc.setTextColor(0, 0, 0);
-          yPosition += 4;
-        }
-
-        // Adicionar linha separadora entre reclamações (exceto a última)
-        if (index < reclamacoesToExport.length - 1) {
-          yPosition += 2;
-          doc.setDrawColor(220, 220, 220);
-          doc.line(20, yPosition, 200, yPosition);
-          doc.setDrawColor(0, 0, 0);
-          yPosition += 4;
-        }
+      const rows = reclamacoesToExport.map(rec => {
+        const aeroporto = aeroportos.find(a => a.codigo_icao === rec.aeroporto_id);
+        return [
+          rec.protocolo_numero || 'N/A',
+          rec.titulo || '',
+          (rec.status || '').replace('_', ' '),
+          rec.prioridade || 'N/A',
+          aeroporto?.nome || 'N/A',
+          new Date(rec.data_recebimento).toLocaleDateString('pt-AO'),
+        ];
       });
 
+      y = addTable(doc, y, { columns, rows, headerOpts });
+
+      addFooter(doc);
+
       doc.save(`relatorio_reclamacoes_${new Date().toISOString().split('T')[0]}.pdf`);
-      
+
       showSuccess('Relatório Exportado!', 'O seu relatório PDF foi gerado com sucesso.');
 
     } catch (error) {
@@ -493,7 +403,7 @@ export default function Reclamacoes() {
     } finally {
       setIsLoading(false);
     }
-  }, [reclamacoes, selectedReclamacoes, filteredReclamacoes, aeroportos, showSuccess, setIsLoading, setAlertInfo]);
+  }, [reclamacoes, selectedReclamacoes, filteredReclamacoes, aeroportos, showSuccess, setIsLoading, setAlertInfo, user, empresas]);
 
   const handleSendEmail = useCallback(async (recipient, subject) => {
     try {
@@ -508,10 +418,11 @@ export default function Reclamacoes() {
         rejeitadas: reclamacoesToSend.filter(r => r.status === 'rejeitada').length,
       };
 
+      const reportLogoUrl = getEmpresaLogoByUser(user, empresas);
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="https://qtrypzzcjebvfciynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="DIROPS-SGA Logo" style="height: 60px;">
+            <img src="${reportLogoUrl}" alt="DIROPS Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">Relatório de Reclamações</h1>
             <p style="color: #64748b; margin: 5px 0;">Data: ${new Date().toLocaleDateString('pt-AO')}</p>
           </div>
@@ -572,7 +483,7 @@ export default function Reclamacoes() {
           </table>
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b;">
-            <p><strong>Sistema DIROPS-SGA</strong><br>
+            <p><strong>Sistema DIROPS</strong><br>
             Direcção de Operações - Serviços de Gestão Aeroportuária</p>
           </div>
         </div>
@@ -580,9 +491,9 @@ export default function Reclamacoes() {
 
       const result = await sendEmailDirect({
         to: recipient,
-        subject: subject || 'Relatório de Reclamações - DIROPS-SGA',
+        subject: subject || 'Relatório de Reclamações - DIROPS',
         body: emailBody,
-        from_name: 'DIROPS-SGA'
+        from_name: 'DIROPS'
       });
 
       if (result.status === 200) {
@@ -601,7 +512,7 @@ export default function Reclamacoes() {
       });
       return false;
     }
-  }, [reclamacoes, selectedReclamacoes, filteredReclamacoes, aeroportos, showSuccess, setAlertInfo]);
+  }, [reclamacoes, selectedReclamacoes, filteredReclamacoes, aeroportos, showSuccess, setAlertInfo, user, empresas]);
 
   const clearAllFilters = useCallback(() => {
     setFiltros({
@@ -620,11 +531,12 @@ export default function Reclamacoes() {
   ), [filtros]);
 
   const aeroportoOptions = useMemo(() => {
+    const permitidos = getAeroportosPermitidos(user, aeroportos);
     return [
         { value: 'todos', label: 'Todos os Aeroportos' },
-        ...aeroportos.map(a => ({ value: a.codigo_icao, label: a.nome }))
+        ...permitidos.map(a => ({ value: a.codigo_icao, label: a.nome }))
     ];
-  }, [aeroportos]);
+  }, [aeroportos, user]);
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
@@ -893,7 +805,7 @@ export default function Reclamacoes() {
         isOpen={isEmailModalOpen}
         onClose={() => {setIsEmailModalOpen(false); setReclamacaoParaProtocolo(null);}}
         onSend={reclamacaoParaProtocolo ? handleSendEmailProtocol : handleSendEmail}
-        defaultSubject={reclamacaoParaProtocolo ? `Protocolo de Reclamação ${reclamacaoParaProtocolo.protocolo_numero}` : 'Relatório de Reclamações - DIROPS-SGA'}
+        defaultSubject={reclamacaoParaProtocolo ? `Protocolo de Reclamação ${reclamacaoParaProtocolo.protocolo_numero}` : 'Relatório de Reclamações - DIROPS'}
         title={reclamacaoParaProtocolo ? 'Enviar Protocolo por E-mail' : 'Enviar Relatório por E-mail'}
         isProtocolo={!!reclamacaoParaProtocolo}
       />

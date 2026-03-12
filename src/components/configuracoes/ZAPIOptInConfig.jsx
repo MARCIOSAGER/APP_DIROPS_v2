@@ -20,16 +20,16 @@ export default function ZAPIOptInConfig({ onError, onSuccess }) {
     palavras_chave_opt_out: ['parar', 'cancelar', 'stop', 'sair', 'remover'],
     botao_opt_in_label: '✅ SIM',
     botao_opt_out_label: '❌ NAO',
-    mensagem_confirmacao_opt_in: '✅ Confirmado! Você está inscrito para receber notificações do DIROPS-SGA via WhatsApp.',
+    mensagem_confirmacao_opt_in: '✅ Confirmado! Você está inscrito para receber notificações do DIROPS via WhatsApp.',
     mensagem_confirmacao_opt_out: '✅ Você foi removido da lista de notificações. Para voltar a receber, envie SIM.',
-    mensagem_boas_vindas: 'Olá! 👋 Para receber notificações operacionais do DIROPS-SGA via WhatsApp, responda com SIM.',
+    mensagem_boas_vindas: 'Olá! 👋 Para receber notificações operacionais do DIROPS via WhatsApp, responda com SIM.',
     enviar_resposta_automatica: true,
     ativo: true,
     grupos_palavras_registrar: ['registrar_grupo', 'registrar grupo', 'ativar_grupo', 'ativar grupo'],
     grupos_palavras_parar: ['parar_notificacoes', 'parar notificacoes', 'desativar_notificacoes', 'cancelar_notificacoes'],
-    grupos_mensagem_registro_sucesso: '✅ Grupo registrado com sucesso no sistema DIROPS-SGA!\n\n📋 O registo está pendente de aprovação.\n\n⏳ Aguarde que um administrador aprove o grupo para começar a receber notificações automáticas.',
-    grupos_mensagem_ja_registrado: '✅ Este grupo já está registrado no sistema DIROPS-SGA.\n\nAguarde a aprovação de um administrador para começar a receber notificações.',
-    grupos_mensagem_desativacao: '🔕 Notificações desativadas com sucesso!\n\nEste grupo não receberá mais notificações automáticas do sistema DIROPS-SGA.\n\nPara reativar, envie: REGISTRAR_GRUPO',
+    grupos_mensagem_registro_sucesso: '✅ Grupo registrado com sucesso no sistema DIROPS!\n\n📋 O registo está pendente de aprovação.\n\n⏳ Aguarde que um administrador aprove o grupo para começar a receber notificações automáticas.',
+    grupos_mensagem_ja_registrado: '✅ Este grupo já está registrado no sistema DIROPS.\n\nAguarde a aprovação de um administrador para começar a receber notificações.',
+    grupos_mensagem_desativacao: '🔕 Notificações desativadas com sucesso!\n\nEste grupo não receberá mais notificações automáticas do sistema DIROPS.\n\nPara reativar, envie: REGISTRAR_GRUPO',
     grupos_mensagem_nao_encontrado: '⚠️ Este grupo não está registrado no sistema.'
   });
 
@@ -352,7 +352,7 @@ export default function ZAPIOptInConfig({ onError, onSuccess }) {
                     <Textarea
                       value={formData.mensagem_boas_vindas}
                       onChange={(e) => setFormData(prev => ({ ...prev, mensagem_boas_vindas: e.target.value }))}
-                      placeholder="Ex: Olá! 👋 Para receber notificações operacionais do DIROPS-SGA via WhatsApp:"
+                      placeholder="Ex: Olá! 👋 Para receber notificações operacionais do DIROPS via WhatsApp:"
                       className="mt-2 h-20"
                     />
                   </div>

@@ -31,7 +31,7 @@ export async function exportAuditoriaPdf({ processo, respostas, itens, aeroporto
   <body>
       <div class="header">
           <h1>RELATÓRIO DE AUDITORIA INTERNA</h1>
-          <p>Sistema DIROPS-SGA</p>
+          <p>Sistema DIROPS</p>
       </div>
 
       <div class="info-grid">

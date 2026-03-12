@@ -7,6 +7,7 @@ import { User as UserEntity } from '@/entities/User';
 import { Credenciamento } from '@/entities/Credenciamento';
 import { Empresa } from '@/entities/Empresa';
 import { Aeroporto } from '@/entities/Aeroporto';
+import { getEmpresaLogoByUser } from '@/components/lib/userUtils';
 
 const STATUS_CONFIG = {
   pendente: { color: 'bg-yellow-100 text-yellow-800', label: 'Pendente' },
@@ -24,6 +25,7 @@ const STATUS_CONFIG = {
 export default function PortalEmpresa() {
   const [user, setUser] = useState(null);
   const [empresa, setEmpresa] = useState(null);
+  const [empresas, setEmpresas] = useState([]);
   const [credenciamentos, setCredenciamentos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,6 +44,7 @@ export default function PortalEmpresa() {
       if (currentUser.empresa_id) {
         // Carregar dados da empresa
         const empresaData = await Empresa.list();
+        setEmpresas(empresaData || []);
         const userEmpresa = empresaData.find(e => e.id === currentUser.empresa_id);
         setEmpresa(userEmpresa);
 
@@ -105,10 +108,10 @@ export default function PortalEmpresa() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <img 
-                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" 
-                alt="DIROPS-SGA Logo" 
-                className="h-8 mr-4" 
+              <img
+                src={getEmpresaLogoByUser(user, empresas)}
+                alt="DIROPS Logo"
+                className="h-8 mr-4"
               />
               <div>
                 <h1 className="text-xl font-semibold text-slate-900">Portal da Empresa</h1>

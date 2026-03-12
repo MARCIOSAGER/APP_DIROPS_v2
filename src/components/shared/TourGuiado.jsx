@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 
 const TOUR_STEPS = [
   {
-    title: "Bem-vindo ao DIROPS-SGA! 🎉",
-    description: "Este é o sistema de gestão operacional aeroportuária da SGA. Vamos fazer um tour rápido pelas principais funcionalidades. Clica em 'Próximo' para começar.",
+    title: "Bem-vindo ao DIROPS! 🎉",
+    description: "Este é o sistema de gestão operacional aeroportuária DIROPS. Vamos fazer um tour rápido pelas principais funcionalidades. Clica em 'Próximo' para começar.",
     target: null,
     position: "center",
   },
@@ -59,7 +59,7 @@ const TOUR_STEPS = [
   },
   {
     title: "Tour Concluído! 🚀",
-    description: "Já conheces as principais funcionalidades do DIROPS-SGA. Se precisares de ajuda, usa o assistente SIGA ou a página de Suporte. Bom trabalho!",
+    description: "Já conheces as principais funcionalidades do DIROPS. Se precisares de ajuda, usa o assistente SIGA ou a página de Suporte. Bom trabalho!",
     target: null,
     position: "center",
   },

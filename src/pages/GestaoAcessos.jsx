@@ -39,6 +39,7 @@ import { base44 } from '@/api/base44Client';
 
 import AprovarAcessoModal from '../components/gestao/AprovarAcessoModal';
 import EditUserModal from '../components/gestao/EditUserModal';
+import AddUserModal from '../components/gestao/AddUserModal';
 import AlertModal from '../components/shared/AlertModal';
 import AccessDenied from '../components/shared/AccessDenied';
 
@@ -86,6 +87,7 @@ export default function GestaoAcessos() {
 
   const [isAprovarModalOpen, setIsAprovarModalOpen] = useState(false);
   const [isEditUserModalOpen, setIsEditUserModal] = useState(false);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   
   const [selectedSolicitacao, setSelectedSolicitacao] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -427,7 +429,7 @@ export default function GestaoAcessos() {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #10b981;">✅ Solicitação de Acesso Aprovada</h2>
           <p>Olá <strong>${nomeUtilizador}</strong>,</p>
-          <p>A sua solicitação de acesso ao sistema DIROPS-SGA foi <strong>aprovada</strong>!</p>
+          <p>A sua solicitação de acesso ao sistema DIROPS foi <strong>aprovada</strong>!</p>
           
           <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
             <p><strong>📋 Detalhes da Aprovação:</strong></p>
@@ -439,7 +441,7 @@ export default function GestaoAcessos() {
           </div>
           
           <p><strong>Próximos Passos:</strong></p>
-          <p>Já pode aceder ao sistema DIROPS-SGA usando o seu e-mail <strong>${solicitacao.email}</strong>.</p>
+          <p>Já pode aceder ao sistema DIROPS usando o seu e-mail <strong>${solicitacao.email}</strong>.</p>
           
           <div style="text-align: center; margin: 30px 0;">
             <a href="${window.location.origin}" style="background-color: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
@@ -448,15 +450,15 @@ export default function GestaoAcessos() {
           </div>
           
           <p>Bem-vindo(a) à equipa!</p>
-          <p>Atenciosamente,<br><strong>Equipa DIROPS-SGA</strong></p>
+          <p>Atenciosamente,<br><strong>Equipa DIROPS</strong></p>
         </div>
       `;
 
       await base44.integrations.Core.SendEmail({
         to: solicitacao.email,
-        subject: 'DIROPS-SGA: Solicitação de Acesso Aprovada ✅',
+        subject: 'DIROPS: Solicitação de Acesso Aprovada ✅',
         body: emailBody,
-        from_name: 'DIROPS-SGA'
+        from_name: 'DIROPS'
       });
 
       setIsAprovarModalOpen(false);
@@ -495,17 +497,17 @@ export default function GestaoAcessos() {
 
       await base44.integrations.Core.SendEmail({
         to: solicitacao.email,
-        subject: "DIROPS-SGA: Solicitação de Acesso Rejeitada",
+        subject: "DIROPS: Solicitação de Acesso Rejeitada",
         body: `
           <div style="font-family: Arial, sans-serif;">
             <h2>Solicitação Rejeitada</h2>
             <p>Olá ${solicitacao.nome_completo},</p>
-            <p>Lamentamos informar que a sua solicitação de acesso ao sistema DIROPS-SGA foi rejeitada.</p>
+            <p>Lamentamos informar que a sua solicitação de acesso ao sistema DIROPS foi rejeitada.</p>
             <p>Para mais informações, por favor, entre em contacto com o administrador do sistema.</p>
-            <p style="margin-top: 20px; font-size: 0.9em; color: #555;">Atenciosamente,<br>Equipe DIROPS-SGA</p>
+            <p style="margin-top: 20px; font-size: 0.9em; color: #555;">Atenciosamente,<br>Equipe DIROPS</p>
           </div>
         `,
-        from_name: "DIROPS-SGA Notificações"
+        from_name: "DIROPS Notificações"
       });
 
       setRejectionInfo({ isOpen: false, solicitacao: null });
@@ -1048,12 +1050,11 @@ export default function GestaoAcessos() {
                       Exportar CSV
                     </Button>
                     <Button
-                      onClick={() => handleOpenEditUserModal(null)}
-                      disabled
-                      className="bg-slate-400 text-white"
+                      onClick={() => setIsAddUserModalOpen(true)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
                     >
                       <UserPlus className="w-4 h-4 mr-2" />
-                      Adicionar Utilizador (Em Breve)
+                      Adicionar Utilizador
                     </Button>
                   </div>
                 </div>
@@ -1419,6 +1420,22 @@ export default function GestaoAcessos() {
           onSave={handleUpdateUser}
         />
       )}
+
+      <AddUserModal
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+        aeroportos={aeroportos}
+        empresas={empresas}
+        onSuccess={() => {
+          setAlertInfo({
+            isOpen: true,
+            type: 'success',
+            title: 'Utilizador Criado',
+            message: 'O utilizador foi criado com sucesso e receberá um email para definir a senha.'
+          });
+          loadData();
+        }}
+      />
       
       <AlertModal
         isOpen={rejectionInfo.isOpen}

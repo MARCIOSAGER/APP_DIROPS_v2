@@ -13,6 +13,8 @@ import AlertModal from '../../shared/AlertModal';
 import SuccessModal from '../../shared/SuccessModal';
 import SortableTableHeader from '../../shared/SortableTableHeader';
 import { User } from '@/entities/User';
+import { Empresa } from '@/entities/Empresa';
+import { isSuperAdmin } from '@/components/lib/userUtils';
 
 const PAISES_ISO = [
   { code: 'AD', name: 'Andorra' }, { code: 'AE', name: 'Emirados Árabes Unidos' }, { code: 'AF', name: 'Afeganistão' },
@@ -98,7 +100,7 @@ const CATEGORIA_CONFIG = {
 };
 
 // Exportar o formulário separadamente para uso em outros componentes
-export function FormAeroporto({ aeroporto, onSave, onCancel }) {
+export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
   const [formData, setFormData] = useState(aeroporto ? {
     id: aeroporto.id,
     codigo_icao: aeroporto.codigo_icao || '',
@@ -113,7 +115,8 @@ export function FormAeroporto({ aeroporto, onSave, onCancel }) {
     soleiras: aeroporto.soleiras || '',
     categoria: aeroporto.categoria || 'categoria_1',
     status: aeroporto.status || 'operacional',
-    isSGA: aeroporto.isSGA || false
+    isSGA: aeroporto.isSGA || false,
+    empresa_id: aeroporto.empresa_id || ''
   } : {
     id: null,
     codigo_icao: '',
@@ -128,7 +131,8 @@ export function FormAeroporto({ aeroporto, onSave, onCancel }) {
     soleiras: '',
     categoria: 'categoria_1',
     status: 'operacional',
-    isSGA: false
+    isSGA: false,
+    empresa_id: ''
   });
 
   const handleSubmit = (e) => {
@@ -155,11 +159,17 @@ export function FormAeroporto({ aeroporto, onSave, onCancel }) {
       soleiras: formData.soleiras,
       categoria: formData.categoria,
       status: formData.status,
-      isSGA: formData.isSGA
+      isSGA: formData.isSGA,
+      empresa_id: formData.empresa_id || null
     };
 
     onSave(dataToSave);
   };
+
+  const empresaOptions = [
+    { value: '', label: 'Nenhuma empresa' },
+    ...empresas.map(e => ({ value: e.id, label: e.nome }))
+  ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -282,6 +292,21 @@ export function FormAeroporto({ aeroporto, onSave, onCancel }) {
 
         </div>
 
+        <div className="col-span-2">
+          <Label>Empresa</Label>
+          <select
+            value={formData.empresa_id || ''}
+            onChange={(e) => setFormData({ ...formData, empresa_id: e.target.value })}
+            className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            {empresaOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="col-span-2 flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <Checkbox
             id="isSGA"
@@ -312,24 +337,30 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [apernasSGA, setApenaSGA] = useState(false);
   const [filterPais, setFilterPais] = useState('todos');
+  const [filterEmpresa, setFilterEmpresa] = useState('todos');
   const [sortField, setSortField] = useState('nome');
   const [sortDirection, setSortDirection] = useState('asc');
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
   const [currentUser, setCurrentUser] = useState(null);
+  const [empresas, setEmpresas] = useState([]);
   const [selectedAeroportos, setSelectedAeroportos] = useState(new Set());
   const [isUpdatingBulk, setIsUpdatingBulk] = useState(false);
 
   React.useEffect(() => {
-    const loadUser = async () => {
+    const loadData = async () => {
       try {
-        const user = await base44.auth.me();
+        const [user, empresasList] = await Promise.all([
+          base44.auth.me(),
+          Empresa.list()
+        ]);
         setCurrentUser(user);
+        setEmpresas(empresasList || []);
       } catch (error) {
-        console.error('Erro ao carregar utilizador:', error);
+        console.error('Erro ao carregar dados:', error);
       }
     };
-    loadUser();
+    loadData();
   }, []);
 
   const isAdmin = currentUser?.role === 'admin' ||
@@ -563,8 +594,9 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
 
       const sgaMatch = !apernasSGA || aeroporto.isSGA === true;
       const paisMatch = filterPais === 'todos' || aeroporto.pais === filterPais;
+      const empresaMatch = filterEmpresa === 'todos' || aeroporto.empresa_id === filterEmpresa;
 
-      return searchMatch && sgaMatch && paisMatch;
+      return searchMatch && sgaMatch && paisMatch && empresaMatch;
     });
 
     // Aplicar ordenação
@@ -592,7 +624,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
     });
 
     return filtered;
-  }, [aeroportos, searchTerm, apernasSGA, filterPais, sortField, sortDirection]);
+  }, [aeroportos, searchTerm, apernasSGA, filterPais, filterEmpresa, sortField, sortDirection]);
 
   return (
     <>
@@ -635,6 +667,16 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                 value={filterPais}
                 onValueChange={setFilterPais}
                 className="flex-[1]" />
+              {isSuperAdmin(currentUser) && (
+                <Select
+                  options={[
+                    { value: 'todos', label: 'Todas as Empresas' },
+                    ...empresas.map(e => ({ value: e.id, label: e.nome }))
+                  ]}
+                  value={filterEmpresa}
+                  onValueChange={setFilterEmpresa}
+                  className="flex-[1]" />
+              )}
             </div>
           </div>
 
@@ -726,6 +768,15 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   </th>
                   <th className="px-4 py-3 text-left">
                     <SortableTableHeader
+                      field="empresa_id"
+                      label="Empresa"
+                      currentSortField={sortField}
+                      currentSortDirection={sortDirection}
+                      onSort={handleSort}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-left">
+                    <SortableTableHeader
                       field="status"
                       label="Status"
                       currentSortField={sortField}
@@ -772,6 +823,9 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                       ) : (
                         <Badge variant="secondary">Não</Badge>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-600">
+                      {empresas.find(e => e.id === aeroporto.empresa_id)?.nome || '-'}
                     </td>
                     <td className="px-4 py-3">
                       <Badge className={STATUS_CONFIG[aeroporto.status]?.color}>
@@ -834,6 +888,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
               
               <FormAeroporto
               aeroporto={editingAeroporto}
+              empresas={empresas}
               onSave={handleSave}
               onCancel={() => {
                 setIsFormOpen(false);

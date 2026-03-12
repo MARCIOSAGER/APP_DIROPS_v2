@@ -142,6 +142,62 @@ const PAGINAS_DISPONIVEIS = [
     descricao: 'Configuração de permissões por perfil',
     category: 'Gestão',
     icon: '🔐'
+  },
+  {
+    key: 'GestaoEmpresas',
+    label: 'Gestão de Empresas',
+    descricao: 'Gestão de empresas, logos e associações',
+    category: 'Gestão',
+    icon: '🏢'
+  },
+  {
+    key: 'GestaoNotificacoes',
+    label: 'Gestão de Notificações',
+    descricao: 'Configuração e envio de notificações',
+    category: 'Gestão',
+    icon: '🔔'
+  },
+  {
+    key: 'ConfiguracoesGerais',
+    label: 'Configurações Gerais',
+    descricao: 'Configurações do sistema (SMTP, geral)',
+    category: 'Gestão',
+    icon: '⚙️'
+  },
+  {
+    key: 'GuiaUtilizador',
+    label: 'Guia do Utilizador',
+    descricao: 'Manual de utilização do sistema',
+    category: 'Geral',
+    icon: '📖'
+  },
+  {
+    key: 'Suporte',
+    label: 'Suporte',
+    descricao: 'Contacto e suporte técnico',
+    category: 'Geral',
+    icon: '🎧'
+  },
+  {
+    key: 'Proforma',
+    label: 'Proforma',
+    descricao: 'Gestão de faturas proforma',
+    category: 'Operações',
+    icon: '🧾'
+  },
+  {
+    key: 'HistoricoAcessoDocumentos',
+    label: 'Histórico de Acesso a Documentos',
+    descricao: 'Registo de acessos a documentos',
+    category: 'Gestão',
+    icon: '📂'
+  },
+  {
+    key: 'TesteFlightradar24',
+    label: 'Flightradar24',
+    descricao: 'Integração com dados do Flightradar24',
+    category: 'Operações',
+    icon: '🛫'
   }
 ];
 

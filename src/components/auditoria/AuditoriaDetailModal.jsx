@@ -27,8 +27,10 @@ import { pt } from 'date-fns/locale';
 import { RespostaAuditoria } from '@/entities/RespostaAuditoria';
 import { ItemAuditoria } from '@/entities/ItemAuditoria';
 import { PlanoAcaoCorretiva } from '@/entities/PlanoAcaoCorretiva';
+import { Empresa } from '@/entities/Empresa';
 import { SendEmail } from '@/integrations/Core';
 import { exportAuditoriaPdf } from '@/functions/exportAuditoriaPdf';
+import { getEmpresaLogoByAeroporto } from '@/components/lib/userUtils';
 import AlertModal from '../shared/AlertModal';
 import FormPAC from './FormPAC';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -67,10 +69,12 @@ export default function AuditoriaDetailModal({
   const [isPacFormOpen, setIsPacFormOpen] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailAddress, setEmailAddress] = useState('');
+  const [empresas, setEmpresas] = useState([]);
 
   useEffect(() => {
     if (processo && isOpen) {
       loadAuditoriaDetails();
+      Empresa.list().then(data => setEmpresas(data || [])).catch(() => setEmpresas([]));
       setErrorMessage('');
       setSuccessMessage('');
     }
@@ -152,14 +156,15 @@ export default function AuditoriaDetailModal({
     setSuccessMessage('');
 
     try {
+      const emailLogoUrl = getEmpresaLogoByAeroporto(aeroporto?.codigo_icao || aeroporto?.id, aeroporto ? [aeroporto] : [], empresas);
       await SendEmail({
         to: emailAddress,
-        subject: `Relatório de Auditoria DIROPS-SGA - ${tipo?.nome || 'N/A'} - ${aeroporto?.nome || 'N/A'}`,
+        subject: `Relatório de Auditoria DIROPS - ${tipo?.nome || 'N/A'} - ${aeroporto?.nome || 'N/A'}`,
         body: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #004A99; color: white; padding: 20px; text-align: center;">
-              <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="DIROPS-SGA" style="max-width: 150px; height: auto; margin-bottom: 10px;">
-              <h1 style="margin: 0; font-size: 24px;">DIROPS-SGA</h1>
+              <img src="${emailLogoUrl}" alt="DIROPS" style="max-width: 150px; height: auto; margin-bottom: 10px;">
+              <h1 style="margin: 0; font-size: 24px;">DIROPS</h1>
               <p style="margin: 5px 0 0 0; opacity: 0.9;">Sistema de Gestão Aeroportuária</p>
             </div>
             
@@ -232,7 +237,7 @@ export default function AuditoriaDetailModal({
               ` : ''}
               
               <div style="background: #004A99; color: white; padding: 20px; border-radius: 8px; text-align: center;">
-                <p style="margin: 0; font-size: 14px;">Este relatório foi gerado automaticamente pelo Sistema DIROPS-SGA</p>
+                <p style="margin: 0; font-size: 14px;">Este relatório foi gerado automaticamente pelo Sistema DIROPS</p>
                 <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.8;">Direcção de Operações - Sistema de Gestão Aeroportuária</p>
                 <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.8;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
               </div>
@@ -644,7 +649,7 @@ export default function AuditoriaDetailModal({
               </div>
               <div>
                 <DialogTitle>Enviar Relatório por Email</DialogTitle>
-                <p className="text-sm text-slate-500 mt-1">Sistema DIROPS-SGA</p>
+                <p className="text-sm text-slate-500 mt-1">Sistema DIROPS</p>
               </div>
             </div>
           </DialogHeader>

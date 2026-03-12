@@ -39,7 +39,7 @@ import { Aeroporto } from "@/entities/Aeroporto";
 import { Inspecao } from "@/entities/Inspecao";
 import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
-import { hasUserProfile, ensureUserProfilesExist } from '@/components/lib/userUtils';
+import { hasUserProfile, ensureUserProfilesExist, getAeroportosPermitidos, filtrarDadosPorAcesso, filtrarDadosPorAeroportoId, isSuperAdmin } from '@/components/lib/userUtils';
 
 import { getDashboardStats } from '@/functions/getDashboardStats';
 
@@ -85,17 +85,8 @@ export default function DashboardInterno() {
         console.error('❌ Erro ao carregar aeroportos:', err);
       }
 
-      const aeroportosAngola = aeroportosData.filter((a) => a.pais === 'AO');
-
-      let aeroportosFiltrados = aeroportosAngola;
-      if (userWithProfiles.role !== 'admin' && !hasUserProfile(userWithProfiles, 'administrador')) {
-        if (userWithProfiles.aeroportos_acesso && Array.isArray(userWithProfiles.aeroportos_acesso) && userWithProfiles.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(userWithProfiles.aeroportos_acesso.map((code) => code.trim().toUpperCase()));
-          aeroportosFiltrados = aeroportosAngola.filter((a) => userIcaoCodes.has(a.codigo_icao?.trim().toUpperCase()));
-        } else {
-          aeroportosFiltrados = [];
-        }
-      }
+      // Filtrar aeroportos por empresa + permissões do utilizador
+      const aeroportosFiltrados = getAeroportosPermitidos(userWithProfiles, aeroportosData);
 
       setAeroportos(aeroportosFiltrados);
 
@@ -112,37 +103,14 @@ export default function DashboardInterno() {
       let inspecoesData = inspecoesDataResult.status === 'fulfilled' ? inspecoesDataResult.value : [];
       let calculosTarifaData = calculosTarifaResult.status === 'fulfilled' ? calculosTarifaResult.value : [];
 
-      let voosFiltrados = voosData;
-      if (userWithProfiles.role !== 'admin' && !hasUserProfile(userWithProfiles, 'administrador')) {
-        if (userWithProfiles.aeroportos_acesso && Array.isArray(userWithProfiles.aeroportos_acesso) && userWithProfiles.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(userWithProfiles.aeroportos_acesso.map((code) => code.trim().toUpperCase()));
-          voosFiltrados = voosFiltrados.filter((voo) => userIcaoCodes.has(voo.aeroporto_operacao?.trim().toUpperCase()));
-        } else {
-          voosFiltrados = [];
-        }
-      }
+      // Filtrar dados operacionais por empresa + permissões
+      const voosFiltrados = filtrarDadosPorAcesso(userWithProfiles, voosData, 'aeroporto_operacao', aeroportosData);
       setVoos(voosFiltrados);
 
-      let ocorrenciasFiltradas = ocorrenciasData;
-      if (userWithProfiles.role !== 'admin' && !hasUserProfile(userWithProfiles, 'administrador')) {
-        if (userWithProfiles.aeroportos_acesso && Array.isArray(userWithProfiles.aeroportos_acesso) && userWithProfiles.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(userWithProfiles.aeroportos_acesso.map((code) => code.trim().toUpperCase()));
-          ocorrenciasFiltradas = ocorrenciasFiltradas.filter((o) => userIcaoCodes.has(o.aeroporto?.trim().toUpperCase()));
-        } else {
-          ocorrenciasFiltradas = [];
-        }
-      }
+      const ocorrenciasFiltradas = filtrarDadosPorAcesso(userWithProfiles, ocorrenciasData, 'aeroporto', aeroportosData);
       setOcorrenciasSafety(ocorrenciasFiltradas);
 
-      let inspecoesFiltradas = inspecoesData;
-      if (userWithProfiles.role !== 'admin' && !hasUserProfile(userWithProfiles, 'administrador')) {
-        if (userWithProfiles.aeroportos_acesso && Array.isArray(userWithProfiles.aeroportos_acesso) && userWithProfiles.aeroportos_acesso.length > 0) {
-          const aeroportosIds = aeroportosFiltrados.map((a) => a.id);
-          inspecoesFiltradas = inspecoesFiltradas.filter((i) => aeroportosIds.includes(i.aeroporto_id));
-        } else {
-          inspecoesFiltradas = [];
-        }
-      }
+      const inspecoesFiltradas = filtrarDadosPorAeroportoId(userWithProfiles, inspecoesData, 'aeroporto_id', aeroportosData);
       setInspecoes(inspecoesFiltradas);
 
       setCalculosTarifa(calculosTarifaData);
@@ -298,7 +266,7 @@ export default function DashboardInterno() {
           <div>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900">Dashboard Operacional</h1>
             <p className="text-sm sm:text-base text-slate-600 mt-1">
-              Sistema DIROPS-SGA • {new Date().toLocaleDateString('pt-AO')}
+              Sistema DIROPS • {new Date().toLocaleDateString('pt-AO')}
             </p>
           </div>
         </div>

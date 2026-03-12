@@ -42,7 +42,7 @@ export default function ZAPIGruposManagement({ onError, onSuccess }) {
       'criar': {
         title: 'Criar Grupo',
         fields: [
-          { name: 'groupName', label: 'Nome do Grupo *', type: 'text', placeholder: 'Grupo DIROPS-SGA' },
+          { name: 'groupName', label: 'Nome do Grupo *', type: 'text', placeholder: 'Grupo DIROPS' },
           { name: 'participants', label: 'Participantes (números separados por vírgula) *', type: 'textarea', placeholder: '+244XXXXXXXXX, +244YYYYYYYYY' }
         ]
       },

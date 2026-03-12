@@ -73,15 +73,12 @@ export default function SolicitacaoPerfil() {
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
       setAeroportos(aeroportosAngola);
 
-      // Encontrar a empresa SGA e definir como padrão
-      const empresaSGA = empresasAtivas.find(e => e.nome.toUpperCase().includes('SGA'));
-      
       // Preencher dados do utilizador
       setFormData(prev => ({
         ...prev,
         nome_completo: currentUser.full_name || '',
         email: currentUser.email || '',
-        empresa_solicitante_id: empresaSGA ? empresaSGA.id : ''
+        empresa_solicitante_id: empresasAtivas.length === 1 ? empresasAtivas[0].id : ''
       }));
 
     } catch (error) {

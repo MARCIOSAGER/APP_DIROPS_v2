@@ -12,7 +12,7 @@ export default function ChatbotIA({ user }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Olá! Sou o **SIGA**, o assistente virtual do DIROPS-SGA. 👋\n\nPosso ajudar-te com dúvidas sobre o sistema ou abrir um ticket de suporte. Como posso ajudar?"
+      content: "Olá! Sou o **SIGA**, o assistente virtual do DIROPS. 👋\n\nPosso ajudar-te com dúvidas sobre o sistema ou abrir um ticket de suporte. Como posso ajudar?"
     }
   ]);
   const [input, setInput] = useState("");
@@ -124,7 +124,7 @@ export default function ChatbotIA({ user }) {
             </div>
             <div>
               <div className="font-semibold text-sm">SIGA – Assistente Virtual</div>
-              <div className="text-xs text-blue-100">DIROPS-SGA • Online</div>
+              <div className="text-xs text-blue-100">DIROPS • Online</div>
             </div>
             <button onClick={() => setIsOpen(false)} className="ml-auto hover:bg-white/20 rounded-full p-1">
               <X className="w-4 h-4" />

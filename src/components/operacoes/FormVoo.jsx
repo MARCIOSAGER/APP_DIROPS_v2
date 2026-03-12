@@ -11,6 +11,7 @@ import { Plus, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { normalizeAircraftRegistration, normalizeFlightNumber, createDateTime } from '@/components/lib/utils';
 import { notifyAdminsCreation } from '@/components/lib/notificacoes';
+import { getAeroportosPermitidos } from '@/components/lib/userUtils';
 import { differenceInMinutes } from 'date-fns';
 
 // Importar entidades corretas
@@ -123,23 +124,19 @@ export default function FormVoo({
     checkMilitaryConsistency();
   }, [checkMilitaryConsistency]);
 
-  // Aeroportos que o usuário tem acesso (baseado no perfil)
+  // Aeroportos que o usuário tem acesso (empresa-based)
   const aeroportosAcesso = useMemo(() => {
     if (!currentUser || !Array.isArray(aeroportos)) {
       console.log('⚠️ Dados não carregados ainda:', { currentUser: !!currentUser, aeroportos: Array.isArray(aeroportos) ? aeroportos.length : 'não é array' });
       return [];
     }
 
-    if (currentUser.role === 'admin' || currentUser.perfis && currentUser.perfis.includes('administrador')) {
-      return aeroportos.filter((a) => a.isSGA === true);
+    const permitidos = getAeroportosPermitidos(currentUser, aeroportos);
+    // Para FormVoo, filtrar apenas aeroportos SGA se for admin/superadmin
+    if (currentUser.role === 'admin' || (currentUser.perfis && currentUser.perfis.includes('administrador'))) {
+      return permitidos.filter((a) => a.isSGA === true);
     }
-
-    if (currentUser.aeroportos_acesso && Array.isArray(currentUser.aeroportos_acesso) && currentUser.aeroportos_acesso.length > 0) {
-      const userIcaoCodes = new Set(currentUser.aeroportos_acesso.map((code) => code.trim().toUpperCase()));
-      return aeroportos.filter((aeroporto) => userIcaoCodes.has(aeroporto.codigo_icao?.trim().toUpperCase()));
-    }
-
-    return [];
+    return permitidos;
   }, [aeroportos, currentUser]);
 
   // Auto-selecionar aeroporto se o usuário tem acesso a apenas um (para ARR)

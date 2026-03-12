@@ -8,6 +8,7 @@ import Combobox from '@/components/ui/combobox';
 import Select from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { getAeroportosPermitidos } from '@/components/lib/userUtils';
 
 const CATEGORIAS_RECEITA = [
   'Tarifas de Pouso',
@@ -50,24 +51,12 @@ export default function FormMovimentoFinanceiro({
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filtrar aeroportos baseado no acesso do utilizador
+  // Filtrar aeroportos baseado no acesso do utilizador (empresa-based)
   const aeroportosAcesso = useMemo(() => {
     if (!currentUser || !Array.isArray(aeroportos)) {
       return [];
     }
-
-    // Admin e administrador têm acesso a todos os aeroportos
-    if (currentUser.role === 'admin' || (currentUser.perfis && currentUser.perfis.includes('administrador'))) {
-      return aeroportos;
-    }
-
-    // Filtrar por aeroportos que o utilizador tem acesso
-    if (currentUser.aeroportos_acesso && Array.isArray(currentUser.aeroportos_acesso) && currentUser.aeroportos_acesso.length > 0) {
-      const userIcaoCodes = new Set(currentUser.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-      return aeroportos.filter(aeroporto => userIcaoCodes.has(aeroporto.codigo_icao?.trim().toUpperCase()));
-    }
-
-    return [];
+    return getAeroportosPermitidos(currentUser, aeroportos);
   }, [aeroportos, currentUser]);
 
   useEffect(() => {

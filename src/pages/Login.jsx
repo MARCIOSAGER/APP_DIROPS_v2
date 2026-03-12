@@ -112,7 +112,7 @@ export default function Login() {
           <div className="flex items-center gap-4">
             <LogoDirops className="w-16 h-16 drop-shadow-lg" />
             <div>
-              <h1 className="text-3xl font-bold text-white tracking-tight">DIROPS-SGA</h1>
+              <h1 className="text-3xl font-bold text-white tracking-tight">DIROPS</h1>
               <p className="text-blue-300/70 text-sm font-medium">Sistema de Gestao Aeroportuaria</p>
             </div>
           </div>
@@ -150,7 +150,7 @@ export default function Login() {
             <div className="inline-flex items-center gap-3 mb-2">
               <LogoDirops className="w-12 h-12 drop-shadow-md" variant="light" />
               <div className="text-left">
-                <h1 className="text-xl font-bold text-slate-900">DIROPS-SGA</h1>
+                <h1 className="text-xl font-bold text-slate-900">DIROPS</h1>
                 <p className="text-slate-500 text-xs">Sistema de Gestao Aeroportuaria</p>
               </div>
             </div>
@@ -326,7 +326,7 @@ export default function Login() {
           </div>
 
           <p className="text-center text-slate-400 text-xs mt-6">
-            DIROPS-SGA v2.0
+            DIROPS v2.0
           </p>
         </div>
       </div>

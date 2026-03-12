@@ -1,15 +1,19 @@
 import React, { useEffect } from 'react';
 import { createPageUrl } from '@/utils';
 import { User } from '@/entities/User';
+import { Aeroporto } from '@/entities/Aeroporto';
+import { getAeroportosPermitidos } from '@/components/lib/userUtils';
 
 export default function AccessDenied() {
   useEffect(() => {
     const checkUserAndRedirect = async () => {
       try {
         const user = await User.me();
-        
+        const allAeroportos = await Aeroporto.list();
+        const aeroportosPermitidos = getAeroportosPermitidos(user, allAeroportos);
+
         // Se é um usuário novo sem perfis/aeroportos, redirecionar para formulário
-        if (user && (!user.perfis || user.perfis.length === 0 || !user.aeroportos_acesso || user.aeroportos_acesso.length === 0)) {
+        if (user && (!user.perfis || user.perfis.length === 0 || aeroportosPermitidos.length === 0)) {
           console.log('Novo usuário detectado - redirecionando para formulário de solicitação');
           window.location.href = createPageUrl('SolicitacaoPerfil');
         }

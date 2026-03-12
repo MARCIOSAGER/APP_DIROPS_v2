@@ -46,7 +46,8 @@ import { ItemPAC } from '@/entities/ItemPAC'; // New import for ItemPAC
 import { CalculoTarifa } from '@/entities/CalculoTarifa';
 import { Voo } from '@/entities/Voo';
 
-import { ensureUserProfilesExist, hasUserProfile } from '../components/lib/userUtils';
+import { ensureUserProfilesExist, hasUserProfile, getAeroportosPermitidos, filtrarDadosPorAcesso, isSuperAdmin, getEmpresaLogoByUser } from '../components/lib/userUtils';
+import { Empresa } from '@/entities/Empresa';
 
 import FormProcessoAuditoria from '../components/auditoria/FormProcessoAuditoria';
 import ConfiguracaoAuditoria from '../components/auditoria/ConfiguracaoAuditoria';
@@ -57,6 +58,7 @@ import AlertModal from '../components/shared/AlertModal';
 
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { createPdfDoc, addHeader, addFooter, addSectionTitle, addKeyValuePairs, checkPageBreak, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
 
 const CATEGORIAS_CONFIG = {
   seguranca_operacional: {
@@ -97,6 +99,7 @@ export default function Auditoria() {
   const [itensAuditoria, setItensAuditoria] = useState([]);
   const [processosAuditoria, setProcessosAuditoria] = useState([]);
   const [aeroportos, setAeroportos] = useState([]); // All aeroportos from DB
+  const [empresas, setEmpresas] = useState([]);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('processos');
@@ -158,18 +161,7 @@ export default function Auditoria() {
     if (!currentUser || !Array.isArray(aeroportos)) {
       return [];
     }
-
-    const isAdmin = currentUser.role === 'admin' || currentUser.perfis && currentUser.perfis.includes('administrador');
-    if (isAdmin) {
-      return aeroportos;
-    }
-
-    if (currentUser.aeroportos_acesso && Array.isArray(currentUser.aeroportos_acesso) && currentUser.aeroportos_acesso.length > 0) {
-      const userIcaoCodes = new Set(currentUser.aeroportos_acesso.map((code) => code?.trim().toUpperCase()));
-      return aeroportos.filter((aeroporto) => aeroporto.codigo_icao && userIcaoCodes.has(aeroporto.codigo_icao.trim().toUpperCase()));
-    }
-
-    return [];
+    return getAeroportosPermitidos(currentUser, aeroportos);
   }, [aeroportos, currentUser]);
 
   const loadData = useCallback(async () => {
@@ -181,26 +173,19 @@ export default function Auditoria() {
       const isAdmin = user?.role === 'admin' || hasUserProfile(user, 'administrador');
       setGestaoPermission(isAdmin);
 
-      const [tiposData, processosData, aeroportosData, usersData, pacsData, itensData, itensPacData] = await Promise.all([
+      const [tiposData, processosData, aeroportosData, usersData, pacsData, itensData, itensPacData, empresasData] = await Promise.all([
       TipoAuditoria.list(),
       ProcessoAuditoria.list('-data_auditoria'),
       Aeroporto.filter({ pais: 'AO' }),
       User.list(),
       PlanoAcaoCorretiva.list('-data_criacao'),
       ItemAuditoria.list(),
-      ItemPAC.list()]
+      ItemPAC.list(),
+      Empresa.list()]
       );
 
-      let processosFiltrados = processosData || [];
-      let pacsFiltrados = pacsData || [];
-
-      if (!isAdmin && user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-        // Filter processes
-        const userIcaoCodes = new Set(user.aeroportos_acesso.map((code) => code?.trim().toUpperCase()));
-        processosFiltrados = processosData.filter((p) => p.aeroporto_id && userIcaoCodes.has(p.aeroporto_id.trim().toUpperCase()));
-        // Filter PACs
-        pacsFiltrados = pacsData.filter((p) => p.aeroporto_id && userIcaoCodes.has(p.aeroporto_id.trim().toUpperCase()));
-      }
+      const processosFiltrados = filtrarDadosPorAcesso(user, processosData || [], 'aeroporto_id', aeroportosData || []);
+      const pacsFiltrados = filtrarDadosPorAcesso(user, pacsData || [], 'aeroporto_id', aeroportosData || []);
 
       setProcessosAuditoria(processosFiltrados);
       setTiposAuditoria(tiposData || []);
@@ -209,6 +194,7 @@ export default function Auditoria() {
       setPacs(pacsFiltrados);
       setUsers(usersData || []);
       setItensPac(itensPacData || []);
+      setEmpresas(empresasData || []);
 
     } catch (error) {
       console.error('Erro ao carregar dados ou verificar usuário:', error);
@@ -383,221 +369,155 @@ export default function Auditoria() {
       let logoBase64 = null;
 
       try {
-        const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png';
-        const logoResponse = await fetch(logoUrl, {
-          mode: 'cors',
-          headers: {
-            'Access-Control-Allow-Origin': '*'
-          }
-        });
-        if (logoResponse.ok) {
-          const logoBlob = await logoResponse.arrayBuffer();
-          const binary = Array.from(new Uint8Array(logoBlob)).map((b) => String.fromCharCode(b)).join('');
-          logoBase64 = `data:image/png;base64,${btoa(binary)}`;
-        }
+        const logoUrl = getEmpresaLogoByUser(currentUser, empresas);
+        logoBase64 = await loadImageAsBase64(logoUrl);
       } catch (logoError) {
         console.log('Logo não carregado:', logoError);
       }
 
       const [respostasData, tipoData] = await Promise.all([
-      RespostaAuditoria.filter({ processo_auditoria_id: processo.id }),
-      TipoAuditoria.filter({ id: processo.tipo_auditoria_id })]
-      );
+        RespostaAuditoria.filter({ processo_auditoria_id: processo.id }),
+        TipoAuditoria.filter({ id: processo.tipo_auditoria_id })
+      ]);
 
       const tipo = tipoData[0];
       const aeroporto = aeroportos.find((a) => a.codigo_icao === processo.aeroporto_id);
 
       const itensData = await ItemAuditoria.filter({ tipo_auditoria_id: processo.tipo_auditoria_id });
 
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
+      const doc = await createPdfDoc({ orientation: 'portrait' });
 
-      let pageNumber = 1;
-      const pageHeight = 297;
-      const pageWidth = 210;
-      const margin = 20;
-      const contentWidth = pageWidth - margin * 2;
+      const m = PDF.margin;
+      const pageWidth = PDF.page.portrait.w;
+      const contentWidth = pageWidth - m.left - m.right;
 
-      const addHeaderAndFooter = (docInstance, currentPageNumber) => {
-        try {
-          if (logoBase64) {
-            docInstance.addImage(logoBase64, 'PNG', 160, 10, 30, 15);
-          }
-        } catch (logoError) {
-          console.log('Logo não adicionado:', logoError);
-        }
-
-        docInstance.setFontSize(18);
-        docInstance.setFont(undefined, 'bold');
-        docInstance.text('DIROPS-SGA', margin, 20);
-        docInstance.setFontSize(16);
-        docInstance.text('Relatório de Auditoria Interna', margin, 30);
-
-        docInstance.setFontSize(12);
-        docInstance.setFont(undefined, 'normal');
-        docInstance.text(`Data de Geração: ${new Date().toLocaleDateString('pt-AO')}`, margin, 40);
-
-        docInstance.setFontSize(8);
-        docInstance.setTextColor(100, 116, 139);
-        const footerY = pageHeight - 15;
-
-        docInstance.text(`${tipo?.nome || 'N/A'} | ${aeroporto?.codigo_icao || 'N/A'}`, margin, footerY);
-
-        const centerText = `Auditor: ${processo.auditor_responsavel || 'N/A'} | Data: ${processo.data_auditoria ? format(new Date(processo.data_auditoria), 'dd/MM/yyyy') : 'N/A'}`;
-        const centerX = (pageWidth - docInstance.getTextWidth(centerText)) / 2;
-        docInstance.text(centerText, centerX, footerY);
-
-        docInstance.text(`Página ${currentPageNumber}`, pageWidth - 40, footerY);
-
-        docInstance.setTextColor(0, 0, 0);
+      const headerOpts = {
+        title: 'Relatório de Auditoria Interna',
+        logoBase64,
+        date: new Date().toLocaleDateString('pt-AO'),
+        meta: [
+          `${tipo?.nome || 'N/A'} | ${aeroporto?.codigo_icao || 'N/A'}`,
+          `Auditor: ${processo.auditor_responsavel || 'N/A'}`
+        ]
       };
 
-      const checkPageBreak = (currentY, neededSpace = 15, forceBreak = false) => {
-        if (currentY + neededSpace > pageHeight - 35 || forceBreak) {
-          doc.addPage();
-          pageNumber++;
-          addHeaderAndFooter(doc, pageNumber);
-          return 50;
-        }
-        return currentY;
-      };
+      let yPosition = addHeader(doc, headerOpts);
 
-      const addTextWithPageBreak = (text, x, y, maxWidth, lineHeight = 5) => {
-        const lines = doc.splitTextToSize(text, maxWidth);
-        let currentY = y;
+      // ─── Informações da Auditoria ───
+      yPosition = checkPageBreak(doc, yPosition, 30, headerOpts);
+      yPosition = addSectionTitle(doc, yPosition, 'Informações da Auditoria');
 
-        for (let i = 0; i < lines.length; i++) {
-          currentY = checkPageBreak(currentY, lineHeight);
-          doc.text(lines[i], x, currentY);
-          currentY += lineHeight;
-        }
+      yPosition = addKeyValuePairs(doc, yPosition, [
+        { label: 'Aeroporto', value: aeroporto?.nome || 'N/A' },
+        { label: 'Data', value: processo.data_auditoria ? format(new Date(processo.data_auditoria), 'dd/MM/yyyy', { locale: pt }) : 'N/A' },
+        { label: 'Tipo', value: tipo?.nome || 'N/A' },
+        { label: 'Auditor', value: processo.auditor_responsavel || 'N/A' },
+        { label: 'Categoria', value: CATEGORIAS_CONFIG[tipo?.categoria]?.label || 'N/A' },
+        { label: 'Status', value: processo.status || 'N/A' },
+      ], { twoColumns: true });
 
-        return currentY;
-      };
+      yPosition += 4;
 
-      let yPosition = 50;
-      addHeaderAndFooter(doc, pageNumber);
+      // ─── Resumo Executivo ───
+      yPosition = checkPageBreak(doc, yPosition, 35, headerOpts);
+      yPosition = addSectionTitle(doc, yPosition, 'Resumo Executivo');
 
-      yPosition = checkPageBreak(yPosition, 30);
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text('Informações da Auditoria', margin, yPosition);
-      yPosition += 12;
+      yPosition = addKeyValuePairs(doc, yPosition, [
+        { label: 'Total de Itens', value: String(processo.total_itens || 0) },
+        { label: 'Conformes', value: String(processo.itens_conformes || 0) },
+        { label: 'Não Conformes', value: String(processo.itens_nao_conformes || 0) },
+        { label: 'Conformidade', value: `${(processo.percentual_conformidade || 0).toFixed(1)}%` },
+      ], { twoColumns: true });
 
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
+      yPosition += 4;
 
-      doc.text(`Aeroporto: ${aeroporto?.nome || 'N/A'}`, margin, yPosition);
-      doc.text(`Tipo: ${tipo?.nome || 'N/A'}`, margin, yPosition + 5);
-      doc.text(`Categoria: ${CATEGORIAS_CONFIG[tipo?.categoria]?.label || 'N/A'}`, margin, yPosition + 10);
-
-      doc.text(`Data: ${processo.data_auditoria ? format(new Date(processo.data_auditoria), 'dd/MM/yyyy', { locale: pt }) : 'N/A'}`, 120, yPosition);
-      doc.text(`Auditor: ${processo.auditor_responsavel || 'N/A'}`, 120, yPosition + 5);
-      doc.text(`Status: ${processo.status || 'N/A'}`, 120, yPosition + 10);
-
-      yPosition += 20;
-
-      yPosition = checkPageBreak(yPosition, 35);
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text('Resumo Executivo', margin, yPosition);
-      yPosition += 12;
-
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Total', margin, yPosition);
-      doc.text('Conformes', margin + 40, yPosition);
-      doc.text('Não Conformes', margin + 80, yPosition);
-      doc.text('Conformidade', margin + 120, yPosition);
-      yPosition += 7;
-
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'normal');
-      doc.text(`${processo.total_itens || 0}`, margin, yPosition);
-      doc.setTextColor(22, 163, 74);
-      doc.text(`${processo.itens_conformes || 0}`, margin + 40, yPosition);
-      doc.setTextColor(220, 38, 38);
-      doc.text(`${processo.itens_nao_conformes || 0}`, margin + 80, yPosition);
-      doc.setTextColor(30, 64, 175);
-      doc.text(`${(processo.percentual_conformidade || 0).toFixed(1)}%`, margin + 120, yPosition);
-      doc.setTextColor(0, 0, 0);
-      yPosition += 20;
-
+      // ─── Não Conformidades ───
       const naoConformidades = respostasData.filter((r) => r.situacao_encontrada === 'NC');
       if (naoConformidades.length > 0) {
-        yPosition = checkPageBreak(yPosition, 25);
-        doc.setFontSize(14);
-        doc.setFont(undefined, 'bold');
-        doc.text('Não Conformidades Identificadas', margin, yPosition);
-        yPosition += 15;
+        yPosition = checkPageBreak(doc, yPosition, 25, headerOpts);
+        yPosition = addSectionTitle(doc, yPosition, 'Não Conformidades Identificadas');
+
+        const addTextWithPageBreak = (text, x, y, maxWidth, lineHeight = 5) => {
+          const lines = doc.splitTextToSize(text, maxWidth);
+          let currentY = y;
+          for (let i = 0; i < lines.length; i++) {
+            currentY = checkPageBreak(doc, currentY, lineHeight, headerOpts);
+            doc.text(lines[i], x, currentY);
+            currentY += lineHeight;
+          }
+          return currentY;
+        };
 
         for (let index = 0; index < naoConformidades.length; index++) {
           const nc = naoConformidades[index];
           const item = itensData.find((i) => i.id === nc.item_auditoria_id);
 
-          yPosition = checkPageBreak(yPosition, 40);
+          yPosition = checkPageBreak(doc, yPosition, 40, headerOpts);
 
-          doc.setFontSize(12);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(190, 18, 60);
+          doc.setFontSize(PDF.font.subtitle);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...PDF.colors.danger);
 
           const itemTitle = `${index + 1}. Item ${item?.numero || 'N/A'}: ${item?.item || 'N/A'}`;
-          yPosition = addTextWithPageBreak(itemTitle, margin, yPosition, contentWidth, 6);
+          yPosition = addTextWithPageBreak(itemTitle, m.left, yPosition, contentWidth, 6);
           yPosition += 3;
 
-          doc.setTextColor(0, 0, 0);
+          doc.setTextColor(...PDF.colors.dark);
 
-          doc.setFontSize(9);
-          doc.setFont(undefined, 'normal');
-          yPosition = checkPageBreak(yPosition, 7);
-          doc.text(`Referência: ${item?.referencia_norma || 'N/A'}`, margin, yPosition);
+          doc.setFontSize(PDF.font.body);
+          doc.setFont('helvetica', 'normal');
+          yPosition = checkPageBreak(doc, yPosition, 7, headerOpts);
+          doc.text(`Referência: ${item?.referencia_norma || 'N/A'}`, m.left, yPosition);
           yPosition += 8;
 
           if (item?.exemplo_situacao) {
-            yPosition = checkPageBreak(yPosition, 15);
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(100, 116, 139);
-            doc.text('Orientações:', margin, yPosition);
+            yPosition = checkPageBreak(doc, yPosition, 15, headerOpts);
+            doc.setFontSize(PDF.font.body);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...PDF.colors.muted);
+            doc.text('Orientações:', m.left, yPosition);
             yPosition += 6;
 
-            doc.setFont(undefined, 'italic');
-            doc.setTextColor(100, 116, 139);
-            yPosition = addTextWithPageBreak(item.exemplo_situacao, margin + 5, yPosition, contentWidth - 10, 5);
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(...PDF.colors.muted);
+            yPosition = addTextWithPageBreak(item.exemplo_situacao, m.left + 5, yPosition, contentWidth - 10, 5);
             yPosition += 6;
-            doc.setFont(undefined, 'normal');
-            doc.setTextColor(0, 0, 0);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(...PDF.colors.dark);
           }
 
           if (nc.observacao) {
-            yPosition = checkPageBreak(yPosition, 15);
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'bold');
-            doc.text('Observação:', margin, yPosition);
+            yPosition = checkPageBreak(doc, yPosition, 15, headerOpts);
+            doc.setFontSize(PDF.font.body);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...PDF.colors.dark);
+            doc.text('Observação:', m.left, yPosition);
             yPosition += 6;
 
-            doc.setFont(undefined, 'normal');
-            yPosition = addTextWithPageBreak(nc.observacao, margin + 5, yPosition, contentWidth - 10, 5);
+            doc.setFont('helvetica', 'normal');
+            yPosition = addTextWithPageBreak(nc.observacao, m.left + 5, yPosition, contentWidth - 10, 5);
             yPosition += 6;
           }
 
           if (nc.acao_corretiva_recomendada) {
-            yPosition = checkPageBreak(yPosition, 15);
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'bold');
-            doc.text('Ação Corretiva Recomendada:', margin, yPosition);
+            yPosition = checkPageBreak(doc, yPosition, 15, headerOpts);
+            doc.setFontSize(PDF.font.body);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...PDF.colors.dark);
+            doc.text('Ação Corretiva Recomendada:', m.left, yPosition);
             yPosition += 6;
 
-            doc.setFont(undefined, 'normal');
-            yPosition = addTextWithPageBreak(nc.acao_corretiva_recomendada, margin + 5, yPosition, contentWidth - 10, 5);
+            doc.setFont('helvetica', 'normal');
+            yPosition = addTextWithPageBreak(nc.acao_corretiva_recomendada, m.left + 5, yPosition, contentWidth - 10, 5);
             yPosition += 6;
           }
 
           if (nc.evidencias && nc.evidencias.length > 0) {
-            yPosition = checkPageBreak(yPosition, 12);
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'bold');
-            doc.text('Evidências:', margin, yPosition);
+            yPosition = checkPageBreak(doc, yPosition, 12, headerOpts);
+            doc.setFontSize(PDF.font.body);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...PDF.colors.dark);
+            doc.text('Evidências:', m.left, yPosition);
             yPosition += 6;
 
             for (let evidIndex = 0; evidIndex < nc.evidencias.length; evidIndex++) {
@@ -605,59 +525,42 @@ export default function Auditoria() {
 
               try {
                 if (evidencia.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-                  yPosition = checkPageBreak(yPosition, 55);
+                  yPosition = checkPageBreak(doc, yPosition, 55, headerOpts);
 
                   try {
-                    const img = new Image();
-                    img.crossOrigin = 'anonymous';
+                    const imgDataUrl = await loadImageAsBase64(evidencia);
+                    const imgWidth = 60;
+                    const imgHeight = 45;
 
-                    await new Promise((resolve, reject) => {
-                      img.onload = () => {
-                        try {
-                          const canvas = document.createElement('canvas');
-                          const ctx = canvas.getContext('2d');
-                          canvas.width = img.naturalWidth;
-                          canvas.height = img.naturalHeight;
-                          ctx.drawImage(img, 0, 0);
-                          const dataURL = canvas.toDataURL('image/jpeg', 0.8);
-
-                          const imgWidth = 60;
-                          const imgHeight = 45;
-
-                          doc.addImage(dataURL, 'JPEG', margin + 5, yPosition, imgWidth, imgHeight);
-                          doc.setFontSize(8);
-                          doc.setFont(undefined, 'normal');
-                          doc.text(`Evidência ${evidIndex + 1}`, margin + 5, yPosition + imgHeight + 4);
-                          resolve();
-                        } catch (error) {
-                          reject(error);
-                        }
-                      };
-                      img.onerror = reject;
-                      img.src = evidencia;
-                    });
-
+                    doc.addImage(imgDataUrl, 'PNG', m.left + 5, yPosition, imgWidth, imgHeight);
+                    doc.setFontSize(PDF.font.small);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(...PDF.colors.muted);
+                    doc.text(`Evidência ${evidIndex + 1}`, m.left + 5, yPosition + imgHeight + 4);
                     yPosition += 52;
                   } catch (imgError) {
                     console.error('Error loading image for PDF:', imgError);
-                    yPosition = checkPageBreak(yPosition, 6);
-                    doc.setFontSize(9);
-                    doc.setFont(undefined, 'normal');
-                    doc.text(`Evidência ${evidIndex + 1}: [Imagem anexada - ${evidencia.substring(evidencia.lastIndexOf('/') + 1)}]`, margin + 5, yPosition);
+                    yPosition = checkPageBreak(doc, yPosition, 6, headerOpts);
+                    doc.setFontSize(PDF.font.body);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(...PDF.colors.dark);
+                    doc.text(`Evidência ${evidIndex + 1}: [Imagem anexada - ${evidencia.substring(evidencia.lastIndexOf('/') + 1)}]`, m.left + 5, yPosition);
                     yPosition += 6;
                   }
                 } else {
-                  yPosition = checkPageBreak(yPosition, 6);
-                  doc.setFontSize(9);
-                  doc.setFont(undefined, 'normal');
-                  doc.text(`Evidência ${evidIndex + 1}: ${evidencia.substring(evidencia.lastIndexOf('/') + 1)}`, margin + 5, yPosition);
+                  yPosition = checkPageBreak(doc, yPosition, 6, headerOpts);
+                  doc.setFontSize(PDF.font.body);
+                  doc.setFont('helvetica', 'normal');
+                  doc.setTextColor(...PDF.colors.dark);
+                  doc.text(`Evidência ${evidIndex + 1}: ${evidencia.substring(evidencia.lastIndexOf('/') + 1)}`, m.left + 5, yPosition);
                   yPosition += 6;
                 }
               } catch (error) {
                 console.error(`Error processing evidence ${evidIndex + 1}:`, error);
-                yPosition = checkPageBreak(yPosition, 6);
-                doc.setFontSize(9);
-                doc.text(`Evidência ${evidIndex + 1}: [Arquivo anexado]`, margin + 5, yPosition);
+                yPosition = checkPageBreak(doc, yPosition, 6, headerOpts);
+                doc.setFontSize(PDF.font.body);
+                doc.setTextColor(...PDF.colors.dark);
+                doc.text(`Evidência ${evidIndex + 1}: [Arquivo anexado]`, m.left + 5, yPosition);
                 yPosition += 6;
               }
             }
@@ -667,6 +570,8 @@ export default function Auditoria() {
           yPosition += 10;
         }
       }
+
+      addFooter(doc, { generatedBy: processo.auditor_responsavel || undefined });
 
       doc.save(`relatorio_auditoria_${processo.auditor_responsavel?.replace(/\s/g, '_') || 'auditoria'}_${new Date().toISOString().split('T')[0]}.pdf`);
 

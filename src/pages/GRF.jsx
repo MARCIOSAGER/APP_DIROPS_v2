@@ -22,8 +22,10 @@ import { RegistoGRF } from '@/entities/RegistoGRF';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User'; // Added User import
 import { downloadAsCSV } from '../components/lib/export';
+import { filtrarDadosPorAcesso } from '@/components/lib/userUtils';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 
+import { createPdfDoc, addHeader, addFooter, addTable, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
 import FormGRF from '../components/grf/FormGRF';
 import SendEmailModal from '../components/shared/SendEmailModal';
 import SuccessModal from '../components/shared/SuccessModal';
@@ -63,20 +65,8 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
       
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
 
-      // FILTRO CRÍTICO: Filtrar registos GRF por aeroportos do utilizador
-      let registosFiltrados = registosData;
-      
-      if (currentUser.role !== 'admin' && !currentUser.perfis?.includes('administrador')) {
-        if (currentUser.aeroportos_acesso && Array.isArray(currentUser.aeroportos_acesso) && currentUser.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(currentUser.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-          registosFiltrados = registosData.filter(r => 
-            userIcaoCodes.has(r.aeroporto?.trim().toUpperCase())
-          );
-        } else {
-          registosFiltrados = [];
-        }
-      }
-
+      // FILTRO CRÍTICO: Filtrar registos GRF por aeroportos do utilizador (empresa-based)
+      const registosFiltrados = filtrarDadosPorAcesso(currentUser, registosData, 'aeroporto', aeroportosAngola);
       setRegistos(registosFiltrados);
       setAeroportos(aeroportosAngola);
     } catch (error) {
@@ -206,7 +196,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="SGA Logo" style="height: 60px;">
+            <img src="/logo-dirops.svg" alt="DIROPS Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">Relatório GRF - Condições da Pista</h1>
             <p style="color: #64748b;">Data: ${new Date().toLocaleDateString('pt-AO')}</p>
           </div>
@@ -287,7 +277,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
           
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
             <p><strong>Melhores Cumprimentos,</strong></p>
-            <p>Sistema DIROPS-SGA<br>Direcção de Operações</p>
+            <p>Sistema DIROPS<br>Direcção de Operações</p>
           </div>
         </div>
       `;
@@ -296,7 +286,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
         to: recipient,
         subject: subject,
         body: emailBody,
-        from_name: 'DIROPS-SGA'
+        from_name: 'DIROPS'
       });
 
       if (result.status !== 200) {
@@ -310,7 +300,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
           errorTitle = 'Destinatário Não Autorizado';
           errorMessage = `Não foi possível enviar o relatório para "${recipient}". 
 
-O sistema apenas permite o envio de e-mails para utilizadores registados na aplicação DIROPS-SGA.
+O sistema apenas permite o envio de e-mails para utilizadores registados na aplicação DIROPS.
 
 Soluções:
 • Registe o destinatário como utilizador no sistema
@@ -427,7 +417,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
 
   const handleExportPDF = async () => {
     try {
-      const registosParaExportar = selectedRegistos.length > 0 
+      const registosParaExportar = selectedRegistos.length > 0
         ? filteredRegistos.filter(reg => selectedRegistos.includes(reg.id))
         : filteredRegistos;
 
@@ -443,155 +433,54 @@ Por favor tente novamente ou contacte o suporte técnico.`;
         return;
       }
 
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF('landscape');
-      
-      // Logo
-      const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png';
-      let base64LogoImage = '';
+      const doc = await createPdfDoc({ orientation: 'landscape' });
+
+      // Load logo
+      let logoBase64 = null;
       try {
-        const logoResponse = await fetch(logoUrl);
-        if (logoResponse.ok) {
-          const logoBlob = await logoResponse.arrayBuffer();
-          base64LogoImage = btoa(String.fromCharCode(...new Uint8Array(logoBlob)));
-          doc.addImage(`data:image/png;base64,${base64LogoImage}`, 'PNG', 14, 10, 30, 15);
-        }
+        logoBase64 = await loadImageAsBase64('/logo-dirops.svg');
       } catch (logoError) {
         console.log('Logo não adicionado:', logoError);
       }
 
-      // Título e cabeçalho
-      doc.setFontSize(18);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(30, 64, 175); // Cor azul
-      doc.text('DIROPS-SGA', 50, 15);
-      
-      doc.setFontSize(16);
-      doc.text('Relatório GRF - Condições da Pista', 50, 25);
-      
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'normal');
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-AO')}`, 14, 35);
-      doc.text(`Total de registos: ${registosParaExportar.length}`, 14, 42);
+      // Header options (reused on page breaks)
+      const headerOpts = {
+        title: 'Relatório GRF — Condições da Pista',
+        logoBase64,
+        date: new Date().toLocaleDateString('pt-AO'),
+        meta: [`Total de registos: ${registosParaExportar.length}`],
+      };
 
-      let yPosition = 55;
-      
-      // Headers da tabela
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'bold');
-      const headers = ['Aeroporto', 'Data', 'Hora', 'Pista', 'RWYCC', 'Perc.', 'Lâmina', 'Condição'];
-      const colWidths = [35, 25, 20, 20, 25, 25, 25, 40];
-      let currentX = 14;
+      let y = addHeader(doc, headerOpts);
 
-      // Cabeçalho da tabela com fundo azul
-      doc.setFillColor(71, 85, 105);
-      doc.rect(14, yPosition - 5, 235, 8, 'F');
-      doc.setTextColor(255, 255, 255);
+      // Table columns — total width fits landscape (297 - 15 - 15 = 267mm)
+      const columns = [
+        { label: 'Aeroporto', width: 38 },
+        { label: 'Data',      width: 28 },
+        { label: 'Hora',      width: 24 },
+        { label: 'Pista',     width: 22 },
+        { label: 'RWYCC',     width: 34 },
+        { label: 'Perc.',     width: 34 },
+        { label: 'Lâmina',    width: 34 },
+        { label: 'Condição',  width: 53 },
+      ];
 
-      headers.forEach((header, index) => {
-        doc.text(header, currentX + 2, yPosition);
-        currentX += colWidths[index];
-      });
+      // Build row data
+      const rows = registosParaExportar.map(reg => [
+        reg.aeroporto,
+        `${reg.dia}/${reg.mes}`,
+        reg.hora_utc,
+        reg.pista,
+        `${reg.rwycc1}/${reg.rwycc2}/${reg.rwycc3}`,
+        `${reg.perc1}/${reg.perc2}/${reg.perc3}`,
+        `${reg.lamina1}/${reg.lamina2}/${reg.lamina3}`,
+        `${reg.condicao1}/${reg.condicao2}/${reg.condicao3}`,
+      ]);
 
-      yPosition += 10;
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
+      addTable(doc, y, { columns, rows, headerOpts });
 
-      // Dados das linhas
-      for (let index = 0; index < Math.min(registosParaExportar.length, 20); index++) {
-        const reg = registosParaExportar[index];
-        
-        if (yPosition > 180) {
-          doc.addPage('landscape');
-          yPosition = 20;
-          
-          // Repetir logo na nova página
-          if (base64LogoImage) { // Use the already fetched base64 image if available
-            doc.addImage(`data:image/png;base64,${base64LogoImage}`, 'PNG', 14, 10, 30, 15);
-          } else { // Fallback if logo fetch failed previously, try again or log
-            try {
-              const logoResponse = await fetch(logoUrl);
-              if (logoResponse.ok) {
-                const logoBlob = await logoResponse.arrayBuffer();
-                base64LogoImage = btoa(String.fromCharCode(...new Uint8Array(logoBlob))); // Update for subsequent pages
-                doc.addImage(`data:image/png;base64,${base64LogoImage}`, 'PNG', 14, 10, 30, 15);
-              }
-            } catch (logoError) {
-              console.log('Logo não adicionado na nova página:', logoError);
-            }
-          }
-
-          // Repetir cabeçalho na nova página
-          doc.setFontSize(18);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(30, 64, 175);
-          doc.text('DIROPS-SGA', 50, 15);
-          
-          doc.setFontSize(16);
-          doc.text('Relatório GRF - Condições da Pista', 50, 25);
-          
-          doc.setFontSize(12);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(0, 0, 0);
-          doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-AO')}`, 14, 35);
-          doc.text(`Total de registos: ${registosParaExportar.length}`, 14, 42);
-
-          // Repetir headers da tabela
-          let yPositionHeaders = 55;
-          let currentXHeaders = 14;
-
-          doc.setFontSize(9);
-          doc.setFont(undefined, 'bold');
-          doc.setFillColor(71, 85, 105);
-          doc.rect(14, yPositionHeaders - 5, 235, 8, 'F');
-          doc.setTextColor(255, 255, 255);
-
-          headers.forEach((header, idx) => {
-            doc.text(header, currentXHeaders + 2, yPositionHeaders);
-            currentXHeaders += colWidths[idx];
-          });
-
-          yPosition = yPositionHeaders + 10;
-          doc.setTextColor(0, 0, 0);
-          doc.setFont(undefined, 'normal');
-        }
-
-        if (index % 2 === 0) {
-          doc.setFillColor(248, 250, 252);
-          doc.rect(14, yPosition - 3, 235, 6, 'F');
-        }
-
-        currentX = 14;
-        const rowData = [
-          reg.aeroporto,
-          `${reg.dia}/${reg.mes}`,
-          reg.hora_utc,
-          reg.pista,
-          `${reg.rwycc1}/${reg.rwycc2}/${reg.rwycc3}`,
-          `${reg.perc1}/${reg.perc2}/${reg.perc3}`,
-          `${reg.lamina1}/${reg.lamina2}/${reg.lamina3}`,
-          `${reg.condicao1}/${reg.condicao2}/${reg.condicao3}`.substring(0, 20)
-        ];
-
-        doc.setFontSize(8);
-        rowData.forEach((data, colIndex) => {
-          doc.text(String(data), currentX + 2, yPosition);
-          currentX += colWidths[colIndex];
-        });
-
-        yPosition += 6;
-      }
-
-      // Rodapé
-      doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
-      doc.text('Sistema DIROPS-SGA - Direcção de Operações', 14, doc.internal.pageSize.getHeight() - 10);
-      
-      // Número da página (This part might need adjustment for multi-page PDFs)
-      // For simplicity, keeping it as is, assuming jspdf handles it internally or it's outside the scope
-      // A more robust solution would iterate pages and add numbers.
-      doc.text(`Página 1`, doc.internal.pageSize.getWidth() - 30, doc.internal.pageSize.getHeight() - 10);
+      // Footer on all pages
+      addFooter(doc, { generatedBy: currentUser?.full_name || currentUser?.email });
 
       doc.save(`grf_relatorio_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {

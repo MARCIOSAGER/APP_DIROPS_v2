@@ -13,10 +13,12 @@ import { User } from '@/entities/User'; // Added User import
 import SafetyOccurrencesList from '../components/safety/SafetyOccurrencesList';
 import FormSafetyOccurrence from '../components/safety/FormSafetyOccurrence';
 import { downloadAsCSV } from '../components/lib/export';
+import { createPdfDoc, addHeader, addFooter, addTable, PDF } from '@/lib/pdfTemplate';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import SendEmailModal from '../components/shared/SendEmailModal';
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
+import { getAeroportosPermitidos, filtrarDadosPorAcesso } from '@/components/lib/userUtils';
 
 export default function Safety() {
   const [ocorrencias, setOcorrencias] = useState([]);
@@ -54,19 +56,8 @@ export default function Safety() {
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
 
-      // FILTRO CRÍTICO: Filtrar ocorrências por aeroportos do utilizador
-      let filteredOcorrencias = ocorrenciasData;
-      
-      if (currentUser.role !== 'admin' && !(currentUser.perfis && currentUser.perfis.includes('administrador'))) {
-        if (currentUser.aeroportos_acesso && Array.isArray(currentUser.aeroportos_acesso) && currentUser.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(currentUser.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-          filteredOcorrencias = ocorrenciasData.filter(o => 
-            o.aeroporto && userIcaoCodes.has(o.aeroporto.trim().toUpperCase())
-          );
-        } else {
-          filteredOcorrencias = []; // If user has no access airports and is not admin, show nothing
-        }
-      }
+      // FILTRO CRÍTICO: Filtrar ocorrências por aeroportos do utilizador (empresa-based)
+      const filteredOcorrencias = filtrarDadosPorAcesso(currentUser, ocorrenciasData, 'aeroporto', aeroportosAngola);
 
       setOcorrencias(filteredOcorrencias);
       setAeroportos(aeroportosAngola); // Still set for the dropdown options
@@ -222,32 +213,41 @@ export default function Safety() {
     }
       
     try {
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
-      
-      doc.text('Relatório de Ocorrências de Safety', 14, 20);
-      doc.setFontSize(10);
-      doc.text(`Total de ocorrências: ${dataToExport.length}`, 14, 30);
-      
-      let y = 40;
-      dataToExport.forEach((occ, index) => {
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.setFontSize(12);
-        doc.text(`${index + 1}. ${occ.tipo_ocorrencia.replace(/_/g, ' ')} - ${new Date(occ.data_ocorrencia).toLocaleDateString('pt-AO')}`, 14, y);
-        y += 7;
-        doc.setFontSize(10);
-        doc.text(`Aeroporto: ${aeroportos.find(a => a.codigo_icao === occ.aeroporto)?.nome || occ.aeroporto}`, 16, y);
-        y += 5;
-        doc.text(`Gravidade: ${occ.gravidade} | Status: ${occ.status.replace(/_/g, ' ')}`, 16, y);
-        y += 5;
-        const descriptionText = occ.descricao.length > 100 ? occ.descricao.substring(0, 97) + '...' : occ.descricao;
-        doc.text(`Descrição: ${descriptionText}`, 16, y);
-        y += 10;
-      });
-      
+      const doc = await createPdfDoc();
+      const today = new Date().toLocaleDateString('pt-AO');
+
+      const headerOpts = {
+        title: 'Relatório de Ocorrências de Safety',
+        subtitle: `Total de ocorrências: ${dataToExport.length}`,
+        date: today,
+      };
+
+      let y = addHeader(doc, headerOpts);
+
+      const columns = [
+        { label: '#', width: 10, align: 'center' },
+        { label: 'Tipo', width: 30 },
+        { label: 'Aeroporto', width: 30 },
+        { label: 'Data', width: 22, align: 'center' },
+        { label: 'Gravidade', width: 22, align: 'center' },
+        { label: 'Status', width: 25 },
+        { label: 'Descrição', width: 41 },
+      ];
+
+      const rows = dataToExport.map((occ, index) => [
+        String(index + 1),
+        (occ.tipo_ocorrencia || '').replace(/_/g, ' '),
+        aeroportos.find(a => a.codigo_icao === occ.aeroporto)?.nome || occ.aeroporto || '',
+        occ.data_ocorrencia ? new Date(occ.data_ocorrencia).toLocaleDateString('pt-AO') : '',
+        occ.gravidade || '',
+        (occ.status || '').replace(/_/g, ' '),
+        occ.descricao?.length > 60 ? occ.descricao.substring(0, 57) + '...' : (occ.descricao || ''),
+      ]);
+
+      y = addTable(doc, y, { columns, rows, headerOpts });
+
+      addFooter(doc);
+
       doc.save(`relatorio_safety_${new Date().toISOString().split('T')[0]}.pdf`);
       setSuccessInfo({ isOpen: true, title: 'PDF Gerado', message: 'O relatório em PDF foi gerado com sucesso.' });
     } catch (error) {
@@ -304,20 +304,11 @@ export default function Safety() {
   const taxaResolucao = totalOcorrencias > 0 ? ((ocorrenciasFechadas / totalOcorrencias) * 100).toFixed(1) : 0;
 
   const aeroportoOptions = useMemo(() => {
-    // If user has restricted access, only show their airports in the filter dropdown
-    if (user && user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador')) && user.aeroportos_acesso && user.aeroportos_acesso.length > 0) {
-      const userIcaoCodes = new Set(user.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-      const accessibleAeroportos = aeroportos.filter(a => userIcaoCodes.has(a.codigo_icao.trim().toUpperCase()));
-      return [
-        { value: 'todos', label: 'Todos os Aeroportos' },
-        ...accessibleAeroportos.map(a => ({ value: a.codigo_icao, label: a.nome }))
-      ];
-    }
-    // Otherwise, show all Angola airports
-    return ([
+    const permitidos = getAeroportosPermitidos(user, aeroportos);
+    return [
       { value: 'todos', label: 'Todos os Aeroportos' },
-      ...aeroportos.map(a => ({ value: a.codigo_icao, label: a.nome }))
-    ]);
+      ...permitidos.map(a => ({ value: a.codigo_icao, label: a.nome }))
+    ];
   }, [aeroportos, user]);
 
   const gravidadeOptions = [

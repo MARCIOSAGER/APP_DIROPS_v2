@@ -7,6 +7,7 @@ import SendEmailModal from '../shared/SendEmailModal';
 import SuccessModal from '../shared/SuccessModal';
 import AlertModal from '../shared/AlertModal';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
+import { createPdfDoc, addHeader, addFooter, addSectionTitle, addKeyValuePairs, addInfoBox, checkPageBreak, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
 import { TarifaPouso } from '@/entities/TarifaPouso';
 import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 
@@ -819,154 +820,105 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
             <Button onClick={async () => {
               try {
                 console.log('🔄 Gerando PDF no frontend...');
-                
-                // Gerar PDF direto no frontend
-                const { jsPDF } = await import('jspdf');
-                const doc = new jsPDF();
-                const pageWidth = doc.internal.pageSize.getWidth();
-                const pageHeight = doc.internal.pageSize.getHeight();
-                let yPos = 20;
-                const lineHeight = 7;
-                
-                // Logo
-                try {
-                  const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png';
-                  const logoResponse = await fetch(logoUrl);
-                  if (logoResponse.ok) {
-                    const logoBlob = await logoResponse.blob();
-                    const reader = new FileReader();
-                    await new Promise((resolve) => {
-                      reader.onloadend = () => {
-                        doc.addImage(reader.result, 'PNG', 14, 10, 30, 15);
-                        resolve();
-                      };
-                      reader.readAsDataURL(logoBlob);
-                    });
-                  }
-                } catch (e) {
-                  console.warn('Logo não carregado');
-                }
 
-                // Título
-                doc.setFontSize(18);
-                doc.setFont(undefined, 'bold');
-                doc.text('Cálculo de Tarifas Aeroportuárias', 105, yPos, { align: 'center' });
-                yPos += 15;
-
-                // Info dos voos ARR e DEP
-                doc.setFontSize(11);
-                doc.setFont(undefined, 'bold');
-
-                if (vooArr) {
-                  doc.text(`Voo ARR: ${vooArr.numero_voo || 'N/A'}`, 14, yPos);
-                  yPos += 6;
-                  doc.setFont(undefined, 'normal');
-                  doc.text(`Data: ${vooArr.data_operacao ? new Date(vooArr.data_operacao).toLocaleDateString('pt-AO') : 'N/A'}`, 14, yPos);
-                  yPos += 8;
-                }
-
-                doc.setFont(undefined, 'bold');
-                doc.text(`Voo DEP: ${vooDep?.numero_voo || 'N/A'}`, 14, yPos);
-                yPos += 6;
-                doc.setFont(undefined, 'normal');
-                doc.text(`Data: ${vooDep?.data_operacao ? new Date(vooDep.data_operacao).toLocaleDateString('pt-AO') : 'N/A'}`, 14, yPos);
-                yPos += 8;
-
-                doc.text(`Aeroporto: ${aeroporto?.nome ? `${aeroporto.nome} - ${aeroporto.codigo_icao}` : 'N/A'}`, 14, yPos);
-                yPos += 6;
-                doc.text(`Companhia: ${vooDep?.companhia_aerea ? `${vooDep.companhia_aerea} - ${nomeCompanhia}` : nomeCompanhia}`, 14, yPos);
-                yPos += 6;
-                doc.text(`Registo: ${vooDep?.registo_aeronave || 'N/A'}`, 14, yPos);
-                yPos += 10;
-
-                doc.line(14, yPos, 196, yPos);
-                yPos += 8;
-
-                // Seções
-                const addSection = (title, items) => {
-                  // Verificar se há espaço suficiente para a seção (título + pelo menos 3 linhas)
-                  if (yPos > pageHeight - 50) {
-                    doc.addPage();
-                    yPos = 20;
-                  }
-
-                  doc.setFontSize(12);
-                  doc.setFont(undefined, 'bold');
-                  doc.setTextColor(0, 74, 153);
-                  doc.text(title, 14, yPos);
-                  yPos += 7;
-
-                  doc.setFontSize(9);
-                  doc.setFont(undefined, 'normal');
-                  doc.setTextColor(0, 0, 0);
-
-                  items.forEach(([label, value]) => {
-                    if (yPos > pageHeight - 30) {
-                      doc.addPage();
-                      yPos = 20;
-                    }
-                    doc.text(`${label}:`, 20, yPos);
-                    doc.text(String(value), 90, yPos);
-                    yPos += 6;
-                  });
-                  yPos += 4;
-                };
-
-                addSection('Informações Gerais', infoGerais);
-                
-                if (detalhes.pouso) {
-                  addSection('Tarifa de Pouso', [
-                    ['Tipo', detalhes.pouso.tipoVoo || 'N/A'],
-                    ['MTOW', formatToneladas(detalhes.pouso.mtowTonnes)],
-                    ['Valor USD', formatUSD(tariffCalculation.tarifa_pouso_usd)],
-                    ['Valor AOA', formatCurrency(tariffCalculation.tarifa_pouso)]
-                  ]);
-                }
-
-                if (detalhes.permanencia) {
-                  addSection('Tarifa de Estacionamento', [
-                    ['Tempo', detalhes.permanencia.tempoPermanencia || '0h'],
-                    ['Valor USD', formatUSD(tariffCalculation.tarifa_permanencia_usd)],
-                    ['Valor AOA', formatCurrency(tariffCalculation.tarifa_permanencia)]
-                  ]);
-                }
-
-                if (detalhes.passageiros) {
-                  addSection('Tarifas de Passageiros', [
-                    ['Total Cobrado', `${detalhes.passageiros.totalPassageirosCobranca || 0} pax`],
-                    ['Valor USD', formatUSD(tariffCalculation.tarifa_passageiros_usd)],
-                    ['Valor AOA', formatCurrency(tariffCalculation.tarifa_passageiros)]
-                  ]);
-                }
-
-                // Total - verificar se há espaço
-                if (yPos > pageHeight - 40) {
-                  doc.addPage();
-                  yPos = 20;
-                }
-
-                yPos += 8;
-                doc.line(14, yPos, 196, yPos);
-                yPos += 10;
-                doc.setFontSize(14);
-                doc.setFont(undefined, 'bold');
-                doc.setTextColor(0, 128, 0);
-                doc.text('TOTAL:', 14, yPos);
-                doc.text(`${formatUSD(tariffCalculation.total_tarifa_usd)} = ${formatCurrency(tariffCalculation.total_tarifa)}`, 196, yPos, { align: 'right' });
-
-                // Rodapé com informações do documento - sempre na mesma página do total
-                yPos += 12;
-                doc.setFontSize(8);
-                doc.setFont(undefined, 'italic');
-                doc.setTextColor(100, 100, 100);
-                const dataGeracao = new Date().toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const doc = await createPdfDoc();
+                const logoBase64 = await loadImageAsBase64('/logo-dirops.svg').catch(() => null);
 
                 // Buscar informações do usuário
                 const { User } = await import('@/entities/User');
                 const currentUser = await User.me();
                 const nomeUsuario = currentUser?.full_name || currentUser?.email || 'Usuário';
 
-                doc.text(`Gerado em ${dataGeracao} por ${nomeUsuario}`, 14, yPos);
+                // Header
+                let y = addHeader(doc, { title: 'Cálculo de Tarifas Aeroportuárias', logoBase64 });
+
+                // Info box com dados do voo
+                const infoItems = [];
+                if (vooArr) {
+                  infoItems.push({ label: 'Voo ARR', value: `${vooArr.numero_voo || 'N/A'} — ${vooArr.data_operacao ? new Date(vooArr.data_operacao).toLocaleDateString('pt-AO') : 'N/A'}` });
+                }
+                infoItems.push({ label: 'Voo DEP', value: `${vooDep?.numero_voo || 'N/A'} — ${vooDep?.data_operacao ? new Date(vooDep.data_operacao).toLocaleDateString('pt-AO') : 'N/A'}` });
+                infoItems.push({ label: 'Aeroporto', value: aeroporto?.nome ? `${aeroporto.nome} - ${aeroporto.codigo_icao}` : 'N/A' });
+                infoItems.push({ label: 'Companhia', value: vooDep?.companhia_aerea ? `${vooDep.companhia_aerea} - ${nomeCompanhia}` : nomeCompanhia });
+                infoItems.push({ label: 'Registo', value: vooDep?.registo_aeronave || 'N/A' });
+                y = addInfoBox(doc, y, infoItems);
+
+                // Informações Gerais
+                y = checkPageBreak(doc, y, 30);
+                y = addSectionTitle(doc, y, 'Informações Gerais');
+                const infoGeraisItems = infoGerais.map(([label, value]) => ({ label, value: String(value) }));
+                y = addKeyValuePairs(doc, y, infoGeraisItems, { twoColumns: true });
+
+                // Tarifa de Pouso
+                if (detalhes.pouso) {
+                  y = checkPageBreak(doc, y, 30);
+                  y = addSectionTitle(doc, y, 'Tarifa de Pouso');
+                  y = addKeyValuePairs(doc, y, [
+                    { label: 'Tipo', value: detalhes.pouso.tipoVoo || 'N/A' },
+                    { label: 'MTOW', value: formatToneladas(detalhes.pouso.mtowTonnes) },
+                    { label: 'Valor USD', value: formatUSD(tariffCalculation.tarifa_pouso_usd) },
+                    { label: 'Valor AOA', value: formatCurrency(tariffCalculation.tarifa_pouso) },
+                  ], { twoColumns: true });
+                }
+
+                // Tarifa de Estacionamento
+                if (detalhes.permanencia) {
+                  y = checkPageBreak(doc, y, 30);
+                  y = addSectionTitle(doc, y, 'Tarifa de Estacionamento');
+                  y = addKeyValuePairs(doc, y, [
+                    { label: 'Tempo', value: detalhes.permanencia.tempoPermanencia || '0h' },
+                    { label: 'Valor USD', value: formatUSD(tariffCalculation.tarifa_permanencia_usd) },
+                    { label: 'Valor AOA', value: formatCurrency(tariffCalculation.tarifa_permanencia) },
+                  ], { twoColumns: true });
+                }
+
+                // Tarifas de Passageiros
+                if (detalhes.passageiros) {
+                  y = checkPageBreak(doc, y, 30);
+                  y = addSectionTitle(doc, y, 'Tarifas de Passageiros');
+                  y = addKeyValuePairs(doc, y, [
+                    { label: 'Total Cobrado', value: `${detalhes.passageiros.totalPassageirosCobranca || 0} pax` },
+                    { label: 'Valor USD', value: formatUSD(tariffCalculation.tarifa_passageiros_usd) },
+                    { label: 'Valor AOA', value: formatCurrency(tariffCalculation.tarifa_passageiros) },
+                  ], { twoColumns: true });
+                }
+
+                // Totais
+                y = checkPageBreak(doc, y, 40);
+                const m = PDF.margin;
+                const pageWidth = doc.internal.pageSize.getWidth();
+
+                y += 4;
+                doc.setDrawColor(...PDF.colors.separator);
+                doc.setLineWidth(0.3);
+                doc.line(m.left, y, pageWidth - m.right, y);
+                y += 8;
+
+                // Subtotal
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(PDF.font.body);
+                doc.setTextColor(...PDF.colors.muted);
+                doc.text('Subtotal USD:', m.left, y);
+                doc.text(formatUSD(tariffCalculation.total_tarifa_usd), pageWidth - m.right, y, { align: 'right' });
+                y += 6;
+
+                // Impostos (if applicable)
+                if (tariffCalculation.total_impostos_usd) {
+                  doc.setTextColor(...PDF.colors.danger);
+                  doc.text('Impostos USD:', m.left, y);
+                  doc.text(formatUSD(tariffCalculation.total_impostos_usd), pageWidth - m.right, y, { align: 'right' });
+                  y += 6;
+                }
+
+                // Total
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(14);
+                doc.setTextColor(...PDF.colors.success);
+                doc.text('TOTAL:', m.left, y);
+                doc.text(`${formatUSD(tariffCalculation.total_tarifa_usd)} = ${formatCurrency(tariffCalculation.total_tarifa)}`, pageWidth - m.right, y, { align: 'right' });
+
+                // Footer
+                addFooter(doc, { generatedBy: nomeUsuario });
 
                 // Download
                 doc.save(`detalhes_tarifas_${vooDep?.numero_voo || 'voo'}_${new Date().toISOString().split('T')[0]}.pdf`);

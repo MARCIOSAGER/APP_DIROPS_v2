@@ -570,7 +570,7 @@ export default function FormPAC({
               </div>
               <div>
                 <DialogTitle>Enviar PAC por Email</DialogTitle>
-                <p className="text-sm text-slate-500 mt-1">Sistema DIROPS-SGA</p>
+                <p className="text-sm text-slate-500 mt-1">Sistema DIROPS</p>
               </div>
             </div>
           </DialogHeader>

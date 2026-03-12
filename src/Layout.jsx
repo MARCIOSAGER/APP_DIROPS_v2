@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, UserPlus, ChevronDown, Globe, BarChart3, Mail, ArrowLeft, BookMarked, Sparkles
+  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, UserPlus, ChevronDown, Globe, BarChart3, Mail, ArrowLeft, BookMarked, Sparkles, Building2
 } from "lucide-react";
 import BottomTabs from '@/components/shared/BottomTabs';
 import { useI18n } from '@/components/lib/i18n';
@@ -18,8 +18,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { hasPageAccess, hasUserProfile, areUserProfilesLoaded, ensureUserProfilesExist } from '@/components/lib/userUtils';
+import { Empresa } from '@/entities/Empresa';
 import { RegraPermissao } from '@/entities/RegraPermissao';
 import AccessDenied from '@/components/shared/AccessDenied';
+import NetworkIndicator from '@/components/shared/NetworkIndicator';
             import GlobalLoadingModal from '@/components/shared/GlobalLoadingModal';
 import ChatbotIA from '@/components/shared/ChatbotIA';
 import SessionTimeoutModal from '@/components/shared/SessionTimeoutModal';
@@ -28,7 +30,7 @@ import { I18nProvider } from '@/components/lib/i18n';
 
       // Mapeamento padrão de permissões (fallback se não houver regras na BD)
 const PERFIL_PERMISSIONS_DEFAULT = {
-  administrador: ['Home', 'Operacoes', 'FundoManeio', 'Proforma', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte'],
+  administrador: ['Home', 'Operacoes', 'FundoManeio', 'Proforma', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte'],
   gestor_empresa: ['Credenciamento', 'GuiaUtilizador', 'Suporte'],
   operacoes: ['Home', 'Operacoes', 'FundoManeio', 'Proforma', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte'],
   infraestrutura: ['Home', 'Reclamacoes', 'Inspecoes', 'Manutencao', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
@@ -48,6 +50,7 @@ const navigationItems = [
   { title: "Auditoria Interna", url: createPageUrl("Auditoria"), icon: FileSearch, color: "text-indigo-600", pageKey: "Auditoria" },
   { title: "Reclamações", url: createPageUrl("Reclamacoes"), icon: MessageSquare, color: "text-pink-600", pageKey: "Reclamacoes" },
   { title: "Gestão de Credenciamentos", url: "https://credenciamentosga.marciosager.com/", icon: UserCheck, color: "text-teal-600", pageKey: "Credenciamento", external: true },
+  { title: "Gestão de Empresas", url: createPageUrl("GestaoEmpresas"), icon: Building2, color: "text-blue-800", pageKey: "GestaoEmpresas" },
   { title: "Gestão de Acessos", url: createPageUrl("GestaoAcessos"), icon: Users, color: "text-yellow-600", pageKey: "GestaoAcessos" },
   { title: "Gestão de Permissões", url: createPageUrl("GerirPermissoes"), icon: Shield, color: "text-red-600", pageKey: "GerirPermissoes" },
   { title: "Gestão de Notificações", url: createPageUrl("GestaoNotificacoes"), icon: Bell, color: "text-indigo-600", pageKey: "GestaoNotificacoes" },
@@ -59,6 +62,8 @@ const navigationItems = [
   { title: "Guia do Utilizador", url: createPageUrl("GuiaUtilizador"), icon: BookMarked, color: "text-blue-500", pageKey: "GuiaUtilizador" },
   { title: "Suporte", url: createPageUrl("Suporte"), icon: MessageSquare, color: "text-purple-500", pageKey: "Suporte" },
 ];
+
+const DEFAULT_LOGO = '/logo-dirops.svg';
 
 const unprotectedPages = [
   'FormularioReclamacaoPublico',
@@ -106,7 +111,7 @@ const getFirstAccessiblePage = (user, permissions) => {
 };
 
 // Root pages – no back button shown on these
-const rootPages = ['Home', 'Operacoes', 'Safety', 'FundoManeio', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria'];
+const rootPages = ['Home', 'Operacoes', 'Safety', 'FundoManeio', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria'];
 
 function LayoutContent({ children, currentPageName }) {
   const location = useLocation();
@@ -122,6 +127,30 @@ function LayoutContent({ children, currentPageName }) {
         const [hasRedirected, setHasRedirected] = React.useState(false);
         const [globalLoading, setGlobalLoading] = React.useState(false);
         const [showTour, setShowTour] = React.useState(false);
+        const [logoUrl, setLogoUrl] = React.useState(DEFAULT_LOGO);
+
+  // Carregar logo da empresa do utilizador
+  React.useEffect(() => {
+    const loadEmpresaLogo = async () => {
+      if (!authUser?.empresa_id) {
+        setLogoUrl(DEFAULT_LOGO);
+        return;
+      }
+      try {
+        const empresas = await Empresa.list();
+        const empresa = empresas.find(e => e.id === authUser.empresa_id);
+        if (empresa?.logo_url) {
+          setLogoUrl(empresa.logo_url);
+        } else {
+          setLogoUrl(DEFAULT_LOGO);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar logo da empresa:', error);
+        setLogoUrl(DEFAULT_LOGO);
+      }
+    };
+    if (!isLoadingAuth) loadEmpresaLogo();
+  }, [authUser, isLoadingAuth]);
 
   React.useEffect(() => {
     const loadPermissions = async () => {
@@ -347,7 +376,7 @@ function LayoutContent({ children, currentPageName }) {
               <Menu className="h-6 w-6" />
             </Button>
           )}
-          <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="Logo" className="h-7" />
+          <img src={logoUrl} alt="Logo" className="h-7" />
         </div>
         {!isRootPage && (
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="select-none">
@@ -360,7 +389,7 @@ function LayoutContent({ children, currentPageName }) {
         <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setSidebarOpen(false)}></div>
         <div className="relative w-72 h-full bg-white shadow-xl flex flex-col">
           <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="DIROPS-SGA Logo" className="h-8" />
+            <img src={logoUrl} alt="Logo" className="h-8" />
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}><X className="h-5 w-5" /></Button>
           </div>
 
@@ -423,7 +452,7 @@ function LayoutContent({ children, currentPageName }) {
         <div className="hidden lg:flex flex-col w-64 bg-white border-r border-slate-200 h-screen sticky top-0">
           <div className="p-4 border-b border-slate-200">
             <div className="flex items-center gap-2">
-              <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="DIROPS-SGA Logo" className="h-9" />
+              <img src={logoUrl} alt="Logo" className="h-9" />
             </div>
           </div>
           <nav className="flex-grow p-4 space-y-1 overflow-y-auto">
@@ -461,6 +490,7 @@ function LayoutContent({ children, currentPageName }) {
         <div className="flex-1">
           <header className="hidden lg:flex justify-end items-center bg-white border-b border-slate-200 px-6 h-16">
             <div className="flex items-center gap-4">
+              <NetworkIndicator />
 
               {/* Help dropdown */}
               <DropdownMenu>

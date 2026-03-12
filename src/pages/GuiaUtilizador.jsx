@@ -136,7 +136,7 @@ const sections = [
     title: "Configurações Gerais",
     badge: "Config",
     conteudo: [
-      { subtitulo: "Aeroportos", texto: "Adicione e configure os aeroportos da rede SGA com código ICAO, categoria e localização." },
+      { subtitulo: "Aeroportos", texto: "Adicione e configure os aeroportos da rede com código ICAO, categoria e localização." },
       { subtitulo: "Companhias Aéreas", texto: "Registe as companhias aéreas que operam na rede com códigos ICAO/IATA." },
       { subtitulo: "Aeronaves", texto: "Mantenha o registo de aeronaves com MTOW, capacidade e modelo. O MTOW é essencial para o cálculo correto das tarifas." },
       { subtitulo: "Tarifas", texto: "Defina as tarifas de pouso, permanência e outras taxas por categoria de aeroporto. Os valores são usados automaticamente no cálculo de faturação." },
@@ -169,7 +169,7 @@ export default function GuiaUtilizador() {
           Guia do Utilizador
         </h1>
         <p className="text-slate-500 text-sm mt-1">
-          Documentação completa do sistema DIROPS-SGA
+          Documentação completa do sistema DIROPS
         </p>
       </div>
 
@@ -263,7 +263,7 @@ export default function GuiaUtilizador() {
       </div>
 
       <div className="mt-8 text-center text-xs text-slate-400">
-        Sistema DIROPS-SGA • Versão 2.1.0
+        Sistema DIROPS • Versão 2.1.0
       </div>
     </div>
   );

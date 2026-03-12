@@ -25,12 +25,15 @@ import SuccessModal from '../components/shared/SuccessModal';
 import { Reclamacao } from '@/entities/Reclamacao';
 import { HistoricoReclamacao } from '@/entities/HistoricoReclamacao';
 import { Aeroporto } from '@/entities/Aeroporto';
+import { Empresa } from '@/entities/Empresa';
 import { UploadFile, SendEmail } from '@/integrations/Core';
+import { getEmpresaLogoByAeroporto } from '@/components/lib/userUtils';
 
 const generateProtocolo = () => `REC-${new Date().getFullYear()}${String(Date.now()).slice(-6)}`;
 
 export default function FormularioReclamacaoPublico() {
   const [aeroportos, setAeroportos] = useState([]);
+  const [empresas, setEmpresas] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState('');
@@ -54,10 +57,14 @@ export default function FormularioReclamacaoPublico() {
 
   const loadAeroportos = async () => {
     try {
-      const aeroportosData = await Aeroporto.list();
+      const [aeroportosData, empresasData] = await Promise.all([
+        Aeroporto.list(),
+        Empresa.list()
+      ]);
       // Filtrar apenas aeroportos de Angola para reclamações
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
       setAeroportos(aeroportosAngola);
+      setEmpresas(empresasData || []);
     } catch (error) {
       console.error('Erro ao carregar aeroportos:', error);
     }
@@ -123,14 +130,15 @@ export default function FormularioReclamacaoPublico() {
       try {
         const aeroportoNome = aeroportos.find(a => a.codigo_icao === formData.aeroporto_id)?.nome || formData.aeroporto_id;
         
+        const notifLogoUrl = getEmpresaLogoByAeroporto(formData.aeroporto_id, aeroportos, empresas);
         await SendEmail({
-          from_name: 'DIROPS-SGA - Formulário Público',
+          from_name: 'DIROPS - Formulário Público',
           to: 'operacoes@sga.co.ao', // Email centralizador - pode ser configurado
           subject: `Nova Reclamação Pública - ${protocolo_numero}`,
           body: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <div style="text-align: center; margin-bottom: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
-                <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="DIROPS-SGA Logo" style="height: 60px; margin-bottom: 20px;">
+                <img src="${notifLogoUrl}" alt="DIROPS Logo" style="height: 60px; margin-bottom: 20px;">
                 <h1 style="color: #dc2626; margin: 0; font-size: 24px;">Nova Reclamação Recebida</h1>
                 <p style="color: #64748b; margin: 5px 0;">Formulário Público</p>
               </div>
@@ -164,11 +172,11 @@ export default function FormularioReclamacaoPublico() {
               <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #fef3c7; border-radius: 8px;">
                 <p style="color: #92400e; margin: 0; font-weight: bold;">⚠️ Ação Necessária</p>
                 <p style="color: #92400e; margin: 5px 0;">Esta reclamação precisa ser direcionada para a área responsável.</p>
-                <p style="color: #92400e; margin: 5px 0; font-size: 14px;">Aceda ao sistema DIROPS-SGA para processar esta reclamação.</p>
+                <p style="color: #92400e; margin: 5px 0; font-size: 14px;">Aceda ao sistema DIROPS para processar esta reclamação.</p>
               </div>
 
               <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #64748b;">
-                <p><strong>Sistema DIROPS-SGA</strong><br>
+                <p><strong>Sistema DIROPS</strong><br>
                 Direcção de Operações - Serviços de Gestão Aeroportária</p>
               </div>
             </div>

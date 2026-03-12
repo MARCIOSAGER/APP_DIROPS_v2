@@ -7,7 +7,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, UserCog, CheckCircle, User, Mail, Shield, Phone, Save, Edit2, X, MessageSquare, ArrowLeft, Trash2, AlertTriangle } from 'lucide-react';
 import DeleteAccountModal from '@/components/shared/DeleteAccountModal';
 import { User as UserEntity } from '@/entities/User';
+import { Aeroporto } from '@/entities/Aeroporto';
 import { base44 } from '@/api/base44Client';
+import { getAeroportosPermitidos } from '@/components/lib/userUtils';
 import { createPageUrl } from '@/utils';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,6 +23,7 @@ export default function ConfigurarPerfil() {
   const [successMessage, setSuccessMessage] = useState('');
   const [isSendingOptIn, setIsSendingOptIn] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [aeroportosPermitidos, setAeroportosPermitidos] = useState([]);
   
   const [formData, setFormData] = useState({
     full_name: '',
@@ -36,7 +39,12 @@ export default function ConfigurarPerfil() {
     try {
       const currentUser = await UserEntity.me();
       setUser(currentUser);
-      
+
+      // Carregar aeroportos permitidos (empresa-based)
+      const allAeroportos = await Aeroporto.list();
+      const permitidos = getAeroportosPermitidos(currentUser, allAeroportos);
+      setAeroportosPermitidos(permitidos);
+
       // Preencher o formulário com os dados atuais
       // Remover prefixo "whatsapp:" para exibição
       let whatsappDisplay = currentUser.whatsapp_number || '';
@@ -439,13 +447,13 @@ export default function ConfigurarPerfil() {
               </div>
             </div>
 
-            {user.aeroportos_acesso && user.aeroportos_acesso.length > 0 && (
+            {aeroportosPermitidos.length > 0 && (
               <div className="mt-4 p-3 bg-slate-50 rounded-lg">
                 <p className="text-sm text-slate-500 mb-2">Aeroportos com Acesso</p>
                 <div className="flex flex-wrap gap-2">
-                  {user.aeroportos_acesso.map(codigo => (
-                    <span key={codigo} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                      {codigo}
+                  {aeroportosPermitidos.map(aeroporto => (
+                    <span key={aeroporto.id} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                      {aeroporto.codigo_icao} - {aeroporto.nome}
                     </span>
                   ))}
                 </div>

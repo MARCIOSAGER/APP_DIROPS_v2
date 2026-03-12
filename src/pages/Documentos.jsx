@@ -8,6 +8,7 @@ import { Documento } from '@/entities/Documento';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
 import { downloadAsCSV } from '../components/lib/export';
+import { getAeroportosPermitidos, filtrarDadosPorAcesso } from '@/components/lib/userUtils';
 
 import DocumentosList from '../components/documentos/DocumentosList';
 import FormDocumento from '../components/documentos/FormDocumento';
@@ -75,34 +76,16 @@ export default function Documentos() {
       
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
 
-      // Filtrar aeroportos pelos aeroportos de acesso do utilizador
-      let aeroportosFiltrados = aeroportosAngola;
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
-        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(user.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-          aeroportosFiltrados = aeroportosAngola.filter(a => userIcaoCodes.has(a.codigo_icao?.trim().toUpperCase()));
-        } else {
-          aeroportosFiltrados = []; // Se o utilizador não tem aeroportos de acesso configurados, não vê nenhum aeroporto
-        }
-      }
-
-      setAeroportos(aeroportosFiltrados); // Set filtered aeroportos
+      // Filtrar aeroportos pelos aeroportos de acesso do utilizador (empresa-based)
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola);
+      setAeroportos(aeroportosFiltrados);
 
       // Filtrar documentos pelos aeroportos de acesso do utilizador
       // Documentos sem aeroporto específico são "gerais" e visíveis para todos
-      let documentosFiltrados = documentosData;
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
-        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(user.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-          documentosFiltrados = documentosData.filter(doc => 
-            !doc.aeroporto || // Documentos gerais (sem aeroporto) são visíveis para todos
-            userIcaoCodes.has(doc.aeroporto?.trim().toUpperCase())
-          );
-        } else {
-          // Se não tem aeroportos de acesso, só vê documentos gerais
-          documentosFiltrados = documentosData.filter(doc => !doc.aeroporto);
-        }
-      }
+      const docsFiltradosPorAcesso = filtrarDadosPorAcesso(user, documentosData, 'aeroporto', aeroportosAngola);
+      // Incluir documentos gerais (sem aeroporto) que não entraram no filtro
+      const docsGerais = documentosData.filter(doc => !doc.aeroporto);
+      const documentosFiltrados = [...new Map([...docsFiltradosPorAcesso, ...docsGerais].map(d => [d.id, d])).values()];
 
       setDocumentos(documentosFiltrados);
       setPastas(pastasData);

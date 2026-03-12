@@ -58,11 +58,110 @@ export function areUserProfilesLoaded(user) {
 export function ensureUserProfilesExist(user) {
   // Se o utilizador for nulo ou indefinido, retornar imediatamente
   if (!user) return user;
-  
+
   // Se perfis não existe ou não é um array, inicializar como array vazio
   if (!user.perfis || !Array.isArray(user.perfis)) {
     user.perfis = [];
   }
-  
+
   return user;
+}
+
+// Verifica se o utilizador é superadmin (sem empresa_id = vê tudo)
+export function isSuperAdmin(user) {
+  if (!user) return false;
+  return !user.empresa_id && (user.role === 'admin' || hasUserProfile(user, 'administrador'));
+}
+
+// Verifica se o utilizador é admin da sua empresa
+export function isEmpresaAdmin(user) {
+  if (!user) return false;
+  return !!user.empresa_id && (user.role === 'admin' || hasUserProfile(user, 'administrador'));
+}
+
+// Filtra aeroportos com base na empresa e permissões do utilizador
+// Retorna os aeroportos que o utilizador pode ver
+export function getAeroportosPermitidos(user, todosAeroportos) {
+  if (!user || !todosAeroportos) return [];
+
+  // Superadmin (sem empresa_id + admin) → vê tudo
+  if (isSuperAdmin(user)) {
+    return todosAeroportos;
+  }
+
+  // Filtrar primeiro por empresa (se o utilizador tem empresa_id)
+  let aeroportosEmpresa = todosAeroportos;
+  if (user.empresa_id) {
+    aeroportosEmpresa = todosAeroportos.filter(a => a.empresa_id === user.empresa_id);
+  }
+
+  // Admin da empresa → vê todos os aeroportos da empresa
+  if (isEmpresaAdmin(user)) {
+    return aeroportosEmpresa;
+  }
+
+  // Utilizador normal → filtrar por aeroportos_acesso dentro da empresa
+  if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
+    const userIcaoCodes = new Set(user.aeroportos_acesso.map(code => code.trim().toUpperCase()));
+    return aeroportosEmpresa.filter(a => userIcaoCodes.has(a.codigo_icao?.trim().toUpperCase()));
+  }
+
+  return [];
+}
+
+// Filtra dados operacionais por aeroporto do utilizador
+// campo = nome do campo que contém o ICAO do aeroporto no registo (ex: 'aeroporto_operacao', 'aeroporto')
+export function filtrarDadosPorAcesso(user, dados, campo, todosAeroportos) {
+  if (!user || !dados) return [];
+
+  // Superadmin → vê tudo
+  if (isSuperAdmin(user)) {
+    return dados;
+  }
+
+  const aeroportosPermitidos = getAeroportosPermitidos(user, todosAeroportos);
+  const icaosPermitidos = new Set(aeroportosPermitidos.map(a => a.codigo_icao?.trim().toUpperCase()));
+
+  return dados.filter(item => icaosPermitidos.has(item[campo]?.trim().toUpperCase()));
+}
+
+// Filtra dados por ID do aeroporto (para entidades que usam aeroporto_id em vez de ICAO)
+export function filtrarDadosPorAeroportoId(user, dados, campo, todosAeroportos) {
+  if (!user || !dados) return [];
+
+  // Superadmin → vê tudo
+  if (isSuperAdmin(user)) {
+    return dados;
+  }
+
+  const aeroportosPermitidos = getAeroportosPermitidos(user, todosAeroportos);
+  const idsPermitidos = new Set(aeroportosPermitidos.map(a => a.id));
+
+  return dados.filter(item => idsPermitidos.has(item[campo]));
+}
+
+// Obter logo URL da empresa de um aeroporto (para relatórios/PDFs)
+// Recebe a lista de empresas e aeroportos já carregados, e o código ICAO ou ID do aeroporto
+// Retorna a URL do logo da empresa ou o fallback DIROPS
+const DEFAULT_LOGO_URL = '/logo-dirops.svg';
+
+export function getEmpresaLogoByAeroporto(aeroportoIcaoOrId, aeroportos, empresas) {
+  if (!aeroportoIcaoOrId || !aeroportos || !empresas) return DEFAULT_LOGO_URL;
+
+  const aeroporto = aeroportos.find(a =>
+    a.id === aeroportoIcaoOrId ||
+    a.codigo_icao?.toUpperCase() === String(aeroportoIcaoOrId).toUpperCase()
+  );
+
+  if (!aeroporto?.empresa_id) return DEFAULT_LOGO_URL;
+
+  const empresa = empresas.find(e => e.id === aeroporto.empresa_id);
+  return empresa?.logo_url || DEFAULT_LOGO_URL;
+}
+
+// Obter logo URL da empresa do utilizador (para relatórios genéricos)
+export function getEmpresaLogoByUser(user, empresas) {
+  if (!user?.empresa_id || !empresas) return DEFAULT_LOGO_URL;
+  const empresa = empresas.find(e => e.id === user.empresa_id);
+  return empresa?.logo_url || DEFAULT_LOGO_URL;
 }

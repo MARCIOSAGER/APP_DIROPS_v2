@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,9 @@ import SendEmailModal from '../shared/SendEmailModal';
 import InspecaoDetailModal from './InspecaoDetailModal';
 import AlertModal from '../shared/AlertModal';
 import { Inspecao } from '@/entities/Inspecao';
+import { Empresa } from '@/entities/Empresa';
+import { getEmpresaLogoByAeroporto } from '@/components/lib/userUtils';
+import { createPdfDoc, addHeader, addFooter, addInfoBox, addSectionTitle, addKeyValuePairs, checkPageBreak, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
 
 const STATUS_CONFIG = {
   em_andamento: { color: 'bg-blue-100 text-blue-800', icon: Clock },
@@ -46,6 +49,11 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [inspecaoToDelete, setInspecaoToDelete] = useState(null);
+  const [empresas, setEmpresas] = useState([]);
+
+  useEffect(() => {
+    Empresa.list().then(data => setEmpresas(data || [])).catch(() => setEmpresas([]));
+  }, []);
 
   const filteredInspecoes = useMemo(() => {
     let filtered = inspecoes.filter(inspecao => {
@@ -145,10 +153,11 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
       const aeroportoNome = aeroportos.find(a => a.id === selectedInspecao.aeroporto_id)?.nome || 'Aeroporto não encontrado';
       const tipoNome = tiposInspecao.find(t => t.id === selectedInspecao.tipo_inspecao_id)?.nome || 'Tipo não encontrado';
       
+      const emailLogoUrl = getEmpresaLogoByAeroporto(selectedInspecao.aeroporto_id, aeroportos, empresas);
       const reportBody = `
         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="SGA Logo" style="height: 60px;">
+            <img src="${emailLogoUrl}" alt="DIROPS Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">Relatório de Inspeção</h1>
           </div>
           
@@ -210,7 +219,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
           ` : ''}
           
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b;">
-            <p><strong>Sistema DIROPS-SGA</strong><br>
+            <p><strong>Sistema DIROPS</strong><br>
             Direcção de Operações - Serviços de Gestão Aeroportária</p>
           </div>
         </div>
@@ -220,7 +229,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
         to: recipient,
         subject: subject || `Relatório de Inspeção - ${tipoNome} - ${aeroportoNome}`,
         body: reportBody,
-        from_name: 'DIROPS-SGA'
+        from_name: 'DIROPS'
       });
 
       return true;
@@ -232,133 +241,85 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
 
   const handleExportPDF = async (inspecao) => {
     try {
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
-      
-      // Adicionar logo
+      const doc = await createPdfDoc();
+      const m = PDF.margin;
+
+      // Load logo
+      let logoBase64 = null;
       try {
-        const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png';
-        const logoResponse = await fetch(logoUrl);
-        if (logoResponse.ok) {
-          const logoBlob = await logoResponse.blob();
-          const arrayBuffer = await logoBlob.arrayBuffer();
-          const base64Image = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-          doc.addImage(`data:image/png;base64,${base64Image}`, 'PNG', 15, 15, 40, 20);
-        }
+        const logoUrl = getEmpresaLogoByAeroporto(inspecao.aeroporto_id, aeroportos, empresas);
+        logoBase64 = await loadImageAsBase64(logoUrl);
       } catch (logoError) {
         console.log('Logo não adicionado:', logoError);
       }
 
-      // Cabeçalho melhorado
-      doc.setFontSize(20);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(30, 64, 175); // Azul
-      doc.text('DIROPS-SGA', 70, 25);
-      
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 0);
-      doc.text('Relatório de Inspeção', 70, 35);
+      const aeroportoNome = getAeroportoNome(inspecao.aeroporto_id);
+      const dataFormatada = format(parseISO(inspecao.data_inspecao), 'dd/MM/yyyy');
 
-      // Linha decorativa
-      doc.setDrawColor(30, 64, 175);
-      doc.setLineWidth(2);
-      doc.line(15, 45, 195, 45);
-
-      // Informações da inspeção em caixa
-      doc.setFillColor(248, 250, 252); // Cinza claro
-      doc.rect(15, 55, 180, 35, 'F');
-      doc.setDrawColor(226, 232, 240);
-      doc.rect(15, 55, 180, 35);
-
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(30, 64, 175);
-      doc.text('INFORMACOES DA INSPECAO', 20, 65);
-
-      doc.setFont(undefined, 'normal');
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(10);
-      
-      const infoY = 75;
-      doc.text(`Tipo: ${getTipoNome(inspecao.tipo_inspecao_id)}`, 20, infoY);
-      doc.text(`Data: ${format(parseISO(inspecao.data_inspecao), 'dd/MM/yyyy')}`, 20, infoY + 5);
-      doc.text(`Aeroporto: ${getAeroportoNome(inspecao.aeroporto_id)}`, 20, infoY + 10);
-      doc.text(`Inspetor: ${inspecao.inspetor_responsavel}`, 110, infoY);
-      doc.text(`Status: ${inspecao.status.replace(/_/g, ' ').toUpperCase()}`, 110, infoY + 5);
-
-      // Estatísticas em cards
-      let yPos = 105;
-      
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(30, 64, 175);
-      doc.text('ESTATISTICAS', 20, yPos);
-      yPos += 10;
-
-      // Cards de estatísticas
-      const stats = [
-        { label: 'Total de Itens', value: inspecao.total_itens || 0, color: [100, 116, 139] },
-        { label: 'Conformes', value: inspecao.itens_conformes || 0, color: [34, 197, 94] },
-        { label: 'Não Conformes', value: inspecao.itens_nao_conformes || 0, color: [239, 68, 68] },
-        { label: 'Conformidade', value: `${getConformityPercentage(inspecao)}%`, color: [59, 130, 246] }
-      ];
-
-      stats.forEach((stat, index) => {
-        const x = 20 + (index * 43);
-        
-        // Card background
-        doc.setFillColor(248, 250, 252);
-        doc.rect(x, yPos, 40, 25, 'F');
-        doc.setDrawColor(226, 232, 240);
-        doc.rect(x, yPos, 40, 25);
-        
-        // Valor
-        doc.setFontSize(14);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(...stat.color);
-        doc.text(String(stat.value), x + 20, yPos + 10, { align: 'center' });
-        
-        // Label
-        doc.setFontSize(8);
-        doc.setTextColor(100, 116, 139);
-        doc.text(stat.label, x + 20, yPos + 18, { align: 'center' });
+      // Header
+      let yPos = addHeader(doc, {
+        title: 'Relatório de Inspeção',
+        logoBase64,
+        date: dataFormatada,
+        meta: [
+          `Aeroporto: ${aeroportoNome}`,
+          `Inspetor: ${inspecao.inspetor_responsavel}`,
+        ],
       });
 
-      yPos += 35;
+      // Informações da Inspeção
+      yPos = addSectionTitle(doc, yPos, 'INFORMAÇÕES DA INSPEÇÃO');
+      yPos = addInfoBox(doc, yPos, [
+        { label: 'Tipo', value: getTipoNome(inspecao.tipo_inspecao_id) },
+        { label: 'Data', value: dataFormatada },
+        { label: 'Aeroporto', value: aeroportoNome },
+        { label: 'Inspetor', value: inspecao.inspetor_responsavel },
+        { label: 'Status', value: inspecao.status.replace(/_/g, ' ').toUpperCase() },
+      ]);
+
+      // Estatísticas
+      yPos = checkPageBreak(doc, yPos, 30);
+      yPos = addSectionTitle(doc, yPos, 'ESTATÍSTICAS');
+      yPos = addKeyValuePairs(doc, yPos, [
+        { label: 'Total de Itens', value: String(inspecao.total_itens || 0) },
+        { label: 'Conformes', value: String(inspecao.itens_conformes || 0) },
+        { label: 'Não Conformes', value: String(inspecao.itens_nao_conformes || 0) },
+        { label: 'Conformidade', value: `${getConformityPercentage(inspecao)}%` },
+      ], { twoColumns: true });
 
       // Resumo Geral
       if (inspecao.resumo_geral) {
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(30, 64, 175);
-        doc.text('RESUMO GERAL', 20, yPos);
-        yPos += 10;
+        yPos = checkPageBreak(doc, yPos, 30);
+        yPos = addSectionTitle(doc, yPos, 'RESUMO GERAL');
 
-        doc.setFillColor(248, 250, 252);
-        doc.rect(15, yPos, 180, 20, 'F');
-        doc.setDrawColor(226, 232, 240);
-        doc.rect(15, yPos, 180, 20);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(PDF.font.body);
+        doc.setTextColor(...PDF.colors.dark);
+        const resumoLines = doc.splitTextToSize(inspecao.resumo_geral, doc.internal.pageSize.getWidth() - m.left - m.right - 8);
+        const resumoBoxHeight = resumoLines.length * 4 + 8;
 
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        doc.setTextColor(0, 0, 0);
-        const resumoLines = doc.splitTextToSize(inspecao.resumo_geral, 170);
-        doc.text(resumoLines, 20, yPos + 8);
-        yPos += 30;
+        doc.setFillColor(...PDF.colors.bgStripe);
+        doc.setDrawColor(...PDF.colors.separator);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(m.left, yPos, doc.internal.pageSize.getWidth() - m.left - m.right, resumoBoxHeight, 2, 2, 'FD');
+        doc.text(resumoLines, m.left + 4, yPos + 6);
+        yPos += resumoBoxHeight + 4;
       }
 
       // Alerta se requer ação imediata
       if (inspecao.requer_acao_imediata) {
-        doc.setFillColor(254, 242, 242);
-        doc.rect(15, yPos, 180, 15, 'F');
-        doc.setDrawColor(239, 68, 68);
-        doc.setLineWidth(2);
-        doc.rect(15, yPos, 180, 15);
+        yPos = checkPageBreak(doc, yPos, 20);
 
-        doc.setFontSize(11);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(220, 38, 38);
-        doc.text('ATENCAO: REQUER ACAO CORRETIVA IMEDIATA', 20, yPos + 10);
+        const alertW = doc.internal.pageSize.getWidth() - m.left - m.right;
+        doc.setFillColor(254, 242, 242);
+        doc.setDrawColor(...PDF.colors.danger);
+        doc.setLineWidth(1.5);
+        doc.roundedRect(m.left, yPos, alertW, 15, 2, 2, 'FD');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(PDF.font.subtitle);
+        doc.setTextColor(...PDF.colors.danger);
+        doc.text('ATENÇÃO: REQUER AÇÃO CORRETIVA IMEDIATA', m.left + 4, yPos + 10);
         yPos += 25;
       }
 
@@ -369,41 +330,29 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
         const respostasComFotos = respostas.filter(r => r.fotos && r.fotos.length > 0);
 
         if (respostasComFotos.length > 0) {
-          // Nova página para fotos se necessário
-          if (yPos > 200) {
-            doc.addPage();
-            yPos = 30;
-          }
-
-          doc.setFontSize(12);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(30, 64, 175);
-          doc.text('EVIDENCIAS FOTOGRAFICAS', 20, yPos);
-          yPos += 15;
+          yPos = checkPageBreak(doc, yPos, 60);
+          yPos = addSectionTitle(doc, yPos, 'EVIDÊNCIAS FOTOGRÁFICAS');
 
           for (const resposta of respostasComFotos) {
-            if (yPos > 250) {
-              doc.addPage();
-              yPos = 30;
-            }
+            yPos = checkPageBreak(doc, yPos, 55);
 
             // Título da resposta
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(0, 0, 0);
-            doc.text(`Item da Inspeção`, 20, yPos);
+            doc.setFontSize(PDF.font.body);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...PDF.colors.dark);
+            doc.text('Item da Inspeção', m.left, yPos);
             yPos += 7;
 
             if (resposta.observacoes) {
-              doc.setFont(undefined, 'normal');
-              doc.setFontSize(9);
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(PDF.font.body);
               const obsLines = doc.splitTextToSize(resposta.observacoes, 170);
-              doc.text(obsLines, 20, yPos);
+              doc.text(obsLines, m.left, yPos);
               yPos += (obsLines.length * 4) + 5;
             }
 
             // Adicionar fotos
-            let xPos = 20;
+            let xPos = m.left;
             let photosInRow = 0;
             const maxPhotosPerRow = 3;
             const photoWidth = 50;
@@ -413,33 +362,20 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
               try {
                 if (photosInRow >= maxPhotosPerRow) {
                   yPos += photoHeight + 5;
-                  xPos = 20;
+                  xPos = m.left;
                   photosInRow = 0;
                 }
 
-                if (yPos + photoHeight > 280) {
-                  doc.addPage();
-                  yPos = 30;
-                  xPos = 20;
-                  photosInRow = 0;
-                }
+                yPos = checkPageBreak(doc, yPos, photoHeight + 5);
+                if (photosInRow === 0) xPos = m.left;
 
-                const imgResponse = await fetch(fotoUrl);
-                if (imgResponse.ok) {
-                  const imgBlob = await imgResponse.blob();
-                  const arrayBuffer = await imgBlob.arrayBuffer();
-                  const base64Img = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-                  
-                  // Determinar formato da imagem
-                  const imgFormat = fotoUrl.toLowerCase().includes('.png') ? 'PNG' : 'JPEG';
-                  
-                  doc.addImage(`data:image/${imgFormat.toLowerCase()};base64,${base64Img}`, imgFormat, xPos, yPos, photoWidth, photoHeight);
-                  
-                  // Borda da foto
-                  doc.setDrawColor(200, 200, 200);
-                  doc.setLineWidth(0.5);
-                  doc.rect(xPos, yPos, photoWidth, photoHeight);
-                }
+                const imgBase64 = await loadImageAsBase64(fotoUrl);
+                doc.addImage(imgBase64, 'PNG', xPos, yPos, photoWidth, photoHeight);
+
+                // Borda da foto
+                doc.setDrawColor(...PDF.colors.separator);
+                doc.setLineWidth(0.5);
+                doc.rect(xPos, yPos, photoWidth, photoHeight);
 
                 xPos += photoWidth + 5;
                 photosInRow++;
@@ -449,9 +385,9 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
                 doc.setFillColor(240, 240, 240);
                 doc.rect(xPos, yPos, photoWidth, photoHeight, 'F');
                 doc.setTextColor(150, 150, 150);
-                doc.setFontSize(8);
-                doc.text('Imagem\nnão carregada', xPos + photoWidth/2, yPos + photoHeight/2, { align: 'center' });
-                
+                doc.setFontSize(PDF.font.caption);
+                doc.text('Imagem\nnão carregada', xPos + photoWidth / 2, yPos + photoHeight / 2, { align: 'center' });
+
                 xPos += photoWidth + 5;
                 photosInRow++;
               }
@@ -464,15 +400,8 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
         console.log('Erro ao carregar evidências:', error);
       }
 
-      // Rodapé
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(100, 116, 139);
-        doc.text(`Página ${i} de ${pageCount}`, 15, 290);
-        doc.text(`Gerado em ${new Date().toLocaleString('pt-AO')} | DIROPS-SGA`, 195, 290, { align: 'right' });
-      }
+      // Footer
+      addFooter(doc);
 
       doc.save(`inspecao_${getTipoNome(inspecao.tipo_inspecao_id).replace(/\s+/g, '_')}_${format(parseISO(inspecao.data_inspecao), 'yyyy-MM-dd')}.pdf`);
     } catch (error) {

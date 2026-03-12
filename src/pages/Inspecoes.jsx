@@ -9,6 +9,7 @@ import { Inspecao } from '@/entities/Inspecao';
 import { TipoInspecao } from '@/entities/TipoInspecao';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User'; // Added User import
+import { getAeroportosPermitidos, filtrarDadosPorAeroportoId } from '@/components/lib/userUtils';
 
 import InspecoesList from '../components/inspecoes/InspecoesList';
 import FormInspecao from '../components/inspecoes/FormInspecao';
@@ -40,34 +41,13 @@ export default function Inspecoes() {
         Aeroporto.list()
       ]);
       
-      // Filtrar apenas aeroportos de Angola
-      const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-
-      // Filtrar aeroportos pelos aeroportos de acesso do utilizador
-      let aeroportosFiltrados = aeroportosAngola;
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
-        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(user.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-          aeroportosFiltrados = aeroportosAngola.filter(a => userIcaoCodes.has(a.codigo_icao?.trim().toUpperCase()));
-        } else {
-          aeroportosFiltrados = [];
-        }
-      }
-
+      // Filtrar aeroportos pela empresa e acesso do utilizador
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData);
       setAeroportos(aeroportosFiltrados);
       setTiposInspecao(tiposData);
 
-      // Filtrar inspeções pelos aeroportos de acesso do utilizador
-      let inspecoesFiltradas = inspecoesData;
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
-        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-          const aeroportosIds = aeroportosFiltrados.map(a => a.id);
-          inspecoesFiltradas = inspecoesData.filter(i => aeroportosIds.includes(i.aeroporto_id));
-        } else {
-          inspecoesFiltradas = [];
-        }
-      }
-
+      // Filtrar inspeções pelos aeroportos permitidos do utilizador
+      const inspecoesFiltradas = filtrarDadosPorAeroportoId(user, inspecoesData, 'aeroporto_id', aeroportosData);
       setInspecoes(inspecoesFiltradas);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);

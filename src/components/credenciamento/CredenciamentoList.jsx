@@ -300,11 +300,11 @@ export default function CredenciamentoList({
         if (empresa) {
           await SendEmail({
             to: empresa.responsavel_email,
-            subject: `DIROPS-SGA - Credenciamento Aprovado - ${credenciamento.protocolo_numero}`,
+            subject: `DIROPS - Credenciamento Aprovado - ${credenciamento.protocolo_numero}`,
             body: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="text-align: center; margin-bottom: 30px;">
-                  <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="SGA Logo" style="height: 60px;">
+                  <img src="/logo-dirops.svg" alt="DIROPS Logo" style="height: 60px;">
                   <h1 style="color: #16a34a; margin-top: 20px;">✅ Credenciamento Aprovado!</h1>
                 </div>
 
@@ -343,11 +343,11 @@ export default function CredenciamentoList({
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
                   <p><strong>Importante:</strong> Mencione sempre o número de protocolo <strong>${credenciamento.protocolo_numero}</strong> durante o atendimento.</p>
                   <p><strong>Melhores Cumprimentos,</strong><br>
-                  Equipa de Credenciamento DIROPS-SGA</p>
+                  Equipa de Credenciamento DIROPS</p>
                 </div>
               </div>
             `,
-            from_name: 'DIROPS-SGA Credenciamento'
+            from_name: 'DIROPS Credenciamento'
           });
         }
       } catch (emailError) {
@@ -440,7 +440,7 @@ export default function CredenciamentoList({
       const reportBody = `
         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="SGA Logo" style="height: 60px;">
+            <img src="/logo-dirops.svg" alt="DIROPS Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">Relatório de Credenciamentos Selecionados</h1>
             <p style="color: #64748b;">Data: ${new Date().toLocaleDateString('pt-AO')}</p>
           </div>
@@ -490,7 +490,7 @@ export default function CredenciamentoList({
           </table>
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b;">
-            <p><strong>Sistema DIROPS-SGA</strong><br>
+            <p><strong>Sistema DIROPS</strong><br>
             Gestão de Credenciamentos Aeroportuárias</p>
           </div>
         </div>
@@ -500,7 +500,7 @@ export default function CredenciamentoList({
         to: recipient,
         subject: subject || `Relatório de Credenciamentos Selecionados - ${selectedData.length} itens`,
         body: reportBody,
-        from_name: 'DIROPS-SGA'
+        from_name: 'DIROPS'
       });
 
       setSelectedCredenciamentos([]);

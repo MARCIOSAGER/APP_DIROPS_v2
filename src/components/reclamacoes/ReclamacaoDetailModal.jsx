@@ -210,7 +210,7 @@ export default function ReclamacaoDetailModal({
         body: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="DIROPS-SGA" style="height: 60px;">
+              <img src="/logo-dirops.svg" alt="DIROPS" style="height: 60px;">
               <h1 style="color: #1e40af; margin-top: 20px;">Notificação de Reclamação</h1>
             </div>
             
@@ -223,12 +223,12 @@ export default function ReclamacaoDetailModal({
             </div>
             
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-              <p><strong>Sistema DIROPS-SGA</strong><br>
+              <p><strong>Sistema DIROPS</strong><br>
               Direcção de Operações - Serviços de Gestão Aeroportuária</p>
             </div>
           </div>
         `,
-        from_name: 'DIROPS-SGA'
+        from_name: 'DIROPS'
       });
     } catch (error) {
       console.error('Erro ao enviar notificação:', error);

@@ -139,7 +139,7 @@ export async function notifyAdminsCreation(entityType, entityData, createdBy, ad
     const body = `
 <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
   <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">DIROPS-SGA</h1>
+    <h1 style="color: white; margin: 0; font-size: 24px;">DIROPS</h1>
     <p style="color: #e0e7ff; margin: 10px 0 0 0;">Notificação de Criação</p>
   </div>
   
@@ -166,7 +166,7 @@ export async function notifyAdminsCreation(entityType, entityData, createdBy, ad
     
     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
       <p style="color: #64748b; font-size: 12px; margin: 0;">
-        Esta é uma notificação automática do sistema DIROPS-SGA.<br>
+        Esta é uma notificação automática do sistema DIROPS.<br>
         Por favor, não responda a este e-mail.
       </p>
     </div>
@@ -265,7 +265,7 @@ export async function notifyAdminsUpdate(entityType, entityData, updatedBy, addi
     const body = `
 <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
   <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">DIROPS-SGA</h1>
+    <h1 style="color: white; margin: 0; font-size: 24px;">DIROPS</h1>
     <p style="color: #fef3c7; margin: 10px 0 0 0;">Notificação de Atualização</p>
   </div>
   
@@ -292,7 +292,7 @@ export async function notifyAdminsUpdate(entityType, entityData, updatedBy, addi
     
     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
       <p style="color: #64748b; font-size: 12px; margin: 0;">
-        Esta é uma notificação automática do sistema DIROPS-SGA.<br>
+        Esta é uma notificação automática do sistema DIROPS.<br>
         Por favor, não responda a este e-mail.
       </p>
     </div>

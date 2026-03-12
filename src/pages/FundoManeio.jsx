@@ -37,6 +37,9 @@ import AlertModal from '../components/shared/AlertModal';
 import SendEmailModal from '../components/shared/SendEmailModal';
 import { registarExclusao, registarExportacao } from '../components/lib/auditoria';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
+import { getAeroportosPermitidos, filtrarDadosPorAeroportoId, getEmpresaLogoByUser } from '@/components/lib/userUtils';
+import { createPdfDoc, addHeader, addFooter, addTable, loadImageAsBase64 } from '@/lib/pdfTemplate';
+import { Empresa } from '@/entities/Empresa';
 
 
 // Placeholder for RecentMovimentosFinanceiros component
@@ -75,6 +78,7 @@ export default function FundoManeio() {
   const [voos, setVoos] = useState([]);
   const [voosLigados, setVoosLigados] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
+  const [empresas, setEmpresas] = useState([]);
   const [todosAeroportos, setTodosAeroportos] = useState([]); // To hold all airports before user filtering
   const [aeronaves, setAeronaves] = useState([]); // Assuming this might be needed by tariff calculations, but not fetched yet
   const [isLoading, setIsLoading] = useState(true);
@@ -151,7 +155,8 @@ export default function FundoManeio() {
         voosData,
         voosLigadosData,
         aeronavesData,
-        configsData
+        configsData,
+        empresasData
       ] = await Promise.all([
         MovimentoFinanceiro.list('-data'),
         Aeroporto.list(),
@@ -179,33 +184,21 @@ export default function FundoManeio() {
                 console.warn('Erro ao carregar configuração:', err);
                 return { taxa_cambio_usd_aoa: 850 };
             }
-        })()
+        })(),
+        Empresa.list()
       ]);
 
       setConfiguracao(configsData);
       setTodosAeroportos(aeroportosData);
       setAeronaves(aeronavesData);
+      setEmpresas(empresasData || []);
 
       // 1. Filter all airports to only those in Angola
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
 
-      // 2. Determine which airports the current user has access to (by their actual ID)
-      let userAccessibleAeroportos = aeroportosAngola; // Default: all Angola airports
-      let userAccessibleAirportIds = aeroportosAngola.map(a => a.id); // Default: all Angola airport IDs
-
-      // If not an admin or a user with 'administrador' profile, apply airport access filter
-      if (user && user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
-        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-          // Filter `aeroportosAngola` by `codigo_icao` from `user.aeroportos_acesso`
-          const userIcaoCodes = new Set(user.aeroportos_acesso.map(code => code.trim().toUpperCase()));
-          userAccessibleAeroportos = aeroportosAngola.filter(a => userIcaoCodes.has(a.codigo_icao?.trim().toUpperCase()));
-          userAccessibleAirportIds = userAccessibleAeroportos.map(a => a.id);
-        } else {
-          // If not admin/administrador and no aeroportos_acesso defined, they see no airports/movements
-          userAccessibleAeroportos = [];
-          userAccessibleAirportIds = [];
-        }
-      }
+      // 2. Determine which airports the current user has access to (empresa-based)
+      const userAccessibleAeroportos = getAeroportosPermitidos(user, aeroportosAngola);
+      const userAccessibleAirportIds = userAccessibleAeroportos.map(a => a.id);
       setAeroportos(userAccessibleAeroportos); // Set the filtered airports for the component
 
       // 3. MUDANÇA: Guardar TODOS os voos e voos ligados para uso interno nos cálculos
@@ -683,83 +676,55 @@ export default function FundoManeio() {
     try {
       await registarExportacao('MovimentoFinanceiro', 'PDF', filtros, 'financeiro');
 
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
-
+      const doc = await createPdfDoc({ orientation: 'portrait' });
       const { totalReceitas, totalDespesas, saldo } = kpiData;
+      const fmt = (v) => new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(v);
 
+      // Load logo
+      let logoBase64 = null;
       try {
-        const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png';
-        const logoResponse = await fetch(logoUrl);
-        if (logoResponse.ok) {
-          const logoBlob = await logoResponse.arrayBuffer();
-          const base64Image = btoa(String.fromCharCode(...new Uint8Array(logoBlob)));
-          doc.addImage(`data:image/png;base64,${base64Image}`, 'PNG', 160, 10, 30, 15);
-        }
+        logoBase64 = await loadImageAsBase64(getEmpresaLogoByUser(currentUser, empresas));
       } catch (logoError) {
         console.log('Logo não adicionado:', logoError);
       }
 
-      doc.setFontSize(18);
-      doc.setFont(undefined, 'bold');
-      doc.text('DIROPS-SGA', 20, 20);
-      doc.setFontSize(16);
-      doc.text('Relatório Fundo de Maneio', 20, 30);
+      // Header
+      const headerOpts = {
+        title: 'Relatório Fundo de Maneio',
+        logoBase64,
+        date: new Date().toLocaleDateString('pt-AO'),
+        meta: [
+          `Total de Receitas: ${fmt(totalReceitas)}`,
+          `Total de Despesas: ${fmt(totalDespesas)}`,
+          `Saldo: ${fmt(saldo)}`,
+        ],
+      };
+      let y = addHeader(doc, headerOpts);
 
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'normal');
-      doc.text(`Data de Geração: ${new Date().toLocaleDateString('pt-AO')}`, 20, 40);
-      doc.text(`Total de Receitas: ${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(totalReceitas)}`, 20, 47);
-      doc.text(`Total de Despesas: ${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(totalDespesas)}`, 20, 54);
-      doc.text(`Saldo: ${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(saldo)}`, 20, 61);
+      // Table
+      const columns = [
+        { label: 'Data', width: 30 },
+        { label: 'Tipo', width: 30 },
+        { label: 'Categoria', width: 45 },
+        { label: 'Aeroporto', width: 40 },
+        { label: 'Valor (Kz)', width: 35, align: 'right' },
+      ];
 
-      let yPosition = 75;
-
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text('Data', 20, yPosition);
-      doc.text('Tipo', 45, yPosition);
-      doc.text('Categoria', 70, yPosition);
-      doc.text('Aeroporto', 110, yPosition);
-      doc.text('Valor (Kz)', 150, yPosition);
-      doc.setFont(undefined, 'normal');
-      yPosition += 5;
-
-      doc.line(20, yPosition, 190, yPosition);
-      yPosition += 5;
-
-      movimentosParaAcao.forEach((movimento) => {
-        if (yPosition > 270) {
-          doc.addPage();
-          yPosition = 30;
-          try {
-            const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png';
-            fetch(logoUrl).then(res => res.ok ? res.blob() : null).then(blob => {
-              if (blob) {
-                const reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend = function() {
-                    const base64data = reader.result;
-                    doc.addImage(base64data, 'PNG', 160, 10, 30, 15);
-                }
-              }
-            });
-          } catch (logoError) {
-            console.log('Logo não adicionado na nova página:', logoError);
-          }
-        }
-
-        const aeroportoNome = aeroportos.find(a => a.id === movimento.aeroporto_id)?.nome || movimento.aeroporto_id; // Changed from codigo_icao to id
-
-        doc.setFontSize(9);
-        doc.text(`${new Date(movimento.data).toLocaleDateString('pt-AO')}`, 20, yPosition);
-        doc.text(`${movimento.tipo.toUpperCase()}`, 45, yPosition);
-        doc.text(`${movimento.categoria}`, 70, yPosition);
-        doc.text(`${aeroportoNome}`, 110, yPosition);
-        doc.text(`${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(movimento.valor_kz)}`, 150, yPosition);
-
-        yPosition += 7;
+      const rows = movimentosParaAcao.map((movimento) => {
+        const aeroportoNome = aeroportos.find(a => a.id === movimento.aeroporto_id)?.nome || movimento.aeroporto_id;
+        return [
+          new Date(movimento.data).toLocaleDateString('pt-AO'),
+          movimento.tipo.toUpperCase(),
+          movimento.categoria,
+          aeroportoNome,
+          fmt(movimento.valor_kz),
+        ];
       });
+
+      addTable(doc, y, { columns, rows, headerOpts });
+
+      // Footer
+      addFooter(doc, { generatedBy: currentUser?.full_name || currentUser?.email });
 
       doc.save(`relatorio_fundo_maneio_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
@@ -881,7 +846,7 @@ export default function FundoManeio() {
 
       // Rodapé
       emailBody += `<div style="background: #1f2937; color: white; padding: 20px; border-radius: 0 0 10px 10px; text-align: center;">`;
-      emailBody += `<p style="margin: 0; font-size: 14px; opacity: 0.8}>🏢 Relatório gerado pelo Sistema DIROPS-SGA</p>`;
+      emailBody += `<p style="margin: 0; font-size: 14px; opacity: 0.8}>🏢 Relatório gerado pelo Sistema DIROPS</p>`;
       emailBody += `<p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.6;">Este é um email automático, não responda.</p>`;
       emailBody += `</div>`;
 
@@ -891,7 +856,7 @@ export default function FundoManeio() {
         to: to,
         subject: subject || `📊 Relatório Fundo de Maneio - ${new Date().toLocaleDateString('pt-AO')}`,
         body: emailBody,
-        from_name: 'DIROPS-SGA'
+        from_name: 'DIROPS'
       });
 
       return true;

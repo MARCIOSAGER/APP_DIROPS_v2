@@ -207,11 +207,11 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
       const emailPromises = admins.map(admin => 
         sendEmailDirect({
           to: admin.email,
-          subject: `[DIROPS-SGA] ${voosNaLixeira.length} voos na lixeira`,
+          subject: `[DIROPS] ${voosNaLixeira.length} voos na lixeira`,
           body: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <div style="background-color: #004A99; color: white; padding: 20px; text-align: center;">
-                <h1>DIROPS-SGA - Notificação de Lixeira</h1>
+                <h1>DIROPS - Notificação de Lixeira</h1>
               </div>
               
               <div style="padding: 20px; background-color: #f9f9f9;">
@@ -240,13 +240,13 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
                 </div>
                 
                 <p style="font-size: 12px; color: #666; margin-top: 30px;">
-                  Esta é uma notificação automática do sistema DIROPS-SGA.<br>
+                  Esta é uma notificação automática do sistema DIROPS.<br>
                   Para gerir a lixeira, aceda à página de Operações e clique no botão "Lixeira".
                 </p>
               </div>
             </div>
           `,
-          from_name: 'DIROPS-SGA'
+          from_name: 'DIROPS'
         })
       );
 

@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient';
-import jsPDF from 'jspdf';
+import { createPdfDoc, addHeader, addFooter, addTable, addKeyValuePairs, PDF } from '@/lib/pdfTemplate';
 
 export default async function gerarProformaPdfSimples({ proforma_id }) {
   if (!proforma_id) throw new Error('proforma_id e obrigatorio');
@@ -28,69 +28,51 @@ export default async function gerarProformaPdfSimples({ proforma_id }) {
   }
 
   // Generate PDF
-  const doc = new jsPDF();
-  const margin = 20;
-  let y = margin;
+  const doc = await createPdfDoc();
 
-  // Header
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.text('PROFORMA', 105, y, { align: 'center' });
-  y += 10;
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`N: ${proforma.numero_proforma || proforma.id?.slice(0, 8)}`, 105, y, { align: 'center' });
-  y += 15;
-
-  // Info section
-  doc.setFontSize(11);
-  const addLine = (label, value) => {
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${label}:`, margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(String(value || '-'), margin + 60, y);
-    y += 7;
+  const headerOpts = {
+    title: 'Proforma',
+    subtitle: `N.º ${proforma.numero_proforma || proforma.id?.slice(0, 8)}`,
+    date: proforma.data_emissao || proforma.created_date?.split('T')[0] || '',
   };
 
-  addLine('Data', proforma.data_emissao || proforma.created_date?.split('T')[0] || '-');
-  addLine('Aeroporto', aeroporto?.nome || aeroporto?.codigo_icao || '-');
-  addLine('Companhia', companhia?.nome || proforma.companhia_nome || '-');
+  let y = addHeader(doc, headerOpts);
+
+  // Info section
+  const infoItems = [
+    { label: 'Aeroporto', value: aeroporto?.nome || aeroporto?.codigo_icao || '-' },
+    { label: 'Companhia', value: companhia?.nome || proforma.companhia_nome || '-' },
+  ];
   if (voo) {
-    addLine('Voo', voo.numero_voo || '-');
-    addLine('Matricula', voo.matricula_aeronave || '-');
+    infoItems.push({ label: 'Voo', value: voo.numero_voo || '-' });
+    infoItems.push({ label: 'Matrícula', value: voo.matricula_aeronave || '-' });
   }
-  addLine('Status', proforma.status || '-');
+  infoItems.push({ label: 'Status', value: proforma.status || '-' });
 
-  y += 5;
-  doc.setDrawColor(200);
-  doc.line(margin, y, 190, y);
-  y += 10;
+  y = addKeyValuePairs(doc, y, infoItems, { twoColumns: true });
+  y += 4;
 
-  // Values
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Valores', margin, y);
-  y += 8;
+  // Values table
+  if (proforma.itens && Array.isArray(proforma.itens) && proforma.itens.length > 0) {
+    const columns = [
+      { label: 'Descrição', width: 120 },
+      { label: 'Valor (AOA)', width: 60, align: 'right' },
+    ];
+    const rows = proforma.itens.map(item => [
+      item.descricao || item.tipo || '-',
+      (item.valor || 0).toLocaleString('pt-AO'),
+    ]);
+    // Add total row
+    rows.push([
+      'TOTAL',
+      `${(proforma.valor_total || 0).toLocaleString('pt-AO')} AOA`,
+    ]);
 
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-
-  if (proforma.itens && Array.isArray(proforma.itens)) {
-    proforma.itens.forEach((item) => {
-      doc.text(`${item.descricao || item.tipo || '-'}`, margin, y);
-      doc.text(`${(item.valor || 0).toLocaleString('pt-AO')} AOA`, 160, y, { align: 'right' });
-      y += 6;
-    });
+    y = addTable(doc, y, { columns, rows, headerOpts });
   }
-
-  addLine('Valor Total', `${(proforma.valor_total || 0).toLocaleString('pt-AO')} AOA`);
 
   // Footer
-  y = 270;
-  doc.setFontSize(8);
-  doc.setTextColor(150);
-  doc.text('Documento gerado pelo DIROPS-SGA', 105, y, { align: 'center' });
+  addFooter(doc);
 
   // Return as array buffer
   const pdfArrayBuffer = doc.output('arraybuffer');

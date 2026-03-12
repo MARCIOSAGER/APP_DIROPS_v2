@@ -29,8 +29,10 @@ import DashboardKPIs from '../components/kpis/DashboardKPIs';
 import { downloadAsExcel } from '@/components/lib/export';
 import AlertModal from '@/components/shared/AlertModal';
 import SuccessModal from '@/components/shared/SuccessModal';
+import { getAeroportosPermitidos, filtrarDadosPorAcesso } from '@/components/lib/userUtils';
 import SendEmailModal from '@/components/shared/SendEmailModal';
 import { registarExclusao, registarExportacao } from '@/components/lib/auditoria';
+import { createPdfDoc, addHeader, addFooter, addTable, addInfoBox, addSectionTitle, checkPageBreak, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 
@@ -109,32 +111,14 @@ export default function KPIsOperacionais() {
 
       const aeroportosAngola = aeroportosData.filter((a) => a.pais === 'AO');
 
-      // Filtrar aeroportos pelos aeroportos de acesso do utilizador
-      let aeroportosFiltrados = aeroportosAngola;
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
-        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-          const userIcaoCodes = new Set(user.aeroportos_acesso.map((code) => code.trim().toUpperCase()));
-          aeroportosFiltrados = aeroportosAngola.filter((a) => userIcaoCodes.has(a.codigo_icao?.trim().toUpperCase()));
-        } else {
-          aeroportosFiltrados = [];
-        }
-      }
-
+      // Filtrar aeroportos pelos aeroportos de acesso do utilizador (empresa-based)
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola);
       setAeroportos(aeroportosFiltrados);
       setTiposKPI(tiposData);
       setCompanhias(companhiasData);
 
-      // Filtrar medições pelos aeroportos de acesso do utilizador
-      let medicoesFiltradas = medicoesData;
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
-        if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
-          const aeroportosPermitidosIcao = new Set(user.aeroportos_acesso.map((code) => code.trim().toUpperCase()));
-          medicoesFiltradas = medicoesData.filter((m) => aeroportosPermitidosIcao.has(m.aeroporto_id?.trim().toUpperCase()));
-        } else {
-          medicoesFiltradas = [];
-        }
-      }
-
+      // Filtrar medições pelos aeroportos de acesso do utilizador (empresa-based)
+      const medicoesFiltradas = filtrarDadosPorAcesso(user, medicoesData, 'aeroporto_id', aeroportosAngola);
       setMedicoesKPI(medicoesFiltradas); // Set the filtered measurements
     } catch (error) {
       console.error("Erro ao carregar dados dos KPIs:", error);
@@ -314,121 +298,60 @@ export default function KPIsOperacionais() {
   const handleExportPDF = async (medicoesFiltradas = null, filtrosDashboard = null) => {
     setIsExportingPDF(true);
     try {
-      const { jsPDF } = await import('jspdf');
-      
       // Usar medições filtradas se fornecidas, caso contrário usar as da página
       const medicoesParaPDF = medicoesFiltradas || filteredAndSortedMedicoes;
       const filtrosParaPDF = filtrosDashboard || filtros;
-      
+
+      const doc = await createPdfDoc({ orientation: 'portrait' });
+
       // Registar exportação após importação bem-sucedida
       await registarExportacao('MedicaoKPI', 'PDF', filtrosParaPDF, 'kpis');
 
-      const doc = new jsPDF('p', 'mm', 'a4');
-      const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png';
+      // Carregar logo
+      let logoBase64 = null;
+      try {
+        logoBase64 = await loadImageAsBase64('/logo-dirops.svg');
+      } catch (e) {
+        console.warn('Erro ao carregar logo, continuando sem logo:', e);
+      }
 
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let yPosition = 20;
-
-      // Função para adicionar cabeçalho
-      const addHeader = () => {
-        try {
-          doc.addImage(logoUrl, 'PNG', 15, 10, 40, 14);
-        } catch (imgError) {
-          console.warn('Erro ao adicionar logo, continuando sem logo:', imgError);
-        }
-        doc.setFillColor(0, 74, 153);
-        doc.rect(0, 0, pageWidth, 8, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(11);
-        doc.setFont(undefined, 'bold');
-        doc.text('DIROPS-SGA | Relatório de KPIs Operacionais', pageWidth / 2, 5, { align: 'center' });
-        doc.setTextColor(0, 0, 0);
-      };
-
-      // Função para adicionar rodapé
-      const addFooter = (pageNum) => {
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Página ${pageNum}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-        doc.text(`Gerado em ${new Date().toLocaleDateString('pt-PT')} às ${new Date().toLocaleTimeString('pt-PT')}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
-      };
-
-      // Primeira página - Sumário
-      addHeader();
-      yPosition = 35;
-
-      doc.setFontSize(18);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(0, 74, 153);
-      doc.text('Relatório de Performance de KPIs', 15, yPosition);
-      
-      yPosition += 12;
-      doc.setFontSize(10);
-      doc.setTextColor(80, 80, 80);
-      doc.setFont(undefined, 'normal');
-      
+      // Preparar meta do header
       const dataInicioTexto = filtrosParaPDF.dataInicio ? format(new Date(filtrosParaPDF.dataInicio), 'dd/MM/yyyy', { locale: pt }) : 'Início';
       const dataFimTexto = filtrosParaPDF.dataFim ? format(new Date(filtrosParaPDF.dataFim), 'dd/MM/yyyy', { locale: pt }) : 'Hoje';
-      doc.text(`Período: ${dataInicioTexto} - ${dataFimTexto}`, 15, yPosition);
-      
-      yPosition += 6;
-      
-      // Adicionar informação do aeroporto
-      if (filtrosParaPDF.aeroporto === 'todos') {
-        doc.text('Aeroportos: Todos', 15, yPosition);
-      } else {
+
+      let aeroportoTexto = 'Aeroportos: Todos';
+      if (filtrosParaPDF.aeroporto !== 'todos') {
         const aeroportoSelecionado = aeroportos.find(a => a.codigo_icao === filtrosParaPDF.aeroporto);
         if (aeroportoSelecionado) {
-          doc.text(`Aeroporto: ${aeroportoSelecionado.nome} (${aeroportoSelecionado.codigo_icao})`, 15, yPosition);
+          aeroportoTexto = `Aeroporto: ${aeroportoSelecionado.nome} (${aeroportoSelecionado.codigo_icao})`;
         }
       }
-      
-      yPosition += 9;
 
-      // Cards de resumo
+      const headerOpts = {
+        title: 'Relatório de KPIs Operacionais',
+        logoBase64,
+        date: new Date().toLocaleDateString('pt-AO'),
+        meta: [
+          `Período: ${dataInicioTexto} - ${dataFimTexto}`,
+          aeroportoTexto
+        ]
+      };
+
+      let y = addHeader(doc, headerOpts);
+
+      // Cards de resumo via addInfoBox
       const totalMedicoes = medicoesParaPDF.length;
       const dentroMeta = medicoesParaPDF.filter(m => m.dentro_da_meta).length;
       const percentualGeral = totalMedicoes > 0 ? ((dentroMeta / totalMedicoes) * 100).toFixed(1) : 0;
 
-      // Card Total
-      doc.setFillColor(59, 130, 246);
-      doc.roundedRect(15, yPosition, 58, 25, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.text('Total de Medições', 44, yPosition + 8, { align: 'center' });
-      doc.setFontSize(22);
-      doc.setFont(undefined, 'bold');
-      doc.text(totalMedicoes.toString(), 44, yPosition + 18, { align: 'center' });
-
-      // Card Dentro da Meta
-      doc.setFillColor(16, 185, 129);
-      doc.roundedRect(78, yPosition, 58, 25, 2, 2, 'F');
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text('Dentro da Meta', 107, yPosition + 8, { align: 'center' });
-      doc.setFontSize(22);
-      doc.setFont(undefined, 'bold');
-      doc.text(dentroMeta.toString(), 107, yPosition + 18, { align: 'center' });
-
-      // Card Performance
-      doc.setFillColor(139, 92, 246);
-      doc.roundedRect(141, yPosition, 58, 25, 2, 2, 'F');
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text('Performance Geral', 170, yPosition + 8, { align: 'center' });
-      doc.setFontSize(22);
-      doc.setFont(undefined, 'bold');
-      doc.text(`${percentualGeral}%`, 170, yPosition + 18, { align: 'center' });
-
-      yPosition += 35;
+      y = addInfoBox(doc, y, [
+        { label: 'Total de Medições', value: totalMedicoes.toString() },
+        { label: 'Dentro da Meta', value: dentroMeta.toString() },
+        { label: 'Performance Geral', value: `${percentualGeral}%` }
+      ]);
 
       // Título da seção de KPIs
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text('Análise Individual dos KPIs', 15, yPosition);
-      yPosition += 10;
+      y = addSectionTitle(doc, y, 'Análise Individual dos KPIs');
 
       // Agrupar medições por tipo de KPI
       const medicoesPorTipo = {};
@@ -440,7 +363,7 @@ export default function KPIsOperacionais() {
             .filter(m => m.resultado_principal !== null && m.resultado_principal !== undefined)
             .map(m => m.resultado_principal);
           const media = resultados.length > 0 ? resultados.reduce((acc, val) => acc + val, 0) / resultados.length : 0;
-          
+
           medicoesPorTipo[tipo.id] = {
             tipo,
             total: medicoesDoTipo.length,
@@ -451,115 +374,159 @@ export default function KPIsOperacionais() {
         }
       });
 
-      let pageNum = 1;
+      const m = PDF.margin;
       let cardCount = 0;
 
+      // Converter hex para RGB
+      const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 59, g: 130, b: 246 };
+      };
+
       // Desenhar cards dos KPIs
-      Object.values(medicoesPorTipo).sort((a, b) => a.tipo.nome.localeCompare(b.tipo.nome)).forEach((item, index) => {
+      Object.values(medicoesPorTipo).sort((a, b) => a.tipo.nome.localeCompare(b.tipo.nome)).forEach((item) => {
         const cardWidth = 90;
         const cardHeight = 45;
         const col = cardCount % 2;
-        const xPos = 15 + (col * (cardWidth + 10));
+        const xPos = m.left + (col * (cardWidth + 10));
 
         // Nova página se necessário
-        if (yPosition + cardHeight > pageHeight - 25) {
-          addFooter(pageNum);
-          doc.addPage();
-          addHeader();
-          pageNum++;
-          yPosition = 35;
-          cardCount = 0;
+        y = checkPageBreak(doc, y, cardHeight, headerOpts);
+        if (col === 0) {
+          // Reset cardCount when we hit a new page (checkPageBreak may have added one)
         }
 
         const percentual = parseFloat(item.percentual);
         const color = item.tipo.cor_identificacao || '#3B82F6';
-        
-        // Converter hex para RGB
-        const hexToRgb = (hex) => {
-          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-          return result ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16)
-          } : { r: 59, g: 130, b: 246 };
-        };
-
         const rgb = hexToRgb(color);
 
         // Card background
-        doc.setFillColor(248, 250, 252);
-        doc.roundedRect(xPos, yPosition, cardWidth, cardHeight, 2, 2, 'F');
-        
+        doc.setFillColor(...PDF.colors.bgStripe);
+        doc.roundedRect(xPos, y, cardWidth, cardHeight, 2, 2, 'F');
+
         // Borda colorida esquerda
         doc.setFillColor(rgb.r, rgb.g, rgb.b);
-        doc.rect(xPos, yPosition, 3, cardHeight);
+        doc.rect(xPos, y, 3, cardHeight);
 
         // Título do KPI
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'bold');
+        doc.setTextColor(...PDF.colors.black);
+        doc.setFontSize(PDF.font.body + 1);
+        doc.setFont('helvetica', 'bold');
         const kpiNome = item.tipo.nome.length > 30 ? item.tipo.nome.substring(0, 30) + '...' : item.tipo.nome;
-        doc.text(kpiNome, xPos + 5, yPosition + 6);
+        doc.text(kpiNome, xPos + 5, y + 6);
 
         // Informações
-        doc.setFontSize(8);
-        doc.setFont(undefined, 'normal');
-        doc.setTextColor(80, 80, 80);
-        
-        doc.text('Total Medições:', xPos + 5, yPosition + 13);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text(item.total.toString(), xPos + cardWidth - 5, yPosition + 13, { align: 'right' });
+        doc.setFontSize(PDF.font.small);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...PDF.colors.muted);
 
-        doc.setFont(undefined, 'normal');
-        doc.setTextColor(80, 80, 80);
-        doc.text('Dentro da Meta:', xPos + 5, yPosition + 19);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(16, 185, 129);
-        doc.text(item.dentroDaMeta.toString(), xPos + cardWidth - 5, yPosition + 19, { align: 'right' });
+        doc.text('Total Medições:', xPos + 5, y + 13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...PDF.colors.dark);
+        doc.text(item.total.toString(), xPos + cardWidth - 5, y + 13, { align: 'right' });
 
-        doc.setFont(undefined, 'normal');
-        doc.setTextColor(80, 80, 80);
-        doc.text('Tempo Médio:', xPos + 5, yPosition + 25);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(59, 130, 246);
-        doc.text(`${item.mediaResultado.toFixed(1)} ${item.tipo.unidade_medida || ''}`, xPos + cardWidth - 5, yPosition + 25, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...PDF.colors.muted);
+        doc.text('Dentro da Meta:', xPos + 5, y + 19);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...PDF.colors.success);
+        doc.text(item.dentroDaMeta.toString(), xPos + cardWidth - 5, y + 19, { align: 'right' });
 
-        doc.setFont(undefined, 'normal');
-        doc.setTextColor(80, 80, 80);
-        doc.text('Meta:', xPos + 5, yPosition + 31);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...PDF.colors.muted);
+        doc.text('Tempo Médio:', xPos + 5, y + 25);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...PDF.colors.primary);
+        doc.text(`${item.mediaResultado.toFixed(1)} ${item.tipo.unidade_medida || ''}`, xPos + cardWidth - 5, y + 25, { align: 'right' });
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...PDF.colors.muted);
+        doc.text('Meta:', xPos + 5, y + 31);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...PDF.colors.dark);
         const metaTexto = item.tipo.meta_objetivo !== null ? `${item.tipo.meta_objetivo} ${item.tipo.unidade_medida || ''}` : 'N/A';
-        doc.text(metaTexto, xPos + cardWidth - 5, yPosition + 31, { align: 'right' });
+        doc.text(metaTexto, xPos + cardWidth - 5, y + 31, { align: 'right' });
 
-        doc.setFont(undefined, 'normal');
-        doc.setTextColor(80, 80, 80);
-        doc.text('Performance:', xPos + 5, yPosition + 37);
-        
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...PDF.colors.muted);
+        doc.text('Performance:', xPos + 5, y + 37);
+
         // Badge de performance
-        const badgeColor = percentual >= 80 ? [16, 185, 129] : percentual >= 60 ? [245, 158, 11] : [239, 68, 68];
-        doc.setFillColor(badgeColor[0], badgeColor[1], badgeColor[2]);
-        doc.roundedRect(xPos + cardWidth - 25, yPosition + 34, 20, 6, 1, 1, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(8);
-        doc.setFont(undefined, 'bold');
-        doc.text(`${percentual}%`, xPos + cardWidth - 15, yPosition + 38, { align: 'center' });
+        const badgeColor = percentual >= 80 ? PDF.colors.success : percentual >= 60 ? PDF.colors.warning : PDF.colors.danger;
+        doc.setFillColor(...badgeColor);
+        doc.roundedRect(xPos + cardWidth - 25, y + 34, 20, 6, 1, 1, 'F');
+        doc.setTextColor(...PDF.colors.white);
+        doc.setFontSize(PDF.font.small);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${percentual}%`, xPos + cardWidth - 15, y + 38, { align: 'center' });
 
         // Barra de progresso
-        doc.setFillColor(226, 232, 240);
-        doc.roundedRect(xPos + 5, yPosition + 41, cardWidth - 10, 2, 1, 1, 'F');
+        doc.setFillColor(...PDF.colors.separator);
+        doc.roundedRect(xPos + 5, y + 41, cardWidth - 10, 2, 1, 1, 'F');
         doc.setFillColor(rgb.r, rgb.g, rgb.b);
         const progressWidth = ((cardWidth - 10) * percentual) / 100;
-        doc.roundedRect(xPos + 5, yPosition + 41, progressWidth, 2, 1, 1, 'F');
+        if (progressWidth > 0) {
+          doc.roundedRect(xPos + 5, y + 41, progressWidth, 2, 1, 1, 'F');
+        }
 
         cardCount++;
         if (col === 1) {
-          yPosition += cardHeight + 5;
+          y += cardHeight + 5;
         }
       });
 
-      addFooter(pageNum);
+      // Se o último card ficou na coluna esquerda, avançar Y
+      if (cardCount % 2 !== 0) {
+        y += 50;
+      }
+
+      // Tabela detalhada de medições
+      y += 5;
+      y = checkPageBreak(doc, y, 30, headerOpts);
+      y = addSectionTitle(doc, y, 'Detalhes das Medições');
+
+      const tableColumns = [
+        { label: 'KPI', width: 40 },
+        { label: 'Aeroporto', width: 20, align: 'center' },
+        { label: 'Data', width: 22, align: 'center' },
+        { label: 'Voo', width: 18, align: 'center' },
+        { label: 'Responsável', width: 30 },
+        { label: 'Resultado', width: 25, align: 'right' },
+        { label: 'Meta', width: 15, align: 'center' }
+      ];
+
+      const tiposKPIMap = new Map(tiposKPI.map(t => [t.id, t]));
+
+      const tableRows = medicoesParaPDF.map(medicao => {
+        const tipo = tiposKPIMap.get(medicao.tipo_kpi_id);
+        const resultadoTexto = medicao.resultado_principal !== null
+          ? `${medicao.resultado_principal} ${tipo?.unidade_medida || ''}`
+          : '-';
+        return [
+          tipo?.nome || 'N/A',
+          medicao.aeroporto_id || '-',
+          medicao.data_medicao ? format(new Date(medicao.data_medicao), 'dd/MM/yyyy', { locale: pt }) : '-',
+          medicao.numero_voo || '-',
+          medicao.responsavel_medicao || '-',
+          resultadoTexto,
+          medicao.dentro_da_meta ? 'Dentro' : 'Fora'
+        ];
+      });
+
+      y = addTable(doc, y, {
+        columns: tableColumns,
+        rows: tableRows,
+        headerOpts,
+        rowHeight: 6,
+        fontSize: PDF.font.small
+      });
+
+      // Rodapé em todas as páginas
+      addFooter(doc);
 
       doc.save(`relatorio_kpis_${new Date().toISOString().split('T')[0]}.pdf`);
 
@@ -600,8 +567,8 @@ export default function KPIsOperacionais() {
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; color: #333;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" alt="SGA Logo" style="height: 60px;">
-            <h1 style="color: #1e40af; margin-top: 20px;">DIROPS-SGA</h1>
+            <img src="/logo-dirops.svg" alt="DIROPS Logo" style="height: 60px;">
+            <h1 style="color: #1e40af; margin-top: 20px;">DIROPS</h1>
             <h2 style="color: #1e40af; margin: 10px 0;">Relatório de KPIs Operacionais</h2>
             <p style="color: #64748b; margin-bottom: 10px;">Data de Geração: ${new Date().toLocaleDateString('pt-AO')}</p>
             <p style="color: #64748b;">Total de Medições: ${medicoesParaEnviar.length}</p>
@@ -651,7 +618,7 @@ export default function KPIsOperacionais() {
 
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
             <p><strong>Melhores Cumprimentos,</strong></p>
-            <p>Sistema DIROPS-SGA<br>Direcção de Operações</p>
+            <p>Sistema DIROPS<br>Direcção de Operações</p>
           </div>
         </div>
       `;
@@ -660,7 +627,7 @@ export default function KPIsOperacionais() {
         to: destinatario,
         subject: assunto,
         body: emailBody,
-        from_name: 'DIROPS-SGA'
+        from_name: 'DIROPS'
       });
 
       if (result.status !== 200) {
@@ -674,7 +641,7 @@ export default function KPIsOperacionais() {
           errorTitle = 'Destinatário Não Autorizado';
           errorMessage = `Não foi possível enviar o relatório para "${destinatario}". 
 
-O sistema apenas permite o envio de e-mails para utilizadores registados na aplicação DIROPS-SGA.
+O sistema apenas permite o envio de e-mails para utilizadores registados na aplicação DIROPS.
 
 Soluções:
 • Registe o destinatário como utilizador no sistema
@@ -1313,13 +1280,13 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-blue-600" />
-                  Relatório Power BI - KPIs SGA
+                  Relatório Power BI - KPIs Operacionais
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="w-full" style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
                   <iframe 
-                    title="KPIs - SGA" 
+                    title="KPIs Operacionais" 
                     src="https://app.powerbi.com/view?r=eyJrIjoiYTY3NmZmMmMtZWQ3Zi00MmJlLTgwYTItNTQ2MDcyOGY4NGFhIiwidCI6IjYwMzA1NmIzLWZmNDItNDQ4Mi1iOWQzLWRjYmU5YjJkOTNiNiJ9" 
                     frameBorder="0" 
                     allowFullScreen={true}

@@ -22,7 +22,7 @@ export default function ConfiguracoesGerais() {
     smtp_port: '587',
     smtp_user: '',
     smtp_password: '',
-    smtp_from_name: 'DIROPS-SGA',
+    smtp_from_name: 'DIROPS',
     smtp_from_email: '',
     smtp_secure: true,
     email_notificacoes_padrao: '',
@@ -74,7 +74,7 @@ export default function ConfiguracoesGerais() {
           smtp_port: config.smtp_port || '587',
           smtp_user: config.smtp_user || '',
           smtp_password: config.smtp_password || '',
-          smtp_from_name: config.smtp_from_name || 'DIROPS-SGA',
+          smtp_from_name: config.smtp_from_name || 'DIROPS',
           smtp_from_email: config.smtp_from_email || '',
           smtp_secure: config.smtp_secure !== false,
           email_notificacoes_padrao: config.email_notificacoes_padrao || '',
@@ -166,7 +166,7 @@ export default function ConfiguracoesGerais() {
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           to: smtpData.smtp_from_email,
-          subject: 'Teste SMTP - DIROPS-SGA',
+          subject: 'Teste SMTP - DIROPS',
           html: emailTemplates.smtp_test(),
         },
       });
@@ -303,7 +303,7 @@ export default function ConfiguracoesGerais() {
                   <Input
                     value={smtpData.smtp_from_name}
                     onChange={(e) => handleSmtpChange('smtp_from_name', e.target.value)}
-                    placeholder="DIROPS-SGA"
+                    placeholder="DIROPS"
                   />
                 </div>
                 <div className="space-y-2">

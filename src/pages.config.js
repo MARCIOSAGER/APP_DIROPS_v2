@@ -61,6 +61,7 @@ import FundoManeio from './pages/FundoManeio';
 import GRF from './pages/GRF';
 import GerirPermissoes from './pages/GerirPermissoes';
 import GestaoAcessos from './pages/GestaoAcessos';
+import GestaoEmpresas from './pages/GestaoEmpresas';
 import GestaoNotificacoes from './pages/GestaoNotificacoes';
 import GuiaUtilizador from './pages/GuiaUtilizador';
 import HistoricoAcessoDocumentos from './pages/HistoricoAcessoDocumentos';
@@ -100,6 +101,7 @@ export const PAGES = {
     "GRF": GRF,
     "GerirPermissoes": GerirPermissoes,
     "GestaoAcessos": GestaoAcessos,
+    "GestaoEmpresas": GestaoEmpresas,
     "GestaoNotificacoes": GestaoNotificacoes,
     "GuiaUtilizador": GuiaUtilizador,
     "HistoricoAcessoDocumentos": HistoricoAcessoDocumentos,

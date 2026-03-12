@@ -11,7 +11,7 @@ const baseLayout = (content) => `
   <div style="max-width:600px;margin:0 auto;padding:20px;">
     <!-- Header -->
     <div style="background:linear-gradient(135deg,#1e3a5f 0%,#1a3050 100%);border-radius:12px 12px 0 0;padding:30px 40px;text-align:center;">
-      <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:1px;">DIROPS-SGA</h1>
+      <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:1px;">DIROPS</h1>
       <p style="margin:4px 0 0;color:#93c5fd;font-size:12px;letter-spacing:0.5px;">Sistema de Gestao Aeroportuaria</p>
     </div>
     <!-- Body -->
@@ -21,7 +21,7 @@ const baseLayout = (content) => `
     <!-- Footer -->
     <div style="background:#f8fafc;border-radius:0 0 12px 12px;padding:20px 40px;border:1px solid #e2e8f0;border-top:none;text-align:center;">
       <p style="margin:0;color:#94a3b8;font-size:11px;">
-        Este email foi enviado automaticamente pelo DIROPS-SGA.
+        Este email foi enviado automaticamente pelo DIROPS.
       </p>
       <p style="margin:4px 0 0;color:#cbd5e1;font-size:10px;">
         Sistema de Gestao Aeroportuaria
@@ -40,7 +40,7 @@ export const emailTemplates = {
       </div>
       <h2 style="margin:0 0 8px;color:#0f172a;font-size:20px;">Configuracao SMTP Validada</h2>
       <p style="margin:0 0 20px;color:#64748b;font-size:14px;line-height:1.6;">
-        Se voce esta a receber este email, a configuracao SMTP do DIROPS-SGA esta funcionando corretamente.
+        Se voce esta a receber este email, a configuracao SMTP do DIROPS esta funcionando corretamente.
       </p>
       <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px;text-align:left;">
         <p style="margin:0;color:#0369a1;font-size:13px;"><strong>Servidor:</strong> Conectado</p>
@@ -63,7 +63,7 @@ export const emailTemplates = {
         Prezado(a) <strong>${full_name || 'Utilizador'}</strong>,
       </p>
       <p style="color:#334155;font-size:14px;line-height:1.6;">
-        O seu acesso ao sistema DIROPS-SGA foi <strong style="color:#059669;">aprovado</strong> com sucesso.
+        O seu acesso ao sistema DIROPS foi <strong style="color:#059669;">aprovado</strong> com sucesso.
       </p>
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin:20px 0;">
         <table style="width:100%;border-collapse:collapse;">
@@ -99,7 +99,7 @@ export const emailTemplates = {
         Prezado(a) <strong>${full_name || 'Utilizador'}</strong>,
       </p>
       <p style="color:#334155;font-size:14px;line-height:1.6;">
-        Lamentamos informar que a sua solicitacao de acesso ao DIROPS-SGA nao foi aprovada neste momento.
+        Lamentamos informar que a sua solicitacao de acesso ao DIROPS nao foi aprovada neste momento.
       </p>
       ${motivo ? `
       <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:20px 0;">
@@ -121,7 +121,7 @@ export const emailTemplates = {
         <h2 style="margin:0;color:#0f172a;font-size:20px;">Nova Solicitacao de Acesso</h2>
       </div>
       <p style="color:#334155;font-size:14px;line-height:1.6;">
-        Um novo utilizador solicitou acesso ao sistema DIROPS-SGA:
+        Um novo utilizador solicitou acesso ao sistema DIROPS:
       </p>
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin:20px 0;">
         <table style="width:100%;border-collapse:collapse;">
@@ -175,7 +175,7 @@ export const emailTemplates = {
         Prezado(a) <strong>${full_name || 'Utilizador'}</strong>,
       </p>
       <p style="color:#334155;font-size:14px;line-height:1.6;">
-        Recebemos um pedido para redefinir a sua senha no DIROPS-SGA. Clique no botao abaixo:
+        Recebemos um pedido para redefinir a sua senha no DIROPS. Clique no botao abaixo:
       </p>
       <div style="text-align:center;margin:24px 0;">
         <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;">

@@ -1,11 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UserCheck, FileText, ArrowRight, Building, Mail, Globe, Phone, LogIn } from 'lucide-react';
+import { Empresa } from '@/entities/Empresa';
+import { getEmpresaLogoByUser } from '@/components/lib/userUtils';
 
 export default function PortalServicos() {
+  const [empresas, setEmpresas] = useState([]);
+
+  useEffect(() => {
+    Empresa.list().then(data => setEmpresas(data || [])).catch(() => setEmpresas([]));
+  }, []);
+
+  const logoUrl = getEmpresaLogoByUser(null, empresas);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-4xl">
@@ -21,16 +31,16 @@ export default function PortalServicos() {
         </header>
 
         <div className="text-center mb-10">
-          <img 
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png" 
-            alt="DIROPS-SGA Logo" 
-            className="h-16 mx-auto mb-4" 
+          <img
+            src={logoUrl}
+            alt="DIROPS Logo"
+            className="h-16 mx-auto mb-4"
           />
           <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
             Portal de Serviços Públicos
           </h1>
           <p className="text-slate-600 mt-2">
-            Aceda aos serviços públicos disponibilizados pela DIROPS-SGA.
+            Aceda aos serviços públicos disponibilizados pela DIROPS.
           </p>
         </div>
 

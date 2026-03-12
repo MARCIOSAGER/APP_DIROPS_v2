@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { User as UserEntity } from '@/entities/User';
-import { hasUserProfile, getPrimaryUserProfile, ensureUserProfilesExist } from '@/components/lib/userUtils';
+import { Empresa } from '@/entities/Empresa';
+import { hasUserProfile, getPrimaryUserProfile, ensureUserProfilesExist, getEmpresaLogoByUser } from '@/components/lib/userUtils';
 
 const PERFIL_INFO = {
   administrador: {
@@ -73,6 +74,7 @@ const PERFIL_INFO = {
 
 export default function BoasVindas() {
   const [user, setUser] = useState(null);
+  const [empresas, setEmpresas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -81,9 +83,13 @@ export default function BoasVindas() {
 
   const loadUser = async () => {
     try {
-      let userData = await UserEntity.me();
-      userData = ensureUserProfilesExist(userData);
+      const [userData_raw, empresasData] = await Promise.all([
+        UserEntity.me(),
+        Empresa.list()
+      ]);
+      let userData = ensureUserProfilesExist(userData_raw);
       setUser(userData);
+      setEmpresas(empresasData || []);
 
       // Se o utilizador só tem o perfil 'visualizador' ou nenhum perfil válido,
       // redirecionar para a solicitação de perfil
@@ -177,12 +183,12 @@ export default function BoasVindas() {
       <div className="max-w-4xl mx-auto py-8">
         <div className="text-center mb-8">
           <img
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/563d28706_logoSGA.png"
-            alt="DIROPS-SGA Logo"
+            src={getEmpresaLogoByUser(user, empresas)}
+            alt="DIROPS Logo"
             className="h-20 mx-auto mb-6"
           />
           <h1 className="text-4xl font-bold text-slate-900 mb-2">
-            Bem-vindo ao DIROPS-SGA
+            Bem-vindo ao DIROPS
           </h1>
           <p className="text-xl text-slate-600">
             Sistema de Gestão Aeroportuária

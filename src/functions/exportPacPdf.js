@@ -41,7 +41,7 @@ export async function exportPacPdf({ pac, itens, aeroporto }) {
       <div class="container">
         <div class="header">
           <h1>Plano de Ação Corretiva (PAC)</h1>
-          <p>Relatório gerado pelo sistema DIROPS-SGA</p>
+          <p>Relatório gerado pelo sistema DIROPS</p>
         </div>
 
         <div class="card">
@@ -86,7 +86,7 @@ export async function exportPacPdf({ pac, itens, aeroporto }) {
           </div>
         </div>
         <div class="footer">
-          DIROPS-SGA - ${new Date().getFullYear()}
+          DIROPS - ${new Date().getFullYear()}
         </div>
       </div>
     </body>

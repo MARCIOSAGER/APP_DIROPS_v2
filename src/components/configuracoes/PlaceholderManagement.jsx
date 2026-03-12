@@ -254,7 +254,7 @@ export default function PlaceholderManagement({ onError, onSuccess }) {
                   id="valor_padrao"
                   value={formData.valor_padrao}
                   onChange={(e) => handleInputChange('valor_padrao', e.target.value)}
-                  placeholder="Ex: DIROPS-SGA, +244 923 456 789"
+                  placeholder="Ex: DIROPS, +244 923 456 789"
                   required
                 />
                 <p className="text-xs text-slate-500 mt-1">

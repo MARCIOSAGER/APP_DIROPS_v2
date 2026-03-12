@@ -43,7 +43,7 @@ export default function ZAPIGruposRegistrados({ onError, onSuccess }) {
       try {
         await base44.functions.invoke('sendWhatsAppMessageToGroupZAPI', {
           groupId: grupo.chat_id,
-          body: `🎉 Grupo "${grupo.nome_grupo}" aprovado!\n\nVocê começará a receber notificações automáticas do sistema DIROPS-SGA.`
+          body: `🎉 Grupo "${grupo.nome_grupo}" aprovado!\n\nVocê começará a receber notificações automáticas do sistema DIROPS.`
         });
       } catch (msgError) {
         console.error('Erro ao enviar mensagem de aprovação:', msgError);
