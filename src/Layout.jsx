@@ -376,7 +376,7 @@ function LayoutContent({ children, currentPageName }) {
               <Menu className="h-6 w-6" />
             </Button>
           )}
-          <img src={logoUrl} alt="Logo" className="h-14" />
+          <img src={logoUrl} alt="Logo" className="h-[100px]" />
         </div>
         {!isRootPage && (
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="select-none">
@@ -389,7 +389,7 @@ function LayoutContent({ children, currentPageName }) {
         <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setSidebarOpen(false)}></div>
         <div className="relative w-72 h-full bg-white shadow-xl flex flex-col">
           <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-            <img src={logoUrl} alt="Logo" className="h-16" />
+            <img src={logoUrl} alt="Logo" className="h-[120px] mx-auto" />
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}><X className="h-5 w-5" /></Button>
           </div>
 
@@ -451,8 +451,8 @@ function LayoutContent({ children, currentPageName }) {
       <div className="flex">
         <div className="hidden lg:flex flex-col w-64 bg-white border-r border-slate-200 h-screen sticky top-0">
           <div className="p-4 border-b border-slate-200">
-            <div className="flex items-center gap-2">
-              <img src={logoUrl} alt="Logo" className="h-16" />
+            <div className="flex justify-center">
+              <img src={logoUrl} alt="Logo" className="h-[120px]" />
             </div>
           </div>
           <nav className="flex-grow p-4 space-y-1 overflow-y-auto">

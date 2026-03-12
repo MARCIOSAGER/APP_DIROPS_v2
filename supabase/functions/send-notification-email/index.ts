@@ -12,14 +12,14 @@ function baseLayout(content: string) {
 <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
 <div style="max-width:600px;margin:0 auto;padding:20px;">
 <div style="background:linear-gradient(135deg,#1e3a5f 0%,#1a3050 100%);border-radius:12px 12px 0 0;padding:30px 40px;text-align:center;">
-<h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:1px;">DIROPS-SGA</h1>
+<h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:1px;">DIROPS</h1>
 <p style="margin:4px 0 0;color:#93c5fd;font-size:12px;">Sistema de Gestao Aeroportuaria</p>
 </div>
 <div style="background:#ffffff;padding:32px 40px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">
 ${content}
 </div>
 <div style="background:#f8fafc;border-radius:0 0 12px 12px;padding:20px 40px;border:1px solid #e2e8f0;border-top:none;text-align:center;">
-<p style="margin:0;color:#94a3b8;font-size:11px;">Este email foi enviado automaticamente pelo DIROPS-SGA.</p>
+<p style="margin:0;color:#94a3b8;font-size:11px;">Este email foi enviado automaticamente pelo DIROPS.</p>
 </div>
 </div></body></html>`;
 }
@@ -28,14 +28,14 @@ function getTemplateHtml(template: string, data: any): { subject: string; html: 
   switch (template) {
     case "user_approved":
       return {
-        subject: "Acesso Aprovado - DIROPS-SGA",
+        subject: "Acesso Aprovado - DIROPS",
         html: baseLayout(`
           <div style="text-align:center;margin-bottom:24px;">
             <div style="width:56px;height:56px;background:#ecfdf5;border-radius:50%;margin:0 auto 12px;display:inline-flex;align-items:center;justify-content:center;"><span style="font-size:28px;">&#9989;</span></div>
             <h2 style="margin:0;color:#0f172a;font-size:20px;">Acesso Aprovado</h2>
           </div>
           <p style="color:#334155;font-size:14px;line-height:1.6;">Prezado(a) <strong>${data?.full_name || "Utilizador"}</strong>,</p>
-          <p style="color:#334155;font-size:14px;line-height:1.6;">O seu acesso ao sistema DIROPS-SGA foi <strong style="color:#059669;">aprovado</strong> com sucesso.</p>
+          <p style="color:#334155;font-size:14px;line-height:1.6;">O seu acesso ao sistema DIROPS foi <strong style="color:#059669;">aprovado</strong> com sucesso.</p>
           <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin:20px 0;">
             <table style="width:100%;border-collapse:collapse;">
               <tr><td style="padding:6px 0;color:#64748b;font-size:13px;width:120px;">Perfis:</td><td style="padding:6px 0;color:#0f172a;font-size:13px;font-weight:600;">${data?.perfis?.join?.(", ") || data?.perfis || "Utilizador"}</td></tr>
@@ -48,14 +48,14 @@ function getTemplateHtml(template: string, data: any): { subject: string; html: 
 
     case "user_rejected":
       return {
-        subject: "Solicitacao de Acesso - DIROPS-SGA",
+        subject: "Solicitacao de Acesso - DIROPS",
         html: baseLayout(`
           <div style="text-align:center;margin-bottom:24px;">
             <div style="width:56px;height:56px;background:#fef2f2;border-radius:50%;margin:0 auto 12px;display:inline-flex;align-items:center;justify-content:center;"><span style="font-size:28px;">&#10060;</span></div>
             <h2 style="margin:0;color:#0f172a;font-size:20px;">Solicitacao de Acesso</h2>
           </div>
           <p style="color:#334155;font-size:14px;line-height:1.6;">Prezado(a) <strong>${data?.full_name || "Utilizador"}</strong>,</p>
-          <p style="color:#334155;font-size:14px;line-height:1.6;">Lamentamos informar que a sua solicitacao de acesso ao DIROPS-SGA nao foi aprovada neste momento.</p>
+          <p style="color:#334155;font-size:14px;line-height:1.6;">Lamentamos informar que a sua solicitacao de acesso ao DIROPS nao foi aprovada neste momento.</p>
           ${data?.motivo ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:20px 0;"><p style="margin:0;color:#991b1b;font-size:13px;"><strong>Motivo:</strong> ${data.motivo}</p></div>` : ""}
           <p style="color:#64748b;font-size:13px;">Para mais informacoes, contacte o administrador do sistema.</p>
         `),
@@ -63,7 +63,7 @@ function getTemplateHtml(template: string, data: any): { subject: string; html: 
 
     case "new_access_request":
       return {
-        subject: "Nova Solicitacao de Acesso - DIROPS-SGA",
+        subject: "Nova Solicitacao de Acesso - DIROPS",
         html: baseLayout(`
           <div style="text-align:center;margin-bottom:24px;">
             <div style="width:56px;height:56px;background:#eff6ff;border-radius:50%;margin:0 auto 12px;display:inline-flex;align-items:center;justify-content:center;"><span style="font-size:28px;">&#128100;</span></div>
@@ -81,7 +81,7 @@ function getTemplateHtml(template: string, data: any): { subject: string; html: 
       };
 
     default:
-      return { subject: "Notificacao DIROPS-SGA", html: "" };
+      return { subject: "Notificacao DIROPS", html: "" };
   }
 }
 
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "SMTP nao configurado." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    let emailSubject = subject || "Notificacao DIROPS-SGA";
+    let emailSubject = subject || "Notificacao DIROPS";
     let emailHtml = body || "";
 
     if (template) {

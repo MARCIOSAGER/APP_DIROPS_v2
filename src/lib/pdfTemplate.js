@@ -51,10 +51,10 @@ export const PDF = {
     right:  15,
   },
 
-  // Logo (trimmed 413x499, ratio 0.83:1)
+  // Logo (400x483, ratio ~0.83:1)
   logo: {
-    width:  18,
-    height: 22,
+    width:  20,
+    height: 24,
     x:      15,
     y:      8,
   },
