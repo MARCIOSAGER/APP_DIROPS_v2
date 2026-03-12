@@ -104,29 +104,21 @@ export async function loadImageAsBase64(url) {
  * @returns {Promise<string|null>} base64 data URL or null
  */
 export async function fetchEmpresaLogo(empresaId) {
+  if (!empresaId) return null;
   try {
-    if (empresaId) {
-      const { supabase } = await import('@/lib/supabaseClient');
-      const { data: empresa } = await supabase.from('empresa').select('logo_url').eq('id', empresaId).single();
-      if (empresa?.logo_url) {
-        const response = await fetch(empresa.logo_url);
-        const blob = await response.blob();
-        return await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(blob);
-        });
-      }
-    }
-    // Fallback: logo padrão DIROPS
-    return await loadImageAsBase64('/logo-dirops.svg');
+    const { supabase } = await import('@/lib/supabaseClient');
+    const { data: empresa } = await supabase.from('empresa').select('logo_url').eq('id', empresaId).single();
+    if (!empresa?.logo_url) return null;
+    const response = await fetch(empresa.logo_url);
+    const blob = await response.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
   } catch (e) {
-    console.warn('Não foi possível carregar logo:', e);
-    try {
-      return await loadImageAsBase64('/logo-dirops.svg');
-    } catch {
-      return null;
-    }
+    console.warn('Não foi possível carregar logo da empresa:', e);
+    return null;
   }
 }
 
@@ -172,29 +164,28 @@ export function addHeader(doc, { title, subtitle, logoBase64, date, meta = [] } 
   const m = PDF.margin;
   let y = 10;
 
-  // Title: "DIROPS" (left side)
+  // Title: "DIROPS — Direcção de Operações" (left side)
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
+  doc.setFontSize(14);
   setColor(doc, PDF.colors.primary);
   doc.text('DIROPS', m.left, y + 6);
-
-  // Subtitle: "Direcção de Operações"
+  const diropsWidth = doc.getTextWidth('DIROPS');
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(PDF.font.small);
+  doc.setFontSize(10);
   setColor(doc, PDF.colors.muted);
-  doc.text('Direcção de Operações', m.left, y + 11);
+  doc.text(' — Direcção de Operações', m.left + diropsWidth, y + 6);
 
-  // Logo (right side — replaces date)
+  // Empresa logo (right side)
   if (logoBase64) {
     try {
       const rightLogoX = w - m.right - PDF.logo.width;
-      doc.addImage(logoBase64, 'PNG', rightLogoX, PDF.logo.y, PDF.logo.width, PDF.logo.height);
+      doc.addImage(logoBase64, 'PNG', rightLogoX, y - 2, PDF.logo.width, PDF.logo.height);
     } catch (e) {
       console.warn('PDF: Logo could not be added', e.message);
     }
   }
 
-  y = Math.max(PDF.logo.y + PDF.logo.height, y + 14) + 2;
+  y += 12;
 
   // Decorative blue bar
   setFill(doc, PDF.colors.primary);
