@@ -562,7 +562,7 @@ export default function KPIsOperacionais() {
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; color: #333;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="/logo-dirops.svg" alt="DIROPS Logo" style="height: 60px;">
+            <img src="/logo-dirops.png" alt="DIROPS Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">DIROPS</h1>
             <h2 style="color: #1e40af; margin: 10px 0;">Relatório de KPIs Operacionais</h2>
             <p style="color: #64748b; margin-bottom: 10px;">Data de Geração: ${new Date().toLocaleDateString('pt-AO')}</p>

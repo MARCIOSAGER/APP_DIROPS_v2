@@ -143,7 +143,7 @@ export function filtrarDadosPorAeroportoId(user, dados, campo, todosAeroportos) 
 // Obter logo URL da empresa de um aeroporto (para relatórios/PDFs)
 // Recebe a lista de empresas e aeroportos já carregados, e o código ICAO ou ID do aeroporto
 // Retorna a URL do logo da empresa ou o fallback DIROPS
-const DEFAULT_LOGO_URL = '/logo-dirops.svg';
+const DEFAULT_LOGO_URL = '/logo-dirops.png';
 
 export function getEmpresaLogoByAeroporto(aeroportoIcaoOrId, aeroportos, empresas) {
   if (!aeroportoIcaoOrId || !aeroportos || !empresas) return DEFAULT_LOGO_URL;

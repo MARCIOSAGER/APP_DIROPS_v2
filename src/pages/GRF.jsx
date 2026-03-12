@@ -196,7 +196,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="/logo-dirops.svg" alt="DIROPS Logo" style="height: 60px;">
+            <img src="/logo-dirops.png" alt="DIROPS Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">Relatório GRF - Condições da Pista</h1>
             <p style="color: #64748b;">Data: ${new Date().toLocaleDateString('pt-AO')}</p>
           </div>

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Plane, Loader2, Eye, EyeOff, UserPlus, Mail, Lock, ArrowLeft, CheckCircle2, Shield, User } from 'lucide-react';
 
 const LogoDirops = ({ className = "w-14 h-14", variant = "dark" }) => (
-  <img src={variant === "light" ? "/logo-dirops-light.svg" : "/logo-dirops.svg"} alt="DIROPS" className={className} />
+  <img src={variant === "light" ? "/logo-dirops-light.png" : "/logo-dirops.png"} alt="DIROPS" className={className} />
 );
 
 export default function Login() {

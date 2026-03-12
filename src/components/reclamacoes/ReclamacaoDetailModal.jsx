@@ -210,7 +210,7 @@ export default function ReclamacaoDetailModal({
         body: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <img src="/logo-dirops.svg" alt="DIROPS" style="height: 60px;">
+              <img src="/logo-dirops.png" alt="DIROPS" style="height: 60px;">
               <h1 style="color: #1e40af; margin-top: 20px;">Notificação de Reclamação</h1>
             </div>
             

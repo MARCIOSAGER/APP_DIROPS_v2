@@ -104,21 +104,29 @@ export async function loadImageAsBase64(url) {
  * @returns {Promise<string|null>} base64 data URL or null
  */
 export async function fetchEmpresaLogo(empresaId) {
-  if (!empresaId) return null;
   try {
-    const { supabase } = await import('@/lib/supabaseClient');
-    const { data: empresa } = await supabase.from('empresa').select('logo_url').eq('id', empresaId).single();
-    if (!empresa?.logo_url) return null;
-    const response = await fetch(empresa.logo_url);
-    const blob = await response.blob();
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
-    });
+    if (empresaId) {
+      const { supabase } = await import('@/lib/supabaseClient');
+      const { data: empresa } = await supabase.from('empresa').select('logo_url').eq('id', empresaId).single();
+      if (empresa?.logo_url) {
+        const response = await fetch(empresa.logo_url);
+        const blob = await response.blob();
+        return await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      }
+    }
+    // Fallback: logo padrão DIROPS
+    return await loadImageAsBase64('/logo-dirops.png');
   } catch (e) {
-    console.warn('Não foi possível carregar logo da empresa:', e);
-    return null;
+    console.warn('Não foi possível carregar logo:', e);
+    try {
+      return await loadImageAsBase64('/logo-dirops.png');
+    } catch {
+      return null;
+    }
   }
 }
 

@@ -147,7 +147,7 @@ export default function Manutencao() {
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="/logo-dirops.svg" alt="DIROPS Logo" style="height: 60px;">
+            <img src="/logo-dirops.png" alt="DIROPS Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">DIROPS</h1>
             <h2 style="color: #1e40af; margin: 10px 0 0 0;">Notificação de Ordem de Serviço: #${ordem.numero_ordem}</h2>
           </div>

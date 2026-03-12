@@ -63,7 +63,7 @@ const navigationItems = [
   { title: "Suporte", url: createPageUrl("Suporte"), icon: MessageSquare, color: "text-purple-500", pageKey: "Suporte" },
 ];
 
-const DEFAULT_LOGO = '/logo-dirops.svg';
+const DEFAULT_LOGO = '/logo-dirops.png';
 
 const unprotectedPages = [
   'FormularioReclamacaoPublico',

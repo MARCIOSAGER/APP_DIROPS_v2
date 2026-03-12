@@ -1,4 +1,4 @@
-const LOGO_URL = '/logo-dirops.svg';
+const LOGO_URL = '/logo-dirops.png';
 
 const baseLayout = (content) => `
 <!DOCTYPE html>

@@ -304,7 +304,7 @@ export default function CredenciamentoList({
             body: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="text-align: center; margin-bottom: 30px;">
-                  <img src="/logo-dirops.svg" alt="DIROPS Logo" style="height: 60px;">
+                  <img src="/logo-dirops.png" alt="DIROPS Logo" style="height: 60px;">
                   <h1 style="color: #16a34a; margin-top: 20px;">✅ Credenciamento Aprovado!</h1>
                 </div>
 
@@ -440,7 +440,7 @@ export default function CredenciamentoList({
       const reportBody = `
         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="/logo-dirops.svg" alt="DIROPS Logo" style="height: 60px;">
+            <img src="/logo-dirops.png" alt="DIROPS Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">Relatório de Credenciamentos Selecionados</h1>
             <p style="color: #64748b;">Data: ${new Date().toLocaleDateString('pt-AO')}</p>
           </div>

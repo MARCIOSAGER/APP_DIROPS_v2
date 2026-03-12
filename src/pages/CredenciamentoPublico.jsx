@@ -150,7 +150,7 @@ export default function CredenciamentoPublico() {
         </div>
         <Card className="w-full">
           <CardHeader className="text-center">
-            <div className="flex justify-center mb-4"><img src="/logo-dirops.svg" alt="DIROPS Logo" className="h-12" /></div>
+            <div className="flex justify-center mb-4"><img src="/logo-dirops.png" alt="DIROPS Logo" className="h-12" /></div>
             <CardTitle className="text-2xl font-bold text-slate-900">Formulário de Solicitação de Credencial</CardTitle>
             <CardDescription className="text-slate-600 mt-2">Preencha os dados abaixo para iniciar um novo pedido de credenciamento.</CardDescription>
           </CardHeader>
