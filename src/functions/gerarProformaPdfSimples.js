@@ -22,8 +22,8 @@ export default async function gerarProformaPdfSimples({ proforma_id }) {
     const { data } = await supabase.from('aeroporto').select('*').eq('id', proforma.aeroporto_id).single();
     aeroporto = data;
   }
-  if (proforma.companhia_id) {
-    const { data } = await supabase.from('companhia_aerea').select('*').eq('id', proforma.companhia_id).single();
+  if (proforma.companhia_aerea_id) {
+    const { data } = await supabase.from('companhia_aerea').select('*').eq('id', proforma.companhia_aerea_id).single();
     companhia = data;
   }
 

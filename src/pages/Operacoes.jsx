@@ -1449,8 +1449,8 @@ export default function Operacoes() {
         ...dadosProforma,
         numero_proforma: numeroProforma,
         status: 'emitida',
-        emitida_por: currentUser.email,
-        data_emissao: new Date().toISOString().split('T')[0]
+        data_emissao: new Date().toISOString().split('T')[0],
+        voo_id: gerarProformaCalculo?.voo_id || null
       };
 
       const novaProforma = await Proforma.create(proformaData);
