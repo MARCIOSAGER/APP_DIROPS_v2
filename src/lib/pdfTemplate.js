@@ -172,34 +172,26 @@ export function addHeader(doc, { title, subtitle, logoBase64, date, meta = [] } 
   const m = PDF.margin;
   let y = 10;
 
-  // Logo
-  let textStartX = m.left;
-  if (logoBase64) {
-    try {
-      doc.addImage(logoBase64, 'PNG', PDF.logo.x, PDF.logo.y, PDF.logo.width, PDF.logo.height);
-      textStartX = PDF.logo.x + PDF.logo.width + 5;
-    } catch (e) {
-      console.warn('PDF: Logo could not be added', e.message);
-    }
-  }
-
-  // Title: "DIROPS"
+  // Title: "DIROPS" (left side)
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
   setColor(doc, PDF.colors.primary);
-  doc.text('DIROPS', textStartX, y + 6);
+  doc.text('DIROPS', m.left, y + 6);
 
   // Subtitle: "Direcção de Operações"
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(PDF.font.small);
   setColor(doc, PDF.colors.muted);
-  doc.text('Direcção de Operações', textStartX, y + 11);
+  doc.text('Direcção de Operações', m.left, y + 11);
 
-  // Date on the right
-  if (date) {
-    doc.setFontSize(PDF.font.small);
-    setColor(doc, PDF.colors.muted);
-    doc.text(date, w - m.right, y + 6, { align: 'right' });
+  // Logo (right side — replaces date)
+  if (logoBase64) {
+    try {
+      const rightLogoX = w - m.right - PDF.logo.width;
+      doc.addImage(logoBase64, 'PNG', rightLogoX, PDF.logo.y, PDF.logo.width, PDF.logo.height);
+    } catch (e) {
+      console.warn('PDF: Logo could not be added', e.message);
+    }
   }
 
   y = Math.max(PDF.logo.y + PDF.logo.height, y + 14) + 2;
