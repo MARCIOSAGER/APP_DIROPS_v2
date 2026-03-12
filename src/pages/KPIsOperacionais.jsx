@@ -32,7 +32,7 @@ import SuccessModal from '@/components/shared/SuccessModal';
 import { getAeroportosPermitidos, filtrarDadosPorAcesso } from '@/components/lib/userUtils';
 import SendEmailModal from '@/components/shared/SendEmailModal';
 import { registarExclusao, registarExportacao } from '@/components/lib/auditoria';
-import { createPdfDoc, addHeader, addFooter, addTable, addInfoBox, addSectionTitle, checkPageBreak, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
+import { createPdfDoc, addHeader, addFooter, addTable, addInfoBox, addSectionTitle, checkPageBreak, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 
@@ -307,13 +307,8 @@ export default function KPIsOperacionais() {
       // Registar exportação após importação bem-sucedida
       await registarExportacao('MedicaoKPI', 'PDF', filtrosParaPDF, 'kpis');
 
-      // Carregar logo
-      let logoBase64 = null;
-      try {
-        logoBase64 = await loadImageAsBase64('/logo-dirops.svg');
-      } catch (e) {
-        console.warn('Erro ao carregar logo, continuando sem logo:', e);
-      }
+      // Carregar logo da empresa do usuário
+      const logoBase64 = await fetchEmpresaLogo(currentUser?.empresa_id);
 
       // Preparar meta do header
       const dataInicioTexto = filtrosParaPDF.dataInicio ? format(new Date(filtrosParaPDF.dataInicio), 'dd/MM/yyyy', { locale: pt }) : 'Início';

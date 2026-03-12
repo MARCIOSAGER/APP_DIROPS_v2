@@ -164,51 +164,48 @@ export function addHeader(doc, { title, subtitle, logoBase64, date, meta = [] } 
   const m = PDF.margin;
   let y = 10;
 
-  // Title: "DIROPS — Direcção de Operações" (left side)
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  setColor(doc, PDF.colors.primary);
-  doc.text('DIROPS', m.left, y + 6);
-  const diropsWidth = doc.getTextWidth('DIROPS');
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  setColor(doc, PDF.colors.muted);
-  doc.text(' — Direcção de Operações', m.left + diropsWidth, y + 6);
+  // Single line: subtitle (left) | title (center) | logo (right)
+  const lineY = y + 6;
+
+  // Subtitle left (e.g. "N.º PF-2026-000003")
+  if (subtitle) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(PDF.font.subtitle);
+    setColor(doc, PDF.colors.body);
+    doc.text(subtitle, m.left, lineY);
+  }
+
+  // Title center (e.g. "Nota Proforma")
+  if (title) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(PDF.font.title);
+    setColor(doc, PDF.colors.dark);
+    doc.text(title, w / 2, lineY, { align: 'center' });
+  }
 
   // Empresa logo (right side)
   if (logoBase64) {
     try {
       const rightLogoX = w - m.right - PDF.logo.width;
-      doc.addImage(logoBase64, 'PNG', rightLogoX, y - 2, PDF.logo.width, PDF.logo.height);
+      doc.addImage(logoBase64, 'PNG', rightLogoX, y, PDF.logo.width, PDF.logo.height);
     } catch (e) {
       console.warn('PDF: Logo could not be added', e.message);
     }
   }
 
-  y += 12;
+  y = Math.max(y + PDF.logo.height, lineY + 4) + 2;
 
   // Decorative blue bar
   setFill(doc, PDF.colors.primary);
   doc.rect(m.left, y, w - m.left - m.right, PDF.headerBar.height, 'F');
-  y += PDF.headerBar.height + 4;
+  y += PDF.headerBar.height + 2;
 
-  // Report title
-  if (title) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(PDF.font.title);
-    setColor(doc, PDF.colors.dark);
-    doc.text(title, m.left, y + 4);
-    y += 8;
-  }
-
-  // Report subtitle
-  if (subtitle) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(PDF.font.subtitle);
-    setColor(doc, PDF.colors.body);
-    doc.text(subtitle, m.left, y + 3);
-    y += 6;
-  }
+  // "Direcção de Operações" (right-aligned, below the bar)
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(PDF.font.small);
+  setColor(doc, PDF.colors.muted);
+  doc.text('Direcção de Operações', w - m.right, y + 3, { align: 'right' });
+  y += 7;
 
   // Meta lines
   if (meta.length > 0) {

@@ -25,7 +25,7 @@ import { downloadAsCSV } from '../components/lib/export';
 import { filtrarDadosPorAcesso } from '@/components/lib/userUtils';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 
-import { createPdfDoc, addHeader, addFooter, addTable, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
+import { createPdfDoc, addHeader, addFooter, addTable, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
 import FormGRF from '../components/grf/FormGRF';
 import SendEmailModal from '../components/shared/SendEmailModal';
 import SuccessModal from '../components/shared/SuccessModal';
@@ -435,13 +435,8 @@ Por favor tente novamente ou contacte o suporte técnico.`;
 
       const doc = await createPdfDoc({ orientation: 'landscape' });
 
-      // Load logo
-      let logoBase64 = null;
-      try {
-        logoBase64 = await loadImageAsBase64('/logo-dirops.svg');
-      } catch (logoError) {
-        console.log('Logo não adicionado:', logoError);
-      }
+      // Load empresa logo
+      const logoBase64 = await fetchEmpresaLogo(currentUser?.empresa_id);
 
       // Header options (reused on page breaks)
       const headerOpts = {

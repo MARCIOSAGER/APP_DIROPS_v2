@@ -11,7 +11,7 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
-import { createPdfDoc, addHeader, addFooter, addTable, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
+import { createPdfDoc, addHeader, addFooter, addTable, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
 
 import ManutencaoStats from '../components/manutencao/ManutencaoStats';
 import ManutencaoList from '../components/manutencao/ManutencaoList';
@@ -46,14 +46,10 @@ export default function Manutencao() {
   const [atribuirOrdem, setAtribuirOrdem] = useState(null);
   const [responderOrdem, setResponderOrdem] = useState(null);
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
-  const [logoBase64, setLogoBase64] = useState(null); // State to store logo base64
+  const [logoBase64, setLogoBase64] = useState(null);
 
   useEffect(() => {
     loadData();
-    // Pre-fetch logo when component mounts for PDF generation
-    loadImageAsBase64('/logo-dirops.svg')
-      .then(b64 => setLogoBase64(b64))
-      .catch(err => console.warn('Error fetching logo for PDF:', err));
   }, []);
 
   const loadData = async () => {
@@ -61,6 +57,9 @@ export default function Manutencao() {
     try {
       const user = await User.me();
       setCurrentUser(user);
+
+      // Pre-fetch empresa logo for PDF generation
+      fetchEmpresaLogo(user?.empresa_id).then(b64 => setLogoBase64(b64));
 
       const [ordensData, aeroportosData] = await Promise.all([
         OrdemServico.list('-data_abertura'),

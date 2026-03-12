@@ -7,7 +7,7 @@ import SendEmailModal from '../shared/SendEmailModal';
 import SuccessModal from '../shared/SuccessModal';
 import AlertModal from '../shared/AlertModal';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
-import { createPdfDoc, addHeader, addFooter, addSectionTitle, addKeyValuePairs, addInfoBox, checkPageBreak, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
+import { createPdfDoc, addHeader, addFooter, addSectionTitle, addKeyValuePairs, addInfoBox, checkPageBreak, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
 import { TarifaPouso } from '@/entities/TarifaPouso';
 import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 
@@ -822,12 +822,12 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
                 console.log('🔄 Gerando PDF no frontend...');
 
                 const doc = await createPdfDoc();
-                const logoBase64 = await loadImageAsBase64('/logo-dirops.svg').catch(() => null);
 
-                // Buscar informações do usuário
+                // Buscar informações do usuário e logo da empresa
                 const { User } = await import('@/entities/User');
                 const currentUser = await User.me();
                 const nomeUsuario = currentUser?.full_name || currentUser?.email || 'Usuário';
+                const logoBase64 = await fetchEmpresaLogo(currentUser?.empresa_id);
 
                 // Header
                 let y = addHeader(doc, { title: 'Cálculo de Tarifas Aeroportuárias', logoBase64 });
