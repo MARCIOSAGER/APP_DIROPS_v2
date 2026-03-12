@@ -213,62 +213,39 @@ export default function Operacoes() {
       const outrasTarifasData = outrasTarifasResult.status === 'fulfilled' ? outrasTarifasResult.value : [];
       const impostosData = impostosResult.status === 'fulfilled' ? impostosResult.value : [];
       const configData = configResult.status === 'fulfilled' ? configResult.value : [];
-      
-      const allAeroportosData = aeroportosCache;
-      const companhiasData = companhiasCache;
-      const aeronavesData = aeronavesCache;
-      const modelosData = modelosCache;
 
-      const allAngolanAeroportos = allAeroportosData.filter(a => a.pais === 'AO');
-      const userAccessibleAngolanAeroportos = getAeroportosPermitidos(user, allAngolanAeroportos);
+      const configuracaoSistemaData = configData.length > 0 ? configData[0] : { taxa_cambio_usd_aoa: 850 };
 
-      const filteredVoosData = filtrarDadosPorAcesso(user, voosData.filter(v => !v.deleted_at), 'aeroporto_operacao', allAeroportosData);
-
-      const configuracaoSistema = configData.length > 0 ? configData[0] : { taxa_cambio_usd_aoa: 850 };
-
-      setVoos(filteredVoosData);
+      setVoos(filtrarDadosPorAcesso(user, voosData.filter(v => !v.deleted_at), 'aeroporto_operacao', aeroportosCache));
       setVoosLigados(voosLigadosData);
-      setAeroportos(userAccessibleAngolanAeroportos);
-      setTodosAeroportos(allAeroportosData);
-      setCompanhias(companhiasData);
-      setAeronaves(aeronavesData);
-      setModelosAeronave(modelosData);
       setCalculosTarifa(calculosTarifaData);
       setTarifasPouso(tarifasPousoData);
       setTarifasPermanencia(tarifasPermanenciaData);
       setOutrasTarifas(outrasTarifasData);
       setImpostos(impostosData);
-      setConfiguracaoSistema(configuracaoSistema);
+      setConfiguracaoSistema(configuracaoSistemaData);
 
       setIsLoading(false);
     } catch (error) {
       console.error(`❌ Erro ao carregar dados (tentativa ${tentativa}):`, error);
 
-      // Retry automático com backoff exponencial para conexões instáveis
       if (tentativa < MAX_TENTATIVAS && !error.message?.includes('You must be logged in') && error.response?.status !== 403) {
         const tempoEspera = tentativa * 2000;
-        console.log(`⏳ Conexão instável. Tentando novamente em ${tempoEspera/1000}s... (${tentativa}/${MAX_TENTATIVAS})`);
-        setTimeout(() => {
-          loadData(tentativa + 1);
-        }, tempoEspera);
+        setTimeout(() => { loadData(tentativa + 1); }, tempoEspera);
         return;
       }
 
-      // Erros críticos que não devem fazer retry
       if (error.message?.includes('You must be logged in')) {
         alert('Sessão expirada. Por favor, faça login novamente.');
         await User.login();
       } else if (error.response?.status === 403) {
         alert('Acesso negado. Será redirecionado.');
         window.location.href = createPageUrl('Home');
-      } else {
-        // Após 3 tentativas, mostrar erro ao usuário
-        console.error('❌ Falha após 3 tentativas. Verifique sua conexão.');
       }
-      
+
       setIsLoading(false);
     }
-  }, [aeroportosCache, companhiasCache, aeronavesCache, modelosCache]);
+  }, []);
 
   const refreshSpecificData = async (dataTypes = ['voos', 'voosLigados', 'calculosTarifa']) => {
     try {
@@ -341,12 +318,28 @@ export default function Operacoes() {
     loadData();
   }, [loadData]);
 
-  // Sincronizar companhias com o cache quando ele carregar
+  // Sincronizar dados estáticos com os caches (useStaticData hooks)
   useEffect(() => {
-    if (companhiasCache.length > 0 && companhias.length === 0) {
-      setCompanhias(companhiasCache);
+    if (aeroportosCache.length > 0) {
+      setTodosAeroportos(aeroportosCache);
+      const allAngolan = aeroportosCache.filter(a => a.pais === 'AO');
+      if (currentUser) {
+        setAeroportos(getAeroportosPermitidos(currentUser, allAngolan));
+      }
     }
+  }, [aeroportosCache, currentUser]);
+
+  useEffect(() => {
+    if (companhiasCache.length > 0) setCompanhias(companhiasCache);
   }, [companhiasCache]);
+
+  useEffect(() => {
+    if (aeronavesCache.length > 0) setAeronaves(aeronavesCache);
+  }, [aeronavesCache]);
+
+  useEffect(() => {
+    if (modelosCache.length > 0) setModelosAeronave(modelosCache);
+  }, [modelosCache]);
 
   // Filtragem por data (server-side) quando os filtros de data mudam
   useEffect(() => {
@@ -616,7 +609,8 @@ export default function Operacoes() {
         voo_ligado_id: vooLigado.id
       };
 
-      const calculosAtualizados = await CalculoTarifa.list();
+      // Use freshData.calculosTarifa if available, otherwise use state, only fetch as last resort
+      const calculosAtualizados = freshData?.calculosTarifa || calculosTarifa;
       const existingCalculo = calculosAtualizados.find(ct => ct.voo_id === vooDep.id);
 
       if (existingCalculo) {
@@ -626,7 +620,7 @@ export default function Operacoes() {
         console.log('📝 Criando novo cálculo');
         await CalculoTarifa.create(calculoComVooLigado);
       }
-      
+
       console.log('✅ ========== RECÁLCULO CONCLUÍDO ==========');
       return true;
     } catch (error) {
@@ -635,7 +629,7 @@ export default function Operacoes() {
       console.error('   Stack:', error?.stack);
       throw error;
     }
-  }, []);
+  }, [calculosTarifa]);
 
   const handleSaveVoo = async ({ vooData, linkedArrVooId }) => {
     let tariffsCalculatedSuccessfully = false; 
@@ -654,34 +648,34 @@ export default function Operacoes() {
         savedVoo = await Voo.create(vooDataWithUpdatedBy);
       }
 
-      // IMPORTANTE: Aguardar para garantir consistência
-      await sleep(500);
-
       // Se é um voo DEP com vinculação ARR, criar/atualizar o VooLigado e calcular tarifas
       if (savedVoo.tipo_movimento === 'DEP' && linkedArrVooId) {
         console.log('🔗 ========== INICIANDO VINCULAÇÃO AUTOMÁTICA ==========');
-        await sleep(1000); // Aguardar propagação no banco
 
-        // CRÍTICO: Buscar TODOS os dados FRESCOS do banco antes de calcular
-        const [
-          voosAtualizadosBanco, 
-          voosLigadosBanco, 
-          aeronavesAtualizadas,
-          tarifasPousoAtualizadas,
-          tarifasPermanenciaAtualizadas,
-          outrasTarifasAtualizadas,
-          impostosAtualizadosBanco,
-          aeroportosAtualizados
-        ] = await Promise.all([
-          Voo.list(),
-          VooLigado.list(),
-          RegistoAeronave.list(),
-          TarifaPouso.list().catch(() => tarifasPouso),
-          TarifaPermanencia.list().catch(() => tarifasPermanencia),
-          OutraTarifa.list().catch(() => outrasTarifas),
-          Imposto.list().catch(() => impostos),
-          Aeroporto.list()
+        // Buscar apenas o voo salvo fresco + usar state para dados estáticos
+        const [freshSavedVoo, freshLinkedVoo] = await Promise.all([
+          Voo.filter({ id: { $eq: savedVoo.id } }).then(r => r[0]),
+          Voo.filter({ id: { $eq: linkedArrVooId } }).then(r => r[0])
         ]);
+
+        // Merge fresh voo data into state arrays
+        const voosAtualizadosBanco = voos.map(v => {
+          if (v.id === savedVoo.id) return freshSavedVoo || { ...v, ...vooData };
+          if (v.id === linkedArrVooId) return freshLinkedVoo || v;
+          return v;
+        });
+        // Add if not in state (new voo)
+        if (!voos.find(v => v.id === savedVoo.id) && freshSavedVoo) {
+          voosAtualizadosBanco.push(freshSavedVoo);
+        }
+
+        const voosLigadosBanco = voosLigados;
+        const aeronavesAtualizadas = aeronaves;
+        const tarifasPousoAtualizadas = tarifasPouso;
+        const tarifasPermanenciaAtualizadas = tarifasPermanencia;
+        const outrasTarifasAtualizadas = outrasTarifas;
+        const impostosAtualizadosBanco = impostos;
+        const aeroportosAtualizados = todosAeroportos;
 
         console.log('✅ Dados frescos carregados do banco');
 
@@ -713,18 +707,17 @@ export default function Operacoes() {
             vooLigadoInstance = await VooLigado.create(vooLigadoData);
           }
 
-          await sleep(500); // Aguardar criação do VooLigado
-
           // Atualizar voos com voo_ligado_id
           try {
+            const vooLigadoUpdates = [];
             if (vooArr.voo_ligado_id !== vooLigadoInstance.id) {
-              await Voo.update(linkedArrVooId, { voo_ligado_id: vooLigadoInstance.id });
-              await sleep(100);
+              vooLigadoUpdates.push(Voo.update(linkedArrVooId, { voo_ligado_id: vooLigadoInstance.id }));
             }
-
             if (vooDep.voo_ligado_id !== vooLigadoInstance.id) {
-              await Voo.update(savedVoo.id, { voo_ligado_id: vooLigadoInstance.id });
-              await sleep(100);
+              vooLigadoUpdates.push(Voo.update(savedVoo.id, { voo_ligado_id: vooLigadoInstance.id }));
+            }
+            if (vooLigadoUpdates.length > 0) {
+              await Promise.all(vooLigadoUpdates);
             }
 
             console.log('✅ Voos atualizados com voo_ligado_id:', vooLigadoInstance.id);
@@ -808,12 +801,8 @@ export default function Operacoes() {
               voo_ligado_id: vooLigadoInstance.id
             };
 
-            await sleep(500);
-
-            // Buscar cálculo existente do banco
-            console.log('🔍 Verificando se já existe cálculo no banco...');
-            const calculosAtualizados = await CalculoTarifa.list();
-            const existingCalculo = calculosAtualizados.find(ct => ct.voo_id === vooDep.id);
+            // Verificar se já existe cálculo (usar state em vez de buscar do banco)
+            const existingCalculo = calculosTarifa.find(ct => ct.voo_id === vooDep.id);
 
             if (existingCalculo) {
               console.log('📝 Atualizando cálculo existente ID:', existingCalculo.id);
@@ -827,11 +816,6 @@ export default function Operacoes() {
 
             tariffsCalculatedSuccessfully = true;
             console.log('✅ ========== TARIFAS SALVAS COM SUCESSO ==========');
-            console.log('   Total USD:', calculatedTariffs.total_tarifa_usd, '| Total AOA:', calculatedTariffs.total_tarifa);
-
-            await sleep(500);
-            await refreshSpecificData(['calculosTarifa', 'voosLigados', 'voos']);
-            console.log('✅ Refresh de dados concluído');
           } catch (calcError) {
             console.error('❌ ========== ERRO CRÍTICO NO CÁLCULO AUTOMÁTICO ==========');
             console.error('   Erro completo:', calcError);
@@ -855,39 +839,25 @@ export default function Operacoes() {
         }
       }
 
-      // NOVO: Se estamos EDITANDO um voo ARR que está vinculado, recalcular
+      // Se estamos EDITANDO um voo ARR que está vinculado, recalcular
       if (editingVoo && savedVoo.tipo_movimento === 'ARR') {
         console.log('🔍 Verificando se ARR editado está vinculado...');
-        await sleep(500);
 
-        // Recarregar voosLigados do banco
-        const voosLigadosAtualizados = await VooLigado.list();
-        const vooLigadoExistente = voosLigadosAtualizados.find(vl => vl.id_voo_arr === savedVoo.id);
+        // Usar voosLigados do state (não recarregar do banco)
+        const vooLigadoExistente = voosLigados.find(vl => vl.id_voo_arr === savedVoo.id);
 
         if (vooLigadoExistente) {
           console.log('🔄 Voo ARR editado e vinculado - ID VooLigado:', vooLigadoExistente.id);
           try {
-              // Recarregar dados mais recentes
-              const [voosAtualizados, aeronavesAtualizadas, impostosAtualizadosLocal] = await Promise.all([
-                Voo.list(),
-                RegistoAeronave.list(),
-                Imposto.list()
-              ]);
-
-              const vooArrAtualizado = voosAtualizados.find(v => v.id === vooLigadoExistente.id_voo_arr);
-              const vooDepAtualizado = voosAtualizados.find(v => v.id === vooLigadoExistente.id_voo_dep);
+              // Usar state + merge do voo editado
+              const vooArrAtualizado = { ...savedVoo, ...vooData };
+              const vooDepAtualizado = voos.find(v => v.id === vooLigadoExistente.id_voo_dep);
               const aeroportoOperacao = todosAeroportos.find(a => a.codigo_icao === vooArrAtualizado?.aeroporto_operacao);
-
-              console.log('📊 Dados para recálculo:', {
-                arrId: vooArrAtualizado?.id,
-                depId: vooDepAtualizado?.id,
-                aeroporto: aeroportoOperacao?.codigo_icao
-              });
 
               if (vooArrAtualizado && vooDepAtualizado && aeroportoOperacao) {
                 const currentConfiguracao = {
                   aeroportos: todosAeroportos,
-                  aeronaves: aeronavesAtualizadas,
+                  aeronaves: aeronaves,
                   tarifasPouso: tarifasPouso,
                   tarifasPermanencia: tarifasPermanencia,
                   outrasTarifas: outrasTarifas,
@@ -900,7 +870,7 @@ export default function Operacoes() {
                   vooDepAtualizado,
                   aeroportoOperacao,
                   currentConfiguracao,
-                  impostosAtualizadosLocal
+                  impostos
                 );
 
                 if (calculatedTariffs) {
@@ -909,16 +879,12 @@ export default function Operacoes() {
                     voo_ligado_id: vooLigadoExistente.id
                   };
 
-                  const calculosAtualizados = await CalculoTarifa.list();
-                  const existingCalculo = calculosAtualizados.find(ct => ct.voo_id === vooDepAtualizado.id);
-
-                  await sleep(300);
+                  // Use state instead of fetching from DB
+                  const existingCalculo = calculosTarifa.find(ct => ct.voo_id === vooDepAtualizado.id);
 
                   if (existingCalculo) {
-                    console.log('📝 Atualizando cálculo existente ID:', existingCalculo.id);
                     await CalculoTarifa.update(existingCalculo.id, calculoComVooLigado);
                   } else {
-                    console.log('📝 Criando novo cálculo');
                     await CalculoTarifa.create(calculoComVooLigado);
                   }
 
@@ -940,8 +906,6 @@ export default function Operacoes() {
               message: `Voo atualizado, mas recálculo falhou:\n\n${errorMessage}`
             });
           }
-        } else {
-          console.log('ℹ️ ARR editado não está vinculado ou não encontrado');
         }
       }
 
@@ -1017,11 +981,8 @@ export default function Operacoes() {
             deleted_by: currentUser?.email || 'sistema'
           });
           
-          // Aguardar propagação no banco antes de refresh
-          await sleep(1000);
           await refreshSpecificData(['voos']);
-          
-          await sleep(500);
+
           setSuccessInfo({
             isOpen: true,
             title: 'Voo Movido para Lixeira!',
@@ -1179,16 +1140,19 @@ export default function Operacoes() {
         const [
           voosAtualizados, aeroportosAtualizados, aeronavesAtualizadas,
           tarifasPousoAtualizadas, tarifasPermanenciaAtualizadas,
-          outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas
+          outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas,
+          calculosTarifaFrescos
         ] = await Promise.all([
           Voo.list(), Aeroporto.list(), RegistoAeronave.list(),
           TarifaPouso.list(), TarifaPermanencia.list(), OutraTarifa.list(),
-          Imposto.list(), ConfiguracaoSistema.list()
+          Imposto.list(), ConfiguracaoSistema.list(),
+          CalculoTarifa.list()
         ]);
         const freshData = {
           voosAtualizados, aeroportosAtualizados, aeronavesAtualizadas,
           tarifasPousoAtualizadas, tarifasPermanenciaAtualizadas,
-          outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas
+          outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas,
+          calculosTarifa: calculosTarifaFrescos
         };
 
         // Processar em batches
@@ -1231,22 +1195,23 @@ export default function Operacoes() {
               await _recalculateSingleTariff(vl, freshData);
               
               try {
+                const batchUpdates = [];
                 if (arrVoo && arrVoo.voo_ligado_id !== vl.id) {
-                  await Voo.update(arrVoo.id, { voo_ligado_id: vl.id });
-                  await sleep(100);
+                  batchUpdates.push(Voo.update(arrVoo.id, { voo_ligado_id: vl.id }));
                 }
                 if (depVoo && depVoo.voo_ligado_id !== vl.id) {
-                  await Voo.update(depVoo.id, { voo_ligado_id: vl.id });
-                  await sleep(100);
+                  batchUpdates.push(Voo.update(depVoo.id, { voo_ligado_id: vl.id }));
                 }
+                if (batchUpdates.length > 0) await Promise.all(batchUpdates);
               } catch (updateError) {
                 console.warn('⚠️ Erro ao atualizar voo_ligado_id:', updateError);
               }
-              
+
               successCount++;
 
+              // Rate limiting: pause every 10 items
               if ((globalIndex + 1) % 10 === 0) {
-                await sleep(500);
+                await sleep(300);
               }
             } catch (error) {
               errorCount++;
@@ -1450,7 +1415,8 @@ export default function Operacoes() {
         numero_proforma: numeroProforma,
         status: 'emitida',
         data_emissao: new Date().toISOString().split('T')[0],
-        voo_id: gerarProformaCalculo?.voo_id || null
+        voo_id: gerarProformaCalculo?.voo_id || null,
+        emitida_por: currentUser?.email || 'sistema'
       };
 
       const novaProforma = await Proforma.create(proformaData);

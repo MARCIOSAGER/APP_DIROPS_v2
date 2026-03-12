@@ -79,6 +79,7 @@ CREATE TABLE aeroporto (
   longitude DOUBLE PRECISION,
   soleiras TEXT,
   "isSGA" BOOLEAN DEFAULT FALSE,
+  empresa_id UUID REFERENCES empresa(id),
   updated_by TEXT,
   created_by TEXT,
   created_date TIMESTAMPTZ DEFAULT NOW(),

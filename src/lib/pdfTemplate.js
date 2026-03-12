@@ -97,6 +97,39 @@ export async function loadImageAsBase64(url) {
   });
 }
 
+/**
+ * Fetch empresa logo as base64 from user's empresa_id.
+ * Falls back to DIROPS default logo if no empresa or no logo_url.
+ * @param {string} empresaId - UUID of the empresa
+ * @returns {Promise<string|null>} base64 data URL or null
+ */
+export async function fetchEmpresaLogo(empresaId) {
+  try {
+    if (empresaId) {
+      const { supabase } = await import('@/lib/supabaseClient');
+      const { data: empresa } = await supabase.from('empresa').select('logo_url').eq('id', empresaId).single();
+      if (empresa?.logo_url) {
+        const response = await fetch(empresa.logo_url);
+        const blob = await response.blob();
+        return await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      }
+    }
+    // Fallback: logo padrão DIROPS
+    return await loadImageAsBase64('/logo-dirops.svg');
+  } catch (e) {
+    console.warn('Não foi possível carregar logo:', e);
+    try {
+      return await loadImageAsBase64('/logo-dirops.svg');
+    } catch {
+      return null;
+    }
+  }
+}
+
 /** Get page dimensions based on orientation */
 function getPageDims(doc) {
   return {
@@ -298,6 +331,13 @@ export function addTable(doc, startY, { columns, rows, headerOpts = null, rowHei
   const safeBottom = h - PDF.margin.bottom - 8;
   const cellPadding = 2;
   const bodyFontSize = fontSize || PDF.font.body;
+
+  // Normalize column widths to fit tableWidth
+  const totalDefined = columns.reduce((sum, col) => sum + col.width, 0);
+  if (totalDefined > tableWidth) {
+    const scale = tableWidth / totalDefined;
+    columns.forEach(col => { col.width = col.width * scale; });
+  }
 
   // Calculate column positions
   const colPositions = [];

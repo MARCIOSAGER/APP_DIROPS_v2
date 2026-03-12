@@ -219,19 +219,7 @@ export default function ProformaPage() {
 
   const handleDownloadPDF = async (proforma) => {
     try {
-      // Se já existe URL do PDF, fazer download direto
-      if (proforma.pdf_url) {
-        const link = document.createElement('a');
-        link.href = proforma.pdf_url;
-        link.download = `proforma_${proforma.numero_proforma}.pdf`;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        return;
-      }
-
-      // Se não existe, gerar novo PDF
+      // Sempre regenerar o PDF para garantir layout atualizado
       setAlertInfo({
         isOpen: true,
         type: 'info',

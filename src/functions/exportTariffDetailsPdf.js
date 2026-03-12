@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient';
-import { createPdfDoc, addHeader, addFooter, addSectionTitle, addKeyValuePairs, addInfoBox, checkPageBreak, PDF } from '@/lib/pdfTemplate';
+import { createPdfDoc, addHeader, addFooter, addSectionTitle, addKeyValuePairs, addInfoBox, checkPageBreak, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
 
 export async function exportTariffDetailsPdf({ calculoId }) {
   if (!calculoId) throw new Error('ID do cálculo é obrigatório');
@@ -25,13 +25,18 @@ export async function exportTariffDetailsPdf({ calculoId }) {
   const aeroporto = (aeroportosRes.data || []).find(a => a.id === calculo.aeroporto_id);
   const companhia = (companhiasRes.data || []).find(c => c.codigo_icao === voo.companhia_aerea);
 
-  // Get current user for footer
+  // Get current user for footer and logo
   const { data: { user } } = await supabase.auth.getUser();
   let userName = user?.email || 'Sistema';
+  let userEmpresaId = null;
   if (user) {
-    const { data: profile } = await supabase.from('users').select('full_name').eq('auth_id', user.id).single();
+    const { data: profile } = await supabase.from('users').select('full_name, empresa_id').eq('auth_id', user.id).single();
     if (profile?.full_name) userName = profile.full_name;
+    userEmpresaId = profile?.empresa_id;
   }
+
+  // Fetch empresa logo from user's empresa
+  const logoBase64 = await fetchEmpresaLogo(userEmpresaId);
 
   const detalhes = calculo.detalhes_calculo || {};
 
@@ -48,7 +53,7 @@ export async function exportTariffDetailsPdf({ calculoId }) {
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // Header
-  let yPos = addHeader(doc, { title: 'Cálculo de Tarifas Aeroportuárias' });
+  let yPos = addHeader(doc, { title: 'Cálculo de Tarifas Aeroportuárias', logoBase64 });
 
   // Flight info box
   let vooArrData = null;
