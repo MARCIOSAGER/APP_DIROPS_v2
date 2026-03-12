@@ -131,7 +131,7 @@ export default function FormVoo({
     }
 
     if (currentUser.role === 'admin' || currentUser.perfis && currentUser.perfis.includes('administrador')) {
-      return aeroportos;
+      return aeroportos.filter((a) => a.isSGA === true);
     }
 
     if (currentUser.aeroportos_acesso && Array.isArray(currentUser.aeroportos_acesso) && currentUser.aeroportos_acesso.length > 0) {

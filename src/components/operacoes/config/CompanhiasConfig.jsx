@@ -13,6 +13,76 @@ import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 import { User } from '@/entities/User';
 
+const PAISES_ISO = [
+  { code: 'AD', name: 'Andorra' }, { code: 'AE', name: 'Emirados Árabes Unidos' }, { code: 'AF', name: 'Afeganistão' },
+  { code: 'AG', name: 'Antígua e Barbuda' }, { code: 'AI', name: 'Anguila' }, { code: 'AL', name: 'Albânia' },
+  { code: 'AM', name: 'Arménia' }, { code: 'AO', name: 'Angola' }, { code: 'AR', name: 'Argentina' },
+  { code: 'AT', name: 'Áustria' }, { code: 'AU', name: 'Austrália' }, { code: 'AZ', name: 'Azerbaijão' },
+  { code: 'BA', name: 'Bósnia e Herzegovina' }, { code: 'BB', name: 'Barbados' }, { code: 'BD', name: 'Bangladesh' },
+  { code: 'BE', name: 'Bélgica' }, { code: 'BF', name: 'Burkina Faso' }, { code: 'BG', name: 'Bulgária' },
+  { code: 'BH', name: 'Barém' }, { code: 'BI', name: 'Burundi' }, { code: 'BJ', name: 'Benim' },
+  { code: 'BN', name: 'Brunei' }, { code: 'BO', name: 'Bolívia' }, { code: 'BR', name: 'Brasil' },
+  { code: 'BS', name: 'Bahamas' }, { code: 'BT', name: 'Butão' }, { code: 'BW', name: 'Botswana' },
+  { code: 'BY', name: 'Bielorrússia' }, { code: 'BZ', name: 'Belize' }, { code: 'CA', name: 'Canadá' },
+  { code: 'CD', name: 'Congo (RDC)' }, { code: 'CF', name: 'República Centro-Africana' }, { code: 'CG', name: 'Congo' },
+  { code: 'CH', name: 'Suíça' }, { code: 'CI', name: 'Costa do Marfim' }, { code: 'CL', name: 'Chile' },
+  { code: 'CM', name: 'Camarões' }, { code: 'CN', name: 'China' }, { code: 'CO', name: 'Colômbia' },
+  { code: 'CR', name: 'Costa Rica' }, { code: 'CU', name: 'Cuba' }, { code: 'CV', name: 'Cabo Verde' },
+  { code: 'CY', name: 'Chipre' }, { code: 'CZ', name: 'República Checa' }, { code: 'DE', name: 'Alemanha' },
+  { code: 'DJ', name: 'Djibuti' }, { code: 'DK', name: 'Dinamarca' }, { code: 'DM', name: 'Dominica' },
+  { code: 'DO', name: 'República Dominicana' }, { code: 'DZ', name: 'Argélia' }, { code: 'EC', name: 'Equador' },
+  { code: 'EE', name: 'Estónia' }, { code: 'EG', name: 'Egito' }, { code: 'ER', name: 'Eritreia' },
+  { code: 'ES', name: 'Espanha' }, { code: 'ET', name: 'Etiópia' }, { code: 'FI', name: 'Finlândia' },
+  { code: 'FJ', name: 'Fiji' }, { code: 'FR', name: 'França' }, { code: 'GA', name: 'Gabão' },
+  { code: 'GB', name: 'Reino Unido' }, { code: 'GD', name: 'Granada' }, { code: 'GE', name: 'Geórgia' },
+  { code: 'GH', name: 'Gana' }, { code: 'GM', name: 'Gâmbia' }, { code: 'GN', name: 'Guiné' },
+  { code: 'GQ', name: 'Guiné Equatorial' }, { code: 'GR', name: 'Grécia' }, { code: 'GT', name: 'Guatemala' },
+  { code: 'GW', name: 'Guiné-Bissau' }, { code: 'GY', name: 'Guiana' }, { code: 'HN', name: 'Honduras' },
+  { code: 'HR', name: 'Croácia' }, { code: 'HT', name: 'Haiti' }, { code: 'HU', name: 'Hungria' },
+  { code: 'ID', name: 'Indonésia' }, { code: 'IE', name: 'Irlanda' }, { code: 'IL', name: 'Israel' },
+  { code: 'IN', name: 'Índia' }, { code: 'IQ', name: 'Iraque' }, { code: 'IR', name: 'Irão' },
+  { code: 'IS', name: 'Islândia' }, { code: 'IT', name: 'Itália' }, { code: 'JM', name: 'Jamaica' },
+  { code: 'JO', name: 'Jordânia' }, { code: 'JP', name: 'Japão' }, { code: 'KE', name: 'Quénia' },
+  { code: 'KG', name: 'Quirguistão' }, { code: 'KH', name: 'Camboja' }, { code: 'KI', name: 'Quiribati' },
+  { code: 'KM', name: 'Comores' }, { code: 'KN', name: 'São Cristóvão e Neves' }, { code: 'KP', name: 'Coreia do Norte' },
+  { code: 'KR', name: 'Coreia do Sul' }, { code: 'KW', name: 'Kuwait' }, { code: 'KZ', name: 'Cazaquistão' },
+  { code: 'LA', name: 'Laos' }, { code: 'LB', name: 'Líbano' }, { code: 'LC', name: 'Santa Lúcia' },
+  { code: 'LI', name: 'Liechtenstein' }, { code: 'LK', name: 'Sri Lanka' }, { code: 'LR', name: 'Libéria' },
+  { code: 'LS', name: 'Lesoto' }, { code: 'LT', name: 'Lituânia' }, { code: 'LU', name: 'Luxemburgo' },
+  { code: 'LV', name: 'Letónia' }, { code: 'LY', name: 'Líbia' }, { code: 'MA', name: 'Marrocos' },
+  { code: 'MC', name: 'Mónaco' }, { code: 'MD', name: 'Moldávia' }, { code: 'ME', name: 'Montenegro' },
+  { code: 'MG', name: 'Madagáscar' }, { code: 'MH', name: 'Ilhas Marshall' }, { code: 'MK', name: 'Macedónia do Norte' },
+  { code: 'ML', name: 'Mali' }, { code: 'MM', name: 'Myanmar' }, { code: 'MN', name: 'Mongólia' },
+  { code: 'MR', name: 'Mauritânia' }, { code: 'MT', name: 'Malta' }, { code: 'MU', name: 'Maurícia' },
+  { code: 'MV', name: 'Maldivas' }, { code: 'MW', name: 'Malawi' }, { code: 'MX', name: 'México' },
+  { code: 'MY', name: 'Malásia' }, { code: 'MZ', name: 'Moçambique' }, { code: 'NA', name: 'Namíbia' },
+  { code: 'NE', name: 'Níger' }, { code: 'NG', name: 'Nigéria' }, { code: 'NI', name: 'Nicarágua' },
+  { code: 'NL', name: 'Países Baixos' }, { code: 'NO', name: 'Noruega' }, { code: 'NP', name: 'Nepal' },
+  { code: 'NR', name: 'Nauru' }, { code: 'NZ', name: 'Nova Zelândia' }, { code: 'OM', name: 'Omã' },
+  { code: 'PA', name: 'Panamá' }, { code: 'PE', name: 'Peru' }, { code: 'PG', name: 'Papua Nova Guiné' },
+  { code: 'PH', name: 'Filipinas' }, { code: 'PK', name: 'Paquistão' }, { code: 'PL', name: 'Polónia' },
+  { code: 'PT', name: 'Portugal' }, { code: 'PW', name: 'Palau' }, { code: 'PY', name: 'Paraguai' },
+  { code: 'QA', name: 'Catar' }, { code: 'RO', name: 'Roménia' }, { code: 'RS', name: 'Sérvia' },
+  { code: 'RU', name: 'Rússia' }, { code: 'RW', name: 'Ruanda' }, { code: 'SA', name: 'Arábia Saudita' },
+  { code: 'SB', name: 'Ilhas Salomão' }, { code: 'SC', name: 'Seicheles' }, { code: 'SD', name: 'Sudão' },
+  { code: 'SE', name: 'Suécia' }, { code: 'SG', name: 'Singapura' }, { code: 'SI', name: 'Eslovénia' },
+  { code: 'SK', name: 'Eslováquia' }, { code: 'SL', name: 'Serra Leoa' }, { code: 'SM', name: 'San Marino' },
+  { code: 'SN', name: 'Senegal' }, { code: 'SO', name: 'Somália' }, { code: 'SR', name: 'Suriname' },
+  { code: 'SS', name: 'Sudão do Sul' }, { code: 'ST', name: 'São Tomé e Príncipe' }, { code: 'SV', name: 'El Salvador' },
+  { code: 'SY', name: 'Síria' }, { code: 'SZ', name: 'Essuatíni' }, { code: 'TD', name: 'Chade' },
+  { code: 'TG', name: 'Togo' }, { code: 'TH', name: 'Tailândia' }, { code: 'TJ', name: 'Tajiquistão' },
+  { code: 'TL', name: 'Timor-Leste' }, { code: 'TM', name: 'Turquemenistão' }, { code: 'TN', name: 'Tunísia' },
+  { code: 'TO', name: 'Tonga' }, { code: 'TR', name: 'Turquia' }, { code: 'TT', name: 'Trindade e Tobago' },
+  { code: 'TV', name: 'Tuvalu' }, { code: 'TZ', name: 'Tanzânia' }, { code: 'UA', name: 'Ucrânia' },
+  { code: 'UG', name: 'Uganda' }, { code: 'US', name: 'Estados Unidos' }, { code: 'UY', name: 'Uruguai' },
+  { code: 'UZ', name: 'Uzbequistão' }, { code: 'VA', name: 'Vaticano' }, { code: 'VC', name: 'São Vicente e Granadinas' },
+  { code: 'VE', name: 'Venezuela' }, { code: 'VN', name: 'Vietname' }, { code: 'VU', name: 'Vanuatu' },
+  { code: 'WS', name: 'Samoa' }, { code: 'YE', name: 'Iémen' }, { code: 'ZA', name: 'África do Sul' },
+  { code: 'ZM', name: 'Zâmbia' }, { code: 'ZW', name: 'Zimbabwe' }
+];
+
+const PAISES_OPTIONS = PAISES_ISO.map(p => ({ value: p.code, label: `${p.code} – ${p.name}` }));
+
 // Exportar o formulário separadamente para uso em outros componentes
 export function FormCompanhia({ companhia, onSave, onCancel }) {
   const [formData, setFormData] = useState(companhia || {
@@ -76,14 +146,11 @@ export function FormCompanhia({ companhia, onSave, onCancel }) {
         </div>
         <div>
           <Label>Nacionalidade</Label>
-          <Input
+          <Combobox
+            options={PAISES_OPTIONS}
             value={formData.nacionalidade}
-            onChange={(e) => setFormData({ ...formData, nacionalidade: e.target.value.toUpperCase() })}
-            maxLength={2}
-            placeholder="Ex: AO" />
-          <p className="text-xs text-slate-500 mt-1">
-            Código ISO de 2 letras (ex: AO, BR, PT)
-          </p>
+            onValueChange={(v) => setFormData({ ...formData, nacionalidade: v })}
+            placeholder="Pesquisar país (código ou nome)..." />
         </div>
         <div>
           <Label>Tipo *</Label>

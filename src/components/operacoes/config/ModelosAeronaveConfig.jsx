@@ -97,8 +97,11 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
     setIsFormOpen(true);
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       // Validar duplicidade de código IATA
       const codigoIataNormalizado = formData.codigo_iata.trim().toUpperCase();
@@ -163,6 +166,8 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
           message: `Erro ao salvar modelo: ${error.message || 'Ocorreu um erro desconhecido.'}`
         });
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -384,8 +389,8 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-              <Button type="submit" className="bg-green-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-green-600/90 h-10">Salvar</Button>
+              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-green-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-green-600/90 h-10">{isSubmitting ? 'Salvando...' : 'Salvar'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
