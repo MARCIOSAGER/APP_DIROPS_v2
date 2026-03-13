@@ -101,53 +101,37 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
     setSaving(true);
 
     try {
-      // 1. Create auth user with a random temporary password
+      // 1. Create auth user (confirmed) + profile via admin Edge Function
       const tempPassword = crypto.randomUUID().slice(0, 16) + 'A1!';
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: tempPassword,
-        options: {
-          data: { full_name: formData.full_name },
-          emailRedirectTo: `${window.location.origin}/AlterarSenha`,
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('admin-user', {
+        body: {
+          action: 'create',
+          email: formData.email,
+          password: tempPassword,
+          full_name: formData.full_name,
+          perfis: formData.perfis,
+          empresa_id: formData.empresa_id || null,
+          aeroportos_acesso: [...new Set(formData.aeroportos_acesso)],
         },
       });
 
-      if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
+      if (fnError || fnData?.error) {
+        const errMsg = fnData?.error || fnError?.message || 'Erro ao criar utilizador';
+        if (errMsg.includes('already been registered') || errMsg.includes('already registered')) {
           setError('Este email já está registado no sistema.');
         } else {
-          setError(signUpError.message);
+          setError(errMsg);
         }
         setSaving(false);
         return;
       }
 
-      const authUserId = authData?.user?.id;
-      if (!authUserId) {
-        setError('Erro ao criar conta de autenticação.');
-        setSaving(false);
-        return;
-      }
-
-      // 2. Create the users profile row
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert({
-          auth_id: authUserId,
-          email: formData.email,
-          full_name: formData.full_name,
-          telefone: formData.telefone || null,
-          perfis: formData.perfis,
-          empresa_id: formData.empresa_id || null,
-          aeroportos_acesso: [...new Set(formData.aeroportos_acesso)],
-          status: 'ativo',
-        });
-
-      if (profileError) {
-        console.error('[AddUser] Profile creation error:', profileError);
-        setError('Conta criada mas houve erro ao criar perfil: ' + profileError.message);
-        setSaving(false);
-        return;
+      // 2. Update profile with telefone (if provided)
+      if (formData.telefone && fnData?.user_id) {
+        await supabase
+          .from('users')
+          .update({ telefone: formData.telefone })
+          .eq('auth_id', fnData.user_id);
       }
 
       // 3. Send password reset email so user can set their own password

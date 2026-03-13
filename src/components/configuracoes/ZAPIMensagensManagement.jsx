@@ -124,7 +124,7 @@ export default function ZAPIMensagensManagement({ onError, onSuccess }) {
                   <Button 
                     onClick={handleEnviarTextoSimples} 
                     disabled={isSending}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     {isSending ? 'A enviar...' : 'Enviar'}
                   </Button>
@@ -186,7 +186,7 @@ export default function ZAPIMensagensManagement({ onError, onSuccess }) {
                   <Button onClick={() => setShowModal(null)} variant="outline" className="flex-1">
                     Cancelar
                   </Button>
-                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                     Em breve
                   </Button>
                 </div>
@@ -247,7 +247,7 @@ export default function ZAPIMensagensManagement({ onError, onSuccess }) {
                   <Button onClick={() => setShowModal(null)} variant="outline" className="flex-1">
                     Cancelar
                   </Button>
-                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                     Em breve
                   </Button>
                 </div>
@@ -298,7 +298,7 @@ export default function ZAPIMensagensManagement({ onError, onSuccess }) {
                   <Button onClick={() => setShowModal(null)} variant="outline" className="flex-1">
                     Cancelar
                   </Button>
-                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                     Em breve
                   </Button>
                 </div>
@@ -359,7 +359,7 @@ export default function ZAPIMensagensManagement({ onError, onSuccess }) {
                   <Button onClick={() => setShowModal(null)} variant="outline" className="flex-1">
                     Cancelar
                   </Button>
-                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                     Em breve
                   </Button>
                 </div>
@@ -441,7 +441,7 @@ export default function ZAPIMensagensManagement({ onError, onSuccess }) {
                   <Button onClick={() => setShowModal(null)} variant="outline" className="flex-1">
                     Cancelar
                   </Button>
-                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                     Em breve
                   </Button>
                 </div>
@@ -502,7 +502,7 @@ export default function ZAPIMensagensManagement({ onError, onSuccess }) {
                   <Button onClick={() => setShowModal(null)} variant="outline" className="flex-1">
                     Cancelar
                   </Button>
-                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                     Em breve
                   </Button>
                 </div>

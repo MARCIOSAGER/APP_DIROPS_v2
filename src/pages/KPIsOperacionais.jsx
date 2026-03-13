@@ -974,10 +974,13 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <BarChart3 className="w-4 h-4" />
               Dashboard
             </TabsTrigger>
+            {/* Power BI só disponível para SGA (superadmin sem empresa_id) */}
+            {!currentUser?.empresa_id && (
             <TabsTrigger value="powerbi" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               Power BI
             </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="medicoes" className="space-y-6">

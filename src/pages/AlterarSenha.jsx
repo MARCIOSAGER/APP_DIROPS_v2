@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
-import { User } from '@/entities/User';
+import { supabase } from '@/lib/supabaseClient';
 import { createPageUrl } from '@/utils';
 
 export default function AlterarSenha() {
@@ -16,26 +16,36 @@ export default function AlterarSenha() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
   useEffect(() => {
+    // Listen for PASSWORD_RECOVERY event from reset link
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AlterarSenha] Auth event:', event);
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        if (session?.user) {
+          setUser({ email: session.user.email, full_name: session.user.user_metadata?.full_name });
+        }
+        setLoadingUser(false);
+      }
+    });
+
+    // Also check current session
     checkUser();
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const checkUser = async () => {
     try {
-      const currentUser = await User.me();
-      setUser(currentUser);
-      
-      console.log('👤 Usuário carregado na AlterarSenha:', {
-        email: currentUser.email,
-        status: currentUser.status
-      });
-      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser({ email: session.user.email, full_name: session.user.user_metadata?.full_name });
+      }
     } catch (error) {
       console.error('Erro ao carregar usuário:', error);
-      setError('Não foi possível carregar os dados do usuário.');
     } finally {
       setLoadingUser(false);
     }
@@ -66,19 +76,29 @@ export default function AlterarSenha() {
     setIsLoading(true);
 
     try {
-      // TODO: Implementar a lógica para realmente alterar a senha do usuário
-      // via Auth do SDK da base44. Por exemplo:
-      // await Auth.changePassword(novaSenha);
-      // O User.updateMyUserData com status 'pendente' não é mais necessário aqui.
-      
-      // Após alterar a senha, redirecionar para ValidacaoAcesso
-      // que vai verificar se o usuário precisa solicitar perfil ou ir para Home
-      console.log('✅ Senha alterada com sucesso, redirecionando para ValidacaoAcesso');
-      window.location.href = createPageUrl('ValidacaoAcesso');
-      
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: novaSenha,
+      });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setSuccess(true);
+      console.log('[AlterarSenha] Senha alterada com sucesso');
+
+      // Redirecionar após 2 segundos
+      setTimeout(() => {
+        window.location.href = createPageUrl('ValidacaoAcesso');
+      }, 2000);
+
     } catch (error) {
       console.error('Erro ao alterar senha:', error);
-      setError('Não foi possível alterar a senha. Tente novamente.');
+      if (error.message?.includes('same_password')) {
+        setError('A nova senha não pode ser igual à senha anterior.');
+      } else {
+        setError(error.message || 'Não foi possível alterar a senha. Tente novamente.');
+      }
       setIsLoading(false);
     }
   };
@@ -99,6 +119,18 @@ export default function AlterarSenha() {
     );
   }
 
+  if (success) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Senha Alterada com Sucesso!</h2>
+          <p className="text-slate-600">A redirecionar...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4">
       <div className="max-w-md mx-auto">
@@ -108,7 +140,7 @@ export default function AlterarSenha() {
           </div>
           <h1 className="text-3xl font-bold text-slate-900">Definir Nova Senha</h1>
           <p className="text-slate-600 mt-2">
-            Olá {user?.full_name || user?.email}! Por favor, defina uma nova senha para a sua conta.
+            {user ? `Olá ${user.full_name || user.email}! ` : ''}Por favor, defina uma nova senha para a sua conta.
           </p>
         </div>
 
@@ -186,7 +218,7 @@ export default function AlterarSenha() {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 disabled={isLoading || !novaSenha || !confirmarSenha}
               >
                 {isLoading ? (

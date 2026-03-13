@@ -561,7 +561,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
               <Button
                 onClick={handleBuscar}
                 disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Search className="w-4 h-4 mr-2" />
                 {isLoading ? 'Buscando...' : 'Buscar'}

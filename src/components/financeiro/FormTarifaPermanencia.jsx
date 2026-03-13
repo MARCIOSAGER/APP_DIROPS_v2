@@ -123,7 +123,7 @@ const FormTarifaPermanencia = ({ isOpen, onClose, onSubmit, tarifa }) => {
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit">Salvar</Button>
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">Salvar</Button>
           </DialogFooter>
         </form>
       </DialogContent>

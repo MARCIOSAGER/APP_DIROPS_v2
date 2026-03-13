@@ -69,8 +69,14 @@ export default function FormVoo({
     tripulacao: 0,
     carga_kg: 0,
     observacoes: '',
+    posicao_stand: '',
     aeronave_no_hangar: false,
-    requer_iluminacao_extra: false
+    requer_iluminacao_extra: false,
+    registo_alterado: false,
+    registo_dep: '',
+    combustivel_utilizado: false,
+    combustivel_tipo: 'JET-A1',
+    combustivel_litros: 0
   });
 
   const [errors, setErrors] = useState({});
@@ -248,8 +254,14 @@ export default function FormVoo({
         tripulacao: vooInicial.tripulacao || 0,
         carga_kg: vooInicial.carga_kg || 0,
         observacoes: vooInicial.observacoes || '',
+        posicao_stand: vooInicial.posicao_stand || '',
         aeronave_no_hangar: vooInicial.aeronave_no_hangar || false,
-        requer_iluminacao_extra: vooInicial.requer_iluminacao_extra || false
+        requer_iluminacao_extra: vooInicial.requer_iluminacao_extra || false,
+        registo_alterado: false,
+        registo_dep: '',
+        combustivel_utilizado: vooInicial.combustivel_utilizado || false,
+        combustivel_tipo: vooInicial.combustivel_tipo || 'JET-A1',
+        combustivel_litros: vooInicial.combustivel_litros || 0
       });
 
       // If editing a DEP flight, check if it's already linked
@@ -257,6 +269,14 @@ export default function FormVoo({
         const existingLink = voosLigados.find((vl) => vl.id_voo_dep === vooInicial.id);
         if (existingLink) {
           setLinkedArrVooId(existingLink.id_voo_arr);
+          // Carregar dados de troca de registo se existir
+          if (existingLink.registo_alterado) {
+            setFormData(prev => ({
+              ...prev,
+              registo_alterado: true,
+              registo_dep: existingLink.registo_dep || ''
+            }));
+          }
         } else {
           setLinkedArrVooId('');
         }
@@ -524,6 +544,18 @@ export default function FormVoo({
       if (!formData.numero_voo) newErrors.numero_voo = 'Número do voo é obrigatório';
       if (!formData.aeroporto_origem_destino) newErrors.aeroporto_origem_destino = 'Aeroporto de destino é obrigatório';
 
+      // Validação troca de registo
+      if (formData.registo_alterado) {
+        if (!formData.registo_dep) {
+          newErrors.registo_dep = 'Indique o registo da aeronave que partiu.';
+        } else {
+          const arrVoo = voos.find(v => v.id === linkedArrVooId);
+          if (arrVoo && formData.registo_dep === arrVoo.registo_aeronave) {
+            newErrors.registo_dep = 'O registo DEP deve ser diferente do registo ARR.';
+          }
+        }
+      }
+
     } else {// ARR flight
       if (!formData.numero_voo) newErrors.numero_voo = 'Número do voo é obrigatório';
       if (!formData.companhia_aerea) newErrors.companhia_aerea = 'Companhia aérea é obrigatória';
@@ -572,10 +604,17 @@ export default function FormVoo({
         }
       }
 
+      // Se houve troca de registo, usar o registo DEP
+      const registoFinal = formData.registo_alterado && formData.registo_dep
+        ? normalizeAircraftRegistration(formData.registo_dep) || formData.registo_dep
+        : registoToSubmit;
+
+      // Remove campos internos que não existem na tabela voo (até migration ser executada)
+      const { registo_dep, registo_alterado, ...formDataClean } = formData;
       const vooDataToSubmit = {
-        ...formData,
-        registo_aeronave: registoToSubmit, // Use the (potentially normalized) registration
-        numero_voo: numeroVooToSubmit // Use the normalized flight number
+        ...formDataClean,
+        registo_aeronave: registoFinal,
+        numero_voo: numeroVooToSubmit,
       };
 
       await onSubmit({
@@ -1232,7 +1271,7 @@ export default function FormVoo({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="aeroporto_origem_destino">
-                    {formData.tipo_movimento === 'ARR' ? 'Aeroporto de Origem *' : 'Aeroporto de Destino *'}
+                    {formData.tipo_movimento === 'ARR' ? 'Origem *' : 'Destino *'}
                   </Label>
                   <Combobox
                   id="aeroporto_origem_destino"
@@ -1257,9 +1296,18 @@ export default function FormVoo({
                 </div>
               </div>
 
-              {/* --- Linha 4: Checkboxes Especiais --- */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
-                <div className="flex items-center space-x-2">
+              {/* --- Linha 4: Stand + Checkboxes Especiais --- */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="posicao_stand">Posição Stand</Label>
+                  <Input
+                    id="posicao_stand"
+                    value={formData.posicao_stand}
+                    onChange={(e) => handleInputChange('posicao_stand', e.target.value)}
+                    placeholder="Ex: A1"
+                  />
+                </div>
+                <div className="flex items-center space-x-2 pb-2">
                   <Checkbox
                     id="aeronave_no_hangar"
                     checked={formData.aeronave_no_hangar}
@@ -1269,7 +1317,7 @@ export default function FormVoo({
                     Hangar (Isenta estacionamento)
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 pb-2">
                   <Checkbox
                     id="requer_iluminacao_extra"
                     checked={formData.requer_iluminacao_extra}
@@ -1432,9 +1480,18 @@ export default function FormVoo({
                 </div>
               </div>
 
-              {/* --- Linha 3: Checkboxes Especiais --- */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
-                <div className="flex items-center space-x-2">
+              {/* --- Linha 3: Stand + Checkboxes Especiais --- */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="posicao_stand_dep">Posição Stand</Label>
+                  <Input
+                    id="posicao_stand_dep"
+                    value={formData.posicao_stand}
+                    onChange={(e) => handleInputChange('posicao_stand', e.target.value)}
+                    placeholder="Ex: A1"
+                  />
+                </div>
+                <div className="flex items-center space-x-2 pb-2">
                   <Checkbox
                     id="aeronave_no_hangar_dep"
                     checked={formData.aeronave_no_hangar}
@@ -1444,7 +1501,7 @@ export default function FormVoo({
                     Hangar (Isenta estacionamento)
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 pb-2">
                   <Checkbox
                     id="requer_iluminacao_extra_dep"
                     checked={formData.requer_iluminacao_extra}
@@ -1456,17 +1513,115 @@ export default function FormVoo({
                 </div>
               </div>
 
+              {/* --- Secção Troca de Registo (apenas DEP) --- */}
+              {formData.tipo_movimento === 'DEP' && linkedArrVooId && (
+                <div className="border-t pt-4 space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="registo_alterado"
+                      checked={formData.registo_alterado}
+                      onCheckedChange={(checked) => {
+                        handleInputChange('registo_alterado', checked);
+                        if (!checked) {
+                          const arrVoo = voos.find(v => v.id === linkedArrVooId);
+                          if (arrVoo) {
+                            handleInputChange('registo_aeronave', arrVoo.registo_aeronave);
+                          }
+                          handleInputChange('registo_dep', '');
+                        }
+                      }}
+                    />
+                    <Label htmlFor="registo_alterado" className="text-sm font-semibold leading-none cursor-pointer text-orange-700">
+                      Houve alteração de registo (troca de aeronave)
+                    </Label>
+                  </div>
+                  {formData.registo_alterado && (
+                    <div className="pl-6 space-y-3">
+                      <Alert className="bg-orange-50 border-orange-200">
+                        <AlertTriangle className="h-4 w-4 text-orange-600" />
+                        <AlertDescription className="text-orange-800 text-sm">
+                          O registo original (ARR) é <strong>{voos.find(v => v.id === linkedArrVooId)?.registo_aeronave}</strong>.
+                          Indique abaixo o registo da aeronave que efetivamente partiu.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 max-w-md space-y-1">
+                        <Label className="text-xs">Registo da Aeronave DEP *</Label>
+                        <AsyncCombobox
+                          id="registo_dep"
+                          value={formData.registo_dep}
+                          onValueChange={(value) => {
+                            handleInputChange('registo_dep', value);
+                            handleInputChange('registo_aeronave', value);
+                          }}
+                          placeholder="Pesquisar registo..."
+                          searchPlaceholder="Procurar registo..."
+                          noResultsMessage="Nenhum registo"
+                          onSearch={searchRegistos}
+                          getInitialOption={getRegistoInicial}
+                          minSearchLength={1}
+                          className={errors.registo_dep ? 'border-red-500' : ''}
+                        />
+                        {errors.registo_dep && <p className="text-red-500 text-sm">{errors.registo_dep}</p>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* --- Secção Combustível (apenas DEP) --- */}
+              {formData.tipo_movimento === 'DEP' && (
+                <div className="border-t pt-4 space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="combustivel_utilizado"
+                      checked={formData.combustivel_utilizado}
+                      onCheckedChange={(checked) => handleInputChange('combustivel_utilizado', checked)}
+                    />
+                    <Label htmlFor="combustivel_utilizado" className="text-sm font-semibold leading-none cursor-pointer text-amber-700">
+                      Abastecimento de Combustível
+                    </Label>
+                  </div>
+                  {formData.combustivel_utilizado && (
+                    <div className="grid grid-cols-2 gap-3 pl-6 bg-amber-50 p-3 rounded-lg border border-amber-200 max-w-md">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Tipo</Label>
+                        <select
+                          value={formData.combustivel_tipo}
+                          onChange={(e) => handleInputChange('combustivel_tipo', e.target.value)}
+                          className="w-full h-9 px-2 py-1 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 border-slate-200"
+                        >
+                          <option value="JET-A1">JET-A1</option>
+                          <option value="AVGAS">AVGAS</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Litros</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.combustivel_litros || ''}
+                          onChange={(e) => handleInputChange('combustivel_litros', parseFloat(e.target.value) || 0)}
+                          className="h-9"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* --- Linha 4: Destino e Outros --- */}
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="aeroporto_origem_destino">
-                    {formData.tipo_movimento === 'ARR' ? 'Aeroporto de Origem *' : 'Aeroporto de Destino *'}
+                    {formData.tipo_movimento === 'ARR' ? 'Origem *' : 'Destino *'}
                   </Label>
                   <AsyncCombobox
                   id="aeroporto_origem_destino"
                   value={formData.aeroporto_origem_destino}
                   onValueChange={(value) => handleInputChange('aeroporto_origem_destino', value)}
-                  placeholder="Pesquisar aeroporto..."
+                  placeholder="Pesquisar a..."
                   searchPlaceholder="Digite nome ou código ICAO..."
                   noResultsMessage="Nenhum aeroporto encontrado"
                   onSearch={searchAeroportos}
@@ -1587,7 +1742,7 @@ export default function FormVoo({
               Cancelar
             </Button>
           </DialogClose>
-          <Button onClick={handleSubmit} disabled={isLoading || isSubmitting} className="bg-[#169c41] text-slate-50 px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-primary/50 h-10">
+          <Button onClick={handleSubmit} disabled={isLoading || isSubmitting} className="bg-[#169c41] hover:bg-[#128a36] text-white">
             {isLoading || isSubmitting ? 'Salvando...' : vooInicial ? 'Atualizar Voo' : 'Criar Voo'}
           </Button>
         </DialogFooter>

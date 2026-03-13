@@ -33,14 +33,12 @@ export default function AguardandoAprovacao() {
         setSolicitacao(solicitacoes[0]);
       } else {
         // Se não há solicitação pendente, verificar se o utilizador já foi aprovado
-        if (currentUser.perfis && Array.isArray(currentUser.perfis) && currentUser.perfis.length > 0) {
+        if (currentUser.perfis && Array.isArray(currentUser.perfis) && currentUser.perfis.length > 0 && currentUser.status === 'ativo') {
           console.log('Utilizador já aprovado, redirecionando para Home');
           window.location.href = createPageUrl('Home');
-        } else {
-          // Se não há solicitação e não foi aprovado, redirecionar para criar solicitação
-          console.log('Sem solicitação pendente, redirecionando para SolicitacaoPerfil');
-          window.location.href = createPageUrl('SolicitacaoPerfil');
         }
+        // Não redirecionar de volta para SolicitacaoPerfil para evitar loop
+        // O utilizador pode ter acabado de submeter e o dado ainda não propagou
       }
     } catch (error) {
       console.error(`Erro ao carregar dados (tentativa ${tentativa}):`, error);

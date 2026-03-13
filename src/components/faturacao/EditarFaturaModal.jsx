@@ -178,7 +178,7 @@ export default function EditarFaturaModal({ isOpen, onClose, onSave, fatura }) {
             <Button 
               type="submit"
               disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isSubmitting ? (
                 <>

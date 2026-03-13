@@ -23,6 +23,7 @@ export default function SolicitacaoPerfil() {
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [searchAeroporto, setSearchAeroporto] = useState('');
   
@@ -116,8 +117,8 @@ export default function SolicitacaoPerfil() {
         throw new Error('Por favor, selecione um perfil.');
       }
 
-      if (formData.perfil_solicitado === 'gestor_empresa' && !formData.empresa_solicitante_id) {
-        throw new Error('Para o perfil de Gestor de Empresa, é necessário selecionar uma empresa.');
+      if (!formData.empresa_solicitante_id) {
+        throw new Error('Por favor, selecione uma empresa.');
       }
 
       if (!formData.aeroportos_solicitados || formData.aeroportos_solicitados.length === 0) {
@@ -137,8 +138,8 @@ export default function SolicitacaoPerfil() {
         status: 'pendente'
       });
 
-      // Redirecionar para página de aguardo
-      window.location.href = createPageUrl('AguardandoAprovacao');
+      // Mostrar sucesso
+      setSubmitted(true);
 
     } catch (error) {
       console.error('Erro ao submeter solicitação:', error);
@@ -160,8 +161,12 @@ export default function SolicitacaoPerfil() {
     label: e.nome
   }));
 
-  const aeroportosFiltrados = aeroportos.filter(a => {
-    // Show all when no search term, or filter by search term
+  // Filtrar aeroportos pela empresa selecionada e pelo termo de pesquisa
+  const aeroportosDaEmpresa = formData.empresa_solicitante_id
+    ? aeroportos.filter(a => a.empresa_id === formData.empresa_solicitante_id)
+    : aeroportos;
+
+  const aeroportosFiltrados = aeroportosDaEmpresa.filter(a => {
     if (!searchAeroporto) return true;
     const search = searchAeroporto.toLowerCase();
     return (
@@ -196,12 +201,12 @@ export default function SolicitacaoPerfil() {
   };
 
   const handleSelecionarTodos = () => {
-    const todosCodigos = aeroportos.map(a => a.codigo_icao);
+    const todosCodigos = aeroportosDaEmpresa.map(a => a.codigo_icao);
     setFormData(prev => ({
       ...prev,
       aeroportos_solicitados: todosCodigos
     }));
-    setSearchAeroporto(''); // Limpar pesquisa
+    setSearchAeroporto('');
   };
 
   const handleLimparTodos = () => {
@@ -218,6 +223,31 @@ export default function SolicitacaoPerfil() {
           <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 mb-4" />
           <p className="text-lg text-slate-700">A carregar...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="max-w-lg w-full shadow-xl border-0">
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto">
+              <Info className="w-10 h-10 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Solicitação Enviada!</h2>
+            <p className="text-slate-600">
+              A sua solicitação de acesso foi recebida com sucesso. Um administrador irá analisá-la e receberá uma notificação por e-mail quando for aprovada.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => window.location.href = createPageUrl('AguardandoAprovacao')}
+              className="mt-4"
+            >
+              Ver Estado da Solicitação
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -317,22 +347,20 @@ export default function SolicitacaoPerfil() {
                 />
               </div>
 
-              {/* Empresa (apenas para gestor_empresa) */}
-              {formData.perfil_solicitado === 'gestor_empresa' && (
-                <div className="space-y-2">
-                  <Label htmlFor="empresa_solicitante_id" className="text-base font-semibold text-slate-700">
-                    Empresa *
-                  </Label>
-                  <Combobox
-                    id="empresa_solicitante_id"
-                    options={empresaOptions}
-                    value={formData.empresa_solicitante_id}
-                    onValueChange={(value) => setFormData({ ...formData, empresa_solicitante_id: value })}
-                    placeholder="Selecione a empresa"
-                    searchPlaceholder="Pesquisar empresa..."
-                  />
-                </div>
-              )}
+              {/* Empresa */}
+              <div className="space-y-2">
+                <Label htmlFor="empresa_solicitante_id" className="text-base font-semibold text-slate-700">
+                  Empresa *
+                </Label>
+                <Combobox
+                  id="empresa_solicitante_id"
+                  options={empresaOptions}
+                  value={formData.empresa_solicitante_id}
+                  onValueChange={(value) => setFormData({ ...formData, empresa_solicitante_id: value, aeroportos_solicitados: [] })}
+                  placeholder="Selecione a empresa"
+                  searchPlaceholder="Pesquisar empresa..."
+                />
+              </div>
 
               {/* Aeroportos */}
               <div className="space-y-3">

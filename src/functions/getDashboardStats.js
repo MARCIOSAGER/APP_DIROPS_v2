@@ -1,5 +1,5 @@
 // Client-side dashboard stats computation (replaces Supabase Edge Function)
-export async function getDashboardStats({ aeroporto, periodo }) {
+export async function getDashboardStats({ aeroporto, periodo, empresaId }) {
   // Import here to avoid circular deps
   const { supabase } = await import('@/lib/supabaseClient');
 
@@ -27,10 +27,16 @@ export async function getDashboardStats({ aeroporto, periodo }) {
   const ocorrencias = ocorrenciasRes.data || [];
   const inspecoes = inspecoesRes.data || [];
 
-  // Filter by aeroporto if specified
-  const voosFiltrados = aeroporto && aeroporto !== 'todos'
-    ? voos.filter(v => v.aeroporto_operacao === aeroporto)
-    : voos;
+  // Filter by empresa_id directly
+  let voosFiltrados = voos;
+  if (empresaId) {
+    voosFiltrados = voosFiltrados.filter(v => v.empresa_id === empresaId);
+  }
+
+  // Then filter by selected aeroporto dropdown
+  if (aeroporto && aeroporto !== 'todos') {
+    voosFiltrados = voosFiltrados.filter(v => v.aeroporto_operacao === aeroporto);
+  }
 
   // Basic stats
   const totalVoos = voosFiltrados.length;
@@ -59,7 +65,9 @@ export async function getDashboardStats({ aeroporto, periodo }) {
 
   // Linked flights
   const vooIds = new Set(voosFiltrados.map(v => v.id));
-  const voosLigadosFiltrados = voosLigados.filter(vl => vooIds.has(vl.id_voo_arr) || vooIds.has(vl.id_voo_dep));
+  const voosLigadosFiltrados = empresaId
+    ? voosLigados.filter(vl => vl.empresa_id === empresaId)
+    : voosLigados.filter(vl => vooIds.has(vl.id_voo_arr) || vooIds.has(vl.id_voo_dep));
   const voosComLink = new Set();
   voosLigadosFiltrados.forEach(vl => {
     voosComLink.add(vl.id_voo_arr);

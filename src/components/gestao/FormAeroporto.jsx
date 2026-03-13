@@ -156,7 +156,7 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
               <X className="w-4 h-4 mr-1" />
               Cancelar
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
               <Save className="w-4 h-4 mr-1" />
               {aeroporto ? 'Atualizar' : 'Criar'} Aeroporto
             </Button>

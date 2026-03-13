@@ -202,7 +202,7 @@ export default function TourGuiado({ onClose }) {
                 Anterior
               </Button>
             )}
-            <Button size="sm" onClick={next} className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700">
+            <Button size="sm" onClick={next} className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white">
               {step === TOUR_STEPS.length - 1 ? "Concluir" : "Próximo"}
               {step < TOUR_STEPS.length - 1 && <ChevronRight className="w-3 h-3 ml-1" />}
             </Button>

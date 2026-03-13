@@ -43,6 +43,7 @@ import { getAeroportosPermitidos, ensureUserProfilesExist, getEmailsEmpresa, fil
 
 import EditarFaturaModal from '../components/faturacao/EditarFaturaModal';
 import GerarProformaConsolidadaModal from '../components/faturacao/GerarProformaConsolidadaModal';
+import GerarRelatorioFaturacaoModal from '../components/faturacao/GerarRelatorioFaturacaoModal';
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
 
@@ -64,6 +65,7 @@ export default function ProformaPage() {
   const [editingProforma, setEditingProforma] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isConsolidadaModalOpen, setIsConsolidadaModalOpen] = useState(false);
+  const [isRelatorioModalOpen, setIsRelatorioModalOpen] = useState(false);
 
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
@@ -426,6 +428,10 @@ export default function ProformaPage() {
               <Layers className="w-4 h-4 mr-2" />
               Gerar Consolidada
             </Button>
+            <Button onClick={() => setIsRelatorioModalOpen(true)} variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+              <FileText className="w-4 h-4 mr-2" />
+              Extrato
+            </Button>
             <Button variant="outline" onClick={handleExportCSV}>
               <Download className="w-4 h-4 mr-2" />
               Exportar CSV
@@ -755,6 +761,13 @@ export default function ProformaPage() {
         isOpen={isConsolidadaModalOpen}
         onClose={() => setIsConsolidadaModalOpen(false)}
         onConfirm={handleConfirmarConsolidada}
+        companhias={companhias}
+        aeroportos={aeroportos}
+      />
+
+      <GerarRelatorioFaturacaoModal
+        isOpen={isRelatorioModalOpen}
+        onClose={() => setIsRelatorioModalOpen(false)}
         companhias={companhias}
         aeroportos={aeroportos}
       />

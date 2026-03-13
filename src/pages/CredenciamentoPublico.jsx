@@ -216,7 +216,7 @@ export default function CredenciamentoPublico() {
 
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => window.location.href = createPageUrl('servicos')}><ArrowLeft className="w-4 h-4 mr-2" />Voltar</Button>
-                <Button type="submit" disabled={isLoading} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                <Button type="submit" disabled={isLoading} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                   {isLoading ? <><Loader2 className="animate-spin h-4 w-4 mr-2" />A Enviar...</> : <><Send className="w-4 h-4 mr-2" />Enviar Solicitação</>}
                 </Button>
               </div>

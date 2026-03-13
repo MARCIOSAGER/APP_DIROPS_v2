@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, UserPlus, ChevronDown, Globe, BarChart3, Mail, ArrowLeft, BookMarked, Sparkles, Building2
+  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, UserPlus, ChevronDown, Globe, BarChart3, Mail, ArrowLeft, BookMarked, Sparkles, Building2
 } from "lucide-react";
 import BottomTabs from '@/components/shared/BottomTabs';
 import { useI18n } from '@/components/lib/i18n';
@@ -17,8 +17,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { hasPageAccess, hasUserProfile, areUserProfilesLoaded, ensureUserProfilesExist } from '@/components/lib/userUtils';
+import { hasPageAccess, hasUserProfile, areUserProfilesLoaded, ensureUserProfilesExist, isSuperAdmin } from '@/components/lib/userUtils';
 import { Empresa } from '@/entities/Empresa';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 import { RegraPermissao } from '@/entities/RegraPermissao';
 import AccessDenied from '@/components/shared/AccessDenied';
 import NetworkIndicator from '@/components/shared/NetworkIndicator';
@@ -30,9 +31,9 @@ import { I18nProvider } from '@/components/lib/i18n';
 
       // Mapeamento padrão de permissões (fallback se não houver regras na BD)
 const PERFIL_PERMISSIONS_DEFAULT = {
-  administrador: ['Home', 'Operacoes', 'FundoManeio', 'Proforma', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte'],
+  administrador: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte'],
   gestor_empresa: ['Credenciamento', 'GuiaUtilizador', 'Suporte'],
-  operacoes: ['Home', 'Operacoes', 'FundoManeio', 'Proforma', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte'],
+  operacoes: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte'],
   infraestrutura: ['Home', 'Reclamacoes', 'Inspecoes', 'Manutencao', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
   credenciamento: ['Home', 'Credenciamento', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte']
 };
@@ -41,6 +42,7 @@ const navigationItems = [
   { title: "Dashboard", url: createPageUrl("Home"), icon: Home, color: "text-blue-600", pageKey: "Home" },
   { title: "Operações", url: createPageUrl("Operacoes"), icon: Plane, color: "text-green-600", pageKey: "Operacoes" },
   { title: "Fundo de Maneio", url: createPageUrl("FundoManeio"), icon: DollarSign, color: "text-emerald-600", pageKey: "FundoManeio" },
+  { title: "Configuração de Tarifas", url: createPageUrl("ConfiguracaoTarifas"), icon: Settings2, color: "text-blue-600", pageKey: "ConfiguracaoTarifas" },
   { title: "Proformas", url: createPageUrl("Proforma"), icon: FileText, color: "text-blue-600", pageKey: "Proforma" },
   { title: "Safety", url: createPageUrl("Safety"), icon: Shield, color: "text-red-600", pageKey: "Safety" },
   { title: "Inspeções", url: createPageUrl("Inspecoes"), icon: ClipboardCheck, color: "text-purple-600", pageKey: "Inspecoes" },
@@ -111,7 +113,7 @@ const getFirstAccessiblePage = (user, permissions) => {
 };
 
 // Root pages – no back button shown on these
-const rootPages = ['Home', 'Operacoes', 'Safety', 'FundoManeio', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria'];
+const rootPages = ['Home', 'Operacoes', 'Safety', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria'];
 
 function LayoutContent({ children, currentPageName }) {
   const location = useLocation();
@@ -128,29 +130,36 @@ function LayoutContent({ children, currentPageName }) {
         const [globalLoading, setGlobalLoading] = React.useState(false);
         const [showTour, setShowTour] = React.useState(false);
         const [logoUrl, setLogoUrl] = React.useState(DEFAULT_LOGO);
+        const [empresasList, setEmpresasList] = React.useState([]);
+        const { viewingAsEmpresa, setViewingAsEmpresa, clearViewingAsEmpresa, isSuperAdminViewing } = useCompanyView();
 
-  // Carregar logo da empresa do utilizador
+  // Carregar logo da empresa do utilizador + lista de empresas para superadmin
   React.useEffect(() => {
-    const loadEmpresaLogo = async () => {
-      if (!authUser?.empresa_id) {
-        setLogoUrl(DEFAULT_LOGO);
-        return;
-      }
+    const loadEmpresaData = async () => {
       try {
         const empresas = await Empresa.list();
-        const empresa = empresas.find(e => e.id === authUser.empresa_id);
-        if (empresa?.logo_url) {
-          setLogoUrl(empresa.logo_url);
+
+        // Se superadmin, guardar lista de empresas para o seletor
+        if (authUser && isSuperAdmin(authUser)) {
+          setEmpresasList(empresas);
+        }
+
+        // Logo: prioridade para viewingAsEmpresa (superadmin), senão empresa do user
+        if (viewingAsEmpresa?.logo_url) {
+          setLogoUrl(viewingAsEmpresa.logo_url);
+        } else if (authUser?.empresa_id) {
+          const empresa = empresas.find(e => e.id === authUser.empresa_id);
+          setLogoUrl(empresa?.logo_url || DEFAULT_LOGO);
         } else {
           setLogoUrl(DEFAULT_LOGO);
         }
       } catch (error) {
-        console.error('Erro ao carregar logo da empresa:', error);
+        console.error('Erro ao carregar dados da empresa:', error);
         setLogoUrl(DEFAULT_LOGO);
       }
     };
-    if (!isLoadingAuth) loadEmpresaLogo();
-  }, [authUser, isLoadingAuth]);
+    if (!isLoadingAuth) loadEmpresaData();
+  }, [authUser, isLoadingAuth, viewingAsEmpresa]);
 
   React.useEffect(() => {
     const loadPermissions = async () => {
@@ -376,7 +385,7 @@ function LayoutContent({ children, currentPageName }) {
               <Menu className="h-6 w-6" />
             </Button>
           )}
-          <img src={logoUrl} alt="Logo" className="h-[100px]" />
+          <img src={logoUrl} alt="Logo" className="h-[100px] max-w-[180px] object-contain" />
         </div>
         {!isRootPage && (
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="select-none">
@@ -389,7 +398,7 @@ function LayoutContent({ children, currentPageName }) {
         <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setSidebarOpen(false)}></div>
         <div className="relative w-72 h-full bg-white shadow-xl flex flex-col">
           <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-            <img src={logoUrl} alt="Logo" className="h-[120px] mx-auto" />
+            <img src={logoUrl} alt="Logo" className="h-[120px] max-w-[200px] object-contain mx-auto" />
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}><X className="h-5 w-5" /></Button>
           </div>
 
@@ -452,7 +461,7 @@ function LayoutContent({ children, currentPageName }) {
         <div className="hidden lg:flex flex-col w-64 bg-white border-r border-slate-200 h-screen sticky top-0">
           <div className="p-4 border-b border-slate-200">
             <div className="flex justify-center">
-              <img src={logoUrl} alt="Logo" className="h-[120px]" />
+              <img src={logoUrl} alt="Logo" className="h-[120px] max-w-[200px] object-contain" />
             </div>
           </div>
           <nav className="flex-grow p-4 space-y-1 overflow-y-auto">
@@ -491,6 +500,60 @@ function LayoutContent({ children, currentPageName }) {
           <header className="hidden lg:flex justify-end items-center bg-white border-b border-slate-200 px-6 h-16">
             <div className="flex items-center gap-4">
               <NetworkIndicator />
+
+              {/* Empresa selector (superadmin only) */}
+              {isSuperAdminViewing && empresasList.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant={viewingAsEmpresa ? "default" : "outline"}
+                      size="sm"
+                      className={viewingAsEmpresa ? "bg-blue-600 text-white hover:bg-blue-700 gap-2" : "gap-2 text-slate-600"}
+                    >
+                      <Building2 className="h-4 w-4" />
+                      {viewingAsEmpresa ? (
+                        <>
+                          <span className="max-w-[150px] truncate">{viewingAsEmpresa.nome}</span>
+                          <span
+                            role="button"
+                            className="ml-1 hover:bg-blue-800 rounded-full p-0.5"
+                            onClick={(e) => { e.stopPropagation(); clearViewingAsEmpresa(); }}
+                          >
+                            <X className="h-3 w-3" />
+                          </span>
+                        </>
+                      ) : (
+                        <span>Visualizar como...</span>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Selecionar Empresa</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {empresasList.map((empresa) => (
+                      <DropdownMenuItem
+                        key={empresa.id}
+                        onClick={() => setViewingAsEmpresa({ id: empresa.id, nome: empresa.nome, logo_url: empresa.logo_url })}
+                        className={viewingAsEmpresa?.id === empresa.id ? 'bg-blue-50 text-blue-700 font-semibold' : ''}
+                      >
+                        {empresa.logo_url && (
+                          <img src={empresa.logo_url} alt="" className="h-5 w-5 mr-2 object-contain rounded" />
+                        )}
+                        <span>{empresa.nome}</span>
+                      </DropdownMenuItem>
+                    ))}
+                    {viewingAsEmpresa && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={clearViewingAsEmpresa} className="text-red-600">
+                          <X className="h-4 w-4 mr-2" />
+                          <span>Limpar seleção</span>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
               {/* Help dropdown */}
               <DropdownMenu>

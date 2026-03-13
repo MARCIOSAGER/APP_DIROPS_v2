@@ -200,7 +200,7 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
             <Button 
               type="submit"
               disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isSubmitting ? (
                 <>

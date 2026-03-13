@@ -153,14 +153,14 @@ export default function FormProcessoAuditoria({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
   
-  const tipoAuditoriaOptions = tipos
+  const tipoAuditoriaOptions = (tipos || [])
     .filter(t => t.status === 'ativo')
     .map(tipo => ({
       value: tipo.id,
-      label: `${tipo.nome} (${tipo.categoria.replace('_', ' ')})`
+      label: `${tipo.nome}${tipo.categoria ? ` (${tipo.categoria.replace('_', ' ')})` : ''}`
     }));
 
-  const aeroportoOptions = aeroportos.map(aeroporto => ({
+  const aeroportoOptions = (aeroportos || []).map(aeroporto => ({
     value: aeroporto.codigo_icao,
     label: `${aeroporto.nome} (${aeroporto.codigo_icao})`
   }));

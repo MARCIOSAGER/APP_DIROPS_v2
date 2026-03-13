@@ -30,4 +30,4 @@ dist-ssr
 .env
 
 # Migration data (contains sensitive production data)
-scripts/data/
+scripts/data/.claude/settings.local.json

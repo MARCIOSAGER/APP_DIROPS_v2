@@ -205,7 +205,7 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
               Cancelar
             </Button>
             <Button 
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => onConfirmImport(processedSuggestions, userSelections)}
               disabled={isLoading}
             >

@@ -71,6 +71,15 @@ function applyFilters(query, filters) {
   return query;
 }
 
+async function getCurrentUserEmail() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.email || null;
+  } catch {
+    return null;
+  }
+}
+
 export function createEntity(tableName) {
   return {
     async list(orderBy, limit) {
@@ -127,11 +136,13 @@ export function createEntity(tableName) {
     },
 
     async create(record) {
+      const email = await getCurrentUserEmail();
       const { data, error } = await supabase
         .from(tableName)
         .insert({
           ...record,
           created_date: record.created_date || new Date().toISOString(),
+          created_by: record.created_by || email,
         })
         .select()
         .single();
@@ -140,11 +151,13 @@ export function createEntity(tableName) {
     },
 
     async update(id, changes) {
+      const email = await getCurrentUserEmail();
       const { data, error } = await supabase
         .from(tableName)
         .update({
           ...changes,
           updated_date: new Date().toISOString(),
+          updated_by: email,
         })
         .eq('id', id)
         .select()

@@ -158,7 +158,7 @@ export default function FormImposto({ isOpen, onClose, onSubmit, imposto, aeropo
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
               {imposto ? 'Atualizar' : 'Criar'} Imposto
             </Button>
           </DialogFooter>

@@ -496,7 +496,7 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancelar</Button>
             </DialogClose>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
               {credenciamentoInicial ? 'Atualizar' : 'Criar'} Solicitação
             </Button>
           </DialogFooter>

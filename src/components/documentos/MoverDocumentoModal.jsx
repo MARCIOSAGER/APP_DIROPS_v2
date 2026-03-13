@@ -58,7 +58,7 @@ export default function MoverDocumentoModal({ isOpen, onClose, onMove, documento
 
           {/* Botão */}
           <div className="flex justify-end pt-2">
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 px-8">
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-8">
               {isBulk ? 'Mover Documentos' : 'Mover Documento'}
             </Button>
           </div>

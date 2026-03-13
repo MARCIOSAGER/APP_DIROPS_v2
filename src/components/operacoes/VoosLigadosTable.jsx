@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  FileText, ArrowRight, Clock, Users, Package, Timer, MoreVertical, Eye, RefreshCw, DollarSign, ChevronLeft, ChevronRight, Trash2, FolderOpen
+  FileText, ArrowRight, Clock, Users, Package, Timer, MoreVertical, Eye, RefreshCw, DollarSign, ChevronLeft, ChevronRight, Trash2, FolderOpen, Wrench
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -51,6 +51,7 @@ export default function VoosLigadosTable({
   onExcluirVooLigado,
   onUploadDocumento,
   onVerDocumentosVoo,
+  onRecursosVoo,
   todosAeroportos,
   sortField,
   sortDirection,
@@ -468,7 +469,17 @@ export default function VoosLigadosTable({
                     </TableCell>
 
                     <TableCell className="font-mono text-xs font-medium text-slate-900 whitespace-nowrap py-2">
-                      {depVoo.registo_aeronave}
+                      {vooLigado.registo_alterado ? (
+                        <div className="flex flex-col gap-0.5">
+                          <Badge className="bg-orange-100 text-orange-700 border-orange-300 text-[9px] px-1 w-fit">
+                            TROCA
+                          </Badge>
+                          <span className="text-slate-400 line-through text-[10px]">{arrVoo?.registo_aeronave}</span>
+                          <span className="text-orange-700 font-bold">{vooLigado.registo_dep}</span>
+                        </div>
+                      ) : (
+                        depVoo.registo_aeronave
+                      )}
                     </TableCell>
 
                     <TableCell className="whitespace-nowrap py-2">
@@ -482,6 +493,11 @@ export default function VoosLigadosTable({
                           {tempoPermanenciaHoras}h
                         </span>
                       </div>
+                      {vooLigado.registo_alterado && vooLigado.tempo_estacionamento_min != null && (
+                        <div className="text-[10px] text-orange-600 mt-0.5 font-medium">
+                          Estac: {(vooLigado.tempo_estacionamento_min / 60).toFixed(1)}h
+                        </div>
+                      )}
                       <div className="text-[10px] text-slate-500 mt-0.5">
                         {vooLigado.tempo_permanencia_min} min
                       </div>
@@ -580,6 +596,10 @@ export default function VoosLigadosTable({
                           <DropdownMenuItem onClick={() => onVerDocumentosVoo && onVerDocumentosVoo(vooLigado)}>
                             <FolderOpen className="mr-2 h-4 w-4" />
                             Documentos
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onRecursosVoo && onRecursosVoo(vooLigado)}>
+                            <Wrench className="mr-2 h-4 w-4" />
+                            Recursos do Voo
                           </DropdownMenuItem>
 
                           {isAdmin && onExcluirVooLigado && (

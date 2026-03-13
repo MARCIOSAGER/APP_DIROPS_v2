@@ -99,7 +99,7 @@ export default function GerenciarAcessoModal({ isOpen, onClose, documento, onSav
               />
               <Button 
                 onClick={adicionarUsuario}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -164,7 +164,7 @@ export default function GerenciarAcessoModal({ isOpen, onClose, documento, onSav
             <Button variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
               Salvar Alterações
             </Button>
           </div>

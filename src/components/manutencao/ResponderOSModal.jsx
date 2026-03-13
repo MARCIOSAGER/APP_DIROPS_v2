@@ -169,12 +169,12 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className={
+              className={`text-white ${
                 acao === 'rejeitar' ? 'bg-red-600 hover:bg-red-700' :
                 acao === 'aceitar' ? 'bg-green-600 hover:bg-green-700' :
                 acao === 'verificar' ? 'bg-orange-600 hover:bg-orange-700' :
                 'bg-blue-600 hover:bg-blue-700'
-              }
+              }`}
             >
               {isSubmitting ? 'Processando...' : acaoConfig.label}
             </Button>

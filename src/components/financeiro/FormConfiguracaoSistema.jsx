@@ -74,7 +74,7 @@ export default function FormConfiguracaoSistema({ isOpen, onClose, onSubmit, con
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Save className="w-4 h-4 mr-2" />
               {isSubmitting ? 'A guardar...' : 'Guardar'}
             </Button>

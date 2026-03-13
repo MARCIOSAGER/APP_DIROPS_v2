@@ -180,7 +180,7 @@ export default function ChatbotIA({ user }) {
                   <p><strong>Mensagem:</strong> {ticketPending.mensagem}</p>
                 </div>
                 <div className="flex gap-2 pt-1">
-                  <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs" onClick={handleCreateTicket}>
+                  <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs" onClick={handleCreateTicket}>
                     Criar Ticket
                   </Button>
                   <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => setTicketPending(null)}>

@@ -488,7 +488,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
           {step === 1 && (
             <>
               <DialogClose asChild><Button type="button" variant="outline" disabled={isLoading}>Cancelar</Button></DialogClose>
-              <Button onClick={handleNextStep} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleNextStep} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white">
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Preencher Checklist'}
               </Button>
             </>
@@ -499,7 +499,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
               <Button
                 onClick={handleFinalSubmit}
                 disabled={isLoading || (isInspecaoPistaDiaria && !grfRegistado)}
-                className={`bg-blue-600 hover:bg-blue-700 ${isInspecaoPistaDiaria && !grfRegistado ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`bg-blue-600 hover:bg-blue-700 text-white ${isInspecaoPistaDiaria && !grfRegistado ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Concluir Inspeção'}
               </Button>

@@ -176,7 +176,7 @@ export default function Inspecoes() {
                     <p className="text-slate-600 text-sm mb-3">{tipo.descricao}</p>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-slate-500 capitalize">
-                        Frequência: {tipo.frequencia.replace('_', ' ')}
+                        Frequência: {(tipo.frequencia || '').replace('_', ' ')}
                       </span>
                       <Button size="sm">
                         Iniciar Inspeção

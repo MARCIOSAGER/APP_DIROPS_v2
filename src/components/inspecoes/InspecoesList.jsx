@@ -561,7 +561,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
                           <td className="px-4 py-3">
                             <Badge variant="outline" className={`${statusConfig.color} border text-xs`}>
                               <StatusIcon className="w-3 h-3 mr-1" />
-                              {inspecao.status.replace(/_/g, ' ')}
+                              {(inspecao.status || '').replace(/_/g, ' ')}
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-center">
@@ -634,7 +634,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
                         </h3>
                         <Badge variant="outline" className={`${statusConfig.color} border`}>
                           <StatusIcon className="w-3 h-3 mr-1" />
-                          {inspecao.status.replace(/_/g, ' ')}
+                          {(inspecao.status || '').replace(/_/g, ' ')}
                         </Badge>
                       </div>
 

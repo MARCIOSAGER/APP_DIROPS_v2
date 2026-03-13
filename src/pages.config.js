@@ -51,6 +51,7 @@ import AguardandoAprovacao from './pages/AguardandoAprovacao';
 import AlterarSenha from './pages/AlterarSenha';
 import Auditoria from './pages/Auditoria';
 import BoasVindas from './pages/BoasVindas';
+import ConfiguracaoTarifas from './pages/ConfiguracaoTarifas';
 import ConfiguracoesGerais from './pages/ConfiguracoesGerais';
 import ConfigurarPerfil from './pages/ConfigurarPerfil';
 import Credenciamento from './pages/Credenciamento';
@@ -91,6 +92,7 @@ export const PAGES = {
     "AlterarSenha": AlterarSenha,
     "Auditoria": Auditoria,
     "BoasVindas": BoasVindas,
+    "ConfiguracaoTarifas": ConfiguracaoTarifas,
     "ConfiguracoesGerais": ConfiguracoesGerais,
     "ConfigurarPerfil": ConfigurarPerfil,
     "Credenciamento": Credenciamento,

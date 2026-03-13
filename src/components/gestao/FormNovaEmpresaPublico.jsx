@@ -130,7 +130,7 @@ export default function FormNovaEmpresaPublico({ isOpen, onClose, onSave }) {
               <X className="w-4 h-4 mr-1" />
               Cancelar
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={isLoading}>
               <Save className="w-4 h-4 mr-1" />
               {isLoading ? 'A Salvar...' : 'Salvar Empresa'}
             </Button>

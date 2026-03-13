@@ -594,7 +594,7 @@ export default function FormPAC({
             <Button 
               onClick={handleSendEmail} 
               disabled={isSendingEmail || !emailAddress || !emailAddress.includes('@')}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isSendingEmail ? 'Enviando...' : 'Enviar'}
             </Button>

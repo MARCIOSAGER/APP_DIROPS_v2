@@ -9,6 +9,10 @@ import { createPageUrl } from '@/utils';
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
 // Tempo para o utilizador responder antes do logout automático (2 minutos em ms)
 const WARNING_TIMEOUT = 2 * 60 * 1000;
+// Key para persistir última atividade no localStorage
+const LAST_ACTIVITY_KEY = 'dirops_last_activity';
+// Throttle para writes no localStorage (30s)
+const STORAGE_THROTTLE = 30 * 1000;
 
 const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
 
@@ -18,9 +22,11 @@ export default function SessionTimeoutModal() {
   const inactivityTimer = useRef(null);
   const warningTimer = useRef(null);
   const countdownInterval = useRef(null);
+  const lastStorageWrite = useRef(0);
 
   const logout = useCallback(async () => {
     clearAll();
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
     try {
       await base44.auth.logout(createPageUrl('ValidacaoAcesso'));
     } catch {
@@ -34,40 +40,64 @@ export default function SessionTimeoutModal() {
     clearInterval(countdownInterval.current);
   };
 
-  const resetTimer = useCallback(() => {
+  const startWarning = useCallback(() => {
+    setShowWarning(true);
+    setCountdown(WARNING_TIMEOUT / 1000);
+
+    countdownInterval.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    warningTimer.current = setTimeout(() => {
+      logout();
+    }, WARNING_TIMEOUT);
+  }, [logout]);
+
+  const resetTimer = useCallback((remainingMs) => {
     if (showWarning) return; // Não resetar se o aviso está visível
     clearTimeout(inactivityTimer.current);
-    inactivityTimer.current = setTimeout(() => {
-      setShowWarning(true);
-      setCountdown(WARNING_TIMEOUT / 1000);
 
-      // Iniciar contagem decrescente
-      countdownInterval.current = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval.current);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    // Persistir timestamp no localStorage (throttled)
+    const now = Date.now();
+    if (now - lastStorageWrite.current > STORAGE_THROTTLE) {
+      localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+      lastStorageWrite.current = now;
+    }
 
-      // Logout automático após WARNING_TIMEOUT
-      warningTimer.current = setTimeout(() => {
-        logout();
-      }, WARNING_TIMEOUT);
-    }, INACTIVITY_TIMEOUT);
-  }, [showWarning, logout]);
+    const delay = remainingMs || INACTIVITY_TIMEOUT;
+    inactivityTimer.current = setTimeout(startWarning, delay);
+  }, [showWarning, startWarning]);
 
   const handleKeepSession = () => {
     setShowWarning(false);
     clearAll();
+    localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+    lastStorageWrite.current = Date.now();
     resetTimer();
   };
 
   useEffect(() => {
-    // Iniciar timer ao montar
-    resetTimer();
+    // Verificar se sessão expirou enquanto browser estava fechado
+    const lastActivity = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || '0');
+    if (lastActivity > 0) {
+      const elapsed = Date.now() - lastActivity;
+      if (elapsed > INACTIVITY_TIMEOUT) {
+        logout();
+        return;
+      }
+      // Iniciar timer com tempo restante
+      resetTimer(INACTIVITY_TIMEOUT - elapsed);
+    } else {
+      // Primeira vez — iniciar timer completo
+      localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+      resetTimer();
+    }
 
     // Adicionar listeners de atividade
     const handleActivity = () => resetTimer();
@@ -128,7 +158,7 @@ export default function SessionTimeoutModal() {
             Sair agora
           </Button>
           <Button
-            className="flex-1 bg-blue-600 hover:bg-blue-700"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
             onClick={handleKeepSession}
           >
             <RefreshCw className="w-4 h-4 mr-2" />

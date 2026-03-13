@@ -642,16 +642,18 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
         <CardContent>
           {/* Filtros */}
           <div className="space-y-4 mb-4">
-            <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <Checkbox
-                id="apenas-sga"
-                checked={apernasSGA}
-                onCheckedChange={setApenaSGA}
-              />
-              <Label htmlFor="apenas-sga" className="cursor-pointer mb-0">
-                Apenas Aeroportos SGA
-              </Label>
-            </div>
+            {isSuperAdmin(currentUser) && (
+              <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <Checkbox
+                  id="apenas-sga"
+                  checked={apernasSGA}
+                  onCheckedChange={setApenaSGA}
+                />
+                <Label htmlFor="apenas-sga" className="cursor-pointer mb-0">
+                  Apenas Aeroportos SGA
+                </Label>
+              </div>
+            )}
 
             <div className="flex gap-4">
               <div className="flex-[2] relative">

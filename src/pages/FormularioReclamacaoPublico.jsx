@@ -445,7 +445,7 @@ export default function FormularioReclamacaoPublico() {
               <Button 
                 type="submit" 
                 disabled={isLoading || !acceptedTerms}
-                className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-6"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6"
               >
                 {isLoading ? (
                   <>

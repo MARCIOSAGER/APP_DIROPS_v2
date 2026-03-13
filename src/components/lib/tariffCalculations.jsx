@@ -1,4 +1,5 @@
 import { CalculoTarifa } from '@/entities/CalculoTarifa';
+import { RecursoVoo } from '@/entities/RecursoVoo';
 
 // Função para normalizar códigos de registo de aeronaves
 const normalizeRegistro = (registro) => {
@@ -128,12 +129,16 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
   }
 
   // Buscar registo de aeronave com normalização
-  const registoNormalizado = normalizeRegistro(vooArr.registo_aeronave);
+  // Se houve troca de registo, usar o registo DEP para MTOW (aeronave que partiu)
+  const registoParaCalculo = vooLigado.registo_alterado
+    ? vooLigado.registo_dep
+    : vooArr.registo_aeronave;
+  const registoNormalizado = normalizeRegistro(registoParaCalculo);
   const registoAeronave = aeronaves.find(r => normalizeRegistro(r.registo) === registoNormalizado);
 
   if (!registoAeronave || !registoAeronave.mtow_kg) {
     console.error(`❌ Registo não encontrado para voo ${vooArr.numero_voo}:`, {
-      registoProcurado: vooArr.registo_aeronave,
+      registoProcurado: registoParaCalculo,
       registoNormalizado: registoNormalizado,
       aeronavesCadastradas: aeronaves.map(a => ({ registo: a.registo, normalizado: normalizeRegistro(a.registo) }))
     });
@@ -182,9 +187,10 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
     aeroporto: aeroportoOperacao.codigo_icao
   });
 
-  // Tempo de permanência
-  const tempoPermanenciaMin = vooLigado.tempo_permanencia_min || 0;
-  const tempoPermanenciaHoras = Math.ceil(tempoPermanenciaMin / 60);
+  // Tempo de permanência (estatístico) vs estacionamento (faturação)
+  const tempoPermanenciaMinEstatistica = vooLigado.tempo_permanencia_min || 0;
+  const tempoEstacionamentoMin = vooLigado.tempo_estacionamento_min ?? tempoPermanenciaMinEstatistica;
+  const tempoPermanenciaHoras = Math.ceil(tempoEstacionamentoMin / 60);
 
   try {
     // IMPORTANTE: Usar os nomes EXATOS dos campos da entidade CalculoTarifa
@@ -212,7 +218,10 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
       
       outras_tarifas_usd: 0,
       outras_tarifas: 0,
-      
+
+      tarifa_recursos_usd: 0,
+      tarifa_recursos: 0,
+
       // CRÍTICO: Inicializar totais com 0
       total_tarifa_usd: 0,
       total_tarifa: 0,
@@ -643,6 +652,97 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
       }
     }
     
+    // ==================== TARIFA DE RECURSOS (PCA, GPU, PBB, CHECK-IN, COMBUSTÍVEL) ====================
+    try {
+      // Buscar recurso_voo para este voo ligado
+      const recursosVoo = await RecursoVoo.filter({ voo_ligado_id: vooLigado.id });
+      const recurso = recursosVoo && recursosVoo.length > 0 ? recursosVoo[0] : null;
+
+      let totalRecursosUSD = 0;
+      const recursosDetalhes = [];
+
+      if (recurso) {
+        // PCA
+        if (recurso.pca_utilizado && recurso.pca_valor_usd > 0) {
+          totalRecursosUSD += recurso.pca_valor_usd;
+          recursosDetalhes.push({
+            tipo: 'PCA (Ar Pré-Condicionado)',
+            tempo_horas: recurso.pca_tempo_horas,
+            posicao_stand: recurso.pca_posicao_stand,
+            valor_usd: recurso.pca_valor_usd
+          });
+        }
+        // GPU
+        if (recurso.gpu_utilizado && recurso.gpu_valor_usd > 0) {
+          totalRecursosUSD += recurso.gpu_valor_usd;
+          recursosDetalhes.push({
+            tipo: 'GPU (Ground Power Unit)',
+            tempo_horas: recurso.gpu_tempo_horas,
+            posicao_stand: recurso.gpu_posicao_stand,
+            valor_usd: recurso.gpu_valor_usd
+          });
+        }
+        // PBB
+        if (recurso.pbb_utilizado && recurso.pbb_valor_usd > 0) {
+          totalRecursosUSD += recurso.pbb_valor_usd;
+          recursosDetalhes.push({
+            tipo: 'PBB (Ponte de Embarque)',
+            tempo_horas: recurso.pbb_tempo_horas,
+            posicao_stand: recurso.pbb_posicao_stand,
+            valor_usd: recurso.pbb_valor_usd
+          });
+        }
+        // Check-in
+        if (recurso.checkin_utilizado && recurso.checkin_valor_usd > 0) {
+          totalRecursosUSD += recurso.checkin_valor_usd;
+          recursosDetalhes.push({
+            tipo: 'Balcão de Check-in',
+            tempo_horas: recurso.checkin_tempo_horas,
+            posicoes: recurso.checkin_posicoes,
+            num_balcoes: recurso.checkin_num_balcoes,
+            valor_usd: recurso.checkin_valor_usd
+          });
+        }
+      }
+
+      // Combustível (campos na tabela voo DEP)
+      if (vooDep.combustivel_utilizado && vooDep.combustivel_valor_usd > 0) {
+        totalRecursosUSD += vooDep.combustivel_valor_usd;
+        recursosDetalhes.push({
+          tipo: 'Combustível',
+          tempo_horas: vooDep.combustivel_tempo_horas,
+          litros: vooDep.combustivel_litros,
+          tipo_combustivel: vooDep.combustivel_tipo,
+          posicao_stand: vooDep.combustivel_posicao_stand,
+          valor_usd: vooDep.combustivel_valor_usd
+        });
+      }
+
+      results.tarifa_recursos_usd = parseFloat(totalRecursosUSD.toFixed(2));
+
+      if (recursosDetalhes.length > 0) {
+        results.detalhes_calculo.recursos = {
+          itens: recursosDetalhes,
+          total_usd: results.tarifa_recursos_usd,
+          observacao: 'Recursos de solo utilizados durante a permanência da aeronave'
+        };
+        console.log(`🔧 Tarifa de Recursos: ${recursosDetalhes.length} recurso(s) = $${results.tarifa_recursos_usd}`);
+      } else {
+        results.detalhes_calculo.recursos = {
+          itens: [],
+          total_usd: 0,
+          observacao: 'Nenhum recurso de solo registado para este voo'
+        };
+      }
+    } catch (err) {
+      console.warn('⚠️ Erro ao buscar recursos do voo:', err);
+      results.detalhes_calculo.recursos = {
+        erro: 'Não foi possível buscar recursos do voo',
+        itens: [],
+        total_usd: 0
+      };
+    }
+
     // ==================== ARREDONDAR E CALCULAR AOA PARA TODAS AS TARIFAS ====================
     results.tarifa_pouso_usd = parseFloat((results.tarifa_pouso_usd || 0).toFixed(2));
     results.tarifa_pouso = parseFloat((results.tarifa_pouso_usd * taxaCambio).toFixed(2));
@@ -659,13 +759,17 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
     results.outras_tarifas_usd = parseFloat((results.outras_tarifas_usd || 0).toFixed(2));
     results.outras_tarifas = parseFloat((results.outras_tarifas_usd * taxaCambio).toFixed(2));
 
+    results.tarifa_recursos_usd = parseFloat((results.tarifa_recursos_usd || 0).toFixed(2));
+    results.tarifa_recursos = parseFloat((results.tarifa_recursos_usd * taxaCambio).toFixed(2));
+
     // ==================== CALCULAR SUBTOTAL (SEM IMPOSTOS) ====================
     const subtotalUSD = parseFloat((
       (results.tarifa_pouso_usd || 0) +
       (results.tarifa_permanencia_usd || 0) +
       (results.tarifa_passageiros_usd || 0) +
       (results.tarifa_carga_usd || 0) +
-      (results.outras_tarifas_usd || 0)
+      (results.outras_tarifas_usd || 0) +
+      (results.tarifa_recursos_usd || 0)
     ).toFixed(2));
 
     const subtotalAOA = parseFloat((
@@ -673,7 +777,8 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
       (results.tarifa_permanencia || 0) +
       (results.tarifa_passageiros || 0) +
       (results.tarifa_carga || 0) +
-      (results.outras_tarifas || 0)
+      (results.outras_tarifas || 0) +
+      (results.tarifa_recursos || 0)
     ).toFixed(2));
 
     // ==================== CALCULAR IMPOSTOS ====================
@@ -744,6 +849,17 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
     results.detalhes_calculo.total_impostos_usd = totalImpostosUSD;
     results.detalhes_calculo.total_impostos_aoa = totalImpostosAOA;
 
+    // Registar troca de registo nos detalhes
+    if (vooLigado.registo_alterado) {
+      results.detalhes_calculo.alteracao_registo = {
+        registo_arr: vooArr.registo_aeronave,
+        registo_dep: vooLigado.registo_dep,
+        permanencia_estatistica: `${Math.ceil(tempoPermanenciaMinEstatistica / 60)}h`,
+        estacionamento_faturacao: `${tempoPermanenciaHoras}h`,
+        origem: vooLigado.estacionamento_origem
+      };
+    }
+
     console.log('✅ Cálculo finalizado:', {
       voo: vooDep.numero_voo,
       total_usd: results.total_tarifa_usd,
@@ -753,7 +869,8 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
         permanencia_usd: results.tarifa_permanencia_usd,
         passageiros_usd: results.tarifa_passageiros_usd,
         carga_usd: results.tarifa_carga_usd,
-        outras_usd: results.outras_tarifas_usd
+        outras_usd: results.outras_tarifas_usd,
+        recursos_usd: results.tarifa_recursos_usd
       }
     });
 
@@ -795,6 +912,8 @@ async function saveCalculation(results) {
       tarifa_carga: results.tarifa_carga,
       outras_tarifas_usd: results.outras_tarifas_usd,
       outras_tarifas: results.outras_tarifas,
+      tarifa_recursos_usd: results.tarifa_recursos_usd,
+      tarifa_recursos: results.tarifa_recursos,
       total_tarifa_usd: results.total_tarifa_usd,
       total_tarifa: results.total_tarifa,
       periodo_noturno: results.periodo_noturno,

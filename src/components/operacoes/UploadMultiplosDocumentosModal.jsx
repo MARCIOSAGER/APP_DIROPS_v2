@@ -246,7 +246,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
                 <Button
                   type="button"
                   onClick={capturePhoto}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Camera className="mr-2 h-4 w-4" />
                   Capturar Foto
@@ -399,7 +399,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
             <Button
               onClick={handleUpload}
               disabled={files.length === 0 || uploading}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {uploading ? (
                 <>

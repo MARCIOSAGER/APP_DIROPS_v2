@@ -595,6 +595,375 @@ function getOutraTarifaShortLabel(key) {
   return labels[key] || key.slice(0, 7);
 }
 
+// ─── Extrato de Faturação (client-side PDF, no DB record) ─────────
+
+export async function gerarRelatorioFaturacaoPdf({
+  calculos, companhia, aeroporto, periodo_inicio, periodo_fim,
+  voos, voosLigados, proformasMap,
+}) {
+  const { fetchEmpresaLogo } = await import('@/lib/pdfTemplate');
+
+  // Build consolidated items from the raw calculos + voos + voosLigados
+  const voosMap = new Map(voos.map(v => [v.id, v]));
+  const vlMap = new Map(voosLigados.map(vl => [vl.id, vl]));
+
+  // Fetch all aeroportos for display
+  const { data: allAeroportos } = await supabase.from('aeroporto').select('*');
+
+  const consolidatedItems = calculos.map(calc => {
+    const itemVoo = voosMap.get(calc.voo_id);
+    const itemVL = vlMap.get(calc.voo_ligado_id);
+    const depVoo = itemVL ? voosMap.get(itemVL.id_voo_dep) : null;
+    const arrVoo = itemVL ? voosMap.get(itemVL.id_voo_arr) : null;
+    const itemAero = calc.aeroporto_id
+      ? (allAeroportos || []).find(a => a.id === calc.aeroporto_id || a.codigo_icao === calc.aeroporto_id)
+      : null;
+
+    return {
+      calculo_tarifa_id: calc.id,
+      voo_id: calc.voo_id,
+      voo_ligado_id: calc.voo_ligado_id,
+      valor_usd: calc.total_tarifa_usd || 0,
+      valor_aoa: calc.total_tarifa || 0,
+      calculo: calc,
+      voo: depVoo || itemVoo,
+      vooArr: arrVoo,
+      vooDep: depVoo,
+      vooLigado: itemVL,
+      aeroporto: itemAero,
+      // Proforma number (if exists)
+      numero_proforma: proformasMap?.get(calc.id) || null,
+    };
+  });
+
+  // Fetch empresa logo
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  let userEmpresaId = null;
+  if (authUser) {
+    const { data: userProfile } = await supabase.from('users').select('empresa_id').eq('auth_id', authUser.id).single();
+    userEmpresaId = userProfile?.empresa_id;
+  }
+  const logoBase64 = await fetchEmpresaLogo(userEmpresaId);
+
+  // Formatting helpers
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value || 0) + ' Kz';
+  };
+  const formatUSD = (value) => `$${new Intl.NumberFormat('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value || 0)}`;
+  const fmtNum = (value, decimals = 2) => {
+    if (!value && value !== 0) return '';
+    return new Intl.NumberFormat('pt-PT', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value);
+  };
+  const fmtDate = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
+    return dateStr;
+  };
+
+  // Average exchange rate
+  const cambioSum = calculos.reduce((s, c) => s + (c.taxa_cambio_usd_aoa || 0), 0);
+  const cambio = calculos.length > 0 ? Math.round(cambioSum / calculos.length) : 850;
+
+  // Synthetic proforma object for generateConsolidatedLandscape
+  const syntheticProforma = {
+    numero_proforma: null,
+    tipo: 'consolidada',
+    taxa_cambio: cambio,
+    periodo_inicio,
+    periodo_fim,
+    data_emissao: new Date().toISOString().split('T')[0],
+    observacoes: null,
+  };
+
+  // Generate landscape PDF using the existing generator
+  const result = await generateExtratoLandscape({
+    proforma: syntheticProforma,
+    companhia,
+    aeroporto,
+    consolidatedItems,
+    logoBase64,
+    formatCurrency,
+    formatUSD,
+    fmtNum,
+    fmtDate,
+  });
+
+  // Direct download (no upload, no DB record)
+  const doc = result._doc;
+  const compNome = companhia?.codigo_icao || 'COMP';
+  const dataStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+  const filename = `Extrato_Faturacao_${compNome}_${periodo_inicio || ''}_${periodo_fim || ''}_${dataStr}.pdf`;
+  doc.save(filename);
+}
+
+// ─── Extrato Landscape Generator (based on consolidated, with N.º PF column) ───
+
+async function generateExtratoLandscape({
+  proforma, companhia, aeroporto, consolidatedItems,
+  logoBase64, formatCurrency, formatUSD, fmtNum, fmtDate,
+}) {
+  const { createPdfDoc, addHeader, addFooter, addTable, addKeyValuePairs, addSectionTitle, addInfoBox, checkPageBreak, PDF } = await import('@/lib/pdfTemplate');
+
+  const doc = await createPdfDoc({ orientation: 'landscape' });
+  const cambio = proforma.taxa_cambio || 850;
+
+  // Short date helper (YYYY-MM-DD → DD/MM/YYYY)
+  const fmtDateFull = (d) => {
+    if (!d) return '...';
+    const p = d.split('-');
+    return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
+  };
+
+  const headerOpts = {
+    title: 'Extrato de Faturação',
+    subtitle: proforma.numero_proforma
+      ? `N.º ${proforma.numero_proforma}`
+      : '',
+    date: '', // no date at top
+    logoBase64,
+  };
+
+  let y = addHeader(doc, headerOpts);
+
+  // Compact info line
+  const infoItems = [
+    { label: 'Companhia', value: companhia?.nome || '-' },
+  ];
+  if (proforma.periodo_inicio || proforma.periodo_fim) {
+    infoItems.push({ label: 'Período', value: `${fmtDateFull(proforma.periodo_inicio)} a ${fmtDateFull(proforma.periodo_fim)}` });
+  }
+  if (aeroporto) {
+    infoItems.push({ label: 'Aeroporto', value: aeroporto?.nome ? `${aeroporto.nome} (${aeroporto.codigo_icao})` : aeroporto?.codigo_icao || '-' });
+  }
+  infoItems.push({ label: 'Voos', value: `${consolidatedItems.length}` });
+  y = addInfoBox(doc, y, infoItems);
+
+  // ─── Scan items to determine dynamic columns (same logic as consolidated) ───
+  const outrasTarifaTypes = new Map();
+  consolidatedItems.forEach(item => {
+    const det = item.calculo?.detalhes_calculo || {};
+    if (det.iluminacao?.valor > 0) outrasTarifaTypes.set('iluminacao', 'Ilumin.');
+    (det.outras || []).forEach(o => {
+      if ((o.valor || 0) > 0 && o.tipo) outrasTarifaTypes.set(o.tipo, getOutraTarifaShortLabel(o.tipo));
+    });
+  });
+
+  const outrasTarifaOrder = ['iluminacao', 'checkin', 'cuppss', 'embarque', 'transito_direto', 'transito_transbordo'];
+  const sortedOutrasTarifaKeys = [...outrasTarifaTypes.keys()].sort((a, b) => {
+    const ia = outrasTarifaOrder.indexOf(a);
+    const ib = outrasTarifaOrder.indexOf(b);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+
+  const resourceTypes = new Map();
+  consolidatedItems.forEach(item => {
+    const recursos = item.calculo?.detalhes_calculo?.recursos?.itens || [];
+    recursos.forEach(r => {
+      const key = normalizeResourceKey(r.tipo);
+      if (key !== 'combustivel' && key !== 'checkin') resourceTypes.set(key, r.tipo);
+    });
+  });
+
+  const resourceOrder = ['pca', 'gpu', 'pbb'];
+  const sortedResourceKeys = [...resourceTypes.keys()].sort((a, b) => {
+    const ia = resourceOrder.indexOf(a);
+    const ib = resourceOrder.indexOf(b);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+
+  // ─── Build columns ───
+  const m = { left: 2, right: 2 };
+  const tableWidth = 297 - m.left - m.right;
+
+  const fixedCols = [
+    { label: 'Registo', width: 16 },
+    { label: 'PMB(t)', width: 13, align: 'right' },
+    { label: 'Voo (A/D)', width: 24 },
+    { label: 'Aterragem', width: 22 },
+    { label: 'Descolagem', width: 22 },
+    { label: 'Pouso', width: 14, align: 'right' },
+    { label: 'Estac.(h)', width: 11, align: 'right' },
+    { label: 'Estac.($)', width: 13, align: 'right' },
+    { label: 'Emb.(pax)', width: 11, align: 'right' },
+    { label: 'Emb.($)', width: 13, align: 'right' },
+  ];
+
+  const outrasTarifaCols = sortedOutrasTarifaKeys.map(key => ({
+    label: outrasTarifaTypes.get(key),
+    width: 14,
+    align: 'right',
+  }));
+
+  const resourceCols = [];
+  sortedResourceKeys.forEach(key => {
+    const label = getResourceShortLabel(key);
+    resourceCols.push({ label: `${label}(h)`, width: 11, align: 'right' });
+    resourceCols.push({ label: `${label}($)`, width: 14, align: 'right' });
+  });
+
+  let ivaPercent = '';
+  for (const item of consolidatedItems) {
+    const impostos = item.calculo?.detalhes_calculo?.impostos;
+    if (impostos?.length > 0 && impostos[0].valor_configurado) {
+      ivaPercent = ` ${impostos[0].valor_configurado}%`;
+      break;
+    }
+  }
+
+  const finalCols = [
+    { label: `IVA${ivaPercent}`, width: 14, align: 'right' },
+    { label: 'TOTAL', width: 18, align: 'right' },
+  ];
+
+  const allCols = [...fixedCols, ...outrasTarifaCols, ...resourceCols, ...finalCols];
+
+  const totalDefinedWidth = allCols.reduce((s, c) => s + c.width, 0);
+  if (totalDefinedWidth !== tableWidth) {
+    const scale = tableWidth / totalDefinedWidth;
+    allCols.forEach(col => { col.width = col.width * scale; });
+  }
+
+  // ─── Build rows ───
+  const totals = { pouso: 0, estac_h: 0, estac: 0, passag_pax: 0, passag: 0, iva: 0, total: 0 };
+  const outrasTarifaTotals = {};
+  sortedOutrasTarifaKeys.forEach(key => { outrasTarifaTotals[key] = 0; });
+  const resourceTotals = {};
+  sortedResourceKeys.forEach(key => {
+    resourceTotals[`${key}_h`] = 0;
+    resourceTotals[`${key}_v`] = 0;
+  });
+
+  const rows = consolidatedItems.map(item => {
+    const c = item.calculo;
+    const det = c?.detalhes_calculo || {};
+    const arrVoo = item.vooArr;
+    const depVoo = item.vooDep || item.voo;
+
+    const registo = arrVoo?.registo_aeronave || depVoo?.registo_aeronave || '-';
+    const mtowKg = det.pouso?.mtowKg || c?.mtow_kg || arrVoo?.peso_maximo_descolagem || 0;
+    const mtowT = mtowKg > 0 ? (mtowKg / 1000) : 0;
+
+    const arrNum = arrVoo?.numero_voo || '';
+    const depNum = depVoo?.numero_voo || '';
+    const vooStr = arrNum && depNum && arrNum !== depNum
+      ? `${arrNum}/${depNum}`
+      : arrNum || depNum || '-';
+
+    const arrDate = arrVoo?.data_operacao || '';
+    const arrTime = arrVoo?.horario_real || arrVoo?.horario_previsto || '';
+    const arrStr = arrDate ? `${fmtDate(arrDate)} ${arrTime}` : '';
+
+    const depDate = depVoo?.data_operacao || '';
+    const depTime = depVoo?.horario_real || depVoo?.horario_previsto || '';
+    const depStr = depDate ? `${fmtDate(depDate)} ${depTime}` : '';
+
+    const pouso = c?.tarifa_pouso_usd || 0;
+    const estacHoras = c?.tempo_permanencia_horas || det.permanencia?.tempoEstacionamento || 0;
+    const estacVal = c?.tarifa_permanencia_usd || 0;
+    const passagPax = det.passageiros?.totalPassageirosCobranca || det.passageiros?.passageirosDep || 0;
+    const passag = c?.tarifa_passageiros_usd || 0;
+
+    const outrasTarifaMap = {};
+    if (det.iluminacao?.valor > 0) outrasTarifaMap['iluminacao'] = det.iluminacao.valor;
+    (det.outras || []).forEach(o => {
+      if ((o.valor || 0) > 0 && o.tipo) outrasTarifaMap[o.tipo] = (outrasTarifaMap[o.tipo] || 0) + o.valor;
+    });
+
+    let iva = 0;
+    if (det.impostos) det.impostos.forEach(imp => { iva += imp.valor_usd || 0; });
+
+    const totalVal = c?.total_tarifa_usd || item.valor_usd || 0;
+
+    totals.pouso += pouso;
+    totals.estac_h += estacHoras;
+    totals.estac += estacVal;
+    totals.passag_pax += passagPax;
+    totals.passag += passag;
+    totals.iva += iva;
+    totals.total += totalVal;
+
+    const recursos = det.recursos?.itens || [];
+    const resourceMap = {};
+    recursos.forEach(r => {
+      const key = normalizeResourceKey(r.tipo);
+      if (key !== 'combustivel' && key !== 'checkin') {
+        resourceMap[key] = { h: r.tempo_horas || 0, v: r.valor_usd || 0 };
+      }
+    });
+
+    const row = [
+      registo,
+      mtowT > 0 ? fmtNum(mtowT, 1) : '',
+      vooStr,
+      arrStr,
+      depStr,
+    ];
+
+    row.push(pouso > 0 ? fmtNum(pouso) : '');
+    row.push(estacHoras > 0 ? fmtNum(estacHoras, 1) : '');
+    row.push(estacVal > 0 ? fmtNum(estacVal) : '');
+    row.push(passagPax > 0 ? fmtNum(passagPax, 0) : '');
+    row.push(passag > 0 ? fmtNum(passag) : '');
+
+    sortedOutrasTarifaKeys.forEach(key => {
+      const val = outrasTarifaMap[key] || 0;
+      row.push(val > 0 ? fmtNum(val) : '');
+      outrasTarifaTotals[key] += val;
+    });
+
+    sortedResourceKeys.forEach(key => {
+      const r = resourceMap[key];
+      const hVal = r?.h || 0;
+      const vVal = r?.v || 0;
+      row.push(hVal > 0 ? fmtNum(hVal, 2) : '');
+      row.push(vVal > 0 ? fmtNum(vVal) : '');
+      resourceTotals[`${key}_h`] += hVal;
+      resourceTotals[`${key}_v`] += vVal;
+    });
+
+    row.push(iva > 0 ? fmtNum(iva) : '');
+    row.push(fmtNum(totalVal));
+
+    return row;
+  });
+
+  // Totals row
+  const emptyBeforeTariffs = 5;
+  const totalRow = Array(emptyBeforeTariffs).fill('');
+  totalRow[0] = 'TOTAIS';
+  totalRow.push(fmtNum(totals.pouso));
+  totalRow.push(''); // estac hours
+  totalRow.push(fmtNum(totals.estac));
+  totalRow.push(fmtNum(totals.passag_pax, 0)); // total pax
+  totalRow.push(fmtNum(totals.passag));
+  sortedOutrasTarifaKeys.forEach(key => {
+    totalRow.push(fmtNum(outrasTarifaTotals[key]));
+  });
+  sortedResourceKeys.forEach(key => {
+    totalRow.push('');
+    totalRow.push(fmtNum(resourceTotals[`${key}_v`]));
+  });
+  totalRow.push(fmtNum(totals.iva));
+  totalRow.push(fmtNum(totals.total));
+  rows.push(totalRow);
+
+  // Draw table
+  y = addSectionTitle(doc, y, 'Discriminação por Voo (valores em USD)');
+  y = addTable(doc, y, {
+    columns: allCols,
+    rows,
+    rowHeight: 5,
+    fontSize: 6,
+    headerOpts,
+  });
+
+  addFooter(doc, { generatedBy: 'Sistema' });
+
+  return { _doc: doc };
+}
+
+
 async function uploadAndReturn(doc, proforma, proforma_id) {
   const pdfArrayBuffer = doc.output('arraybuffer');
   const fileName = `proformas/${proforma.numero_proforma || proforma_id}.pdf`;

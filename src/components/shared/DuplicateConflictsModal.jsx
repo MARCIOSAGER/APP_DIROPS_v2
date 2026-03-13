@@ -58,7 +58,7 @@ export default function DuplicateConflictsModal({
           </Button>
           <Button 
             onClick={() => onResolve('update')}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Atualizar Existentes ({conflictsCount + newRecordsCount} Total)

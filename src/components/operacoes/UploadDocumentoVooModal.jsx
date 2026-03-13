@@ -198,7 +198,7 @@ export default function UploadDocumentoVooModal({
                 />
               </div>
               <div className="flex gap-2 justify-center">
-                <Button onClick={handleCapture} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={handleCapture} className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Camera className="w-4 h-4 mr-2" />
                   Capturar
                 </Button>

@@ -51,12 +51,12 @@ export const PDF = {
     right:  15,
   },
 
-  // Logo (400x483, ratio ~0.83:1)
+  // Logo (400x483, ratio 0.83:1, proportional)
   logo: {
-    width:  20,
-    height: 24,
+    width:  23,
+    height: 28,
     x:      15,
-    y:      8,
+    y:      5,
   },
 
   // Page dimensions A4 (mm)
@@ -172,36 +172,69 @@ export function addHeader(doc, { title, subtitle, logoBase64, date, meta = [] } 
   const m = PDF.margin;
   let y = 10;
 
-  // Single line: subtitle (left) | title (center) | logo (right)
-  const lineY = y + 6;
+  // Calculate logo dimensions dynamically from image ratio
+  const maxH = PDF.logo.height; // max height in mm
+  const maxW = 35; // max width in mm
+  let logoW = PDF.logo.width;
+  let logoH = PDF.logo.height;
+
+  if (logoBase64) {
+    try {
+      // Extract image dimensions from base64 via jsPDF's internal method
+      const imgProps = doc.getImageProperties(logoBase64);
+      const ratio = imgProps.width / imgProps.height;
+      // Fit within maxW x maxH keeping aspect ratio
+      if (ratio >= 1) {
+        // Horizontal/square logo
+        logoW = Math.min(maxW, maxH * ratio);
+        logoH = logoW / ratio;
+      } else {
+        // Vertical logo (like DIROPS)
+        logoH = maxH;
+        logoW = logoH * ratio;
+        if (logoW > maxW) {
+          logoW = maxW;
+          logoH = logoW / ratio;
+        }
+      }
+    } catch (_) {
+      // Fallback to defaults
+    }
+  }
+
+  // Align title baseline with logo bottom, subtitle above
+  const logoY = PDF.logo.y;
+  const logoBottom = logoY + logoH;
+  const titleLineY = logoBottom; // title baseline at logo bottom
+  const subtitleLineY = titleLineY - 6; // subtitle above title
+
+  // Title center (e.g. "Cálculo de Tarifas Aeroportuárias")
+  if (title) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(PDF.font.title);
+    setColor(doc, PDF.colors.dark);
+    doc.text(title, w / 2, titleLineY, { align: 'center' });
+  }
 
   // Subtitle left (e.g. "N.º PF-2026-000003")
   if (subtitle) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(PDF.font.subtitle);
     setColor(doc, PDF.colors.body);
-    doc.text(subtitle, m.left, lineY);
+    doc.text(subtitle, m.left, subtitleLineY);
   }
 
-  // Title center (e.g. "Nota Proforma")
-  if (title) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(PDF.font.title);
-    setColor(doc, PDF.colors.dark);
-    doc.text(title, w / 2, lineY, { align: 'center' });
-  }
-
-  // Empresa logo (right side)
+  // Empresa logo (right side, proportional)
   if (logoBase64) {
     try {
-      const rightLogoX = w - m.right - PDF.logo.width;
-      doc.addImage(logoBase64, 'PNG', rightLogoX, y, PDF.logo.width, PDF.logo.height);
+      const rightLogoX = w - m.right - logoW;
+      doc.addImage(logoBase64, 'PNG', rightLogoX, logoY, logoW, logoH);
     } catch (e) {
       console.warn('PDF: Logo could not be added', e.message);
     }
   }
 
-  y = Math.max(y + PDF.logo.height, lineY + 4) + 2;
+  y = logoY + logoH + 1;
 
   // Decorative blue bar
   setFill(doc, PDF.colors.primary);
@@ -383,9 +416,11 @@ export function addTable(doc, startY, { columns, rows, headerOpts = null, rowHei
       doc.rect(m.left, y, tableWidth, rowHeight, 'F');
     }
 
-    // Row text
+    // Row text — bold for last row if it starts with "TOTAIS" or "TOTAL"
     setColor(doc, PDF.colors.dark);
-    doc.setFont('helvetica', 'normal');
+    const isLastRow = rowIndex === rows.length - 1;
+    const isTotalsRow = isLastRow && String(row[0] || '').toUpperCase().startsWith('TOTA');
+    doc.setFont('helvetica', isTotalsRow ? 'bold' : 'normal');
 
     columns.forEach((col, colIndex) => {
       const cellText = String(row[colIndex] ?? '');

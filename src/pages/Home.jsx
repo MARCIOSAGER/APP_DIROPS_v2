@@ -39,7 +39,7 @@ import { Aeroporto } from "@/entities/Aeroporto";
 import { Inspecao } from "@/entities/Inspecao";
 import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
-import { hasUserProfile, ensureUserProfilesExist, getAeroportosPermitidos, filtrarDadosPorAcesso, filtrarDadosPorAeroportoId, isSuperAdmin } from '@/components/lib/userUtils';
+import { hasUserProfile, ensureUserProfilesExist, getAeroportosPermitidos, filtrarDadosPorAcesso, filtrarDadosPorAeroportoId, isSuperAdmin, getEmailsEmpresa, filtrarDadosPorCriador } from '@/components/lib/userUtils';
 
 import { getDashboardStats } from '@/functions/getDashboardStats';
 
@@ -103,17 +103,28 @@ export default function DashboardInterno() {
       let inspecoesData = inspecoesDataResult.status === 'fulfilled' ? inspecoesDataResult.value : [];
       let calculosTarifaData = calculosTarifaResult.status === 'fulfilled' ? calculosTarifaResult.value : [];
 
-      // Filtrar dados operacionais por empresa + permissões
-      const voosFiltrados = filtrarDadosPorAcesso(userWithProfiles, voosData, 'aeroporto_operacao', aeroportosData);
+      // Filtrar por empresa_id direto
+      const empresaId = userWithProfiles.empresa_id;
+      const voosFiltrados = empresaId ? voosData.filter(v => v.empresa_id === empresaId) : voosData;
       setVoos(voosFiltrados);
 
-      const ocorrenciasFiltradas = filtrarDadosPorAcesso(userWithProfiles, ocorrenciasData, 'aeroporto', aeroportosData);
+      // Ocorrências e inspeções: filtrar por aeroportos da empresa
+      const icaosPermitidos = new Set(aeroportosFiltrados.map(a => a.codigo_icao));
+      const ocorrenciasFiltradas = empresaId
+        ? ocorrenciasData.filter(o => icaosPermitidos.has(o.aeroporto))
+        : ocorrenciasData;
       setOcorrenciasSafety(ocorrenciasFiltradas);
 
-      const inspecoesFiltradas = filtrarDadosPorAeroportoId(userWithProfiles, inspecoesData, 'aeroporto_id', aeroportosData);
+      const aeroportoIdsPermitidos = new Set(aeroportosFiltrados.map(a => a.id));
+      const inspecoesFiltradas = empresaId
+        ? inspecoesData.filter(i => aeroportoIdsPermitidos.has(i.aeroporto_id))
+        : inspecoesData;
       setInspecoes(inspecoesFiltradas);
 
-      setCalculosTarifa(calculosTarifaData);
+      // Filtrar cálculos de tarifa: só os que têm voo_id dentro dos voos filtrados
+      const vooIdsFiltrados = new Set(voosFiltrados.map(v => v.id));
+      const calculosFiltrados = calculosTarifaData.filter(c => vooIdsFiltrados.has(c.voo_id));
+      setCalculosTarifa(calculosFiltrados);
 
       console.log('✅ Dados carregados para gráficos');
       console.log('📊 Cálculos de Tarifa carregados:', calculosTarifaData.length);
@@ -132,7 +143,7 @@ export default function DashboardInterno() {
 
     setIsLoadingStats(true);
     try {
-      const params = { aeroporto: selectedAeroporto, periodo: selectedPeriodo };
+      const params = { aeroporto: selectedAeroporto, periodo: selectedPeriodo, empresaId: currentUser.empresa_id };
       const response = await getDashboardStats(params);
       setDashboardStats(response.data);
     } catch (error) {

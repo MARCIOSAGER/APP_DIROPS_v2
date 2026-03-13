@@ -141,7 +141,7 @@ export default function PlaceholderManagement({ onError, onSuccess }) {
             Crie placeholders globais para usar nos templates de notificação
           </p>
         </div>
-        <Button onClick={() => handleOpenForm()} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => handleOpenForm()} className="bg-blue-600 hover:bg-blue-700 text-white">
           <Plus className="w-4 h-4 mr-2" />
           Novo Placeholder
         </Button>
@@ -314,7 +314,7 @@ export default function PlaceholderManagement({ onError, onSuccess }) {
                   <X className="w-4 h-4 mr-2" />
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Save className="w-4 h-4 mr-2" />
                   {editingPlaceholder ? 'Atualizar' : 'Criar'} Placeholder
                 </Button>

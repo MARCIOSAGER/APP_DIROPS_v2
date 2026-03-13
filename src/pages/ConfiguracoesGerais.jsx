@@ -345,7 +345,7 @@ export default function ConfiguracoesGerais() {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-3 pt-4 border-t">
-                <Button onClick={handleSaveSmtp} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={handleSaveSmtp} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white">
                   {isSaving ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> A guardar...</> : <><Save className="w-4 h-4 mr-2" /> Guardar Configuracoes</>}
                 </Button>
                 <Button variant="outline" onClick={handleTestSmtp} disabled={isTesting}>

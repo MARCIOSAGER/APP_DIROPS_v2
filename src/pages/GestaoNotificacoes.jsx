@@ -1459,7 +1459,7 @@ export default function GestaoNotificacoes() {
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span className="ml-2">Atualizar</span>
             </Button>
-            <Button onClick={() => handleOpenForm()} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => handleOpenForm()} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="w-4 h-4 mr-2" />
               Nova Regra
             </Button>
@@ -2726,7 +2726,7 @@ export default function GestaoNotificacoes() {
                       Enviar Teste
                     </Button>
                   )}
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                     {editingRegra ? 'Atualizar' : 'Criar'} Regra
                   </Button>
                 </div>

@@ -245,7 +245,7 @@ export default function ZAPIGruposRegistrados({ onError, onSuccess }) {
                         <Button
                           size="sm"
                           onClick={() => handleSalvarEdicao(grupo.id)}
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
                           Salvar
                         </Button>

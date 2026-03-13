@@ -80,12 +80,17 @@ export function isEmpresaAdmin(user) {
 }
 
 // Filtra aeroportos com base na empresa e permissões do utilizador
-// Retorna os aeroportos que o utilizador pode ver
-export function getAeroportosPermitidos(user, todosAeroportos) {
+// effectiveEmpresaId: opcional — quando superadmin seleciona uma empresa para "visualizar como"
+export function getAeroportosPermitidos(user, todosAeroportos, effectiveEmpresaId) {
   if (!user || !todosAeroportos) return [];
 
-  // Superadmin (sem empresa_id + admin) → vê tudo
+  // Superadmin (sem empresa_id + admin)
   if (isSuperAdmin(user)) {
+    // Se tem uma empresa selecionada, filtrar por essa empresa
+    if (effectiveEmpresaId) {
+      return todosAeroportos.filter(a => a.empresa_id === effectiveEmpresaId);
+    }
+    // Sem empresa selecionada → vê tudo
     return todosAeroportos;
   }
 
@@ -138,6 +143,37 @@ export function filtrarDadosPorAeroportoId(user, dados, campo, todosAeroportos) 
   const idsPermitidos = new Set(aeroportosPermitidos.map(a => a.id));
 
   return dados.filter(item => idsPermitidos.has(item[campo]));
+}
+
+// Filtra dados por empresa (via aeroportos da empresa)
+// Usado para isolamento de dados entre empresas (segurança)
+export function filtrarDadosPorEmpresa(dados, campo, todosAeroportos, empresaId) {
+  if (!empresaId || !dados || !todosAeroportos) return dados || [];
+  const aeroportosEmpresa = todosAeroportos.filter(a => a.empresa_id === empresaId);
+  const icaosEmpresa = new Set(aeroportosEmpresa.map(a => a.codigo_icao?.trim().toUpperCase()));
+  return dados.filter(item => icaosEmpresa.has(item[campo]?.trim().toUpperCase()));
+}
+
+// Obtém Set de emails de utilizadores de uma empresa
+// Retorna null se empresaId não for fornecido (= sem filtro)
+export function getEmailsEmpresa(todosUsers, empresaId) {
+  if (!empresaId || !todosUsers) return null;
+  return new Set(
+    todosUsers
+      .filter(u => u.empresa_id === empresaId)
+      .map(u => u.email?.toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+// Filtra dados por empresa do criador (created_by = email do utilizador)
+// emailsEmpresa: Set de emails (de getEmailsEmpresa) ou null para sem filtro
+export function filtrarDadosPorCriador(dados, emailsEmpresa) {
+  if (!emailsEmpresa) return dados || [];
+  return (dados || []).filter(item => {
+    if (!item.created_by) return false;
+    return emailsEmpresa.has(item.created_by.toLowerCase());
+  });
 }
 
 // Obter logo URL da empresa de um aeroporto (para relatórios/PDFs)

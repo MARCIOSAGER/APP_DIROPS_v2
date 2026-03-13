@@ -468,7 +468,7 @@ export default function ConfiguracaoCredenciamento({ initialEmpresas, initialAre
                       />
                     </div>
                     <div className="flex gap-2">
-                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                         <Save className="w-4 h-4 mr-2" />
                         {editingEmpresa ? 'Atualizar' : 'Criar'} Empresa
                       </Button>
@@ -583,7 +583,7 @@ export default function ConfiguracaoCredenciamento({ initialEmpresas, initialAre
                       />
                     </div>
                     <div className="flex gap-2">
-                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                         <Save className="w-4 h-4 mr-2" />
                         {editingArea ? 'Atualizar' : 'Criar'} Área
                       </Button>
@@ -772,7 +772,7 @@ export default function ConfiguracaoCredenciamento({ initialEmpresas, initialAre
                       <Label htmlFor="obrigatorio-check">Documento Obrigatório</Label>
                     </div>
                     <div className="flex gap-2">
-                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                         <Save className="w-4 h-4 mr-2" />
                         {editingTipoDoc ? 'Atualizar' : 'Criar'} Tipo
                       </Button>

@@ -515,7 +515,7 @@ export default function OptInZAPIManagement({ onError, onSuccess }) {
 
               <Button
                 onClick={() => setShowQRModal(false)}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               >
                 Fechar
               </Button>
@@ -540,7 +540,7 @@ export default function OptInZAPIManagement({ onError, onSuccess }) {
                 <pre className="text-xs text-slate-700 whitespace-pre-wrap">{JSON.stringify(statusData, null, 2)}</pre>
               </div>
 
-              <Button onClick={() => setShowStatusModal(false)} className="w-full bg-blue-600 hover:bg-blue-700">
+              <Button onClick={() => setShowStatusModal(false)} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                 Fechar
               </Button>
             </div>
@@ -596,7 +596,7 @@ export default function OptInZAPIManagement({ onError, onSuccess }) {
                 <pre className="text-xs text-slate-700 whitespace-pre-wrap">{JSON.stringify(phoneData, null, 2)}</pre>
               </div>
 
-              <Button onClick={() => setShowPhoneModal(false)} className="w-full bg-blue-600 hover:bg-blue-700">
+              <Button onClick={() => setShowPhoneModal(false)} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                 Fechar
               </Button>
             </div>

@@ -62,8 +62,8 @@ export default function AprovarAcessoModal({ isOpen, onClose, solicitacao, aerop
 
   const handleSelectAllAeroportos = (checked) => {
     if (checked) {
-      // Selecionar todos os IDs únicos dos aeroportos
-      const allAeroportoIds = [...new Set(aeroportos.map(a => a.id))];
+      const filtrados = empresaId ? aeroportos.filter(a => a.empresa_id === empresaId) : aeroportos;
+      const allAeroportoIds = [...new Set(filtrados.map(a => a.id))];
       setAeroportosAprovados(allAeroportoIds);
     } else {
       setAeroportosAprovados([]);
@@ -98,7 +98,12 @@ export default function AprovarAcessoModal({ isOpen, onClose, solicitacao, aerop
 
   if (!solicitacao) return null;
 
-  const allAeroportosSelected = aeroportos.length > 0 && aeroportosAprovados.length === aeroportos.length;
+  // Filtrar aeroportos pela empresa selecionada
+  const aeroportosFiltrados = empresaId
+    ? aeroportos.filter(a => a.empresa_id === empresaId)
+    : aeroportos;
+
+  const allAeroportosSelected = aeroportosFiltrados.length > 0 && aeroportosAprovados.length === aeroportosFiltrados.length;
   
   const getEmpresaName = (id) => {
     const empresa = empresas.find(e => e.id === id);
@@ -158,7 +163,7 @@ export default function AprovarAcessoModal({ isOpen, onClose, solicitacao, aerop
               <select
                 id="empresa"
                 value={empresaId}
-                onChange={(e) => setEmpresaId(e.target.value)}
+                onChange={(e) => { setEmpresaId(e.target.value); setAeroportosAprovados([]); }}
                 className="w-full h-10 px-3 py-2 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 border-slate-200"
               >
                 <option value="">Nenhuma</option>
@@ -181,7 +186,7 @@ export default function AprovarAcessoModal({ isOpen, onClose, solicitacao, aerop
                 <label htmlFor="select-all-aeroportos" className="text-sm font-medium">Selecionar Todos</label>
               </div>
               <hr/>
-              {aeroportos.map(aero => (
+              {aeroportosFiltrados.map(aero => (
                 <div key={aero.id} className="flex items-center space-x-2">
                   <Checkbox
                     id={`aeroporto-${aero.id}`}
@@ -193,7 +198,7 @@ export default function AprovarAcessoModal({ isOpen, onClose, solicitacao, aerop
               ))}
             </div>
             <p className="text-xs text-slate-500">
-              {aeroportosAprovados.length} de {aeroportos.length} aeroportos selecionados
+              {aeroportosAprovados.length} de {aeroportosFiltrados.length} aeroportos selecionados
             </p>
           </div>
           

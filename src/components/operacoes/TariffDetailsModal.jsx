@@ -468,6 +468,35 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
         });
       }
 
+      let detalhesRecursos = '';
+      if (detalhes.recursos && detalhes.recursos.itens && detalhes.recursos.itens.length > 0) {
+        let recursosRows = detalhes.recursos.itens.map(r => `
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 8px; color: #475569;">${r.tipo}</td>
+            <td style="padding: 8px; color: #64748b;">${r.tempo_horas ? r.tempo_horas.toFixed(2) + 'h' : '-'}</td>
+            <td style="padding: 8px; text-align: right; color: #64748b;">$${r.valor_usd?.toFixed(2) || '0.00'}</td>
+            <td style="padding: 8px; text-align: right; color: #64748b;">${formatCurrency(r.valor_usd * (tariffCalculation.taxa_cambio_usd_aoa || 850))}</td>
+          </tr>
+        `).join('');
+        detalhesRecursos = `
+          <h3 style="color: #c2410c; margin-top: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">Recursos de Solo</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="background-color: #fff7ed;">
+              <td style="padding: 8px; font-weight: bold;">Recurso</td>
+              <td style="padding: 8px; font-weight: bold;">Tempo</td>
+              <td style="padding: 8px; font-weight: bold; text-align: right;">USD</td>
+              <td style="padding: 8px; font-weight: bold; text-align: right;">AOA</td>
+            </tr>
+            ${recursosRows}
+            <tr style="background-color: #fff7ed;">
+              <td colspan="2" style="padding: 8px; font-weight: bold;">Total Recursos</td>
+              <td style="padding: 8px; text-align: right; font-weight: bold;">$${(tariffCalculation.tarifa_recursos_usd || 0).toFixed(2)}</td>
+              <td style="padding: 8px; text-align: right; font-weight: bold;">${formatCurrency(tariffCalculation.tarifa_recursos)}</td>
+            </tr>
+          </table>
+        `;
+      }
+
       let detalhesIluminacao = '';
       if (detalhes.iluminacao && typeof detalhes.iluminacao === 'object' && !detalhes.iluminacao.erro && tariffCalculation.outras_tarifas > 0) {
         detalhesIluminacao = `
@@ -570,6 +599,12 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
               <td style="padding: 10px;">Outras Tarifas (Iluminação)</td>
               <td style="padding: 10px; text-align: right;">${formatCurrency(tariffCalculation.outras_tarifas)}</td>
             </tr>
+            ${tariffCalculation.tarifa_recursos > 0 ? `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 10px;">Recursos de Solo</td>
+              <td style="padding: 10px; text-align: right;">${formatCurrency(tariffCalculation.tarifa_recursos)}</td>
+            </tr>
+            ` : ''}
             ${detalhes.subtotal_sem_impostos_aoa ? `
             <tr style="border-bottom: 1px solid #e2e8f0; background-color: #f8fafc;">
               <td style="padding: 10px; font-weight: bold;">Subtotal (sem impostos)</td>
@@ -590,6 +625,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
           ${detalhesCarga}
           ${detalhesImpostos}
           ${detalhesIluminacao}
+          ${detalhesRecursos}
 
           <div style="background-color: #dcfce7; padding: 15px; border-radius: 8px; margin-top: 30px;">
             <p style="font-size: 18px; font-weight: bold; color: #166534; margin: 0;">
@@ -775,6 +811,59 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
               ['Valor AOA', formatCurrency(tariffCalculation.outras_tarifas)],
             ], true, detalhes.iluminacao.formula)}
 
+            {/* RECURSOS DE SOLO */}
+            {detalhes.recursos && detalhes.recursos.itens && detalhes.recursos.itens.length > 0 && (
+              <div className="space-y-3 pb-4 border-b border-slate-200">
+                <h3 className="text-base font-semibold text-orange-700 flex items-center gap-2">
+                  Recursos de Solo
+                  <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">
+                    {detalhes.recursos.itens.length} recurso(s)
+                  </Badge>
+                </h3>
+                <div className="space-y-2">
+                  {detalhes.recursos.itens.map((recurso, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded p-3 text-sm">
+                      <div>
+                        <span className="font-medium text-slate-700">{recurso.tipo}</span>
+                        {recurso.tempo_horas > 0 && (
+                          <span className="text-slate-500 ml-2">({recurso.tempo_horas.toFixed(2)}h)</span>
+                        )}
+                        {recurso.posicao_stand && (
+                          <span className="text-slate-400 ml-2">Stand: {recurso.posicao_stand}</span>
+                        )}
+                        {recurso.num_balcoes > 0 && (
+                          <span className="text-slate-400 ml-2">{recurso.num_balcoes} balcões</span>
+                        )}
+                        {recurso.litros > 0 && (
+                          <span className="text-slate-400 ml-2">{recurso.litros}L {recurso.tipo_combustivel || ''}</span>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <span className="font-semibold text-orange-800">{formatUSD(recurso.valor_usd)}</span>
+                        <span className="text-slate-500 ml-2">= {formatCurrency(recurso.valor_usd * (tariffCalculation.taxa_cambio_usd_aoa || 850))}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center pt-2 text-sm font-semibold">
+                  <span className="text-slate-700">Total Recursos USD</span>
+                  <span className="text-orange-800">{formatUSD(tariffCalculation.tarifa_recursos_usd)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm font-semibold">
+                  <span className="text-slate-700">Total Recursos AOA</span>
+                  <span className="text-orange-800">{formatCurrency(tariffCalculation.tarifa_recursos)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Sem recursos */}
+            {(!detalhes.recursos || !detalhes.recursos.itens || detalhes.recursos.itens.length === 0) && (
+              <div className="space-y-3 pb-4 border-b border-slate-200">
+                <h3 className="text-base font-semibold text-orange-700">Recursos de Solo</h3>
+                <p className="text-sm text-slate-500 italic">Nenhum recurso de solo registado para este voo.</p>
+              </div>
+            )}
+
             {/* TOTAL GERAL */}
             <div className="pt-4 border-t-2 border-slate-300 space-y-2">
               {detalhes.subtotal_sem_impostos_usd && (
@@ -881,6 +970,21 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
                     { label: 'Valor USD', value: formatUSD(tariffCalculation.tarifa_passageiros_usd) },
                     { label: 'Valor AOA', value: formatCurrency(tariffCalculation.tarifa_passageiros) },
                   ], { twoColumns: true });
+                }
+
+                // Recursos de Solo
+                if (detalhes.recursos && detalhes.recursos.itens && detalhes.recursos.itens.length > 0) {
+                  y = checkPageBreak(doc, y, 30);
+                  y = addSectionTitle(doc, y, 'Recursos de Solo');
+                  const recursosItems = detalhes.recursos.itens.map(r => ({
+                    label: r.tipo,
+                    value: `${formatUSD(r.valor_usd)} (${r.tempo_horas ? r.tempo_horas.toFixed(2) + 'h' : '-'})`
+                  }));
+                  recursosItems.push({
+                    label: 'Total Recursos',
+                    value: `${formatUSD(tariffCalculation.tarifa_recursos_usd)} = ${formatCurrency(tariffCalculation.tarifa_recursos)}`
+                  });
+                  y = addKeyValuePairs(doc, y, recursosItems, { twoColumns: true });
                 }
 
                 // Totais

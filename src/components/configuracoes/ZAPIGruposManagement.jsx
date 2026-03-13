@@ -159,7 +159,7 @@ export default function ZAPIGruposManagement({ onError, onSuccess }) {
               <Button onClick={() => setShowModal(null)} variant="outline" className="flex-1">
                 Cancelar
               </Button>
-              <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700">
+              <Button disabled className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                 Em breve
               </Button>
             </div>

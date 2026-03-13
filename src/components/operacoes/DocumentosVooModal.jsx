@@ -273,7 +273,7 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
                     onOpenUploadModal(vooLigado);
                   }
                 }}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Carregar Documento
