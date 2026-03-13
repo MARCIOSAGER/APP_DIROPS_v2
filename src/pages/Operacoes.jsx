@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,9 +23,10 @@ import { OutraTarifa } from '@/entities/OutraTarifa';
 import { Imposto } from '@/entities/Imposto';
 import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
-import { hasUserProfile, getAeroportosPermitidos, filtrarDadosPorAcesso, isSuperAdmin } from '@/components/lib/userUtils';
+import { hasUserProfile, getAeroportosPermitidos, filtrarDadosPorAcesso, filtrarDadosPorEmpresa, isSuperAdmin, getEmailsEmpresa, filtrarDadosPorCriador } from '@/components/lib/userUtils';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
 import { useAeroportos, useCompanhias, useAeronaves, useModelosAeronave } from '@/components/lib/useStaticData';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 
 import VoosTable from '../components/operacoes/VoosTable';
 import FormVoo from '../components/operacoes/FormVoo';
@@ -50,6 +51,7 @@ import { Proforma } from '@/entities/Proforma';
 import { base44 } from '@/api/base44Client';
 import { registarCriacao } from '../components/lib/auditoria';
 import AlterarCambioModal from '../components/operacoes/AlterarCambioModal';
+import RecursosVooModal from '../components/operacoes/RecursosVooModal';
 import UploadDocumentoVooModal from '../components/operacoes/UploadDocumentoVooModal';
 import LixeiraVoosModal from '../components/operacoes/LixeiraVoosModal';
 import DocumentosVooModal from '../components/operacoes/DocumentosVooModal';
@@ -65,14 +67,26 @@ const formatCurrency = (value, currency = 'AOA') => {
   return new Intl.NumberFormat('pt-AO', { style: 'currency', currency: currency }).format(value || 0);
 };
 
+// Helper: filtra tarifas por empresa_id
+function filterTarifasByEmpresa(tarifas, empresaId) {
+  if (!empresaId) return tarifas;
+  const empresaTarifas = tarifas.filter(t => t.empresa_id === empresaId);
+  const globalTarifas = tarifas.filter(t => !t.empresa_id);
+  return empresaTarifas.length > 0 ? empresaTarifas : globalTarifas;
+}
+
 export default function Operacoes() {
    const { t, language } = useI18n();
+   const { effectiveEmpresaId } = useCompanyView();
+   const effectiveEmpresaIdRef = useRef(effectiveEmpresaId);
+   effectiveEmpresaIdRef.current = effectiveEmpresaId;
    const [voos, setVoos] = useState([]);
    const [voosLigados, setVoosLigados] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [todosAeroportos, setTodosAeroportos] = useState([]);
   const [companhias, setCompanhias] = useState([]);
   const [aeronaves, setAeronaves] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [modelosAeronave, setModelosAeronave] = useState([]);
   const [calculosTarifa, setCalculosTarifa] = useState([]);
   const [tarifasPouso, setTarifasPouso] = useState([]);
@@ -99,6 +113,8 @@ export default function Operacoes() {
   const [isLixeiraModalOpen, setIsLixeiraModalOpen] = useState(false);
   const [documentosVooModalData, setDocumentosVooModalData] = useState(null);
   const [isDocumentosVooModalOpen, setIsDocumentosVooModalOpen] = useState(false);
+  const [recursosVooModalData, setRecursosVooModalData] = useState(null);
+  const [isRecursosVooModalOpen, setIsRecursosVooModalOpen] = useState(false);
 
   const [uploadMultiplosModalData, setUploadMultiplosModalData] = useState(null);
   const [isUploadMultiplosModalOpen, setIsUploadMultiplosModalOpen] = useState(false);
@@ -196,8 +212,8 @@ export default function Operacoes() {
         configResult
       ] = await Promise.allSettled([
         Voo.list('-data_operacao', 1000),
-        VooLigado.list(),
-        CalculoTarifa.list(),
+        VooLigado.list('-created_date', 1000),
+        CalculoTarifa.list('-data_calculo', 1000),
         TarifaPouso.list().catch(() => []),
         TarifaPermanencia.list().catch(() => []),
         OutraTarifa.list().catch(() => []),
@@ -216,13 +232,23 @@ export default function Operacoes() {
 
       const configuracaoSistemaData = configData.length > 0 ? configData[0] : { taxa_cambio_usd_aoa: 850 };
 
-      setVoos(filtrarDadosPorAcesso(user, voosData.filter(v => !v.deleted_at), 'aeroporto_operacao', aeroportosCache));
-      setVoosLigados(voosLigadosData);
+      // Filtrar voos por empresa_id direto (coluna no voo)
+      const empId = effectiveEmpresaIdRef.current || user.empresa_id;
+      const voosSemDeleted = voosData.filter(v => !v.deleted_at);
+      const voosFiltrados = empId
+        ? voosSemDeleted.filter(v => v.empresa_id === empId)
+        : voosSemDeleted;
+      setVoos(voosFiltrados);
+      // Filtrar voos ligados por empresa_id
+      const voosLigadosFiltrados = empId
+        ? voosLigadosData.filter(vl => vl.empresa_id === empId)
+        : voosLigadosData;
+      setVoosLigados(voosLigadosFiltrados);
       setCalculosTarifa(calculosTarifaData);
-      setTarifasPouso(tarifasPousoData);
-      setTarifasPermanencia(tarifasPermanenciaData);
-      setOutrasTarifas(outrasTarifasData);
-      setImpostos(impostosData);
+      setTarifasPouso(filterTarifasByEmpresa(tarifasPousoData, empId));
+      setTarifasPermanencia(filterTarifasByEmpresa(tarifasPermanenciaData, empId));
+      setOutrasTarifas(filterTarifasByEmpresa(outrasTarifasData, empId));
+      setImpostos(filterTarifasByEmpresa(impostosData, empId));
       setConfiguracaoSistema(configuracaoSistemaData);
 
       setIsLoading(false);
@@ -255,10 +281,10 @@ export default function Operacoes() {
         promises.push(Voo.list('-data_operacao', 1000).then(data => ({ type: 'voos', data })));
       }
       if (dataTypes.includes('voosLigados')) {
-        promises.push(VooLigado.list().then(data => ({ type: 'voosLigados', data })));
+        promises.push(VooLigado.list('-created_date', 1000).then(data => ({ type: 'voosLigados', data })));
       }
       if (dataTypes.includes('calculosTarifa')) {
-        promises.push(CalculoTarifa.list().then(data => ({ type: 'calculosTarifa', data })));
+        promises.push(CalculoTarifa.list('-data_calculo', 1000).then(data => ({ type: 'calculosTarifa', data })));
       }
       if (dataTypes.includes('companhias')) {
         promises.push(CompanhiaAerea.list().then(data => ({ type: 'companhias', data })));
@@ -280,12 +306,17 @@ export default function Operacoes() {
         if (result.status === 'fulfilled') {
           const { type, data } = result.value;
           switch (type) {
-            case 'voos':
-              setVoos(filtrarDadosPorAcesso(currentUser, data.filter(v => !v.deleted_at), 'aeroporto_operacao', todosAeroportos));
+            case 'voos': {
+              const empresaIdFiltro = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+              const voosFilt = data.filter(v => !v.deleted_at);
+              setVoos(empresaIdFiltro ? voosFilt.filter(v => v.empresa_id === empresaIdFiltro) : voosFilt);
               break;
-            case 'voosLigados':
-              setVoosLigados(data);
+            }
+            case 'voosLigados': {
+              const empresaIdFiltro = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+              setVoosLigados(empresaIdFiltro ? data.filter(vl => vl.empresa_id === empresaIdFiltro) : data);
               break;
+            }
             case 'calculosTarifa':
               setCalculosTarifa(data);
               break;
@@ -391,9 +422,10 @@ export default function Operacoes() {
         }
 
         console.log(`📊 Total: ${allVoos.length} voos carregados`);
-        const voosFiltered = allVoos;
 
-        const filteredVoos = filtrarDadosPorAcesso(currentUser, voosFiltered, 'aeroporto_operacao', todosAeroportos);
+        // Filtrar por empresa_id direto
+        const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+        const filteredVoos = empId ? allVoos.filter(v => v.empresa_id === empId) : allVoos;
 
         setVoos(filteredVoos);
         console.log(`✅ ${filteredVoos.length} voo(s) encontrado(s) para o período`);
@@ -512,41 +544,36 @@ export default function Operacoes() {
 
   const _recalculateSingleTariff = useCallback(async (vooLigado, freshData = null) => {
     try {
-      // Se dados frescos foram passados, usar; caso contrário buscar do banco
-      let voosAtualizados, aeroportosAtualizados, aeronavesAtualizadas,
+      let vooArr, vooDep, aeroportosAtualizados, aeronavesAtualizadas,
           tarifasPousoAtualizadas, tarifasPermanenciaAtualizadas,
           outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas;
 
       if (freshData) {
-        ({ voosAtualizados, aeroportosAtualizados, aeronavesAtualizadas,
+        const { voosAtualizados } = freshData;
+        ({ aeroportosAtualizados, aeronavesAtualizadas,
            tarifasPousoAtualizadas, tarifasPermanenciaAtualizadas,
            outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas } = freshData);
+        vooArr = voosAtualizados.find(v => v.id === vooLigado.id_voo_arr);
+        vooDep = voosAtualizados.find(v => v.id === vooLigado.id_voo_dep);
       } else {
-        [
-          voosAtualizados,
-          aeroportosAtualizados,
-          aeronavesAtualizadas,
-          tarifasPousoAtualizadas,
-          tarifasPermanenciaAtualizadas,
-          outrasTarifasAtualizadas,
-          impostosAtualizadosRecalc,
-          configAtualizadas
-        ] = await Promise.all([
-          Voo.list(),
-          Aeroporto.list(),
-          RegistoAeronave.list(),
-          TarifaPouso.list(),
-          TarifaPermanencia.list(),
-          OutraTarifa.list(),
-          Imposto.list(),
-          ConfiguracaoSistema.list()
+        // Buscar apenas os 2 voos específicos + dados de config (usar state quando possível)
+        const [freshVooArr, freshVooDep] = await Promise.all([
+          Voo.filter({ id: { $eq: vooLigado.id_voo_arr } }).then(r => r[0]),
+          Voo.filter({ id: { $eq: vooLigado.id_voo_dep } }).then(r => r[0])
         ]);
+        vooArr = freshVooArr;
+        vooDep = freshVooDep;
+
+        // Usar dados de config já em state (são estáticos/raramente mudam)
+        // Só buscar do banco se o state estiver vazio
+        aeroportosAtualizados = todosAeroportos.length > 0 ? todosAeroportos : await Aeroporto.list();
+        aeronavesAtualizadas = aeronaves.length > 0 ? aeronaves : await RegistoAeronave.list();
+        tarifasPousoAtualizadas = tarifasPouso.length > 0 ? tarifasPouso : filterTarifasByEmpresa(await TarifaPouso.list(), effectiveEmpresaId);
+        tarifasPermanenciaAtualizadas = tarifasPermanencia.length > 0 ? tarifasPermanencia : filterTarifasByEmpresa(await TarifaPermanencia.list(), effectiveEmpresaId);
+        outrasTarifasAtualizadas = outrasTarifas.length > 0 ? outrasTarifas : filterTarifasByEmpresa(await OutraTarifa.list(), effectiveEmpresaId);
+        impostosAtualizadosRecalc = impostos.length > 0 ? impostos : await Imposto.list();
+        configAtualizadas = configuracaoSistema ? [configuracaoSistema] : await ConfiguracaoSistema.list();
       }
-
-
-
-      const vooArr = voosAtualizados.find(v => v.id === vooLigado.id_voo_arr);
-      const vooDep = voosAtualizados.find(v => v.id === vooLigado.id_voo_dep);
 
       if (!vooArr || !vooDep) {
         console.error('❌ Voos não encontrados:', {
@@ -579,8 +606,18 @@ export default function Operacoes() {
         taxaCambio: configAtualizada?.taxa_cambio_usd_aoa || 850
       };
 
-      console.log('💵 Taxa de câmbio:', currentConfiguracao.taxaCambio);
-      console.log('🔄 Iniciando calculateAllTariffs...');
+      console.log('🔍 RECÁLCULO - Dados dos voos:', {
+        vooArr: { id: vooArr.id, numero: vooArr.numero_voo, tipo_voo: vooArr.tipo_voo, aeroporto: vooArr.aeroporto_operacao, pax: vooArr.passageiros_local },
+        vooDep: { id: vooDep.id, numero: vooDep.numero_voo, tipo_voo: vooDep.tipo_voo, pax: vooDep.passageiros_local, carga: vooDep.carga_kg },
+        aeroporto: { icao: aeroportoOperacao.codigo_icao, categoria: aeroportoOperacao.categoria },
+        taxaCambio: currentConfiguracao.taxaCambio,
+        configTarifas: {
+          tarifasPouso: currentConfiguracao.tarifasPouso?.length || 0,
+          tarifasPermanencia: currentConfiguracao.tarifasPermanencia?.length || 0,
+          outrasTarifas: currentConfiguracao.outrasTarifas?.length || 0,
+          aeronaves: currentConfiguracao.aeronaves?.length || 0
+        }
+      });
 
       const calculatedTariffs = await calculateAllTariffs(
         vooLigado,
@@ -629,23 +666,66 @@ export default function Operacoes() {
       console.error('   Stack:', error?.stack);
       throw error;
     }
-  }, [calculosTarifa]);
+  }, [calculosTarifa, todosAeroportos, aeronaves, tarifasPouso, tarifasPermanencia, outrasTarifas, impostos, configuracaoSistema]);
+
+  // Calcular estacionamento quando há troca de aeronave
+  // Procura a chegada mais recente da aeronave DEP no mesmo aeroporto
+  const calculateParkingForSwappedAircraft = (registoDep, aeroportoOperacao, depDateTime, voos, voosLigados) => {
+    try {
+      // Normalizar registo para comparação
+      const normalizeReg = (r) => r ? r.trim().toUpperCase().replace(/[\s\-_.]/g, '') : '';
+      const registoNorm = normalizeReg(registoDep);
+
+      // Encontrar ARRs no mesmo aeroporto com o mesmo registo
+      const arrsMatch = voos
+        .filter(v =>
+          v.tipo_movimento === 'ARR' &&
+          v.aeroporto_operacao === aeroportoOperacao &&
+          normalizeReg(v.registo_aeronave) === registoNorm
+        )
+        .map(v => {
+          const dt = new Date(`${v.data_operacao}T${v.horario_real || v.horario_previsto}`);
+          return { ...v, dateTime: dt };
+        })
+        .filter(v => v.dateTime < depDateTime) // Apenas antes do DEP
+        .sort((a, b) => b.dateTime - a.dateTime); // Mais recente primeiro
+
+      // Para cada ARR, verificar se já tem DEP linkado
+      for (const arrVoo of arrsMatch) {
+        const linkedAsDep = voosLigados.find(vl => vl.id_voo_arr === arrVoo.id);
+        if (!linkedAsDep) {
+          // Esta ARR não tem DEP — é a chegada desta aeronave
+          const minutes = Math.round((depDateTime.getTime() - arrVoo.dateTime.getTime()) / (1000 * 60));
+          return { minutes, source: 'auto' };
+        }
+      }
+
+      // Não encontrou ARR sem DEP linkado
+      console.warn(`⚠️ Não encontrada chegada para ${registoDep} em ${aeroportoOperacao}`);
+      return { minutes: null, source: 'manual' };
+    } catch (err) {
+      console.error('Erro ao calcular estacionamento:', err);
+      return { minutes: null, source: 'manual' };
+    }
+  };
 
   const handleSaveVoo = async ({ vooData, linkedArrVooId }) => {
     let tariffsCalculatedSuccessfully = false; 
 
     try {
       let savedVoo;
-      const vooDataWithUpdatedBy = {
+      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      const vooDataWithMeta = {
         ...vooData,
-        updated_by: currentUser?.email || 'sistema'
+        updated_by: currentUser?.email || 'sistema',
+        ...(empId && !editingVoo ? { empresa_id: empId } : {})
       };
 
       if (editingVoo) {
-        await Voo.update(editingVoo.id, vooDataWithUpdatedBy);
-        savedVoo = { ...editingVoo, ...vooDataWithUpdatedBy, id: editingVoo.id };
+        await Voo.update(editingVoo.id, vooDataWithMeta);
+        savedVoo = { ...editingVoo, ...vooDataWithMeta, id: editingVoo.id };
       } else {
-        savedVoo = await Voo.create(vooDataWithUpdatedBy);
+        savedVoo = await Voo.create(vooDataWithMeta);
       }
 
       // Se é um voo DEP com vinculação ARR, criar/atualizar o VooLigado e calcular tarifas
@@ -695,8 +775,25 @@ export default function Operacoes() {
           const vooLigadoData = {
             id_voo_arr: linkedArrVooId,
             id_voo_dep: savedVoo.id,
-            tempo_permanencia_min: tempoPermanenciaMin
+            tempo_permanencia_min: tempoPermanenciaMin,
+            registo_alterado: vooData.registo_alterado || false,
+            registo_dep: vooData.registo_alterado ? vooData.registo_dep : null,
+            ...(empId ? { empresa_id: empId } : {})
           };
+
+          // Se houve troca de registo, calcular estacionamento pela chegada da aeronave DEP
+          if (vooData.registo_alterado && vooData.registo_dep) {
+            const parkingResult = calculateParkingForSwappedAircraft(
+              vooData.registo_dep,
+              vooArr.aeroporto_operacao,
+              depDateTime,
+              voosAtualizadosBanco,
+              voosLigadosBanco
+            );
+            vooLigadoData.tempo_estacionamento_min = parkingResult.minutes;
+            vooLigadoData.estacionamento_origem = parkingResult.source;
+            console.log(`🔄 Troca de registo: ${vooArr.registo_aeronave} → ${vooData.registo_dep}, estacionamento: ${parkingResult.minutes}min (${parkingResult.source})`);
+          }
 
           let vooLigadoInstance;
 
@@ -1136,22 +1233,26 @@ export default function Operacoes() {
         let errorCount = 0;
         const errors = [];
 
-        // Carregar todos os dados frescos UMA VEZ antes do loop
+        // Carregar dados frescos UMA VEZ antes do loop
         const [
           voosAtualizados, aeroportosAtualizados, aeronavesAtualizadas,
           tarifasPousoAtualizadas, tarifasPermanenciaAtualizadas,
           outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas,
           calculosTarifaFrescos
         ] = await Promise.all([
-          Voo.list(), Aeroporto.list(), RegistoAeronave.list(),
+          Voo.list('-data_operacao', 1000), Aeroporto.list(), RegistoAeronave.list(),
           TarifaPouso.list(), TarifaPermanencia.list(), OutraTarifa.list(),
           Imposto.list(), ConfiguracaoSistema.list(),
-          CalculoTarifa.list()
+          CalculoTarifa.list('-data_calculo', 1000)
         ]);
+        // Filtrar tarifas por empresa
+        const tarifasPousoFiltradas = filterTarifasByEmpresa(tarifasPousoAtualizadas, effectiveEmpresaId);
+        const tarifasPermanenciaFiltradas = filterTarifasByEmpresa(tarifasPermanenciaAtualizadas, effectiveEmpresaId);
+        const outrasTarifasFiltradas = filterTarifasByEmpresa(outrasTarifasAtualizadas, effectiveEmpresaId);
         const freshData = {
           voosAtualizados, aeroportosAtualizados, aeronavesAtualizadas,
-          tarifasPousoAtualizadas, tarifasPermanenciaAtualizadas,
-          outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas,
+          tarifasPousoAtualizadas: tarifasPousoFiltradas, tarifasPermanenciaAtualizadas: tarifasPermanenciaFiltradas,
+          outrasTarifasAtualizadas: outrasTarifasFiltradas, impostosAtualizadosRecalc, configAtualizadas,
           calculosTarifa: calculosTarifaFrescos
         };
 
@@ -1368,8 +1469,13 @@ export default function Operacoes() {
     }
 
     try {
+      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
       const proformas = await Proforma.list();
-      const proformaExistente = proformas.find(f => f.calculo_tarifa_id === calculo.id);
+      const proformaExistente = proformas.find(f =>
+        f.calculo_tarifa_id === calculo.id &&
+        f.status !== 'cancelada' &&
+        (!empId || f.empresa_id === empId)
+      );
 
       if (proformaExistente) {
         setAlertInfo({
@@ -1390,10 +1496,15 @@ export default function Operacoes() {
 
   const handleConfirmarGerarProforma = async (dadosProforma) => {
     try {
+      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
       const proformas = await Proforma.list();
       const ano = new Date().getFullYear();
       const prefixoProforma = `PF-${ano}-`;
-      const proformasDoAno = proformas.filter(f => f.numero_proforma.startsWith(prefixoProforma));
+      // Numeração sequencial por empresa
+      const proformasDoAno = proformas.filter(f =>
+        f.numero_proforma?.startsWith(prefixoProforma) &&
+        (!empId || f.empresa_id === empId)
+      );
       const ultimaProformaDoAno = proformasDoAno.length > 0
         ? proformasDoAno.sort((a, b) => {
             const numA = parseInt(a.numero_proforma.split('-')[2]);
@@ -1416,7 +1527,8 @@ export default function Operacoes() {
         status: 'emitida',
         data_emissao: new Date().toISOString().split('T')[0],
         voo_id: gerarProformaCalculo?.voo_id || null,
-        emitida_por: currentUser?.email || 'sistema'
+        emitida_por: currentUser?.email || 'sistema',
+        empresa_id: empId || null,
       };
 
       const novaProforma = await Proforma.create(proformaData);
@@ -1460,6 +1572,21 @@ export default function Operacoes() {
   const handleVerDocumentosVoo = (vooLigado) => {
     setDocumentosVooModalData(vooLigado);
     setIsDocumentosVooModalOpen(true);
+  };
+
+  const handleRecursosVoo = (vooLigado) => {
+    setRecursosVooModalData(vooLigado);
+    setIsRecursosVooModalOpen(true);
+  };
+
+  const handleResourcesSaved = async (vooLigado) => {
+    setIsRecursosVooModalOpen(false);
+    try {
+      await _recalculateSingleTariff(vooLigado);
+      await refreshSpecificData(['calculosTarifa']);
+    } catch (err) {
+      console.error('Erro ao recalcular após salvar recursos:', err);
+    }
   };
 
   const handleOpenUploadFromDocumentosModal = (vooLigado) => {
@@ -2264,7 +2391,14 @@ export default function Operacoes() {
                         onRecalcularTarifa={async (vooLigado) => {
                           try {
                             await _recalculateSingleTariff(vooLigado);
-                            await refreshSpecificData(['calculosTarifa', 'voosLigados', 'voos']);
+                            // Buscar apenas o cálculo atualizado em vez de recarregar tudo
+                            const updatedCalculo = await CalculoTarifa.filter({ voo_ligado_id: { $eq: vooLigado.id } });
+                            if (updatedCalculo.length > 0) {
+                              setCalculosTarifa(prev => {
+                                const withoutOld = prev.filter(ct => ct.voo_ligado_id !== vooLigado.id);
+                                return [...withoutOld, ...updatedCalculo];
+                              });
+                            }
                             setSuccessInfo({
                               isOpen: true,
                               title: 'Tarifa Recalculada!',
@@ -2285,6 +2419,7 @@ export default function Operacoes() {
                         onExcluirVooLigado={handleExcluirVooLigado}
                         onUploadDocumento={handleUploadDocumento}
                         onVerDocumentosVoo={handleVerDocumentosVoo}
+                        onRecursosVoo={handleRecursosVoo}
                         todosAeroportos={todosAeroportos}
                         sortField={sortFieldLigados}
                         sortDirection={sortDirectionLigados}
@@ -2477,6 +2612,17 @@ export default function Operacoes() {
         aeroportos={todosAeroportos}
         voosLigados={voosLigados}
       />
+
+      {recursosVooModalData && (
+        <RecursosVooModal
+          isOpen={isRecursosVooModalOpen}
+          onClose={() => { setIsRecursosVooModalOpen(false); setRecursosVooModalData(null); }}
+          vooLigado={recursosVooModalData}
+          voos={voos}
+          aeroportos={todosAeroportos}
+          onResourcesSaved={handleResourcesSaved}
+        />
+      )}
 
       {documentosVooModalData && (
         <DocumentosVooModal

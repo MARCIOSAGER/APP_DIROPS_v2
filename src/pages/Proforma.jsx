@@ -16,7 +16,8 @@ import {
   Clock,
   AlertCircle,
   DollarSign,
-  RefreshCw } from
+  RefreshCw,
+  Layers } from
 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,13 +32,17 @@ import { pt } from 'date-fns/locale';
 import Select from '@/components/ui/select';
 
 import { Proforma } from '@/entities/Proforma';
+import { ProformaItem } from '@/entities/ProformaItem';
 import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
 import { downloadAsCSV } from '@/components/lib/export';
 import { base44 } from '@/api/base44Client';
+import { registarCriacao } from '@/components/lib/auditoria';
+import { getAeroportosPermitidos, ensureUserProfilesExist, getEmailsEmpresa, filtrarDadosPorCriador } from '@/components/lib/userUtils';
 
 import EditarFaturaModal from '../components/faturacao/EditarFaturaModal';
+import GerarProformaConsolidadaModal from '../components/faturacao/GerarProformaConsolidadaModal';
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
 
@@ -58,6 +63,7 @@ export default function ProformaPage() {
 
   const [editingProforma, setEditingProforma] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isConsolidadaModalOpen, setIsConsolidadaModalOpen] = useState(false);
 
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
@@ -81,7 +87,7 @@ export default function ProformaPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const user = await User.me();
+      const user = ensureUserProfilesExist(await User.me());
       setCurrentUser(user);
 
       const [proformasData, companhiasData, aeroportosData] = await Promise.all([
@@ -90,9 +96,17 @@ export default function ProformaPage() {
         Aeroporto.list(),
       ]);
 
-      setProformas(proformasData);
+      // Filtrar aeroportos por empresa/permissões do utilizador
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData);
+
+      // Filtrar proformas por empresa_id direto
+      const proformasFiltradas = user.empresa_id
+        ? proformasData.filter(p => p.empresa_id === user.empresa_id)
+        : proformasData;
+
+      setProformas(proformasFiltradas);
       setCompanhias(companhiasData);
-      setAeroportos(aeroportosData);
+      setAeroportos(aeroportosFiltrados);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setAlertInfo({
@@ -255,6 +269,83 @@ export default function ProformaPage() {
     }
   };
 
+  const handleConfirmarConsolidada = async (dadosProforma) => {
+    try {
+      // Extract items before creating the proforma record
+      const items = dadosProforma._items || [];
+      delete dadosProforma._items;
+
+      // Generate sequential proforma number (per empresa)
+      const anoAtual = new Date().getFullYear();
+      const empId = currentUser?.empresa_id;
+      const proformasAno = proformas.filter(p =>
+        p.numero_proforma?.startsWith(`PF-${anoAtual}`) &&
+        (!empId || p.empresa_id === empId)
+      );
+      let maxSeq = 0;
+      proformasAno.forEach(p => {
+        const parts = p.numero_proforma?.split('-');
+        if (parts?.length === 3) {
+          const seq = parseInt(parts[2], 10);
+          if (seq > maxSeq) maxSeq = seq;
+        }
+      });
+      const numeroProforma = `PF-${anoAtual}-${String(maxSeq + 1).padStart(6, '0')}`;
+
+      // Create the proforma record
+      const proformaData = {
+        ...dadosProforma,
+        numero_proforma: numeroProforma,
+        status: 'emitida',
+        emitida_por: currentUser?.email,
+        empresa_id: empId || null,
+      };
+
+      const novaProforma = await Proforma.create(proformaData);
+
+      // Create proforma_item records for each calculo
+      await Promise.all(items.map(item =>
+        ProformaItem.create({
+          proforma_id: novaProforma.id,
+          calculo_tarifa_id: item.calculo_tarifa_id,
+          voo_ligado_id: item.voo_ligado_id,
+          voo_id: item.voo_id,
+          valor_usd: item.valor_usd,
+          valor_aoa: item.valor_aoa,
+        })
+      ));
+
+      // Generate PDF
+      try {
+        await base44.functions.invoke('gerarProformaPdfSimples', { proforma_id: novaProforma.id });
+      } catch (pdfError) {
+        console.warn('PDF generation failed, proforma still created:', pdfError);
+      }
+
+      // Audit log
+      try {
+        await registarCriacao('Proforma', novaProforma, 'faturacao');
+      } catch (_) {}
+
+      await loadData();
+      setIsConsolidadaModalOpen(false);
+
+      setSuccessInfo({
+        isOpen: true,
+        title: 'Proforma Consolidada Gerada!',
+        message: `A proforma ${numeroProforma} foi criada com ${items.length} voo(s) consolidados.`
+      });
+    } catch (error) {
+      console.error('Erro ao gerar proforma consolidada:', error);
+      setAlertInfo({
+        isOpen: true,
+        type: 'error',
+        title: 'Erro ao Gerar Consolidada',
+        message: `Não foi possível gerar a proforma consolidada. ${error.message}`
+      });
+    }
+  };
+
   const handleExportCSV = () => {
     if (proformasFiltradas.length === 0) {
       setAlertInfo({
@@ -331,6 +422,10 @@ export default function ProformaPage() {
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
+            <Button onClick={() => setIsConsolidadaModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Layers className="w-4 h-4 mr-2" />
+              Gerar Consolidada
+            </Button>
             <Button variant="outline" onClick={handleExportCSV}>
               <Download className="w-4 h-4 mr-2" />
               Exportar CSV
@@ -362,7 +457,7 @@ export default function ProformaPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-slate-600">Total (USD)</p>
-                  <p className="text-green-700 text-base font-bold truncate">
+                  <p className="text-green-700 text-sm font-bold" title={`${formatCurrency(kpiData.totalValorUSD, 'USD')} US$`}>
                     {formatCurrency(kpiData.totalValorUSD, 'USD')} US$
                   </p>
                 </div>
@@ -378,7 +473,7 @@ export default function ProformaPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-slate-600">Total (AOA)</p>
-                  <p className="text-emerald-700 text-base font-bold truncate">
+                  <p className="text-emerald-700 text-sm font-bold" title={`${formatCurrency(kpiData.totalValorAOA)} Kz`}>
                     {formatCurrency(kpiData.totalValorAOA)} Kz
                   </p>
                 </div>
@@ -579,7 +674,14 @@ export default function ProformaPage() {
                     return (
                       <TableRow key={proforma.id} className="hover:bg-slate-50">
                           <TableCell className="font-mono font-medium text-blue-700">
-                            {proforma.numero_proforma}
+                            <div className="flex items-center gap-1.5">
+                              {proforma.numero_proforma}
+                              {proforma.tipo === 'consolidada' && (
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 bg-purple-50 text-purple-700 border-purple-200">
+                                  Consolidada
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             {format(parseISO(proforma.data_emissao), 'dd MMM yyyy', { locale: pt })}
@@ -648,6 +750,14 @@ export default function ProformaPage() {
         fatura={editingProforma} />
 
       }
+
+      <GerarProformaConsolidadaModal
+        isOpen={isConsolidadaModalOpen}
+        onClose={() => setIsConsolidadaModalOpen(false)}
+        onConfirm={handleConfirmarConsolidada}
+        companhias={companhias}
+        aeroportos={aeroportos}
+      />
 
       <AlertModal
         isOpen={alertInfo.isOpen}

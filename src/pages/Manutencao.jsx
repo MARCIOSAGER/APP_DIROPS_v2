@@ -108,15 +108,16 @@ export default function Manutencao() {
       if (editingOrdem) {
         await OrdemServico.update(editingOrdem.id, data);
       } else {
-        // Generate a new sequential number for the OS
+        // Generate a new sequential number for the OS (per empresa)
         const currentYear = new Date().getFullYear();
-        // Find the highest existing sequential number for the current year
+        const empId = currentUser?.empresa_id;
         const latestOs = ordensDeServico
-            .filter(os => os.numero_ordem && os.numero_ordem.startsWith(`OS-${currentYear}`))
+            .filter(os => os.numero_ordem && os.numero_ordem.startsWith(`OS-${currentYear}`) &&
+              (!empId || os.empresa_id === empId))
             .sort((a, b) => {
                 const numA = parseInt(a.numero_ordem.split('-')[2]);
                 const numB = parseInt(b.numero_ordem.split('-')[2]);
-                return numB - numA; // Sort descending to get the highest number
+                return numB - numA;
             })[0];
 
         let nextSequentialNumber = 1;
@@ -125,7 +126,7 @@ export default function Manutencao() {
         }
 
         const numeroOrdem = `OS-${currentYear}-${String(nextSequentialNumber).padStart(4, '0')}`;
-        await OrdemServico.create({ ...data, numero_ordem: numeroOrdem, data_abertura: new Date().toISOString() });
+        await OrdemServico.create({ ...data, numero_ordem: numeroOrdem, data_abertura: new Date().toISOString(), empresa_id: empId || null });
       }
       setIsFormOpen(false);
       setEditingOrdem(null);
