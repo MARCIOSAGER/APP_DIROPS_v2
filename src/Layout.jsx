@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, UserPlus, ChevronDown, Globe, BarChart3, Mail, ArrowLeft, BookMarked, Sparkles, Building2
+  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, UserPlus, ChevronDown, Globe, BarChart3, Mail, ArrowLeft, BookMarked, Sparkles, Building2, Layers
 } from "lucide-react";
 import BottomTabs from '@/components/shared/BottomTabs';
 import { useI18n } from '@/components/lib/i18n';
@@ -22,18 +22,19 @@ import { Empresa } from '@/entities/Empresa';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { RegraPermissao } from '@/entities/RegraPermissao';
 import AccessDenied from '@/components/shared/AccessDenied';
+import { logAuthEvent } from '@/lib/auditLog';
 import NetworkIndicator from '@/components/shared/NetworkIndicator';
             import GlobalLoadingModal from '@/components/shared/GlobalLoadingModal';
-import ChatbotIA from '@/components/shared/ChatbotIA';
-import SessionTimeoutModal from '@/components/shared/SessionTimeoutModal';
-import TourGuiado from '@/components/shared/TourGuiado';
+const ChatbotIA = React.lazy(() => import('@/components/shared/ChatbotIA'));
+const SessionTimeoutModal = React.lazy(() => import('@/components/shared/SessionTimeoutModal'));
+const TourGuiado = React.lazy(() => import('@/components/shared/TourGuiado'));
 import { I18nProvider } from '@/components/lib/i18n';
 
       // Mapeamento padrão de permissões (fallback se não houver regras na BD)
 const PERFIL_PERMISSIONS_DEFAULT = {
-  administrador: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte'],
+  administrador: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte'],
   gestor_empresa: ['Credenciamento', 'GuiaUtilizador', 'Suporte'],
-  operacoes: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte'],
+  operacoes: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte'],
   infraestrutura: ['Home', 'Reclamacoes', 'Inspecoes', 'Manutencao', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
   credenciamento: ['Home', 'Credenciamento', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte']
 };
@@ -44,6 +45,7 @@ const navigationItems = [
   { title: "Fundo de Maneio", url: createPageUrl("FundoManeio"), icon: DollarSign, color: "text-emerald-600", pageKey: "FundoManeio" },
   { title: "Configuração de Tarifas", url: createPageUrl("ConfiguracaoTarifas"), icon: Settings2, color: "text-blue-600", pageKey: "ConfiguracaoTarifas" },
   { title: "Proformas", url: createPageUrl("Proforma"), icon: FileText, color: "text-blue-600", pageKey: "Proforma" },
+  { title: "Serviços Aeroportuários", url: createPageUrl("ServicosAeroportuarios"), icon: Layers, color: "text-cyan-600", pageKey: "ServicosAeroportuarios" },
   { title: "Safety", url: createPageUrl("Safety"), icon: Shield, color: "text-red-600", pageKey: "Safety" },
   { title: "Inspeções", url: createPageUrl("Inspecoes"), icon: ClipboardCheck, color: "text-purple-600", pageKey: "Inspecoes" },
   { title: "KPIs Operacionais", url: createPageUrl("KPIsOperacionais"), icon: BarChart3, color: "text-teal-600", pageKey: "KPIsOperacionais" },
@@ -66,6 +68,30 @@ const navigationItems = [
 ];
 
 const DEFAULT_LOGO = '/logo-dirops.png';
+
+// Simple in-memory cache for Layout queries (avoids re-fetching on every navigation)
+const _layoutCache = { empresas: null, empresasTime: 0, regras: null, regrasTime: 0 };
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getCachedEmpresas() {
+  if (_layoutCache.empresas && Date.now() - _layoutCache.empresasTime < CACHE_TTL) {
+    return _layoutCache.empresas;
+  }
+  const data = await Empresa.list();
+  _layoutCache.empresas = data;
+  _layoutCache.empresasTime = Date.now();
+  return data;
+}
+
+async function getCachedRegras() {
+  if (_layoutCache.regras && Date.now() - _layoutCache.regrasTime < CACHE_TTL) {
+    return _layoutCache.regras;
+  }
+  const data = await RegraPermissao.list();
+  _layoutCache.regras = data;
+  _layoutCache.regrasTime = Date.now();
+  return data;
+}
 
 const unprotectedPages = [
   'FormularioReclamacaoPublico',
@@ -137,7 +163,7 @@ function LayoutContent({ children, currentPageName }) {
   React.useEffect(() => {
     const loadEmpresaData = async () => {
       try {
-        const empresas = await Empresa.list();
+        const empresas = await getCachedEmpresas();
 
         // Se superadmin, guardar lista de empresas para o seletor
         if (authUser && isSuperAdmin(authUser)) {
@@ -164,7 +190,7 @@ function LayoutContent({ children, currentPageName }) {
   React.useEffect(() => {
     const loadPermissions = async () => {
       try {
-        const regras = await RegraPermissao.list();
+        const regras = await getCachedRegras();
 
         if (regras && regras.length > 0) {
           const permissoesCarregadas = {};
@@ -253,6 +279,7 @@ function LayoutContent({ children, currentPageName }) {
 
   const handleLogout = async () => {
     try {
+      logAuthEvent('logout', user?.email || authUser?.email, 'Logout pelo utilizador');
       await UserEntity.logout();
       setUser(null);
       window.location.href = '/login';
@@ -610,9 +637,11 @@ function LayoutContent({ children, currentPageName }) {
           </header>
           <main className="p-4 md:p-6 lg:p-8">{children}</main>
           <BottomTabs />
-          <ChatbotIA user={user} />
-          <SessionTimeoutModal />
-          {showTour && <TourGuiado onClose={() => setShowTour(false)} />}
+          <React.Suspense fallback={null}>
+            <ChatbotIA user={user} />
+            <SessionTimeoutModal />
+            {showTour && <TourGuiado onClose={() => setShowTour(false)} />}
+          </React.Suspense>
         </div>
       </div>
     </div>

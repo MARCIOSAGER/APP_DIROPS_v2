@@ -46,20 +46,26 @@ const TOUR_STEPS = [
     position: "center",
   },
   {
+    title: "Serviços Aeroportuários",
+    description: "Em 'Serviços Aeroportuários' podes lançar cobranças de serviços adicionais por voo (check-in, CUPPSS, fast track) e registar cobranças de bombeiros, cursos e licenças associadas a clientes.",
+    target: null,
+    position: "center",
+  },
+  {
     title: "Notificações Automáticas",
     description: "O sistema envia notificações automáticas por WhatsApp e email para os utilizadores conforme as regras configuradas — alertas de voos, relatórios diários/semanais/mensais.",
     target: null,
     position: "center",
   },
   {
-    title: "Assistente Virtual SIGA",
+    title: "Assistente Virtual",
     description: "O botão azul no canto inferior direito é o teu assistente virtual! Podes fazer perguntas sobre o sistema ou pedir ajuda para abrir tickets de suporte.",
     target: "[data-tour='chatbot']",
     position: "top-left",
   },
   {
     title: "Tour Concluído! 🚀",
-    description: "Já conheces as principais funcionalidades do DIROPS. Se precisares de ajuda, usa o assistente SIGA ou a página de Suporte. Bom trabalho!",
+    description: "Já conheces as principais funcionalidades do DIROPS. Se precisares de ajuda, usa o Assistente Virtual ou a página de Suporte. Bom trabalho!",
     target: null,
     position: "center",
   },

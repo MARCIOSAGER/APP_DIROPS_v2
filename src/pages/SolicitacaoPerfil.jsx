@@ -16,6 +16,7 @@ import { SolicitacaoAcesso } from '@/entities/SolicitacaoAcesso';
 import { Empresa } from '@/entities/Empresa';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { createPageUrl } from '@/utils';
+import { sendNotificationEmail } from '@/functions/sendNotificationEmail';
 
 export default function SolicitacaoPerfil() {
   const [user, setUser] = useState(null);
@@ -109,8 +110,12 @@ export default function SolicitacaoPerfil() {
       }
 
       // Validações
-      if (!formData.telefone) {
-        throw new Error('Por favor, forneça um telefone de contacto.');
+      if (!formData.nome_completo || formData.nome_completo.trim().length < 3) {
+        throw new Error('Por favor, forneça o seu nome completo (mínimo 3 caracteres).');
+      }
+
+      if (!formData.telefone || formData.telefone.trim().length < 9) {
+        throw new Error('Por favor, forneça um telefone de contacto válido (mínimo 9 dígitos).');
       }
 
       if (!formData.perfil_solicitado) {
@@ -137,6 +142,24 @@ export default function SolicitacaoPerfil() {
         justificativa: formData.justificativa || 'Não fornecida',
         status: 'pendente'
       });
+
+      // Notificar admins por email via Edge Function (service_role, sem RLS)
+      // A Edge Function auto-resolve os admins da empresa via service_role
+      try {
+        const gestaoUrl = `${window.location.origin}${createPageUrl('GestaoAcessos')}`;
+        sendNotificationEmail({
+          to: formData.email, // fallback + confirmação ao solicitante
+          template: 'new_access_request',
+          data: {
+            full_name: formData.nome_completo,
+            email: formData.email,
+            empresa_id: formData.empresa_solicitante_id,
+            url: gestaoUrl
+          }
+        }).catch(err => console.error('Erro email notificação:', err));
+      } catch (emailErr) {
+        console.error('Erro ao notificar:', emailErr);
+      }
 
       // Mostrar sucesso
       setSubmitted(true);
@@ -298,6 +321,7 @@ export default function SolicitacaoPerfil() {
                   onChange={(e) => setFormData({ ...formData, nome_completo: e.target.value })}
                   placeholder="Seu nome completo"
                   required
+                  minLength={3}
                   className="h-12 text-base"
                 />
               </div>
@@ -328,6 +352,7 @@ export default function SolicitacaoPerfil() {
                   onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
                   placeholder="+244 XXX XXX XXX"
                   required
+                  minLength={9}
                   className="h-12 text-base"
                 />
               </div>
@@ -345,6 +370,7 @@ export default function SolicitacaoPerfil() {
                   placeholder="Selecione um perfil"
                   className="h-12"
                 />
+                <input type="hidden" required value={formData.perfil_solicitado} />
               </div>
 
               {/* Empresa */}
@@ -360,6 +386,7 @@ export default function SolicitacaoPerfil() {
                   placeholder="Selecione a empresa"
                   searchPlaceholder="Pesquisar empresa..."
                 />
+                <input type="hidden" required value={formData.empresa_solicitante_id} />
               </div>
 
               {/* Aeroportos */}
@@ -442,6 +469,7 @@ export default function SolicitacaoPerfil() {
                 </div>
 
                 {/* Aeroportos selecionados */}
+                <input type="hidden" required value={formData.aeroportos_solicitados.length > 0 ? 'ok' : ''} />
                 <div className="space-y-2">
                   <p className="text-sm text-slate-600">
                     Selecionados: <span className="font-semibold text-blue-600">{formData.aeroportos_solicitados.length}</span>

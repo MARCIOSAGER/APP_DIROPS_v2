@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabaseClient';
 
-export async function sendEmailDirect({ to, subject, body, html, from_name }) {
+export async function sendEmailDirect({ to, subject, body, html, from_name, attachments }) {
   const { data, error } = await supabase.functions.invoke('send-email', {
-    body: { to, subject, html: html || body, text: body },
+    body: { to, subject, html: html || body, text: body, ...(attachments?.length ? { attachments } : {}) },
   });
   if (error) throw error;
   return data;

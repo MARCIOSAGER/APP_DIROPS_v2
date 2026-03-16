@@ -1,90 +1,44 @@
-/**
- * pages.config.js - Page routing configuration
- * 
- * This file is AUTO-GENERATED. Do not add imports or modify PAGES manually.
- * Pages are auto-registered when you create files in the ./pages/ folder.
- * 
- * THE ONLY EDITABLE VALUE: mainPage
- * This controls which page is the landing page (shown when users visit the app).
- * 
- * Example file structure:
- * 
- *   import HomePage from './pages/HomePage';
- *   import Dashboard from './pages/Dashboard';
- *   import Settings from './pages/Settings';
- *   
- *   export const PAGES = {
- *       "HomePage": HomePage,
- *       "Dashboard": Dashboard,
- *       "Settings": Settings,
- *   }
- *   
- *   export const pagesConfig = {
- *       mainPage: "HomePage",
- *       Pages: PAGES,
- *   };
- * 
- * Example with Layout (wraps all pages):
- *
- *   import Home from './pages/Home';
- *   import Settings from './pages/Settings';
- *   import __Layout from './Layout.jsx';
- *
- *   export const PAGES = {
- *       "Home": Home,
- *       "Settings": Settings,
- *   }
- *
- *   export const pagesConfig = {
- *       mainPage: "Home",
- *       Pages: PAGES,
- *       Layout: __Layout,
- *   };
- *
- * To change the main page from HomePage to Dashboard, use find_replace:
- *   Old: mainPage: "HomePage",
- *   New: mainPage: "Dashboard",
- *
- * The mainPage value must match a key in the PAGES object exactly.
- */
-import AguardandoAprovacao from './pages/AguardandoAprovacao';
-import AlterarSenha from './pages/AlterarSenha';
-import Auditoria from './pages/Auditoria';
-import BoasVindas from './pages/BoasVindas';
-import ConfiguracaoTarifas from './pages/ConfiguracaoTarifas';
-import ConfiguracoesGerais from './pages/ConfiguracoesGerais';
-import ConfigurarPerfil from './pages/ConfigurarPerfil';
-import Credenciamento from './pages/Credenciamento';
-import CredenciamentoPublico from './pages/CredenciamentoPublico';
-import Documentos from './pages/Documentos';
-import FormularioReclamacaoPublico from './pages/FormularioReclamacaoPublico';
-import FundoManeio from './pages/FundoManeio';
-import GRF from './pages/GRF';
-import GerirPermissoes from './pages/GerirPermissoes';
-import GestaoAcessos from './pages/GestaoAcessos';
-import GestaoEmpresas from './pages/GestaoEmpresas';
-import GestaoNotificacoes from './pages/GestaoNotificacoes';
-import GuiaUtilizador from './pages/GuiaUtilizador';
-import HistoricoAcessoDocumentos from './pages/HistoricoAcessoDocumentos';
-import Home from './pages/Home';
-import Inspecoes from './pages/Inspecoes';
-import KPIsOperacionais from './pages/KPIsOperacionais';
-import LogAuditoria from './pages/LogAuditoria';
-import LogAuditoriaDetalhes from './pages/LogAuditoriaDetalhes';
-import Manutencao from './pages/Manutencao';
-import Operacoes from './pages/Operacoes';
-import PaginaInicial from './pages/PaginaInicial';
-import PortalEmpresa from './pages/PortalEmpresa';
-import PowerBi from './pages/PowerBi';
-import Proforma from './pages/Proforma';
-import Reclamacoes from './pages/Reclamacoes';
-import Safety from './pages/Safety';
-import SolicitacaoPerfil from './pages/SolicitacaoPerfil';
-import Suporte from './pages/Suporte';
-import TesteFlightradar24 from './pages/TesteFlightradar24';
-import ValidacaoAcesso from './pages/ValidacaoAcesso';
-import portalservicos from './pages/portalservicos';
+import { lazy } from 'react';
 import __Layout from './Layout.jsx';
+
+const AguardandoAprovacao = lazy(() => import('./pages/AguardandoAprovacao'));
+const AlterarSenha = lazy(() => import('./pages/AlterarSenha'));
+const Auditoria = lazy(() => import('./pages/Auditoria'));
+const BoasVindas = lazy(() => import('./pages/BoasVindas'));
+const ConfiguracaoTarifas = lazy(() => import('./pages/ConfiguracaoTarifas'));
+const ConfiguracoesGerais = lazy(() => import('./pages/ConfiguracoesGerais'));
+const ConfigurarPerfil = lazy(() => import('./pages/ConfigurarPerfil'));
+const Credenciamento = lazy(() => import('./pages/Credenciamento'));
+const CredenciamentoPublico = lazy(() => import('./pages/CredenciamentoPublico'));
+const Documentos = lazy(() => import('./pages/Documentos'));
+const FormularioReclamacaoPublico = lazy(() => import('./pages/FormularioReclamacaoPublico'));
+const FundoManeio = lazy(() => import('./pages/FundoManeio'));
+const GRF = lazy(() => import('./pages/GRF'));
+const GerirPermissoes = lazy(() => import('./pages/GerirPermissoes'));
+const GestaoAcessos = lazy(() => import('./pages/GestaoAcessos'));
+const GestaoEmpresas = lazy(() => import('./pages/GestaoEmpresas'));
+const GestaoNotificacoes = lazy(() => import('./pages/GestaoNotificacoes'));
+const GuiaUtilizador = lazy(() => import('./pages/GuiaUtilizador'));
+const HistoricoAcessoDocumentos = lazy(() => import('./pages/HistoricoAcessoDocumentos'));
+const Home = lazy(() => import('./pages/Home'));
+const Inspecoes = lazy(() => import('./pages/Inspecoes'));
+const KPIsOperacionais = lazy(() => import('./pages/KPIsOperacionais'));
+const LogAuditoria = lazy(() => import('./pages/LogAuditoria'));
+const LogAuditoriaDetalhes = lazy(() => import('./pages/LogAuditoriaDetalhes'));
+const Manutencao = lazy(() => import('./pages/Manutencao'));
+const Operacoes = lazy(() => import('./pages/Operacoes'));
+const PaginaInicial = lazy(() => import('./pages/PaginaInicial'));
+const PortalEmpresa = lazy(() => import('./pages/PortalEmpresa'));
+const PowerBi = lazy(() => import('./pages/PowerBi'));
+const Proforma = lazy(() => import('./pages/Proforma'));
+const Reclamacoes = lazy(() => import('./pages/Reclamacoes'));
+const Safety = lazy(() => import('./pages/Safety'));
+const ServicosAeroportuarios = lazy(() => import('./pages/ServicosAeroportuarios'));
+const SolicitacaoPerfil = lazy(() => import('./pages/SolicitacaoPerfil'));
+const Suporte = lazy(() => import('./pages/Suporte'));
+const TesteFlightradar24 = lazy(() => import('./pages/TesteFlightradar24'));
+const ValidacaoAcesso = lazy(() => import('./pages/ValidacaoAcesso'));
+const portalservicos = lazy(() => import('./pages/portalservicos'));
 
 
 export const PAGES = {
@@ -120,6 +74,7 @@ export const PAGES = {
     "Proforma": Proforma,
     "Reclamacoes": Reclamacoes,
     "Safety": Safety,
+    "ServicosAeroportuarios": ServicosAeroportuarios,
     "SolicitacaoPerfil": SolicitacaoPerfil,
     "Suporte": Suporte,
     "TesteFlightradar24": TesteFlightradar24,

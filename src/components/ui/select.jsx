@@ -143,7 +143,7 @@ export default function Select({
     <div className={cn("relative w-full", className)} id={id} ref={selectRef}>
       {triggerButton}
       {isOpen && (
-        <div className="absolute top-full left-0 z-50 w-full mt-1 max-h-60 rounded-md border border-slate-200 bg-white shadow-lg flex flex-col">
+        <div className="absolute top-full left-0 z-50 min-w-full w-max mt-1 max-h-60 rounded-md border border-slate-200 bg-white shadow-lg flex flex-col">
           {optionsList}
         </div>
       )}

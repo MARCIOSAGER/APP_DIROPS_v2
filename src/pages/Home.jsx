@@ -40,6 +40,7 @@ import { Inspecao } from "@/entities/Inspecao";
 import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
 import { hasUserProfile, ensureUserProfilesExist, getAeroportosPermitidos, filtrarDadosPorAcesso, filtrarDadosPorAeroportoId, isSuperAdmin, getEmailsEmpresa, filtrarDadosPorCriador } from '@/components/lib/userUtils';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 
 import { getDashboardStats } from '@/functions/getDashboardStats';
 
@@ -47,6 +48,7 @@ const formatCurrency = (value) =>
 new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(value || 0);
 
 export default function DashboardInterno() {
+  const { effectiveEmpresaId } = useCompanyView();
   const [voos, setVoos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [ocorrenciasSafety, setOcorrenciasSafety] = useState([]);
@@ -86,7 +88,7 @@ export default function DashboardInterno() {
       }
 
       // Filtrar aeroportos por empresa + permissões do utilizador
-      const aeroportosFiltrados = getAeroportosPermitidos(userWithProfiles, aeroportosData);
+      const aeroportosFiltrados = getAeroportosPermitidos(userWithProfiles, aeroportosData, effectiveEmpresaId);
 
       setAeroportos(aeroportosFiltrados);
 
@@ -103,13 +105,15 @@ export default function DashboardInterno() {
       let inspecoesData = inspecoesDataResult.status === 'fulfilled' ? inspecoesDataResult.value : [];
       let calculosTarifaData = calculosTarifaResult.status === 'fulfilled' ? calculosTarifaResult.value : [];
 
-      // Filtrar por empresa_id direto
-      const empresaId = userWithProfiles.empresa_id;
-      const voosFiltrados = empresaId ? voosData.filter(v => v.empresa_id === empresaId) : voosData;
+      // Filtrar voos por aeroportos da empresa (mais fiável que voo.empresa_id que pode não estar preenchido)
+      const empresaId = effectiveEmpresaId || userWithProfiles.empresa_id;
+      const icaosPermitidos = new Set(aeroportosFiltrados.map(a => a.codigo_icao));
+      const voosFiltrados = empresaId
+        ? voosData.filter(v => icaosPermitidos.has(v.aeroporto_operacao))
+        : voosData;
       setVoos(voosFiltrados);
 
       // Ocorrências e inspeções: filtrar por aeroportos da empresa
-      const icaosPermitidos = new Set(aeroportosFiltrados.map(a => a.codigo_icao));
       const ocorrenciasFiltradas = empresaId
         ? ocorrenciasData.filter(o => icaosPermitidos.has(o.aeroporto))
         : ocorrenciasData;
@@ -136,14 +140,14 @@ export default function DashboardInterno() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [effectiveEmpresaId]);
 
   const loadDashboardStats = useCallback(async () => {
     if (!currentUser) return;
 
     setIsLoadingStats(true);
     try {
-      const params = { aeroporto: selectedAeroporto, periodo: selectedPeriodo, empresaId: currentUser.empresa_id };
+      const params = { aeroporto: selectedAeroporto, periodo: selectedPeriodo, empresaId: effectiveEmpresaId || currentUser.empresa_id };
       const response = await getDashboardStats(params);
       setDashboardStats(response.data);
     } catch (error) {
@@ -153,7 +157,7 @@ export default function DashboardInterno() {
     } finally {
       setIsLoadingStats(false);
     }
-  }, [selectedAeroporto, selectedPeriodo, currentUser]);
+  }, [selectedAeroporto, selectedPeriodo, currentUser, effectiveEmpresaId]);
 
   const checkUserAndLoadData = useCallback(async () => {
     setIsLoading(true);

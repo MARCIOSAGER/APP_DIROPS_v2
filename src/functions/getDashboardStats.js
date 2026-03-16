@@ -1,6 +1,25 @@
 // Client-side dashboard stats computation (replaces Supabase Edge Function)
+
+const PAGE_SIZE = 1000;
+
+async function fetchAllRows(queryBuilder) {
+  let allData = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await queryBuilder.range(from, from + PAGE_SIZE - 1);
+    if (error) {
+      console.error('[getDashboardStats] Query error:', error);
+      throw error;
+    }
+    if (!data || data.length === 0) break;
+    allData = allData.concat(data);
+    if (data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+  return allData;
+}
+
 export async function getDashboardStats({ aeroporto, periodo, empresaId }) {
-  // Import here to avoid circular deps
   const { supabase } = await import('@/lib/supabaseClient');
 
   const diasPeriodo = parseInt(periodo) || 30;
@@ -10,33 +29,45 @@ export async function getDashboardStats({ aeroporto, periodo, empresaId }) {
 
   const hoje = new Date().toISOString().split('T')[0];
 
-  // Fetch data in parallel
-  let voosQuery = supabase.from('voo').select('*').gte('data_operacao', dataInicioStr);
-  let voosLigadosQuery = supabase.from('voo_ligado').select('*');
-  let calculosQuery = supabase.from('calculo_tarifa').select('voo_id,voo_ligado_id,total_tarifa,total_tarifa_usd');
-  let ocorrenciasQuery = supabase.from('ocorrencia_safety').select('id,status');
-  let inspecoesQuery = supabase.from('inspecao').select('id,status');
+  // If empresaId is set, get the empresa's aeroportos to filter voos by ICAO
+  // This is more reliable than voo.empresa_id which may not be set on all records
+  let empresaIcaos = null;
+  if (empresaId) {
+    const { data: aeroportos, error: aeroErr } = await supabase
+      .from('aeroporto')
+      .select('codigo_icao')
+      .eq('empresa_id', empresaId);
+    if (aeroErr) {
+      console.error('[getDashboardStats] Error fetching aeroportos:', aeroErr);
+    } else {
+      empresaIcaos = new Set((aeroportos || []).map(a => a.codigo_icao));
+      console.log(`[getDashboardStats] empresaId=${empresaId}, aeroportos ICAO:`, [...empresaIcaos]);
+    }
+  }
 
-  const [voosRes, voosLigadosRes, calculosRes, ocorrenciasRes, inspecoesRes] = await Promise.all([
-    voosQuery, voosLigadosQuery, calculosQuery, ocorrenciasQuery, inspecoesQuery
+  // Fetch data with pagination
+  const [voos, voosLigados, calculos, ocorrencias, inspecoes] = await Promise.all([
+    fetchAllRows(supabase.from('voo').select('*').gte('data_operacao', dataInicioStr)),
+    fetchAllRows(supabase.from('voo_ligado').select('*')),
+    fetchAllRows(supabase.from('calculo_tarifa').select('voo_id,voo_ligado_id,total_tarifa,total_tarifa_usd')),
+    fetchAllRows(supabase.from('ocorrencia_safety').select('id,status,aeroporto,empresa_id')),
+    fetchAllRows(supabase.from('inspecao').select('id,status,aeroporto_id,empresa_id')),
   ]);
 
-  const voos = voosRes.data || [];
-  const voosLigados = voosLigadosRes.data || [];
-  const calculos = calculosRes.data || [];
-  const ocorrencias = ocorrenciasRes.data || [];
-  const inspecoes = inspecoesRes.data || [];
+  console.log(`[getDashboardStats] Raw counts: voos=${voos.length}, voosLigados=${voosLigados.length}, calculos=${calculos.length}`);
 
-  // Filter by empresa_id directly
+  // Filter voos by empresa (via aeroporto ICAO relationship)
   let voosFiltrados = voos;
-  if (empresaId) {
-    voosFiltrados = voosFiltrados.filter(v => v.empresa_id === empresaId);
+  if (empresaIcaos) {
+    voosFiltrados = voos.filter(v => empresaIcaos.has(v.aeroporto_operacao));
   }
 
   // Then filter by selected aeroporto dropdown
   if (aeroporto && aeroporto !== 'todos') {
     voosFiltrados = voosFiltrados.filter(v => v.aeroporto_operacao === aeroporto);
   }
+
+  console.log(`[getDashboardStats] After filters: voosFiltrados=${voosFiltrados.length}`);
 
   // Basic stats
   const totalVoos = voosFiltrados.length;
@@ -56,9 +87,26 @@ export async function getDashboardStats({ aeroporto, periodo, empresaId }) {
   });
   const taxaPontualidade = voosComHorarios.length > 0 ? (pontuais / voosComHorarios.length) * 100 : 0;
 
-  // Safety & inspections
-  const ocorrenciasAbertas = ocorrencias.filter(o => o.status && o.status !== 'Fechada' && o.status !== 'Resolvida').length;
-  const inspecoesPendentes = inspecoes.filter(i => i.status === 'Pendente' || i.status === 'Agendada').length;
+  // Safety & inspections - filter by empresa
+  let ocorrenciasFiltradas = ocorrencias;
+  let inspecoesFiltradas = inspecoes;
+  if (empresaId) {
+    // Filter by empresa_id if set, OR by aeroporto ICAO if empresa_id is missing
+    ocorrenciasFiltradas = ocorrencias.filter(o =>
+      o.empresa_id === empresaId || (empresaIcaos && empresaIcaos.has(o.aeroporto))
+    );
+    // For inspecoes, get aeroporto IDs for the empresa
+    const { data: aeroFull } = await supabase
+      .from('aeroporto')
+      .select('id')
+      .eq('empresa_id', empresaId);
+    const empresaAeroIds = new Set((aeroFull || []).map(a => a.id));
+    inspecoesFiltradas = inspecoes.filter(i =>
+      i.empresa_id === empresaId || empresaAeroIds.has(i.aeroporto_id)
+    );
+  }
+  const ocorrenciasAbertas = ocorrenciasFiltradas.filter(o => o.status && o.status !== 'Fechada' && o.status !== 'Resolvida').length;
+  const inspecoesPendentes = inspecoesFiltradas.filter(i => i.status === 'Pendente' || i.status === 'Agendada').length;
 
   // Passengers
   const passageirosPeriodo = voosFiltrados.reduce((sum, v) => sum + (v.passageiros_total || 0), 0);
@@ -66,7 +114,7 @@ export async function getDashboardStats({ aeroporto, periodo, empresaId }) {
   // Linked flights
   const vooIds = new Set(voosFiltrados.map(v => v.id));
   const voosLigadosFiltrados = empresaId
-    ? voosLigados.filter(vl => vl.empresa_id === empresaId)
+    ? voosLigados.filter(vl => vl.empresa_id === empresaId || vooIds.has(vl.id_voo_arr) || vooIds.has(vl.id_voo_dep))
     : voosLigados.filter(vl => vooIds.has(vl.id_voo_arr) || vooIds.has(vl.id_voo_dep));
   const voosComLink = new Set();
   voosLigadosFiltrados.forEach(vl => {

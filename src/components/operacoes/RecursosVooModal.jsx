@@ -6,15 +6,24 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Loader2, Wrench, Wind, Zap, DoorOpen, ClipboardList, DollarSign } from 'lucide-react';
+import { Loader2, Wrench, Wind, Zap, DoorOpen, ClipboardList, DollarSign, Flame } from 'lucide-react';
 import { RecursoVoo } from '@/entities/RecursoVoo';
 import { TarifaRecurso } from '@/entities/TarifaRecurso';
+import { TipoServicoGeral } from '@/entities/TipoServicoGeral';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 
 const RESOURCE_TYPES = [
   { key: 'pca', label: 'PCA (Ar Pré-Condicionado)', icon: Wind, color: 'text-cyan-600' },
   { key: 'gpu', label: 'GPU (Ground Power Unit)', icon: Zap, color: 'text-yellow-600' },
   { key: 'pbb', label: 'PBB (Ponte de Embarque)', icon: DoorOpen, color: 'text-blue-600' },
+];
+
+const BOMBEIROS_TYPES = [
+  { key: 'bombeiros_derrame_pequeno', label: 'Limpeza de Derrame Pequena (até 10m²)', value: 'derrame_pequeno' },
+  { key: 'bombeiros_derrame_medio', label: 'Limpeza de Derrame Média (10-30m²)', value: 'derrame_medio' },
+  { key: 'bombeiros_derrame_grande', label: 'Limpeza de Derrame Grande (>30m²)', value: 'derrame_grande' },
+  { key: 'bombeiros_resfriamento', label: 'Resfriamento do Trem de Pouso', value: 'resfriamento' },
+  { key: 'bombeiros_reabastecimento', label: 'Reabastecimento com Pax a Bordo', value: 'reabastecimento' },
 ];
 
 function calcTempoHoras(inicio, fim) {
@@ -32,6 +41,7 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
   const [isSaving, setIsSaving] = useState(false);
   const [existingId, setExistingId] = useState(null);
   const [tarifas, setTarifas] = useState([]);
+  const [tiposBombeiros, setTiposBombeiros] = useState([]);
   const [formData, setFormData] = useState({});
 
   // Get airport category for tariff lookup
@@ -61,6 +71,12 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
     gpu_utilizado: false, gpu_hora_inicio: '', gpu_hora_fim: '', gpu_posicao_stand: '',
     pbb_utilizado: false, pbb_hora_inicio: '', pbb_hora_fim: '', pbb_posicao_stand: '',
     checkin_utilizado: false, checkin_hora_inicio: '', checkin_hora_fim: '', checkin_posicoes: '', checkin_num_balcoes: 0,
+    // Bombeiros
+    bombeiros_derrame_pequeno: false, bombeiros_derrame_pequeno_qtd: 1, bombeiros_derrame_pequeno_valor_usd: 0,
+    bombeiros_derrame_medio: false, bombeiros_derrame_medio_qtd: 1, bombeiros_derrame_medio_valor_usd: 0,
+    bombeiros_derrame_grande: false, bombeiros_derrame_grande_qtd: 1, bombeiros_derrame_grande_valor_usd: 0,
+    bombeiros_resfriamento: false, bombeiros_resfriamento_qtd: 1, bombeiros_resfriamento_valor_usd: 0,
+    bombeiros_reabastecimento: false, bombeiros_reabastecimento_qtd: 1, bombeiros_reabastecimento_valor_usd: 0,
   });
 
   useEffect(() => {
@@ -68,8 +84,9 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
     setIsLoading(true);
     Promise.all([
       RecursoVoo.filter({ voo_ligado_id: vooLigado.id }),
-      TarifaRecurso.filter({ status: 'ativa' })
-    ]).then(([recursos, tarifasData]) => {
+      TarifaRecurso.filter({ status: 'ativa' }),
+      TipoServicoGeral.filter({ categoria: 'bombeiros', status: 'ativa' }),
+    ]).then(([recursos, tarifasData, bombeirosTipos]) => {
       // Filtrar tarifas por empresa
       const allTarifas = tarifasData || [];
       console.log('[RecursosVoo] allTarifas:', allTarifas.length, 'effectiveEmpresaId:', effectiveEmpresaId, 'aeroportoCategoria:', aeroportoCategoria);
@@ -80,6 +97,7 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
       } else {
         setTarifas(allTarifas);
       }
+      setTiposBombeiros(bombeirosTipos || []);
       if (recursos && recursos.length > 0) {
         const r = recursos[0];
         setExistingId(r.id);
@@ -101,6 +119,22 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
           checkin_hora_fim: r.checkin_hora_fim ? new Date(r.checkin_hora_fim).toTimeString().slice(0, 5) : '',
           checkin_posicoes: r.checkin_posicoes || '',
           checkin_num_balcoes: r.checkin_num_balcoes || 0,
+          // Bombeiros
+          bombeiros_derrame_pequeno: r.bombeiros_derrame_pequeno || false,
+          bombeiros_derrame_pequeno_qtd: r.bombeiros_derrame_pequeno_qtd || 1,
+          bombeiros_derrame_pequeno_valor_usd: Number(r.bombeiros_derrame_pequeno_valor_usd) || 0,
+          bombeiros_derrame_medio: r.bombeiros_derrame_medio || false,
+          bombeiros_derrame_medio_qtd: r.bombeiros_derrame_medio_qtd || 1,
+          bombeiros_derrame_medio_valor_usd: Number(r.bombeiros_derrame_medio_valor_usd) || 0,
+          bombeiros_derrame_grande: r.bombeiros_derrame_grande || false,
+          bombeiros_derrame_grande_qtd: r.bombeiros_derrame_grande_qtd || 1,
+          bombeiros_derrame_grande_valor_usd: Number(r.bombeiros_derrame_grande_valor_usd) || 0,
+          bombeiros_resfriamento: r.bombeiros_resfriamento || false,
+          bombeiros_resfriamento_qtd: r.bombeiros_resfriamento_qtd || 1,
+          bombeiros_resfriamento_valor_usd: Number(r.bombeiros_resfriamento_valor_usd) || 0,
+          bombeiros_reabastecimento: r.bombeiros_reabastecimento || false,
+          bombeiros_reabastecimento_qtd: r.bombeiros_reabastecimento_qtd || 1,
+          bombeiros_reabastecimento_valor_usd: Number(r.bombeiros_reabastecimento_valor_usd) || 0,
         });
       } else {
         setExistingId(null);
@@ -159,9 +193,32 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
     return result;
   }, [formData, getTarifaObj]);
 
+  // Bombeiros calculations
+  const bombeirosCalc = useMemo(() => {
+    const result = {};
+    for (const bt of BOMBEIROS_TYPES) {
+      const utilizado = formData[bt.key];
+      if (!utilizado) {
+        result[bt.key] = { qtd: 0, valorUnit: 0, valor: 0 };
+        continue;
+      }
+      const qtd = Number(formData[`${bt.key}_qtd`]) || 1;
+      // Lookup value from tipo_servico_geral
+      const tipoObj = tiposBombeiros.find(t => t.value === bt.value);
+      const valorUnit = tipoObj ? Number(tipoObj.valor_padrao_usd) : 0;
+      result[bt.key] = { qtd, valorUnit, valor: parseFloat((qtd * valorUnit).toFixed(2)) };
+    }
+    return result;
+  }, [formData, tiposBombeiros]);
+
+  const totalBombeirosUSD = useMemo(() => {
+    return Object.values(bombeirosCalc).reduce((sum, c) => sum + c.valor, 0);
+  }, [bombeirosCalc]);
+
   const totalUSD = useMemo(() => {
-    return Object.values(calculations).reduce((sum, c) => sum + c.valor, 0);
-  }, [calculations]);
+    const recursosTotal = Object.values(calculations).reduce((sum, c) => sum + c.valor, 0);
+    return recursosTotal + totalBombeirosUSD;
+  }, [calculations, totalBombeirosUSD]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -191,6 +248,14 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
 
         payload[`${k}_tempo_horas`] = calculations[k].tempo;
         payload[`${k}_valor_usd`] = calculations[k].valor;
+      }
+
+      // Bombeiros fields
+      for (const bt of BOMBEIROS_TYPES) {
+        const calc = bombeirosCalc[bt.key];
+        payload[bt.key] = formData[bt.key] || false;
+        payload[`${bt.key}_qtd`] = formData[bt.key] ? (Number(formData[`${bt.key}_qtd`]) || 1) : 0;
+        payload[`${bt.key}_valor_usd`] = formData[bt.key] ? calc.valor : 0;
       }
 
       payload.total_recursos_usd = totalUSD;
@@ -348,6 +413,51 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
                 );
               })}
             </Accordion>
+
+            {/* Bombeiros */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border-b">
+                <Flame className="w-5 h-5 text-red-500" />
+                <span className="font-semibold text-sm text-red-800">Serviços de Bombeiros</span>
+                {totalBombeirosUSD > 0 && (
+                  <Badge className="bg-red-100 text-red-800 text-xs ml-auto">
+                    {totalBombeirosUSD.toFixed(2)} USD
+                  </Badge>
+                )}
+              </div>
+              <div className="p-4 space-y-3">
+                {BOMBEIROS_TYPES.map(bt => {
+                  const utilizado = formData[bt.key];
+                  const calc = bombeirosCalc[bt.key];
+                  return (
+                    <div key={bt.key} className="flex items-center gap-3">
+                      <Switch
+                        checked={utilizado || false}
+                        onCheckedChange={(v) => handleChange(bt.key, v)}
+                      />
+                      <span className="text-sm flex-1">{bt.label}</span>
+                      {utilizado && (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="1"
+                            value={formData[`${bt.key}_qtd`] || 1}
+                            onChange={(e) => handleChange(`${bt.key}_qtd`, parseInt(e.target.value) || 1)}
+                            className="h-8 w-16 text-center"
+                          />
+                          <span className="text-xs text-slate-500">×</span>
+                          <span className="text-xs text-slate-500">{calc.valorUnit.toFixed(2)}</span>
+                          <span className="text-xs text-slate-500">=</span>
+                          <Badge className="bg-green-100 text-green-800 text-xs">
+                            {calc.valor.toFixed(2)} USD
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
             {/* Total */}
             <div className="flex items-center justify-between bg-slate-100 rounded-lg p-4 border">

@@ -6,6 +6,7 @@ import { Upload, Loader2, CheckCircle, XCircle, FileText } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Documento } from '@/entities/Documento';
 import { analisarDocumento } from '@/functions/analisarDocumento';
+import { sanitizeFilename } from '@/lib/sanitize';
 
 export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto }) {
   const [files, setFiles] = useState([]);
@@ -66,7 +67,7 @@ export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto
         // 2. Analisar documento com IA
         const analiseResult = await analisarDocumento({ 
           file_url: fileUrl, 
-          titulo: file.name 
+          titulo: sanitizeFilename(file.name)
         });
 
         if (analiseResult.data?.success) {
@@ -79,7 +80,7 @@ export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto
 
           // 3. Criar documento na base de dados
           await Documento.create({
-            titulo: file.name.replace(/\.[^/.]+$/, ''), // Remove extensão
+            titulo: sanitizeFilename(file.name).replace(/\.[^/.]+$/, ''),
             categoria: analise.categoria_sugerida || 'outro',
             arquivo_url: fileUrl,
             versao: '1.0',

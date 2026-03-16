@@ -1,13 +1,44 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  "https://app.marciosager.com",
+];
+
+// Rate limiting: max 10 requests per IP per minute
+const rateLimitMap = new Map<string, number[]>();
+const RATE_LIMIT = 10;
+const RATE_WINDOW = 60000;
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const timestamps = (rateLimitMap.get(ip) || []).filter(t => now - t < RATE_WINDOW);
+  if (timestamps.length >= RATE_LIMIT) return false;
+  timestamps.push(now);
+  rateLimitMap.set(ip, timestamps);
+  return true;
+}
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+}
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
+  if (!checkRateLimit(clientIp)) {
+    return new Response(
+      JSON.stringify({ error: "Demasiados pedidos. Tente novamente em 1 minuto." }),
+      { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
   try {

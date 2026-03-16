@@ -35,6 +35,7 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { Empresa } from '@/entities/Empresa';
 import { downloadAsCSV } from '../components/lib/export';
 import { hasUserProfile } from '@/components/lib/userUtils';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 import { base44 } from '@/api/base44Client';
 
 import AprovarAcessoModal from '../components/gestao/AprovarAcessoModal';
@@ -77,6 +78,7 @@ const PERFIL_LABELS = {
 };
 
 export default function GestaoAcessos() {
+  const { effectiveEmpresaId } = useCompanyView();
   const [currentUser, setCurrentUser] = useState(null);
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [users, setUsers] = useState([]);
@@ -134,21 +136,40 @@ export default function GestaoAcessos() {
         Empresa.list(),
       ]);
 
-      setSolicitacoes(solicitacoesData || []);
-      
-      // Filtrar utilizadores válidos - remover aqueles que possam estar inconsistentes
-      const validUsers = (usersData || []).filter(u => u && u.id && u.email);
-      setUsers(validUsers);
-      
-      setAeroportos(aeroportosData.filter(a => a.pais === 'AO') || []);
+      const allAeroportos = aeroportosData.filter(a => a.pais === 'AO') || [];
+      setAeroportos(allAeroportos);
       setEmpresas(empresasData || []);
+
+      // Filtrar utilizadores válidos
+      let validUsers = (usersData || []).filter(u => u && u.id && u.email);
+      let filteredSolicitacoes = solicitacoesData || [];
+
+      // Filtrar por empresa quando CompanyView está ativo
+      if (effectiveEmpresaId) {
+        // 1. Filtrar solicitações pela empresa_solicitante_id
+        filteredSolicitacoes = filteredSolicitacoes.filter(s =>
+          s.empresa_solicitante_id === effectiveEmpresaId
+        );
+        // 2. IDs e emails de users que têm solicitação para esta empresa
+        const solicitacaoUserIds = new Set(filteredSolicitacoes.map(s => s.user_id).filter(Boolean));
+        const solicitacaoEmails = new Set(filteredSolicitacoes.map(s => s.email?.toLowerCase()).filter(Boolean));
+        // 3. Filtrar utilizadores: da empresa OU que têm solicitação pendente para esta empresa
+        validUsers = validUsers.filter(u =>
+          u.empresa_id === effectiveEmpresaId ||
+          solicitacaoUserIds.has(u.id) ||
+          solicitacaoEmails.has(u.email?.toLowerCase())
+        );
+      }
+
+      setSolicitacoes(filteredSolicitacoes);
+      setUsers(validUsers);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setAlertInfo({ isOpen: true, type: 'error', title: 'Erro', message: 'Erro ao carregar dados. Tente novamente.' });
     } finally {
       setIsLoading(false);
     }
-  }, [setAlertInfo, setAeroportos, setEmpresas, setIsLoading, setSolicitacoes, setUsers, setCurrentUser]);
+  }, [effectiveEmpresaId]);
 
   // Mover funções auxiliares para useCallback para estabilizar as suas referências
   const getAeroportoNome = useCallback((idOuIcao) => {

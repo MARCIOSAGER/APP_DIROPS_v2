@@ -30,4 +30,7 @@ dist-ssr
 .env
 
 # Migration data (contains sensitive production data)
-scripts/data/.claude/settings.local.json
+scripts/data/
+
+# Claude Code local settings (may contain tokens)
+.claude/settings.local.json

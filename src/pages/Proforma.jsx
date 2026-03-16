@@ -40,6 +40,7 @@ import { downloadAsCSV } from '@/components/lib/export';
 import { base44 } from '@/api/base44Client';
 import { registarCriacao } from '@/components/lib/auditoria';
 import { getAeroportosPermitidos, ensureUserProfilesExist, getEmailsEmpresa, filtrarDadosPorCriador } from '@/components/lib/userUtils';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 
 import EditarFaturaModal from '../components/faturacao/EditarFaturaModal';
 import GerarProformaConsolidadaModal from '../components/faturacao/GerarProformaConsolidadaModal';
@@ -56,6 +57,7 @@ const STATUS_CONFIG = {
 };
 
 export default function ProformaPage() {
+  const { effectiveEmpresaId } = useCompanyView();
   const [proformas, setProformas] = useState([]);
   const [companhias, setCompanhias] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -84,7 +86,7 @@ export default function ProformaPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [effectiveEmpresaId]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -101,9 +103,10 @@ export default function ProformaPage() {
       // Filtrar aeroportos por empresa/permissões do utilizador
       const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData);
 
-      // Filtrar proformas por empresa_id direto
-      const proformasFiltradas = user.empresa_id
-        ? proformasData.filter(p => p.empresa_id === user.empresa_id)
+      // Filtrar proformas por empresa (usa CompanyView para superadmin)
+      const empresaIdFiltro = effectiveEmpresaId || user.empresa_id;
+      const proformasFiltradas = empresaIdFiltro
+        ? proformasData.filter(p => p.empresa_id === empresaIdFiltro)
         : proformasData;
 
       setProformas(proformasFiltradas);

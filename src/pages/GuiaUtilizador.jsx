@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   BookOpen, Plane, DollarSign, Shield, ClipboardCheck,
   Users, FileText, MessageSquare, Settings, ChevronDown, ChevronRight,
-  BarChart3, Wrench, Activity, Bell, Search
+  BarChart3, Wrench, Activity, Bell, Search, Layers
 } from "lucide-react";
 
 const sections = [
@@ -129,6 +129,20 @@ const sections = [
     ]
   },
   {
+    id: "servicos",
+    icon: Layers,
+    color: "text-cyan-600",
+    bg: "bg-cyan-50",
+    title: "Serviços Aeroportuários",
+    badge: "Servicos",
+    conteudo: [
+      { subtitulo: "Serviços de Voo", texto: "Na aba 'Serviços de Voo' pode lançar cobranças de serviços adicionais por voo ligado — check-in, CUPPSS, fast track, assistência especial, assistência bagagem e BRS. Os valores unitários são carregados automaticamente das tarifas configuradas." },
+      { subtitulo: "Bombeiros", texto: "Na aba 'Bombeiros' registe cobranças de serviço de combate a incêndio. Selecione o cliente, tipo de serviço, quantidade e data." },
+      { subtitulo: "Cursos e Licenças", texto: "Na aba 'Cursos e Licenças' registe cobranças de cursos de segurança operacional/AVSEC e licenças LCLA, associadas a clientes (companhias ou empresas)." },
+      { subtitulo: "Clientes", texto: "Os clientes (companhias aéreas, empresas de logística, etc.) são geridos na aba 'Clientes' em Configuração de Tarifas. São entidades separadas das empresas operadoras do sistema (ATO, SGA)." },
+    ]
+  },
+  {
     id: "configuracoes",
     icon: Settings,
     color: "text-slate-600",
@@ -139,7 +153,7 @@ const sections = [
       { subtitulo: "Aeroportos", texto: "Adicione e configure os aeroportos da rede com código ICAO, categoria e localização." },
       { subtitulo: "Companhias Aéreas", texto: "Registe as companhias aéreas que operam na rede com códigos ICAO/IATA." },
       { subtitulo: "Aeronaves", texto: "Mantenha o registo de aeronaves com MTOW, capacidade e modelo. O MTOW é essencial para o cálculo correto das tarifas." },
-      { subtitulo: "Tarifas", texto: "Defina as tarifas de pouso, permanência e outras taxas por categoria de aeroporto. Os valores são usados automaticamente no cálculo de faturação." },
+      { subtitulo: "Tarifas", texto: "Defina as tarifas de pouso, permanência e outras taxas por categoria de aeroporto. Os valores são usados automaticamente no cálculo de faturação. Na aba 'Clientes' pode gerir os clientes de faturação (companhias aéreas, empresas de logística)." },
       { subtitulo: "Utilizadores", texto: "Convide utilizadores e atribua perfis (Administrador, Operações, Safety, etc.) e aeroportos de acesso." },
     ]
   },

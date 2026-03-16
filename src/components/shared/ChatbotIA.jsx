@@ -12,7 +12,7 @@ export default function ChatbotIA({ user }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Olá! Sou o **SIGA**, o assistente virtual do DIROPS. 👋\n\nPosso ajudar-te com dúvidas sobre o sistema ou abrir um ticket de suporte. Como posso ajudar?"
+      content: "Olá! Sou o **Assistente Virtual** do DIROPS. 👋\n\nPosso ajudar-te com dúvidas sobre o sistema ou abrir um ticket de suporte. Como posso ajudar?"
     }
   ]);
   const [input, setInput] = useState("");
@@ -93,14 +93,14 @@ export default function ChatbotIA({ user }) {
   };
 
   const renderMessage = (content) => {
-    // Escape HTML first, then apply safe markdown formatting
-    const escaped = content
+    // Convert markdown-like syntax to HTML, then sanitize with DOMPurify
+    const html = content
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    return escaped
+      .replace(/>/g, '&gt;')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n/g, '<br/>');
+    return sanitizeHtml(html);
   };
 
   return (
@@ -109,7 +109,7 @@ export default function ChatbotIA({ user }) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-all duration-200"
-        title="Assistente Virtual SIGA"
+        title="Assistente Virtual"
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
@@ -123,7 +123,7 @@ export default function ChatbotIA({ user }) {
               <Bot className="w-5 h-5" />
             </div>
             <div>
-              <div className="font-semibold text-sm">SIGA – Assistente Virtual</div>
+              <div className="font-semibold text-sm">Assistente Virtual</div>
               <div className="text-xs text-blue-100">DIROPS • Online</div>
             </div>
             <button onClick={() => setIsOpen(false)} className="ml-auto hover:bg-white/20 rounded-full p-1">

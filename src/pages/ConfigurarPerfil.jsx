@@ -12,6 +12,7 @@ import { base44 } from '@/api/base44Client';
 import { getAeroportosPermitidos } from '@/components/lib/userUtils';
 import { createPageUrl } from '@/utils';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function ConfigurarPerfil() {
   const navigate = useNavigate();
@@ -24,6 +25,11 @@ export default function ConfigurarPerfil() {
   const [isSendingOptIn, setIsSendingOptIn] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [aeroportosPermitidos, setAeroportosPermitidos] = useState([]);
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaSetupData, setMfaSetupData] = useState(null);
+  const [mfaVerifyCode, setMfaVerifyCode] = useState('');
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaError, setMfaError] = useState('');
   
   const [formData, setFormData] = useState({
     full_name: '',
@@ -58,11 +64,76 @@ export default function ConfigurarPerfil() {
         whatsapp_number: whatsappDisplay
       });
       
+      // Check MFA status
+      try {
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const totpFactor = factors?.totp?.find(f => f.status === 'verified');
+        setMfaEnabled(!!totpFactor);
+      } catch (e) {
+        console.warn('[MFA] Could not check MFA status:', e.message);
+      }
+
     } catch (error) {
       console.error('Erro ao carregar utilizador:', error);
       setError('Erro ao carregar dados do utilizador.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleEnableMFA = async () => {
+    setMfaLoading(true);
+    setMfaError('');
+    try {
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'DIROPS App' });
+      if (error) throw error;
+      setMfaSetupData(data);
+    } catch (e) {
+      setMfaError(e.message);
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const handleVerifyMFA = async () => {
+    if (!mfaVerifyCode || mfaVerifyCode.length !== 6) {
+      setMfaError('Insira o código de 6 dígitos.');
+      return;
+    }
+    setMfaLoading(true);
+    setMfaError('');
+    try {
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: mfaSetupData.id });
+      if (challengeError) throw challengeError;
+      const { error: verifyError } = await supabase.auth.mfa.verify({ factorId: mfaSetupData.id, challengeId: challenge.id, code: mfaVerifyCode });
+      if (verifyError) throw verifyError;
+      setMfaEnabled(true);
+      setMfaSetupData(null);
+      setMfaVerifyCode('');
+      setSuccessMessage('Autenticação de dois fatores ativada com sucesso!');
+    } catch (e) {
+      setMfaError(e.message === 'Invalid TOTP code' ? 'Código inválido. Tente novamente.' : e.message);
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const handleDisableMFA = async () => {
+    setMfaLoading(true);
+    setMfaError('');
+    try {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totpFactor = factors?.totp?.find(f => f.status === 'verified');
+      if (totpFactor) {
+        const { error } = await supabase.auth.mfa.unenroll({ factorId: totpFactor.id });
+        if (error) throw error;
+      }
+      setMfaEnabled(false);
+      setSuccessMessage('Autenticação de dois fatores desativada.');
+    } catch (e) {
+      setMfaError(e.message);
+    } finally {
+      setMfaLoading(false);
     }
   };
 
@@ -467,6 +538,96 @@ export default function ConfigurarPerfil() {
             Para alterações no perfil de acesso, aeroportos ou outros dados geridos pelos administradores, por favor contacte a equipa de gestão do sistema.
           </p>
         </div>
+
+        {/* 2FA / MFA */}
+        <Card className="shadow-lg border-0 mb-6">
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Shield className="w-5 h-5 text-green-600" />
+              Autenticação de Dois Fatores (2FA)
+            </CardTitle>
+            <p className="text-sm text-slate-500 mt-1">
+              Adicione uma camada extra de segurança à sua conta.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {mfaError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{mfaError}</AlertDescription>
+              </Alert>
+            )}
+
+            {mfaEnabled ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="font-medium text-green-800">2FA Ativo</p>
+                    <p className="text-sm text-green-700">A sua conta está protegida com autenticação de dois fatores.</p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="border-red-200 text-red-600 hover:bg-red-50"
+                  onClick={handleDisableMFA}
+                  disabled={mfaLoading}
+                >
+                  {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Desativar 2FA
+                </Button>
+              </div>
+            ) : mfaSetupData ? (
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600">
+                  Abra o seu aplicativo autenticador (Google Authenticator, Authy, etc.) e digitalize o código QR abaixo:
+                </p>
+                <div className="flex justify-center p-4 bg-white border rounded-lg">
+                  <img src={mfaSetupData.totp.qr_code} alt="QR Code 2FA" className="w-48 h-48" />
+                </div>
+                <p className="text-xs text-slate-500 text-center break-all">
+                  Chave manual: <code className="bg-slate-100 px-1 rounded">{mfaSetupData.totp.secret}</code>
+                </p>
+                <div>
+                  <Label className="text-sm">Código de verificação</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      value={mfaVerifyCode}
+                      onChange={(e) => setMfaVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      maxLength={6}
+                      className="w-32 text-center text-lg tracking-widest"
+                    />
+                    <Button
+                      onClick={handleVerifyMFA}
+                      disabled={mfaLoading || mfaVerifyCode.length !== 6}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Verificar e Ativar
+                    </Button>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => { setMfaSetupData(null); setMfaVerifyCode(''); setMfaError(''); }}>
+                  Cancelar
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-600">
+                  A autenticação de dois fatores adiciona segurança extra ao exigir um código do seu telemóvel além da senha.
+                </p>
+                <Button
+                  onClick={handleEnableMFA}
+                  disabled={mfaLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white gap-2"
+                >
+                  {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                  Ativar 2FA
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Delete Account */}
         <Card className="shadow-lg border border-red-200 mt-8">

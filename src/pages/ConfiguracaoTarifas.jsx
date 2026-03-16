@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Settings2, Filter, Plus, RefreshCw, X, Trash2, Pencil, DollarSign } from 'lucide-react';
 import Combobox from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,9 @@ import { TarifaRecurso } from '@/entities/TarifaRecurso';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { TipoOutraTarifa } from '@/entities/TipoOutraTarifa';
+import { TipoServicoGeral } from '@/entities/TipoServicoGeral';
+import { Cliente } from '@/entities/Cliente';
+import { Textarea } from '@/components/ui/textarea';
 
 import FormTarifaPouso from '../components/financeiro/FormTarifaPouso';
 import FormTarifaPermanencia from '../components/financeiro/FormTarifaPermanencia';
@@ -66,6 +70,12 @@ export default function ConfiguracaoTarifas() {
   const [deleteInfo, setDeleteInfo] = useState({ isOpen: false, entity: null, id: null });
   const [isGerirTiposOpen, setIsGerirTiposOpen] = useState(false);
   const [tiposOutraTarifa, setTiposOutraTarifa] = useState([]);
+  const [tiposServicoGeral, setTiposServicoGeral] = useState([]);
+  const [editingServicoGeral, setEditingServicoGeral] = useState(null);
+  const [isServicoGeralFormOpen, setIsServicoGeralFormOpen] = useState(false);
+  const [clientes, setClientes] = useState([]);
+  const [editingCliente, setEditingCliente] = useState(null);
+  const [isClienteFormOpen, setIsClienteFormOpen] = useState(false);
 
   // Filtros tarifas pouso
   const [filtrosTarifaPouso, setFiltrosTarifaPouso] = useState({ categoria: 'todos', status: 'todos', busca: '' });
@@ -90,7 +100,9 @@ export default function ConfiguracaoTarifas() {
         impostosData,
         tarifasRecursosData,
         configsData,
-        tiposData
+        tiposData,
+        tiposServicoGeralData,
+        clientesData
       ] = await Promise.all([
         Aeroporto.list(),
         TarifaPouso.list(),
@@ -104,7 +116,9 @@ export default function ConfiguracaoTarifas() {
             return configs.length > 0 ? configs[0] : { taxa_cambio_usd_aoa: 850 };
           } catch { return { taxa_cambio_usd_aoa: 850 }; }
         })(),
-        TipoOutraTarifa.list().catch(() => [])
+        TipoOutraTarifa.list().catch(() => []),
+        TipoServicoGeral.list().catch(() => []),
+        Cliente.list().catch(() => [])
       ]);
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
@@ -118,6 +132,8 @@ export default function ConfiguracaoTarifas() {
       setTarifasRecursos(filterTarifasByEmpresa(tarifasRecursosData || [], effectiveEmpresaId));
       setConfiguracao(configsData);
       setTiposOutraTarifa((tiposData || []).filter(t => t.status === 'ativa').sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
+      setTiposServicoGeral((tiposServicoGeralData || []).sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
+      setClientes(clientesData || []);
     } catch (error) {
       console.error("Erro ao carregar tarifas:", error);
       setAlertInfo({ isOpen: true, type: 'error', title: 'Erro de Carga', message: 'Ocorreu um erro ao carregar os dados. Tente novamente.' });
@@ -217,6 +233,16 @@ export default function ConfiguracaoTarifas() {
           dadosParaAuditoria = impostos.find(t => t.id === id);
           if (!dadosParaAuditoria) { loadData(); setDeleteInfo({ isOpen: false, entity: null, id: null }); return; }
           await Imposto.delete(id);
+          break;
+        case 'servico_geral':
+          dadosParaAuditoria = tiposServicoGeral.find(t => t.id === id);
+          if (!dadosParaAuditoria) { loadData(); setDeleteInfo({ isOpen: false, entity: null, id: null }); return; }
+          await TipoServicoGeral.delete(id);
+          break;
+        case 'empresa':
+          dadosParaAuditoria = clientes.find(t => t.id === id);
+          if (!dadosParaAuditoria) { loadData(); setDeleteInfo({ isOpen: false, entity: null, id: null }); return; }
+          await Cliente.delete(id);
           break;
         default:
           throw new Error('Entidade desconhecida para exclusão');
@@ -346,11 +372,13 @@ export default function ConfiguracaoTarifas() {
 
         {/* Tabs */}
         <Tabs defaultValue="tarifas_pouso" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="tarifas_pouso">Pouso</TabsTrigger>
             <TabsTrigger value="tarifas_permanencia">Estacionamento</TabsTrigger>
             <TabsTrigger value="outras_tarifas">Outras Tarifas</TabsTrigger>
             <TabsTrigger value="tarifas_recursos">Recursos</TabsTrigger>
+            <TabsTrigger value="servicos_gerais">Serviços Gerais</TabsTrigger>
+            <TabsTrigger value="empresas">Clientes</TabsTrigger>
             <TabsTrigger value="impostos">Impostos</TabsTrigger>
           </TabsList>
 
@@ -615,6 +643,116 @@ export default function ConfiguracaoTarifas() {
             </Card>
           </TabsContent>
 
+          {/* ==================== SERVIÇOS GERAIS (Cursos/Licenças + Bombeiros) ==================== */}
+          <TabsContent value="servicos_gerais">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Serviços Gerais — Cursos, Licenças e Bombeiros</CardTitle>
+                  <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white" onClick={() => { setEditingServicoGeral(null); setIsServicoGeralFormOpen(true); }}>
+                    <Plus className="w-4 h-4 mr-2" /> Novo Tipo
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {['cursos_licencas', 'bombeiros'].map(cat => {
+                  const items = tiposServicoGeral.filter(t => t.categoria === cat);
+                  return (
+                    <div key={cat} className="mb-6">
+                      <h3 className="text-sm font-semibold text-slate-600 mb-2">
+                        {cat === 'cursos_licencas' ? '📚 Cursos e Licenças' : '🚒 Serviços de Bombeiros'}
+                      </h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead>Valor Padrão (USD)</TableHead>
+                            <TableHead>Unidade</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="w-[100px]">Acções</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {items.length === 0 ? (
+                            <TableRow><TableCell colSpan={5} className="text-center text-slate-400">Nenhum tipo cadastrado</TableCell></TableRow>
+                          ) : items.map(item => (
+                            <TableRow key={item.id}>
+                              <TableCell className="font-medium">{item.label}</TableCell>
+                              <TableCell className="font-semibold text-green-700">{Number(item.valor_padrao_usd || 0).toFixed(2)}</TableCell>
+                              <TableCell><Badge variant="outline">{item.unidade || '—'}</Badge></TableCell>
+                              <TableCell>
+                                <Badge variant={item.status === 'ativa' ? 'default' : 'secondary'} className={item.status === 'ativa' ? 'bg-green-100 text-green-700' : ''}>
+                                  {item.status === 'ativa' ? 'Activa' : 'Inactiva'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setEditingServicoGeral(item); setIsServicoGeralFormOpen(true); }}>
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => setDeleteInfo({ isOpen: true, entity: 'servico_geral', id: item.id })}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ==================== EMPRESAS ==================== */}
+          <TabsContent value="empresas">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="flex flex-row justify-between items-center">
+                <CardTitle className="text-lg">Clientes</CardTitle>
+                <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white" onClick={() => { setEditingCliente(null); setIsClienteFormOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> Novo Cliente
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>NIF</TableHead>
+                      <TableHead>Telefone</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead className="w-[100px]">Acções</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {clientes.length === 0 ? (
+                      <TableRow><TableCell colSpan={5} className="text-center text-slate-400">Nenhum cliente cadastrado</TableCell></TableRow>
+                    ) : clientes.map(emp => (
+                      <TableRow key={emp.id}>
+                        <TableCell className="font-medium">{emp.nome}</TableCell>
+                        <TableCell>{emp.nif || '—'}</TableCell>
+                        <TableCell>{emp.telefone || '—'}</TableCell>
+                        <TableCell>{emp.email || '—'}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setEditingCliente(emp); setIsClienteFormOpen(true); }}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => setDeleteInfo({ isOpen: true, entity: 'empresa', id: emp.id })}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* ==================== IMPOSTOS ==================== */}
           <TabsContent value="impostos">
             <Card className="border-0 shadow-sm">
@@ -700,6 +838,231 @@ export default function ConfiguracaoTarifas() {
       <AlertModal isOpen={deleteInfo.isOpen} onClose={() => setDeleteInfo({ isOpen: false, entity: null, id: null })} onConfirm={handleDeleteConfirm} type="warning" title="Confirmar Exclusão" message="Tem a certeza que deseja excluir este registo? Esta ação não pode ser desfeita." confirmText="Excluir" showCancel />
       <AlertModal isOpen={alertInfo.isOpen} onClose={() => setAlertInfo({ ...alertInfo, isOpen: false })} type={alertInfo.type} title={alertInfo.title} message={alertInfo.message} />
       <GerirTiposOutraTarifaModal isOpen={isGerirTiposOpen} onClose={() => setIsGerirTiposOpen(false)} onUpdated={loadData} />
+
+      {/* Form Serviço Geral */}
+      {isServicoGeralFormOpen && (
+        <FormServicoGeralInline
+          isOpen={isServicoGeralFormOpen}
+          onClose={() => { setIsServicoGeralFormOpen(false); setEditingServicoGeral(null); }}
+          item={editingServicoGeral}
+          onSaved={loadData}
+        />
+      )}
+
+      {/* Form Cliente */}
+      {isClienteFormOpen && (
+        <FormClienteInline
+          isOpen={isClienteFormOpen}
+          onClose={() => { setIsClienteFormOpen(false); setEditingCliente(null); }}
+          cliente={editingCliente}
+          onSaved={loadData}
+        />
+      )}
     </div>
+  );
+}
+
+// Inline form component for Tipo Serviço Geral
+function FormServicoGeralInline({ isOpen, onClose, item, onSaved }) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [form, setForm] = useState({
+    value: '',
+    label: '',
+    categoria: 'cursos_licencas',
+    valor_padrao_usd: 0,
+    unidade: 'participante',
+    status: 'ativa',
+    ordem: 0,
+  });
+
+  useEffect(() => {
+    if (item) {
+      setForm({
+        value: item.value || '',
+        label: item.label || '',
+        categoria: item.categoria || 'cursos_licencas',
+        valor_padrao_usd: Number(item.valor_padrao_usd) || 0,
+        unidade: item.unidade || 'participante',
+        status: item.status || 'ativa',
+        ordem: Number(item.ordem) || 0,
+      });
+    } else {
+      setForm({ value: '', label: '', categoria: 'cursos_licencas', valor_padrao_usd: 0, unidade: 'participante', status: 'ativa', ordem: 0 });
+    }
+  }, [item, isOpen]);
+
+  const handleSave = async () => {
+    if (!form.value || !form.label) return;
+    setIsSaving(true);
+    try {
+      if (item?.id) {
+        await TipoServicoGeral.update(item.id, form);
+      } else {
+        await TipoServicoGeral.create(form);
+      }
+      if (onSaved) onSaved();
+      onClose();
+    } catch (err) {
+      console.error('Erro ao salvar tipo serviço geral:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{item ? 'Editar' : 'Novo'} Tipo de Serviço Geral</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Categoria *</Label>
+            <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm" value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))}>
+              <option value="cursos_licencas">Cursos e Licenças</option>
+              <option value="bombeiros">Serviços de Bombeiros</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label>Identificador (value) *</Label>
+            <Input value={form.value} onChange={e => setForm(p => ({ ...p, value: e.target.value.toLowerCase().replace(/\s+/g, '_') }))} placeholder="ex: curso_8h" disabled={!!item} />
+          </div>
+          <div className="space-y-2">
+            <Label>Descrição (label) *</Label>
+            <Input value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="ex: Curso Seg. Operacional (8h)" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Valor Padrão (USD)</Label>
+              <Input type="number" min="0" step="0.01" value={form.valor_padrao_usd} onChange={e => setForm(p => ({ ...p, valor_padrao_usd: parseFloat(e.target.value) || 0 }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Unidade</Label>
+              <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm" value={form.unidade} onChange={e => setForm(p => ({ ...p, unidade: e.target.value }))}>
+                <option value="participante">Participante</option>
+                <option value="unidade">Unidade</option>
+                <option value="ocorrência">Ocorrência</option>
+                <option value="solicitação">Solicitação</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Ordem</Label>
+              <Input type="number" min="0" value={form.ordem} onChange={e => setForm(p => ({ ...p, ordem: parseInt(e.target.value) || 0 }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}>
+                <option value="ativa">Activa</option>
+                <option value="inativa">Inactiva</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={isSaving || !form.value || !form.label} className="bg-cyan-600 hover:bg-cyan-700 text-white">
+            {isSaving ? 'Salvando...' : 'Salvar'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Inline form component for Cliente
+function FormClienteInline({ isOpen, onClose, cliente, onSaved }) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [form, setForm] = useState({
+    nome: '',
+    nif: '',
+    telefone: '',
+    email: '',
+    endereco: '',
+    website: '',
+    observacoes: '',
+  });
+
+  useEffect(() => {
+    if (cliente) {
+      setForm({
+        nome: cliente.nome || '',
+        nif: cliente.nif || '',
+        telefone: cliente.telefone || '',
+        email: cliente.email || '',
+        endereco: cliente.endereco || '',
+        website: cliente.website || '',
+        observacoes: cliente.observacoes || '',
+      });
+    } else {
+      setForm({ nome: '', nif: '', telefone: '', email: '', endereco: '', website: '', observacoes: '' });
+    }
+  }, [cliente, isOpen]);
+
+  const handleSave = async () => {
+    if (!form.nome) return;
+    setIsSaving(true);
+    try {
+      if (cliente?.id) {
+        await Cliente.update(cliente.id, form);
+      } else {
+        await Cliente.create(form);
+      }
+      if (onSaved) onSaved();
+      onClose();
+    } catch (err) {
+      console.error('Erro ao salvar cliente:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{cliente ? 'Editar' : 'Novo'} Cliente</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Nome *</Label>
+            <Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder="Nome do cliente" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>NIF</Label>
+              <Input value={form.nif} onChange={e => setForm(p => ({ ...p, nif: e.target.value }))} placeholder="NIF" />
+            </div>
+            <div className="space-y-2">
+              <Label>Telefone</Label>
+              <Input value={form.telefone} onChange={e => setForm(p => ({ ...p, telefone: e.target.value }))} placeholder="+244 ..." />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Email</Label>
+            <Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="email@empresa.com" />
+          </div>
+          <div className="space-y-2">
+            <Label>Endereço</Label>
+            <Input value={form.endereco} onChange={e => setForm(p => ({ ...p, endereco: e.target.value }))} placeholder="Endereço" />
+          </div>
+          <div className="space-y-2">
+            <Label>Website</Label>
+            <Input value={form.website} onChange={e => setForm(p => ({ ...p, website: e.target.value }))} placeholder="www.empresa.com" />
+          </div>
+          <div className="space-y-2">
+            <Label>Observações</Label>
+            <Textarea value={form.observacoes} onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))} rows={2} placeholder="Observações..." />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={isSaving || !form.nome} className="bg-cyan-600 hover:bg-cyan-700 text-white">
+            {isSaving ? 'Salvando...' : 'Salvar'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

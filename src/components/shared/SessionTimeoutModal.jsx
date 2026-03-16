@@ -24,14 +24,15 @@ export default function SessionTimeoutModal() {
   const countdownInterval = useRef(null);
   const lastStorageWrite = useRef(0);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(() => {
     clearAll();
     localStorage.removeItem(LAST_ACTIVITY_KEY);
-    try {
-      await base44.auth.logout(createPageUrl('ValidacaoAcesso'));
-    } catch {
-      window.location.href = createPageUrl('ValidacaoAcesso');
-    }
+    const redirectUrl = createPageUrl('ValidacaoAcesso');
+    // Fazer signOut em background e redirecionar imediatamente
+    import('@/lib/supabaseClient').then(({ supabase }) => {
+      supabase.auth.signOut().catch(() => {});
+    }).catch(() => {});
+    window.location.href = redirectUrl;
   }, []);
 
   const clearAll = () => {

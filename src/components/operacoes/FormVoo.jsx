@@ -76,7 +76,11 @@ export default function FormVoo({
     registo_dep: '',
     combustivel_utilizado: false,
     combustivel_tipo: 'JET-A1',
-    combustivel_litros: 0
+    combustivel_litros: 0,
+    bagagem_local: 0,
+    bagagem_transito_transbordo: 0,
+    bagagem_transito_direto: 0,
+    bagagem_total: 0
   });
 
   const [errors, setErrors] = useState({});
@@ -497,6 +501,24 @@ export default function FormVoo({
   formData.passageiros_transito_direto,
   formData.passageiros_total]
   );
+
+  // Calculate total bagagem automatically (ARR only — DEP edits bagagem_total directly)
+  useEffect(() => {
+    if (formData.tipo_movimento === 'ARR') {
+      const total = (parseInt(formData.bagagem_local) || 0) +
+        (parseInt(formData.bagagem_transito_transbordo) || 0) +
+        (parseInt(formData.bagagem_transito_direto) || 0);
+      if (total !== formData.bagagem_total) {
+        setFormData((prev) => ({ ...prev, bagagem_total: total }));
+      }
+    }
+  }, [
+    formData.tipo_movimento,
+    formData.bagagem_local,
+    formData.bagagem_transito_transbordo,
+    formData.bagagem_transito_direto,
+    formData.bagagem_total
+  ]);
 
   const validate = () => {
     const newErrors = {};
@@ -1732,6 +1754,65 @@ export default function FormVoo({
 
                 </div>
               </div>
+            </div>
+          }
+
+          {/* Bagagem Information */}
+          {(formData.tipo_movimento === 'ARR' || formData.tipo_movimento === 'DEP') &&
+          <div className="space-y-4">
+              <h3 className="text-lg font-medium pt-4 border-t">Informações de Bagagem</h3>
+              {formData.tipo_movimento === 'ARR' ? (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bagagem_local">Bagagem Local</Label>
+                    <Input
+                    id="bagagem_local"
+                    type="number"
+                    min="0"
+                    value={formData.bagagem_local}
+                    onChange={(e) => handleInputChange('bagagem_local', parseInt(e.target.value) || 0)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bagagem_transito_transbordo">Trânsito c/ Transbordo</Label>
+                    <Input
+                    id="bagagem_transito_transbordo"
+                    type="number"
+                    min="0"
+                    value={formData.bagagem_transito_transbordo}
+                    onChange={(e) => handleInputChange('bagagem_transito_transbordo', parseInt(e.target.value) || 0)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bagagem_transito_direto">Trânsito Direto</Label>
+                    <Input
+                    id="bagagem_transito_direto"
+                    type="number"
+                    min="0"
+                    value={formData.bagagem_transito_direto}
+                    onChange={(e) => handleInputChange('bagagem_transito_direto', parseInt(e.target.value) || 0)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bagagem_total">Total (Calculado)</Label>
+                    <Input
+                    id="bagagem_total"
+                    type="number"
+                    value={formData.bagagem_total}
+                    disabled
+                    className="bg-gray-100" />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bagagem_total">Total de Bagagens</Label>
+                    <Input
+                    id="bagagem_total"
+                    type="number"
+                    min="0"
+                    value={formData.bagagem_total}
+                    onChange={(e) => handleInputChange('bagagem_total', parseInt(e.target.value) || 0)} />
+                  </div>
+                </div>
+              )}
             </div>
           }
         </form>

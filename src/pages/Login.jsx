@@ -5,10 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plane, Loader2, Eye, EyeOff, UserPlus, Mail, Lock, ArrowLeft, CheckCircle2, Shield, User } from 'lucide-react';
+import { logAuthEvent } from '@/lib/auditLog';
 
 const LogoDirops = ({ className = "w-14 h-14", variant = "dark" }) => (
   <img src={variant === "light" ? "/logo-dirops-light.png" : "/logo-dirops.png"} alt="DIROPS" className={className} />
 );
+
+// Rate limiter: max attempts in time window
+function useRateLimit(maxAttempts = 5, windowMs = 60000) {
+  const attemptsRef = React.useRef([]);
+  return {
+    check() {
+      const now = Date.now();
+      attemptsRef.current = attemptsRef.current.filter(t => now - t < windowMs);
+      if (attemptsRef.current.length >= maxAttempts) {
+        const waitSec = Math.ceil((windowMs - (now - attemptsRef.current[0])) / 1000);
+        return { blocked: true, waitSec };
+      }
+      attemptsRef.current.push(now);
+      return { blocked: false };
+    }
+  };
+}
 
 export default function Login() {
   const { isAuthenticated, isLoadingAuth } = useAuth();
@@ -20,6 +38,10 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [mode, setMode] = useState('login');
+  const [mfaFactorId, setMfaFactorId] = useState(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const loginLimiter = useRateLimit(5, 60000);
+  const resetLimiter = useRateLimit(3, 60000);
 
   useEffect(() => {
     if (!isLoadingAuth && isAuthenticated) {
@@ -29,17 +51,30 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    const { blocked, waitSec } = loginLimiter.check();
+    if (blocked) { setError(`Demasiadas tentativas. Aguarde ${waitSec}s.`); return; }
     setLoading(true);
     setError(null);
     try {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) {
+        logAuthEvent('login_falha', email, signInError.message);
         setError(signInError.message === 'Invalid login credentials'
           ? 'Email ou senha incorretos'
           : signInError.message);
         setLoading(false);
         return;
       }
+      // Check if MFA is required
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totpFactor = factors?.totp?.find(f => f.status === 'verified');
+      if (totpFactor) {
+        setMfaFactorId(totpFactor.id);
+        setMode('mfa');
+        setLoading(false);
+        return;
+      }
+      logAuthEvent('login', email, 'Login bem-sucedido');
       window.location.replace('/Home');
     } catch (err) {
       setError('Erro: ' + err.message);
@@ -51,8 +86,10 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    if (password !== confirmPassword) { setError('As senhas nao coincidem.'); setLoading(false); return; }
-    if (password.length < 6) { setError('A senha deve ter pelo menos 6 caracteres.'); setLoading(false); return; }
+    if (password !== confirmPassword) { setError('As senhas não coincidem.'); setLoading(false); return; }
+    if (password.length < 8) { setError('A senha deve ter pelo menos 8 caracteres.'); setLoading(false); return; }
+    if (!/[A-Z]/.test(password)) { setError('A senha deve conter pelo menos uma letra maiúscula.'); setLoading(false); return; }
+    if (!/[0-9]/.test(password)) { setError('A senha deve conter pelo menos um número.'); setLoading(false); return; }
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email, password,
@@ -63,7 +100,7 @@ export default function Login() {
       });
       if (signUpError) {
         setError(signUpError.message.includes('already registered')
-          ? 'Este email ja esta registado. Faca login ou recupere a senha.'
+          ? 'Este email já está registado. Faça login ou recupere a senha.'
           : signUpError.message);
         setLoading(false);
         return;
@@ -79,6 +116,8 @@ export default function Login() {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    const { blocked, waitSec } = resetLimiter.check();
+    if (blocked) { setError(`Demasiadas tentativas. Aguarde ${waitSec}s.`); return; }
     setLoading(true);
     setError(null);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -87,6 +126,29 @@ export default function Login() {
     if (error) { setError(error.message); setLoading(false); return; }
     setMode('reset_sent');
     setLoading(false);
+  };
+
+  const handleMfaVerify = async (e) => {
+    e.preventDefault();
+    if (!mfaCode || mfaCode.length !== 6) { setError('Insira o código de 6 dígitos.'); return; }
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+      if (challengeError) throw challengeError;
+      const { error: verifyError } = await supabase.auth.mfa.verify({ factorId: mfaFactorId, challengeId: challenge.id, code: mfaCode });
+      if (verifyError) {
+        logAuthEvent('login_mfa_falha', email, 'Código MFA inválido');
+        setError('Código inválido. Tente novamente.');
+        setLoading(false);
+        return;
+      }
+      logAuthEvent('login', email, 'Login com 2FA bem-sucedido');
+      window.location.replace('/Home');
+    } catch (err) {
+      setError('Erro: ' + err.message);
+      setLoading(false);
+    }
   };
 
   const switchMode = (newMode) => { setMode(newMode); setError(null); };
@@ -110,27 +172,29 @@ export default function Login() {
 
         <div className="max-w-lg space-y-8 relative z-10">
           <div className="flex items-center gap-4">
-            <LogoDirops className="w-16 h-16 drop-shadow-lg" />
+            <div className="bg-white rounded-2xl p-3 shadow-lg shadow-black/20">
+              <LogoDirops className="w-12 h-12" />
+            </div>
             <div>
               <h1 className="text-3xl font-bold text-white tracking-tight">DIROPS</h1>
-              <p className="text-blue-300/70 text-sm font-medium">Sistema de Gestao Aeroportuaria</p>
+              <p className="text-blue-300/70 text-sm font-medium">Sistema de Gestão Aeroportuária</p>
             </div>
           </div>
 
           <div className="space-y-2">
             <h2 className="text-4xl font-bold text-white leading-tight">
-              Gestao integrada de
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400"> operacoes aeroportuarias</span>
+              Gestão integrada de
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400"> operações aeroportuárias</span>
             </h2>
             <p className="text-slate-400 text-lg leading-relaxed">
-              Controle de voos, tarifas, seguranca, auditorias e credenciamentos num unico sistema.
+              Controle de voos, tarifas, segurança, auditorias e credenciamentos num único sistema.
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 pt-4">
             {[
-              { icon: Plane, label: 'Operacoes de Voo', desc: 'Gestao completa de movimentos' },
-              { icon: Shield, label: 'Safety & Auditorias', desc: 'Conformidade e seguranca' },
+              { icon: Plane, label: 'Operações de Voo', desc: 'Gestão completa de movimentos' },
+              { icon: Shield, label: 'Safety & Auditorias', desc: 'Conformidade e segurança' },
             ].map(({ icon: Icon, label, desc }) => (
               <div key={label} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 space-y-2">
                 <Icon className="w-5 h-5 text-blue-400" />
@@ -151,7 +215,7 @@ export default function Login() {
               <LogoDirops className="w-12 h-12 drop-shadow-md" variant="light" />
               <div className="text-left">
                 <h1 className="text-xl font-bold text-slate-900">DIROPS</h1>
-                <p className="text-slate-500 text-xs">Sistema de Gestao Aeroportuaria</p>
+                <p className="text-slate-500 text-xs">Sistema de Gestão Aeroportuária</p>
               </div>
             </div>
           </div>
@@ -167,7 +231,7 @@ export default function Login() {
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold text-slate-900">Email enviado</h3>
                   <p className="text-slate-500 text-sm">
-                    Enviamos um link de recuperacao para <strong className="text-slate-700">{email}</strong>. Verifique a sua caixa de entrada.
+                    Enviamos um link de recuperação para <strong className="text-slate-700">{email}</strong>. Verifique a sua caixa de entrada.
                   </p>
                 </div>
                 <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 h-11" onClick={() => switchMode('login')}>
@@ -187,7 +251,7 @@ export default function Login() {
                     Verifique o email <strong className="text-slate-700">{email}</strong> para confirmar o registo.
                   </p>
                   <p className="text-slate-400 text-xs">
-                    Apos confirmar, faca login para solicitar o seu perfil de acesso.
+                    Após confirmar, faça login para solicitar o seu perfil de acesso.
                   </p>
                 </div>
                 <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 h-11" onClick={() => switchMode('login')}>
@@ -196,12 +260,49 @@ export default function Login() {
               </div>
             )}
 
+            {/* MFA VERIFICATION */}
+            {mode === 'mfa' && (
+              <div className="space-y-6">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-semibold text-slate-900">Verificação 2FA</h3>
+                  <p className="text-slate-500 text-sm">Insira o código do seu aplicativo autenticador.</p>
+                </div>
+                <form onSubmit={handleMfaVerify} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-slate-600 text-sm">Código de verificação</Label>
+                    <div className="relative">
+                      <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="000000"
+                        value={mfaCode}
+                        onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        maxLength={6}
+                        required
+                        className={`${inputClass} pl-10 text-center text-lg tracking-widest`}
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3"><p className="text-red-600 text-sm">{error}</p></div>}
+                  <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium" disabled={loading || mfaCode.length !== 6}>
+                    {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                    Verificar
+                  </Button>
+                  <button type="button" className="w-full text-center text-sm text-slate-500 hover:text-slate-700 transition-colors" onClick={() => { setMode('login'); setMfaCode(''); setMfaFactorId(null); setError(null); }}>
+                    <ArrowLeft className="w-3.5 h-3.5 inline mr-1" />Voltar ao login
+                  </button>
+                </form>
+              </div>
+            )}
+
             {/* RESET PASSWORD */}
             {mode === 'reset' && (
               <div className="space-y-6">
                 <div className="space-y-1">
                   <h3 className="text-xl font-semibold text-slate-900">Recuperar senha</h3>
-                  <p className="text-slate-500 text-sm">Insira o seu email para receber o link de recuperacao.</p>
+                  <p className="text-slate-500 text-sm">Insira o seu email para receber o link de recuperação.</p>
                 </div>
                 <form onSubmit={handleResetPassword} className="space-y-4">
                   <div className="space-y-2">
@@ -214,7 +315,7 @@ export default function Login() {
                   {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3"><p className="text-red-600 text-sm">{error}</p></div>}
                   <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium" disabled={loading}>
                     {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                    Enviar link de recuperacao
+                    Enviar link de recuperação
                   </Button>
                   <button type="button" className="w-full text-center text-sm text-slate-500 hover:text-slate-700 transition-colors" onClick={() => switchMode('login')}>
                     <ArrowLeft className="w-3.5 h-3.5 inline mr-1" />Voltar ao login
@@ -249,7 +350,7 @@ export default function Login() {
                     <Label className="text-slate-600 text-sm">Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <Input type={showPassword ? 'text' : 'password'} placeholder="Min. 6 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className={`${inputClass} pl-10 pr-10`} />
+                      <Input type={showPassword ? 'text' : 'password'} placeholder="Min. 8 caracteres, maiúscula e número" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className={`${inputClass} pl-10 pr-10`} />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>

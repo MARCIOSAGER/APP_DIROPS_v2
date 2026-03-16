@@ -1,5 +1,6 @@
 import { CalculoTarifa } from '@/entities/CalculoTarifa';
 import { RecursoVoo } from '@/entities/RecursoVoo';
+import { ServicoVoo } from '@/entities/ServicoVoo';
 
 // Função para normalizar códigos de registo de aeronaves
 const normalizeRegistro = (registro) => {
@@ -652,6 +653,33 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
       }
     }
     
+    // ==================== CUPPSS / CUSS (AUTOMÁTICO — DEP: locais + transbordo) ====================
+    const paxCuppss = (vooDep.passageiros_local || 0) + (vooDep.passageiros_transito_transbordo || 0);
+    if (paxCuppss > 0 && !isVooIsentoPassageiros) {
+      const tarifaCuppssConfig = outrasTarifas.find(t =>
+        t.tipo === 'cuppss' &&
+        t.categoria_aeroporto === categoria_aeroporto &&
+        t.status === 'ativa' &&
+        (t.tipo_operacao === 'ambos' || t.tipo_operacao === tipoOperacaoEnum)
+      );
+      if (tarifaCuppssConfig) {
+        const valorCuppss = tarifaCuppssConfig.valor * paxCuppss;
+        results.outras_tarifas_usd += valorCuppss;
+        results.detalhes_calculo.outras.push({
+          tipo: 'cuppss',
+          tipoVoo: tipoOperacao,
+          descricao: tarifaCuppssConfig.descricao || 'CUPPSS / CUSS',
+          tipo_operacao_tarifa: tarifaCuppssConfig.tipo_operacao,
+          tarifaPorPassageiro: tarifaCuppssConfig.valor,
+          passageiros: paxCuppss,
+          valor: valorCuppss,
+          formula: `${tarifaCuppssConfig.valor} USD/pax × ${paxCuppss} pax (locais + transbordo DEP)`,
+          observacao: 'CUPPSS e CUSS (Common Use Passenger Processing System) – por passageiro embarcado',
+          categoria_aeroporto: categoria_aeroporto
+        });
+      }
+    }
+
     // ==================== TARIFA DE RECURSOS (PCA, GPU, PBB, CHECK-IN, COMBUSTÍVEL) ====================
     try {
       // Buscar recurso_voo para este voo ligado
@@ -703,6 +731,26 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
             valor_usd: recurso.checkin_valor_usd
           });
         }
+
+        // Bombeiros
+        const bombeirosLabels = {
+          bombeiros_derrame_pequeno: 'Limpeza Derrame Pequena',
+          bombeiros_derrame_medio: 'Limpeza Derrame Média',
+          bombeiros_derrame_grande: 'Limpeza Derrame Grande',
+          bombeiros_resfriamento: 'Resfriamento Trem de Pouso',
+          bombeiros_reabastecimento: 'Reabastecimento com Pax',
+        };
+        for (const [key, label] of Object.entries(bombeirosLabels)) {
+          if (recurso[key] && Number(recurso[`${key}_valor_usd`]) > 0) {
+            const val = Number(recurso[`${key}_valor_usd`]);
+            totalRecursosUSD += val;
+            recursosDetalhes.push({
+              tipo: label,
+              quantidade: Number(recurso[`${key}_qtd`]) || 1,
+              valor_usd: val
+            });
+          }
+        }
       }
 
       // Combustível (campos na tabela voo DEP)
@@ -743,6 +791,44 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
       };
     }
 
+    // ==================== TARIFA DE SERVIÇOS AEROPORTUÁRIOS ====================
+    try {
+      const servicosVoo = await ServicoVoo.filter({ voo_ligado_id: vooLigado.id });
+      let totalServicosUSD = 0;
+      const servicosDetalhes = [];
+
+      if (servicosVoo && servicosVoo.length > 0) {
+        servicosVoo.forEach(sv => {
+          const val = Number(sv.valor_total_usd) || 0;
+          if (val > 0) {
+            totalServicosUSD += val;
+            servicosDetalhes.push({
+              tipo: sv.tipo_servico,
+              quantidade: Number(sv.quantidade) || 0,
+              unidade: sv.unidade || 'passageiro',
+              valor_unitario_usd: Number(sv.valor_unitario_usd) || 0,
+              valor_usd: val
+            });
+          }
+        });
+      }
+
+      results.tarifa_servicos_usd = parseFloat(totalServicosUSD.toFixed(2));
+      if (servicosDetalhes.length > 0) {
+        results.detalhes_calculo.servicos = {
+          itens: servicosDetalhes,
+          total_usd: results.tarifa_servicos_usd,
+          observacao: 'Serviços aeroportuários adicionais'
+        };
+        console.log(`🏢 Tarifa de Serviços: ${servicosDetalhes.length} serviço(s) = $${results.tarifa_servicos_usd}`);
+      } else {
+        results.detalhes_calculo.servicos = { itens: [], total_usd: 0 };
+      }
+    } catch (err) {
+      console.warn('⚠️ Erro ao buscar serviços do voo:', err);
+      results.detalhes_calculo.servicos = { itens: [], total_usd: 0 };
+    }
+
     // ==================== ARREDONDAR E CALCULAR AOA PARA TODAS AS TARIFAS ====================
     results.tarifa_pouso_usd = parseFloat((results.tarifa_pouso_usd || 0).toFixed(2));
     results.tarifa_pouso = parseFloat((results.tarifa_pouso_usd * taxaCambio).toFixed(2));
@@ -762,6 +848,9 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
     results.tarifa_recursos_usd = parseFloat((results.tarifa_recursos_usd || 0).toFixed(2));
     results.tarifa_recursos = parseFloat((results.tarifa_recursos_usd * taxaCambio).toFixed(2));
 
+    results.tarifa_servicos_usd = parseFloat((results.tarifa_servicos_usd || 0).toFixed(2));
+    results.tarifa_servicos = parseFloat((results.tarifa_servicos_usd * taxaCambio).toFixed(2));
+
     // ==================== CALCULAR SUBTOTAL (SEM IMPOSTOS) ====================
     const subtotalUSD = parseFloat((
       (results.tarifa_pouso_usd || 0) +
@@ -769,7 +858,8 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
       (results.tarifa_passageiros_usd || 0) +
       (results.tarifa_carga_usd || 0) +
       (results.outras_tarifas_usd || 0) +
-      (results.tarifa_recursos_usd || 0)
+      (results.tarifa_recursos_usd || 0) +
+      (results.tarifa_servicos_usd || 0)
     ).toFixed(2));
 
     const subtotalAOA = parseFloat((
@@ -778,7 +868,8 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
       (results.tarifa_passageiros || 0) +
       (results.tarifa_carga || 0) +
       (results.outras_tarifas || 0) +
-      (results.tarifa_recursos || 0)
+      (results.tarifa_recursos || 0) +
+      (results.tarifa_servicos || 0)
     ).toFixed(2));
 
     // ==================== CALCULAR IMPOSTOS ====================

@@ -8,7 +8,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import Select from '@/components/ui/select';
-import { Loader2, FileText, DollarSign, Search, AlertTriangle } from 'lucide-react';
+import { Loader2, FileText, DollarSign, Search, AlertTriangle, Mail } from 'lucide-react';
+import SendEmailModal from '@/components/shared/SendEmailModal';
+import { toast } from '@/components/ui/use-toast';
 import { CalculoTarifa } from '@/entities/CalculoTarifa';
 import { Voo } from '@/entities/Voo';
 import { VooLigado } from '@/entities/VooLigado';
@@ -17,6 +19,9 @@ import { Proforma } from '@/entities/Proforma';
 export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhias, aeroportos }) {
   const [isSearching, setIsSearching] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [pdfForEmail, setPdfForEmail] = useState(null);
   const [calculos, setCalculos] = useState([]);
   const [voos, setVoos] = useState([]);
   const [voosLigados, setVoosLigados] = useState([]);
@@ -212,6 +217,69 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
     }
   };
 
+  const handlePrepareEmail = async () => {
+    if (selectedCalcItems.length === 0) return;
+    setIsGenerating(true);
+
+    try {
+      const { gerarRelatorioFaturacaoPdf } = await import('@/functions/gerarProformaPdfSimples');
+      const companhia = companhias.find(c => c.id === filtro.companhia_id);
+      const aeroporto = filtro.aeroporto_id
+        ? aeroportos.find(a => a.id === filtro.aeroporto_id)
+        : null;
+
+      const result = await gerarRelatorioFaturacaoPdf({
+        calculos: selectedCalcItems,
+        companhia,
+        aeroporto,
+        periodo_inicio: filtro.data_inicio,
+        periodo_fim: filtro.data_fim,
+        voos,
+        voosLigados,
+        proformasMap,
+        returnBase64: true,
+      });
+
+      setPdfForEmail(result);
+      setIsEmailModalOpen(true);
+    } catch (error) {
+      console.error('Erro ao gerar PDF para email:', error);
+      toast({ title: 'Erro', description: 'Erro ao gerar PDF para envio.', variant: 'destructive' });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSendEmail = async ({ to, subject, message }) => {
+    if (!pdfForEmail) return;
+    setIsSendingEmail(true);
+
+    try {
+      const { sendEmailDirect } = await import('@/functions/sendEmailDirect');
+      await sendEmailDirect({
+        to,
+        subject,
+        body: message || `Segue em anexo o Extrato de Facturação.`,
+        html: `<p>${message || 'Segue em anexo o Extrato de Facturação.'}</p>`,
+        attachments: [{
+          filename: pdfForEmail.filename,
+          content: pdfForEmail.base64,
+          contentType: 'application/pdf',
+        }],
+      });
+
+      toast({ title: 'Email enviado', description: `Extrato enviado para ${to}` });
+      setIsEmailModalOpen(false);
+      setPdfForEmail(null);
+      onClose();
+    } catch (error) {
+      console.error('Erro ao enviar email:', error);
+      toast({ title: 'Erro', description: `Erro ao enviar email: ${error.message}`, variant: 'destructive' });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   const companhiaOptions = companhias.map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }));
   const aeroportoOptions = [
     { value: '', label: 'Todos os Aeroportos' },
@@ -224,7 +292,7 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-emerald-600" />
-            Extrato de Faturação
+            Extrato de Facturação
           </DialogTitle>
         </DialogHeader>
 
@@ -390,9 +458,21 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
                 </div>
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="flex-wrap gap-2">
                 <Button type="button" variant="outline" onClick={onClose} disabled={isGenerating}>
                   Cancelar
+                </Button>
+                <Button
+                  onClick={handlePrepareEmail}
+                  disabled={isGenerating}
+                  variant="outline"
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                >
+                  {isGenerating ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Preparando...</>
+                  ) : (
+                    <><Mail className="mr-2 h-4 w-4" /> Enviar por Email</>
+                  )}
                 </Button>
                 <Button
                   onClick={handleGerarRelatorio}
@@ -410,6 +490,15 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
           )}
         </div>
       </DialogContent>
+
+      <SendEmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => { setIsEmailModalOpen(false); setPdfForEmail(null); }}
+        onSend={handleSendEmail}
+        isSending={isSendingEmail}
+        defaultSubject={`Extrato de Facturação — ${companhias.find(c => c.id === filtro.companhia_id)?.nome || ''}`}
+        defaultBody="Segue em anexo o Extrato de Facturação."
+      />
     </Dialog>
   );
 }

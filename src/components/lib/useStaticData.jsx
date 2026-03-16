@@ -12,7 +12,7 @@ export function useAeroportos() {
     queryKey: ['aeroportos'],
     queryFn: () => Aeroporto.list(),
     staleTime: STATIC_CACHE_TIME,
-    cacheTime: STATIC_CACHE_TIME * 2,
+    gcTime: STATIC_CACHE_TIME * 2,
     refetchOnWindowFocus: false,
   });
 }
@@ -22,7 +22,7 @@ export function useCompanhias() {
     queryKey: ['companhias'],
     queryFn: () => CompanhiaAerea.list(),
     staleTime: STATIC_CACHE_TIME,
-    cacheTime: STATIC_CACHE_TIME * 2,
+    gcTime: STATIC_CACHE_TIME * 2,
     refetchOnWindowFocus: false,
   });
 }
@@ -32,7 +32,7 @@ export function useAeronaves() {
     queryKey: ['aeronaves'],
     queryFn: () => RegistoAeronave.list(),
     staleTime: STATIC_CACHE_TIME,
-    cacheTime: STATIC_CACHE_TIME * 2,
+    gcTime: STATIC_CACHE_TIME * 2,
     refetchOnWindowFocus: false,
   });
 }
@@ -42,7 +42,7 @@ export function useModelosAeronave() {
     queryKey: ['modelos'],
     queryFn: () => ModeloAeronave.list(),
     staleTime: STATIC_CACHE_TIME,
-    cacheTime: STATIC_CACHE_TIME * 2,
+    gcTime: STATIC_CACHE_TIME * 2,
     refetchOnWindowFocus: false,
   });
 }
@@ -53,21 +53,21 @@ export async function useTarifas() {
       queryKey: ['tarifas-pouso'],
       queryFn: () => import('@/entities/TarifaPouso').then(({ TarifaPouso }) => TarifaPouso.list()),
       staleTime: STATIC_CACHE_TIME,
-      cacheTime: STATIC_CACHE_TIME * 2,
+      gcTime: STATIC_CACHE_TIME * 2,
       refetchOnWindowFocus: false,
     }),
     useQuery({
       queryKey: ['tarifas-permanencia'],
       queryFn: () => import('@/entities/TarifaPermanencia').then(({ TarifaPermanencia }) => TarifaPermanencia.list()),
       staleTime: STATIC_CACHE_TIME,
-      cacheTime: STATIC_CACHE_TIME * 2,
+      gcTime: STATIC_CACHE_TIME * 2,
       refetchOnWindowFocus: false,
     }),
     useQuery({
       queryKey: ['outras-tarifas'],
       queryFn: () => import('@/entities/OutraTarifa').then(({ OutraTarifa }) => OutraTarifa.list()),
       staleTime: STATIC_CACHE_TIME,
-      cacheTime: STATIC_CACHE_TIME * 2,
+      gcTime: STATIC_CACHE_TIME * 2,
       refetchOnWindowFocus: false,
     }),
   ]);

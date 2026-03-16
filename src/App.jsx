@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import './App.css'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -11,6 +11,12 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { CompanyViewProvider } from '@/lib/CompanyViewContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Login from '@/pages/Login';
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+  </div>
+);
 
 // Error Boundary to prevent white screen crashes
 class ErrorBoundary extends React.Component {
@@ -79,25 +85,27 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
-      {Object.entries(Pages).map(([path, Page]) => (
-        <Route
-          key={path}
-          path={`/${path}`}
-          element={
-            <LayoutWrapper currentPageName={path}>
-              <Page />
-            </LayoutWrapper>
-          }
-        />
-      ))}
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={
+          <LayoutWrapper currentPageName={mainPageKey}>
+            <MainPage />
+          </LayoutWrapper>
+        } />
+        {Object.entries(Pages).map(([path, Page]) => (
+          <Route
+            key={path}
+            path={`/${path}`}
+            element={
+              <LayoutWrapper currentPageName={path}>
+                <Page />
+              </LayoutWrapper>
+            }
+          />
+        ))}
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 
@@ -109,14 +117,16 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <NavigationTracker />
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            {PublicPages.map(page => {
-              const Page = Pages[page];
-              return Page ? <Route key={page} path={`/${page}`} element={<Page />} /> : null;
-            })}
-            <Route path="*" element={<ErrorBoundary><AuthenticatedApp /></ErrorBoundary>} />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              {PublicPages.map(page => {
+                const Page = Pages[page];
+                return Page ? <Route key={page} path={`/${page}`} element={<Page />} /> : null;
+              })}
+              <Route path="*" element={<ErrorBoundary><AuthenticatedApp /></ErrorBoundary>} />
+            </Routes>
+          </Suspense>
         </Router>
         <Toaster />
       </QueryClientProvider>

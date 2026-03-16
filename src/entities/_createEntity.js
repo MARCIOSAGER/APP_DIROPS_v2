@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 
-const PAGE_SIZE = 1000;
+const PAGE_SIZE = 500;
 
 async function fetchAll(query) {
   let allData = [];
@@ -71,10 +71,19 @@ function applyFilters(query, filters) {
   return query;
 }
 
+let _cachedEmail = null;
+let _cachedEmailTime = 0;
+const EMAIL_CACHE_TTL = 60000; // 1 minute
+
 async function getCurrentUserEmail() {
+  if (_cachedEmail && Date.now() - _cachedEmailTime < EMAIL_CACHE_TTL) {
+    return _cachedEmail;
+  }
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    return user?.email || null;
+    _cachedEmail = user?.email || null;
+    _cachedEmailTime = Date.now();
+    return _cachedEmail;
   } catch {
     return null;
   }

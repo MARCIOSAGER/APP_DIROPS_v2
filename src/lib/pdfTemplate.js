@@ -67,7 +67,7 @@ export const PDF = {
 
   // Decorative header bar
   headerBar: {
-    height: 2,
+    height: 0.5,
   },
 };
 

@@ -8,6 +8,7 @@ import Select from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileText, Upload, Sparkles, Loader2, Download, Shield, Lock, Eye, EyeOff } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { sanitizeFilename } from '@/lib/sanitize';
 import { analisarDocumento } from '@/functions/analisarDocumento';
 
 const CATEGORIA_OPTIONS = [
@@ -131,7 +132,7 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
       }
 
       if (!formData.titulo) {
-        handleChange('titulo', file.name.replace(/\.[^/.]+$/, ''));
+        handleChange('titulo', sanitizeFilename(file.name).replace(/\.[^/.]+$/, ''));
       }
     } catch (error) {
       console.error('Erro ao fazer upload:', error);

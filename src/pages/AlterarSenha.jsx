@@ -56,12 +56,18 @@ export default function AlterarSenha() {
       setError('A senha deve ter pelo menos 8 caracteres.');
       return false;
     }
-
+    if (!/[A-Z]/.test(novaSenha)) {
+      setError('A senha deve conter pelo menos uma letra maiúscula.');
+      return false;
+    }
+    if (!/[0-9]/.test(novaSenha)) {
+      setError('A senha deve conter pelo menos um número.');
+      return false;
+    }
     if (novaSenha !== confirmarSenha) {
       setError('As senhas não coincidem.');
       return false;
     }
-
     return true;
   };
 
@@ -105,6 +111,8 @@ export default function AlterarSenha() {
 
   const passwordRequirements = [
     { label: 'Mínimo 8 caracteres', met: novaSenha.length >= 8 },
+    { label: 'Pelo menos uma letra maiúscula', met: /[A-Z]/.test(novaSenha) },
+    { label: 'Pelo menos um número', met: /[0-9]/.test(novaSenha) },
     { label: 'Senhas coincidem', met: novaSenha && novaSenha === confirmarSenha }
   ];
 

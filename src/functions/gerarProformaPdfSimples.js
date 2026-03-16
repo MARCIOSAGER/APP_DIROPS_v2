@@ -175,13 +175,13 @@ export default async function gerarProformaPdfSimples({ proforma_id }) {
 
     const tarifaRows = [];
     if (calculo.tarifa_pouso_usd > 0) {
-      tarifaRows.push(['Tarifa de Pouso', formatUSD(calculo.tarifa_pouso_usd), formatCurrency(calculo.tarifa_pouso)]);
+      tarifaRows.push(['Taxa de Aterragem', formatUSD(calculo.tarifa_pouso_usd), formatCurrency(calculo.tarifa_pouso)]);
     }
     if (calculo.tarifa_permanencia_usd > 0) {
       tarifaRows.push(['Tarifa de Estacionamento', formatUSD(calculo.tarifa_permanencia_usd), formatCurrency(calculo.tarifa_permanencia)]);
     }
     if (calculo.tarifa_passageiros_usd > 0) {
-      tarifaRows.push(['Tarifa de Passageiros', formatUSD(calculo.tarifa_passageiros_usd), formatCurrency(calculo.tarifa_passageiros)]);
+      tarifaRows.push(['Taxa de Embarque', formatUSD(calculo.tarifa_passageiros_usd), formatCurrency(calculo.tarifa_passageiros)]);
     }
     if (calculo.tarifa_carga_usd > 0) {
       tarifaRows.push(['Tarifa de Carga', formatUSD(calculo.tarifa_carga_usd), formatCurrency(calculo.tarifa_carga)]);
@@ -198,6 +198,19 @@ export default async function gerarProformaPdfSimples({ proforma_id }) {
         });
       } else {
         tarifaRows.push(['Recursos de Solo', formatUSD(calculo.tarifa_recursos_usd), formatCurrency(calculo.tarifa_recursos)]);
+      }
+    }
+
+    // Serviços aeroportuários
+    if (calculo.tarifa_servicos_usd > 0) {
+      const servicos = detalhes.servicos;
+      if (servicos?.itens?.length > 0) {
+        servicos.itens.forEach(s => {
+          const label = `${s.tipo} (${s.quantidade} ${s.unidade})`;
+          tarifaRows.push([label, formatUSD(s.valor_usd), formatCurrency(s.valor_usd * (calculo.taxa_cambio_usd_aoa || proforma.taxa_cambio || 850))]);
+        });
+      } else {
+        tarifaRows.push(['Serviços Aeroportuários', formatUSD(calculo.tarifa_servicos_usd), formatCurrency(calculo.tarifa_servicos)]);
       }
     }
 
@@ -330,13 +343,14 @@ async function generateConsolidatedLandscape({
   // Fixed columns
   const fixedCols = [
     { label: 'Registo', width: 15 },
-    { label: 'MTOW(t)', width: 13, align: 'right' },
+    { label: 'PMD(t)', width: 13, align: 'right' },
+    { label: 'Tipo', width: 10 },
     { label: 'Voo (A/D)', width: 18 },
-    { label: 'ARR', width: 22 },
-    { label: 'DEP', width: 22 },
-    { label: 'Pouso', width: 15, align: 'right' },
+    { label: 'Aterragem', width: 22 },
+    { label: 'Descolagem', width: 22 },
+    { label: 'TX Aterr.', width: 15, align: 'right' },
     { label: 'Estac.', width: 14, align: 'right' },
-    { label: 'Passag.', width: 15, align: 'right' },
+    { label: 'Taxa Emb.', width: 15, align: 'right' },
   ];
 
   // Dynamic "outras tarifas" columns (1 col each — just value)
@@ -404,6 +418,12 @@ async function generateConsolidatedLandscape({
     const mtowKg = det.pouso?.mtowKg || c?.mtow_kg || arrVoo?.peso_maximo_descolagem || 0;
     const mtowT = mtowKg > 0 ? (mtowKg / 1000) : 0;
 
+    // Tipo de voo (DOM/INT)
+    const tipoRaw = det.passageiros?.tipoVoo || arrVoo?.tipo_voo || depVoo?.tipo_voo || '';
+    const tipo = tipoRaw.toLowerCase().includes('dom') ? 'DOM'
+      : tipoRaw.toLowerCase().includes('int') ? 'INT'
+      : tipoRaw ? tipoRaw.substring(0, 3).toUpperCase() : '';
+
     // Voo ARR/DEP consolidated
     const arrNum = arrVoo?.numero_voo || '';
     const depNum = depVoo?.numero_voo || '';
@@ -468,6 +488,7 @@ async function generateConsolidatedLandscape({
     const row = [
       registo,
       mtowT > 0 ? fmtNum(mtowT, 1) : '',
+      tipo,
       vooStr,
       arrStr,
       depStr,
@@ -503,7 +524,7 @@ async function generateConsolidatedLandscape({
 
   // ─── Totals row ───
   const totalRow = [
-    'TOTAIS', '', '', '', '',
+    'TOTAIS', '', '', '', '', '',
     fmtNum(totals.pouso),
     fmtNum(totals.estac),
     fmtNum(totals.passag),
@@ -595,7 +616,7 @@ function getOutraTarifaShortLabel(key) {
   return labels[key] || key.slice(0, 7);
 }
 
-// ─── Extrato de Faturação (client-side PDF, no DB record) ─────────
+// ─── Extrato de Facturação (client-side PDF, no DB record) ─────────
 
 export async function gerarRelatorioFaturacaoPdf({
   calculos, companhia, aeroporto, periodo_inicio, periodo_fim,
@@ -689,11 +710,18 @@ export async function gerarRelatorioFaturacaoPdf({
     fmtDate,
   });
 
-  // Direct download (no upload, no DB record)
   const doc = result._doc;
   const compNome = companhia?.codigo_icao || 'COMP';
   const dataStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  const filename = `Extrato_Faturacao_${compNome}_${periodo_inicio || ''}_${periodo_fim || ''}_${dataStr}.pdf`;
+  const filename = `Extrato_Facturacao_${compNome}_${periodo_inicio || ''}_${periodo_fim || ''}_${dataStr}.pdf`;
+
+  // If returnBase64 requested, return the PDF as base64 + filename (for email)
+  if (arguments[0]?.returnBase64) {
+    const base64 = doc.output('datauristring').split(',')[1];
+    return { base64, filename };
+  }
+
+  // Direct download (no upload, no DB record)
   doc.save(filename);
 }
 
@@ -716,7 +744,7 @@ async function generateExtratoLandscape({
   };
 
   const headerOpts = {
-    title: 'Extrato de Faturação',
+    title: 'Extrato de Facturação',
     subtitle: proforma.numero_proforma
       ? `N.º ${proforma.numero_proforma}`
       : '',
@@ -778,11 +806,12 @@ async function generateExtratoLandscape({
 
   const fixedCols = [
     { label: 'Registo', width: 16 },
-    { label: 'PMB(t)', width: 13, align: 'right' },
-    { label: 'Voo (A/D)', width: 24 },
+    { label: 'PMD(t)', width: 13, align: 'right' },
+    { label: 'Tipo', width: 10 },
+    { label: 'Voo (A/D)', width: 22 },
     { label: 'Aterragem', width: 22 },
     { label: 'Descolagem', width: 22 },
-    { label: 'Pouso', width: 14, align: 'right' },
+    { label: 'TX Aterr.', width: 14, align: 'right' },
     { label: 'Estac.(h)', width: 11, align: 'right' },
     { label: 'Estac.($)', width: 13, align: 'right' },
     { label: 'Emb.(pax)', width: 11, align: 'right' },
@@ -844,6 +873,11 @@ async function generateExtratoLandscape({
     const mtowKg = det.pouso?.mtowKg || c?.mtow_kg || arrVoo?.peso_maximo_descolagem || 0;
     const mtowT = mtowKg > 0 ? (mtowKg / 1000) : 0;
 
+    const tipoRaw = det.passageiros?.tipoVoo || arrVoo?.tipo_voo || depVoo?.tipo_voo || '';
+    const tipo = tipoRaw.toLowerCase().includes('dom') ? 'DOM'
+      : tipoRaw.toLowerCase().includes('int') ? 'INT'
+      : tipoRaw ? tipoRaw.substring(0, 3).toUpperCase() : '';
+
     const arrNum = arrVoo?.numero_voo || '';
     const depNum = depVoo?.numero_voo || '';
     const vooStr = arrNum && depNum && arrNum !== depNum
@@ -895,6 +929,7 @@ async function generateExtratoLandscape({
     const row = [
       registo,
       mtowT > 0 ? fmtNum(mtowT, 1) : '',
+      tipo,
       vooStr,
       arrStr,
       depStr,
@@ -929,7 +964,7 @@ async function generateExtratoLandscape({
   });
 
   // Totals row
-  const emptyBeforeTariffs = 5;
+  const emptyBeforeTariffs = 6;
   const totalRow = Array(emptyBeforeTariffs).fill('');
   totalRow[0] = 'TOTAIS';
   totalRow.push(fmtNum(totals.pouso));

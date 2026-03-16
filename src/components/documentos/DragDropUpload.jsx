@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import Select from '@/components/ui/select';
 import { Pasta } from '@/entities/Pasta';
+import { sanitizeFilename, validateFileType } from '@/lib/sanitize';
 
 export default function DragDropUpload({ onUploadComplete, pastaAtual, documentosExistentes = [] }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -90,6 +91,13 @@ export default function DragDropUpload({ onUploadComplete, pastaAtual, documento
           continue;
         }
 
+        // Validar magic bytes do ficheiro
+        const fileCheck = await validateFileType(file);
+        if (!fileCheck.valid) {
+          console.warn(`Ficheiro rejeitado (${fileCheck.reason}): ${file.name}`);
+          continue;
+        }
+
         // Validar tamanho (máx 50MB)
         if (file.size > 50 * 1024 * 1024) {
           console.warn(`Arquivo muito grande: ${file.name}`);
@@ -104,7 +112,7 @@ export default function DragDropUpload({ onUploadComplete, pastaAtual, documento
         }
 
         const docData = {
-          titulo: file.name.replace(/\.[^/.]+$/, ''),
+          titulo: sanitizeFilename(file.name).replace(/\.[^/.]+$/, ''),
           arquivo_url: result.file_url,
           descricao: 'Carregado via drag-and-drop',
           pasta_id: selectedPasta
@@ -143,6 +151,13 @@ export default function DragDropUpload({ onUploadComplete, pastaAtual, documento
           continue;
         }
 
+        // Validar magic bytes do ficheiro
+        const fileCheck = await validateFileType(file);
+        if (!fileCheck.valid) {
+          console.warn(`Ficheiro rejeitado (${fileCheck.reason}): ${file.name}`);
+          continue;
+        }
+
         // Validar tamanho (máx 50MB)
         if (file.size > 50 * 1024 * 1024) {
           console.warn(`Arquivo muito grande: ${file.name}`);
@@ -157,7 +172,7 @@ export default function DragDropUpload({ onUploadComplete, pastaAtual, documento
         }
 
         const docData = {
-          titulo: file.name.replace(/\.[^/.]+$/, ''),
+          titulo: sanitizeFilename(file.name).replace(/\.[^/.]+$/, ''),
           arquivo_url: result.file_url,
           descricao: 'Carregado via drag-and-drop',
           pasta_id: selectedPasta

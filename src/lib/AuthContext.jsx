@@ -119,10 +119,34 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
+    // Re-check session when tab becomes visible again (after hibernate/suspend)
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && !cancelled) {
+        console.log('[AUTH] Tab became visible, refreshing session...');
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (cancelled) return;
+          if (error || !session) {
+            console.warn('[AUTH] Session lost after hibernate, redirecting to login');
+            setUser(null);
+            setIsAuthenticated(false);
+            window.location.href = '/ValidacaoAcesso';
+            return;
+          }
+          // Session valid — refresh token proactively
+          await supabase.auth.refreshSession();
+        } catch (err) {
+          console.warn('[AUTH] Visibility check error:', err);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       cancelled = true;
       clearTimeout(timeout);
       subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [loadUserProfile]);
 

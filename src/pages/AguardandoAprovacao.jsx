@@ -36,10 +36,12 @@ export default function AguardandoAprovacao() {
         if (currentUser.perfis && Array.isArray(currentUser.perfis) && currentUser.perfis.length > 0 && currentUser.status === 'ativo') {
           console.log('Utilizador já aprovado, redirecionando para Home');
           window.location.href = createPageUrl('Home');
+          return;
         }
         // Não redirecionar de volta para SolicitacaoPerfil para evitar loop
         // O utilizador pode ter acabado de submeter e o dado ainda não propagou
       }
+      setIsLoading(false);
     } catch (error) {
       console.error(`Erro ao carregar dados (tentativa ${tentativa}):`, error);
       

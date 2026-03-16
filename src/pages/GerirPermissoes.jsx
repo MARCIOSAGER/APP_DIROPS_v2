@@ -186,6 +186,13 @@ const PAGINAS_DISPONIVEIS = [
     icon: '🧾'
   },
   {
+    key: 'ServicosAeroportuarios',
+    label: 'Serviços Aeroportuários',
+    descricao: 'Serviços de voo, cursos, licenças e bombeiros',
+    category: 'Operações',
+    icon: '🏢'
+  },
+  {
     key: 'HistoricoAcessoDocumentos',
     label: 'Histórico de Acesso a Documentos',
     descricao: 'Registo de acessos a documentos',
