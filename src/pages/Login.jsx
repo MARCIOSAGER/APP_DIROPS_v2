@@ -458,9 +458,14 @@ export default function Login() {
             )}
           </div>
 
-          <p className="text-center text-slate-400 text-xs mt-6">
-            DIROPS v2.0
-          </p>
+          <div className="text-center mt-6 space-y-1">
+            <p className="text-slate-400 text-xs">DIROPS v2.0</p>
+            <p className="text-slate-400 text-xs">
+              <a href="/PoliticaPrivacidade" className="hover:text-slate-600 underline">Política de Privacidade</a>
+              {' · '}
+              <a href="/TermosServico" className="hover:text-slate-600 underline">Termos de Serviço</a>
+            </p>
+          </div>
         </div>
       </div>
     </div>

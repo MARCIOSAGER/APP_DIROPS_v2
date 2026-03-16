@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { CompanyViewProvider } from '@/lib/CompanyViewContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Login from '@/pages/Login';
+import CookieConsent from '@/components/shared/CookieConsent';
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-screen">
@@ -57,7 +58,7 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
-const PublicPages = ['CredenciamentoPublico', 'FormularioReclamacaoPublico', 'portalservicos', 'AlterarSenha'];
+const PublicPages = ['CredenciamentoPublico', 'FormularioReclamacaoPublico', 'portalservicos', 'AlterarSenha', 'PoliticaPrivacidade', 'TermosServico'];
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, authError, isAuthenticated, navigateToLogin } = useAuth();
@@ -129,6 +130,7 @@ function App() {
           </Suspense>
         </Router>
         <Toaster />
+        <CookieConsent />
       </QueryClientProvider>
       </CompanyViewProvider>
     </AuthProvider>

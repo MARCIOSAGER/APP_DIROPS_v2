@@ -28,6 +28,7 @@ const LogAuditoriaDetalhes = lazy(() => import('./pages/LogAuditoriaDetalhes'));
 const Manutencao = lazy(() => import('./pages/Manutencao'));
 const Operacoes = lazy(() => import('./pages/Operacoes'));
 const PaginaInicial = lazy(() => import('./pages/PaginaInicial'));
+const PoliticaPrivacidade = lazy(() => import('./pages/PoliticaPrivacidade'));
 const PortalEmpresa = lazy(() => import('./pages/PortalEmpresa'));
 const PowerBi = lazy(() => import('./pages/PowerBi'));
 const Proforma = lazy(() => import('./pages/Proforma'));
@@ -36,6 +37,7 @@ const Safety = lazy(() => import('./pages/Safety'));
 const ServicosAeroportuarios = lazy(() => import('./pages/ServicosAeroportuarios'));
 const SolicitacaoPerfil = lazy(() => import('./pages/SolicitacaoPerfil'));
 const Suporte = lazy(() => import('./pages/Suporte'));
+const TermosServico = lazy(() => import('./pages/TermosServico'));
 const TesteFlightradar24 = lazy(() => import('./pages/TesteFlightradar24'));
 const ValidacaoAcesso = lazy(() => import('./pages/ValidacaoAcesso'));
 const portalservicos = lazy(() => import('./pages/portalservicos'));
@@ -75,8 +77,10 @@ export const PAGES = {
     "Reclamacoes": Reclamacoes,
     "Safety": Safety,
     "ServicosAeroportuarios": ServicosAeroportuarios,
+    "PoliticaPrivacidade": PoliticaPrivacidade,
     "SolicitacaoPerfil": SolicitacaoPerfil,
     "Suporte": Suporte,
+    "TermosServico": TermosServico,
     "TesteFlightradar24": TesteFlightradar24,
     "ValidacaoAcesso": ValidacaoAcesso,
     "portalservicos": portalservicos,

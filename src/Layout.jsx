@@ -102,7 +102,9 @@ const unprotectedPages = [
   'SolicitarAcessoInterno',
   'AguardandoAprovacao',
   'SolicitacaoPerfil',
-  'ConfigurarPerfil'
+  'ConfigurarPerfil',
+  'PoliticaPrivacidade',
+  'TermosServico'
 ];
 
 const hasAccessToPage = (user, pageKey, permissions) => {
