@@ -870,19 +870,19 @@ Por favor tente novamente ou contacte o suporte técnico.`;
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Atualizar
+              {t('kpis.atualizar')}
             </Button>
             <Button variant="outline" onClick={handleExportExcel}>
               <Download className="w-4 h-4 mr-2" />
-              Exportar Excel
+              {t('kpis.exportarExcel')}
             </Button>
             <Button variant="outline" onClick={handleExportPDF}>
               <FileText className="w-4 h-4 mr-2" />
-              Exportar PDF
+              {t('kpis.exportarPDF')}
             </Button>
             <Button variant="outline" onClick={() => setEmailModalOpen(true)} disabled={selectedMedicoes.length === 0}>
               <Mail className="w-4 h-4 mr-2" />
-              Enviar Email {selectedMedicoes.length > 0 && `(${selectedMedicoes.length})`}
+              {t('kpis.enviarEmail')} {selectedMedicoes.length > 0 && `(${selectedMedicoes.length})`}
             </Button>
             <Button
               variant="destructive"
@@ -890,24 +890,24 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               disabled={selectedMedicoes.length === 0}>
 
               <Trash2 className="w-4 h-4 mr-2" />
-              Excluir {selectedMedicoes.length > 0 && `(${selectedMedicoes.length})`}
+              {t('kpis.excluir')} {selectedMedicoes.length > 0 && `(${selectedMedicoes.length})`}
             </Button>
             <Button variant="outline" onClick={() => setIsAnalisadorOpen(true)} className="border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950">
               <Brain className="w-4 h-4 mr-2" />
-              Análise IA
+              {t('kpis.analiseIA')}
             </Button>
             <Button variant="outline" onClick={() => setIsAssistenteOpen(true)} className="border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950">
               <FileEdit className="w-4 h-4 mr-2" />
-              Gerar Relatório
+              {t('kpis.gerarRelatorio')}
             </Button>
             <Button variant="outline" onClick={() => setIsConfigOpen(true)}>
               <Settings className="w-4 h-4 mr-2" />
-              Configurar KPIs
+              {t('kpis.configurarKPIs')}
             </Button>
             {(currentUser?.role === 'admin' || (currentUser?.perfis && currentUser.perfis.includes('administrador'))) && (
               <Button variant="outline" onClick={() => setIsDiagnosticoOpen(true)} className="border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950">
                 <AlertTriangle className="w-4 h-4 mr-2" />
-                Verificar Duplicações
+                {t('kpis.verificarDuplicacoes')}
               </Button>
             )}
           </div>
@@ -919,7 +919,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Tipos de KPI</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('kpis.tiposKPI')}</p>
                   <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{tiposKPI.length}</p>
                 </div>
                 <Settings className="h-8 w-8 text-blue-600 dark:text-blue-400" />
@@ -931,7 +931,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Medições Total</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('kpis.medicoesTotal')}</p>
                   <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{medicoesKPI.length}</p> {/* Changed medicoes to medicoesKPI */}
                 </div>
                 <ClipboardCheck className="h-8 w-8 text-green-600 dark:text-green-400" />
@@ -943,7 +943,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Hoje</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('kpis.hoje')}</p>
                   <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                     {medicoesKPI.filter((m) => m.data_medicao === new Date().toISOString().split('T')[0]).length} {/* Changed medicoes to medicoesKPI */}
                   </p>
@@ -957,7 +957,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Dentro da Meta</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('kpis.dentroMeta')}</p>
                   <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                     {medicoesKPI.filter((m) => m.dentro_da_meta).length} {/* Changed medicoes to medicoesKPI */}
                   </p>
@@ -972,15 +972,15 @@ Por favor tente novamente ou contacte o suporte técnico.`;
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="medicoes" className="flex items-center gap-2">
               <ClipboardCheck className="w-4 h-4" />
-              Medições de KPI
+              {t('kpis.tabMedicoes')}
             </TabsTrigger>
             <TabsTrigger value="nova" className="bg-blue-500 text-slate-50 px-3 py-1.5 text-sm font-medium rounded-sm justify-center whitespace-nowrap ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm flex items-center gap-2">
               <Plus className="w-4 h-4" />
-              Nova Medição
+              {t('kpis.tabNova')}
             </TabsTrigger>
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
-              Dashboard
+              {t('kpis.tabDashboard')}
             </TabsTrigger>
             {/* Power BI só disponível para SGA (superadmin sem empresa_id) */}
             {!currentUser?.empresa_id && (
@@ -998,12 +998,12 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-                    Filtros de Pesquisa
+                    {t('kpis.filtrosPesquisa')}
                   </CardTitle>
                   {hasActiveFilters &&
                   <Button variant="outline" size="sm" onClick={clearFilters} className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950">
                       <X className="w-4 h-4 mr-1" />
-                      Limpar Filtros
+                      {t('kpis.limparFiltros')}
                     </Button>
                   }
                 </div>
@@ -1011,7 +1011,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="aeroporto">Aeroporto</Label>
+                    <Label htmlFor="aeroporto">{t('kpis.aeroporto')}</Label>
                     <Select
                       id="aeroporto"
                       options={aeroportoOptions}
@@ -1020,7 +1020,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
 
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="tipoKpi">Tipo de KPI</Label>
+                    <Label htmlFor="tipoKpi">{t('kpis.tipoKPI')}</Label>
                     <Select
                       id="tipoKpi"
                       options={tipoKpiOptions}
@@ -1029,7 +1029,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
 
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dataInicio">Data Início</Label>
+                    <Label htmlFor="dataInicio">{t('kpis.dataInicio')}</Label>
                     <Input
                       id="dataInicio"
                       type="date"
@@ -1038,7 +1038,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
 
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dataFim">Data Fim</Label>
+                    <Label htmlFor="dataFim">{t('kpis.dataFim')}</Label>
                     <Input
                       id="dataFim"
                       type="date"
@@ -1047,12 +1047,12 @@ Por favor tente novamente ou contacte o suporte técnico.`;
 
                   </div>
                   <div className="lg:col-span-4">
-                    <Label htmlFor="numeroVoo">Número do Voo</Label>
+                    <Label htmlFor="numeroVoo">{t('kpis.numeroVoo')}</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
                       <Input
                         id="numeroVoo"
-                        placeholder="Buscar por número do voo"
+                        placeholder={t('kpis.buscarVoo')}
                         value={filtros.numeroVoo}
                         onChange={(e) => handleFilterChange('numeroVoo', e.target.value)}
                         className="pl-10" />
@@ -1066,22 +1066,22 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             {/* Lista de Medições */}
             <Card className="border-0 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg">Medições Registadas ({filteredAndSortedMedicoes.length})</CardTitle>
+                <CardTitle className="text-lg">{t('kpis.medicoesRegistadas')} ({filteredAndSortedMedicoes.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ?
                 <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-slate-500 dark:text-slate-400 mt-2">A carregar medições...</p>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2">{t('kpis.carregando')}</p>
                   </div> :
                 filteredAndSortedMedicoes.length === 0 ?
                 <div className="text-center py-8 text-slate-500">
                     <ClipboardCheck className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                     <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                      Nenhuma medição encontrada
+                      {t('kpis.nenhumaMedicao')}
                     </h3>
                     <p className="text-slate-500 dark:text-slate-400">
-                      Não há medições de KPI que correspondam aos filtros selecionados.
+                      {t('kpis.nenhumaMedicaoDesc')}
                     </p>
                   </div> :
 
@@ -1124,7 +1124,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                           currentSortDirection={sortDirection}
                           onSort={handleSort} />
 
-                          <TableHead>Responsável</TableHead>
+                          <TableHead>{t('kpis.responsavel')}</TableHead>
                           <SortableTableHeader
                           field="resultado"
                           label="Resultado"
@@ -1132,7 +1132,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                           currentSortDirection={sortDirection}
                           onSort={handleSort} />
 
-                          <TableHead>Atualizado Por</TableHead>
+                          <TableHead>{t('kpis.atualizadoPor')}</TableHead>
 
                           <SortableTableHeader
                           field="meta"
@@ -1141,7 +1141,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                           currentSortDirection={sortDirection}
                           onSort={handleSort} />
 
-                          <TableHead>Ações</TableHead>
+                          <TableHead>{t('kpis.acoes')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1190,13 +1190,13 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                               </TableCell>
                               <TableCell>
                                 <Badge className={medicao.dentro_da_meta ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                                  {medicao.dentro_da_meta ? 'Dentro' : 'Fora'}
+                                  {medicao.dentro_da_meta ? t('kpis.dentro') : t('kpis.fora')}
                                 </Badge>
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
                                   <Button variant="ghost" size="sm" onClick={() => {setEditingMedicao(medicao);setSelectedTipoKPI(tipoKPI);setIsFormOpen(true);}}>
-                                    Ver/Editar
+                                    {t('kpis.verEditar')}
                                   </Button>
                                   <Button
                                   variant="ghost"
@@ -1222,7 +1222,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
           <TabsContent value="nova" className="space-y-6">
             <Card className="border-0 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg">Selecione o Tipo de KPI</CardTitle>
+                <CardTitle className="text-lg">{t('kpis.selecionarTipoKPI')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1257,13 +1257,13 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                 <div className="text-center py-8 text-slate-500">
                     <Settings className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                     <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                      Nenhum tipo de KPI configurado
+                      {t('kpis.nenhumTipoKPI')}
                     </h3>
                     <p className="text-slate-500 dark:text-slate-400 mb-4">
-                      Configure os tipos de KPI primeiro na secção de configurações.
+                      {t('kpis.configurarPrimeiro')}
                     </p>
                     <Button onClick={() => setIsConfigOpen(true)}>
-                      Configurar KPIs
+                      {t('kpis.configurarKPIs')}
                     </Button>
                   </div>
                 }
@@ -1286,7 +1286,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  Relatório Power BI - KPIs Operacionais
+                  {t('kpis.powerBITitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>

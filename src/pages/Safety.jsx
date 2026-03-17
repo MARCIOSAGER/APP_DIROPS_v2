@@ -73,7 +73,7 @@ export default function Safety() {
       
     } catch (error) {
       console.error("Erro ao carregar dados de safety:", error);
-      setAlertInfo({ isOpen: true, title: 'Erro de Carregamento', message: 'Não foi possível carregar os dados de ocorrências.' });
+      setAlertInfo({ isOpen: true, title: t('safety.erro_carregamento'), message: t('safety.erro_carregamento_msg') });
     } finally {
       setIsLoading(false);
     }
@@ -94,10 +94,10 @@ export default function Safety() {
       setIsFormOpen(false);
       setEditingOcorrencia(null);
       loadData();
-      setSuccessInfo({ isOpen: true, title: 'Ocorrência Salva', message: 'A ocorrência de safety foi salva com sucesso.' });
+      setSuccessInfo({ isOpen: true, title: t('safety.ocorrencia_salva'), message: t('safety.ocorrencia_salva_msg') });
     } catch (error) {
       console.error("Erro ao salvar ocorrência:", error);
-      setAlertInfo({ isOpen: true, title: 'Erro ao Salvar', message: 'Não foi possível salvar a ocorrência.' });
+      setAlertInfo({ isOpen: true, title: t('safety.erro_salvar'), message: t('safety.erro_salvar_msg') });
     }
   };
 
@@ -105,10 +105,10 @@ export default function Safety() {
     setAlertInfo({
       isOpen: true,
       type: 'error',
-      title: 'Excluir Ocorrência',
-      message: `⚠️ ATENÇÃO: Esta ação é irreversível!\n\nTem certeza que deseja excluir permanentemente a ocorrência de ${ocorrencia.tipo_ocorrencia.replace(/_/g, ' ')} do dia ${new Date(ocorrencia.data_ocorrencia).toLocaleDateString('pt-AO')}?\n\nEsta ação removerá completamente o registo do sistema.`,
+      title: t('safety.excluir_ocorrencia'),
+      message: `⚠️ ${t('safety.atencao_irreversivel')}\n\n${t('safety.confirmar_excluir')} ${ocorrencia.tipo_ocorrencia.replace(/_/g, ' ')} ${t('safety.do_dia')} ${new Date(ocorrencia.data_ocorrencia).toLocaleDateString('pt-AO')}?\n\n${t('safety.remover_registro')}`,
       showCancel: true,
-      confirmText: 'Excluir Permanentemente',
+      confirmText: t('safety.excluir_permanentemente'),
       onConfirm: async () => {
         setAlertInfo(prev => ({ ...prev, isOpen: false }));
         
@@ -117,8 +117,8 @@ export default function Safety() {
           loadData();
           setSuccessInfo({
             isOpen: true,
-            title: 'Ocorrência Excluída!',
-            message: 'A ocorrência foi excluída permanentemente do sistema.'
+            title: t('safety.ocorrencia_excluida'),
+            message: t('safety.ocorrencia_excluida_msg')
           });
         } catch (error) {
           console.error('Erro ao excluir ocorrência:', error);
@@ -128,15 +128,15 @@ export default function Safety() {
             setAlertInfo({
               isOpen: true,
               type: 'info',
-              title: 'Ocorrência Já Removida',
-              message: 'A ocorrência já foi removida do sistema. A lista foi atualizada.'
+              title: t('safety.ocorrencia_ja_removida'),
+              message: t('safety.ocorrencia_ja_removida_msg')
             });
           } else {
             setAlertInfo({
               isOpen: true,
               type: 'error',
-              title: 'Erro ao Excluir',
-              message: 'Não foi possível excluir a ocorrência. Tente atualizar a página e verificar se a ocorrência ainda existe.'
+              title: t('safety.erro_excluir'),
+              message: t('safety.erro_excluir_msg')
             });
           }
         }
@@ -187,24 +187,24 @@ export default function Safety() {
       ? ocorrencias.filter(o => selectedOcorrencias.includes(o.id))
       : ocorrenciasFiltradas
     ).map(o => ({
-      'Tipo': o.tipo_ocorrencia.replace(/_/g, ' '),
-      'Aeroporto': aeroportos.find(a => a.codigo_icao === o.aeroporto)?.nome || o.aeroporto,
-      'Data': new Date(o.data_ocorrencia).toLocaleDateString('pt-AO'),
-      'Hora': o.hora_ocorrencia,
-      'Local': o.local_especifico,
-      'Gravidade': o.gravidade,
-      'Status': o.status.replace(/_/g, ' '),
-      'Descrição': o.descricao,
-      'Ações Tomadas': o.acoes_tomadas
+      [t('safety.col_tipo')]: o.tipo_ocorrencia.replace(/_/g, ' '),
+      [t('safety.col_aeroporto')]: aeroportos.find(a => a.codigo_icao === o.aeroporto)?.nome || o.aeroporto,
+      [t('safety.col_data')]: new Date(o.data_ocorrencia).toLocaleDateString('pt-AO'),
+      [t('safety.col_hora')]: o.hora_ocorrencia,
+      [t('safety.col_local')]: o.local_especifico,
+      [t('safety.col_gravidade')]: o.gravidade,
+      [t('safety.col_status')]: o.status.replace(/_/g, ' '),
+      [t('safety.col_descricao')]: o.descricao,
+      [t('safety.acoes_tomadas')]: o.acoes_tomadas
     }));
 
     if (dataToExport.length === 0) {
-      setAlertInfo({ isOpen: true, type: 'warning', title: 'Nenhum Dado', message: 'Não há ocorrências para exportar.' });
+      setAlertInfo({ isOpen: true, type: 'warning', title: t('safety.nenhum_dado'), message: t('safety.nenhum_dado_exportar') });
       return;
     }
-    
+
     downloadAsCSV(dataToExport, `ocorrencias_safety_${new Date().toISOString().split('T')[0]}`);
-    setSuccessInfo({ isOpen: true, title: 'CSV Gerado', message: 'O arquivo CSV foi gerado e baixado com sucesso.' });
+    setSuccessInfo({ isOpen: true, title: t('safety.csv_gerado'), message: t('safety.csv_gerado_msg') });
   };
 
   const handleExportPDF = async () => {
@@ -213,17 +213,17 @@ export default function Safety() {
       : ocorrenciasFiltradas;
       
     if (dataToExport.length === 0) {
-      setAlertInfo({ isOpen: true, type: 'warning', title: 'Nenhum Dado', message: 'Não há ocorrências para exportar.' });
+      setAlertInfo({ isOpen: true, type: 'warning', title: t('safety.nenhum_dado'), message: t('safety.nenhum_dado_exportar') });
       return;
     }
-      
+
     try {
       const doc = await createPdfDoc();
       const today = new Date().toLocaleDateString('pt-AO');
 
       const headerOpts = {
-        title: 'Relatório de Ocorrências de Safety',
-        subtitle: `Total de ocorrências: ${dataToExport.length}`,
+        title: t('safety.relatorio_titulo'),
+        subtitle: `${t('safety.total_ocorrencias_label')}: ${dataToExport.length}`,
         date: today,
       };
 
@@ -231,12 +231,12 @@ export default function Safety() {
 
       const columns = [
         { label: '#', width: 10, align: 'center' },
-        { label: 'Tipo', width: 30 },
-        { label: 'Aeroporto', width: 30 },
-        { label: 'Data', width: 22, align: 'center' },
-        { label: 'Gravidade', width: 22, align: 'center' },
-        { label: 'Status', width: 25 },
-        { label: 'Descrição', width: 41 },
+        { label: t('safety.col_tipo'), width: 30 },
+        { label: t('safety.col_aeroporto'), width: 30 },
+        { label: t('safety.col_data'), width: 22, align: 'center' },
+        { label: t('safety.col_gravidade'), width: 22, align: 'center' },
+        { label: t('safety.col_status'), width: 25 },
+        { label: t('safety.col_descricao'), width: 41 },
       ];
 
       const rows = dataToExport.map((occ, index) => [
@@ -254,10 +254,10 @@ export default function Safety() {
       addFooter(doc);
 
       doc.save(`relatorio_safety_${new Date().toISOString().split('T')[0]}.pdf`);
-      setSuccessInfo({ isOpen: true, title: 'PDF Gerado', message: 'O relatório em PDF foi gerado com sucesso.' });
+      setSuccessInfo({ isOpen: true, title: t('safety.pdf_gerado'), message: t('safety.pdf_gerado_msg') });
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
-      setAlertInfo({ isOpen: true, title: 'Erro de PDF', message: 'Não foi possível gerar o relatório em PDF.' });
+      setAlertInfo({ isOpen: true, title: t('safety.erro_pdf'), message: t('safety.erro_pdf_msg') });
     }
   };
   
@@ -267,12 +267,12 @@ export default function Safety() {
       : ocorrenciasFiltradas;
       
     if (dataToSend.length === 0) {
-      setAlertInfo({ isOpen: true, type: 'warning', title: 'Nenhum Dado', message: 'Selecione ocorrências para enviar.' });
+      setAlertInfo({ isOpen: true, type: 'warning', title: t('safety.nenhum_dado'), message: t('safety.selecione_ocorrencias') });
       return false;
     }
 
-    let body = `<h1>${subject}</h1><p>Segue abaixo o resumo de ${dataToSend.length} ocorrência(s) de safety:</p>`;
-    body += '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;"><thead><tr><th>Tipo</th><th>Aeroporto</th><th>Data</th><th>Gravidade</th><th>Status</th></tr></thead><tbody>';
+    let body = `<h1>${subject}</h1><p>${t('safety.resumo_email')} ${dataToSend.length} ${t('safety.ocorrencias_de_safety')}:</p>`;
+    body += `<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;"><thead><tr><th>${t('safety.col_tipo')}</th><th>${t('safety.col_aeroporto')}</th><th>${t('safety.col_data')}</th><th>${t('safety.col_gravidade')}</th><th>${t('safety.col_status')}</th></tr></thead><tbody>`;
     dataToSend.forEach(occ => {
       body += `<tr>
         <td>${occ.tipo_ocorrencia.replace(/_/g, ' ')}</td>
@@ -286,11 +286,11 @@ export default function Safety() {
 
     try {
       await sendEmailDirect({ to: recipient, subject, body });
-      setSuccessInfo({ isOpen: true, title: 'Email Enviado', message: `Relatório enviado com sucesso para ${recipient}.` });
+      setSuccessInfo({ isOpen: true, title: t('safety.email_enviado'), message: `${t('safety.email_enviado_msg')} ${recipient}.` });
       return true;
     } catch (error) {
       console.error("Erro ao enviar email:", error);
-      setAlertInfo({ isOpen: true, title: 'Erro de Email', message: 'Não foi possível enviar o email.' });
+      setAlertInfo({ isOpen: true, title: t('safety.erro_email'), message: t('safety.erro_email_msg') });
       return false;
     }
   };
@@ -311,24 +311,24 @@ export default function Safety() {
   const aeroportoOptions = useMemo(() => {
     const permitidos = getAeroportosPermitidos(user, aeroportos, user?.empresa_id);
     return [
-      { value: 'todos', label: 'Todos os Aeroportos' },
+      { value: 'todos', label: t('safety.todos_aeroportos') },
       ...permitidos.map(a => ({ value: a.codigo_icao, label: a.nome }))
     ];
-  }, [aeroportos, user]);
+  }, [aeroportos, user, t]);
 
   const gravidadeOptions = [
-    { value: 'todos', label: 'Todas as Gravidades' },
-    { value: 'critica', label: 'Crítica' },
-    { value: 'alta', label: 'Alta' },
-    { value: 'media', label: 'Média' },
-    { value: 'baixa', label: 'Baixa' }
+    { value: 'todos', label: t('safety.todas_gravidades') },
+    { value: 'critica', label: t('safety.critica') },
+    { value: 'alta', label: t('safety.alta') },
+    { value: 'media', label: t('safety.media') },
+    { value: 'baixa', label: t('safety.baixa') }
   ];
 
   const statusOptions = [
-    { value: 'todos', label: 'Todos os Status' },
-    { value: 'aberta', label: 'Aberta' },
-    { value: 'em_investigacao', label: 'Em Investigação' },
-    { value: 'fechada', label: 'Fechada' }
+    { value: 'todos', label: t('safety.todos_status') },
+    { value: 'aberta', label: t('safety.aberta') },
+    { value: 'em_investigacao', label: t('safety.em_investigacao') },
+    { value: 'fechada', label: t('safety.fechada') }
   ];
 
   return (
@@ -362,7 +362,7 @@ export default function Safety() {
             )}
             <Button onClick={() => { setEditingOcorrencia(null); setIsFormOpen(true); }} className="bg-red-500 hover:bg-red-600 text-white">
               <Plus className="w-4 h-4 mr-2" />
-              Nova Ocorrência
+              {t('safety.nova_ocorrencia')}
             </Button>
           </div>
         </div>
@@ -371,51 +371,51 @@ export default function Safety() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Total de Ocorrências</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('safety.total_ocorrencias')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{totalOcorrencias}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ocorrências filtradas</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('safety.ocorrencias_filtradas')}</p>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Ocorrências Abertas</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('safety.ocorrencias_abertas')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">{ocorrenciasAbertas}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Requerem atenção</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('safety.requerem_atencao')}</p>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Críticas</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('safety.criticas')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{ocorrenciasCriticas}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Nível crítico</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('safety.nivel_critico')}</p>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Este Mês</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('safety.este_mes')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">{ocorrenciasEsteMes}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Novas ocorrências</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('safety.novas_ocorrencias')}</p>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Taxa de Resolução</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('safety.taxa_resolucao')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{taxaResolucao}%</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ocorrências resolvidas</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('safety.ocorrencias_resolvidas')}</p>
             </CardContent>
           </Card>
         </div>
@@ -425,46 +425,46 @@ export default function Safety() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-              Filtros de Pesquisa
+              {t('safety.filtros_pesquisa')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="aeroporto" className="text-sm font-medium text-slate-700 dark:text-slate-300">Aeroporto</Label>
+                <Label htmlFor="aeroporto" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('safety.aeroporto')}</Label>
                 <Select
                   id="aeroporto"
                   options={aeroportoOptions}
                   value={filtros.aeroporto}
                   onValueChange={(v) => setFiltros({...filtros, aeroporto: v})}
-                  placeholder="Todos os Aeroportos"
+                  placeholder={t('safety.todos_aeroportos')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gravidade" className="text-sm font-medium text-slate-700 dark:text-slate-300">Gravidade</Label>
+                <Label htmlFor="gravidade" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('safety.gravidade')}</Label>
                 <Select
                   id="gravidade"
                   options={gravidadeOptions}
                   value={filtros.gravidade}
                   onValueChange={(v) => setFiltros({...filtros, gravidade: v})}
-                  placeholder="Todas"
+                  placeholder={t('safety.todas_gravidades')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status" className="text-sm font-medium text-slate-700 dark:text-slate-300">Status</Label>
+                <Label htmlFor="status" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('label.status')}</Label>
                 <Select
                   id="status"
                   options={statusOptions}
                   value={filtros.status}
                   onValueChange={(v) => setFiltros({...filtros, status: v})}
-                  placeholder="Todos"
+                  placeholder={t('safety.todos_status')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="data-inicio" className="text-sm font-medium text-slate-700 dark:text-slate-300">Data Início</Label>
+                <Label htmlFor="data-inicio" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('safety.data_inicio')}</Label>
                 <Input
                   id="data-inicio"
                   type="date"
@@ -474,7 +474,7 @@ export default function Safety() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="data-fim" className="text-sm font-medium text-slate-700 dark:text-slate-300">Data Fim</Label>
+                <Label htmlFor="data-fim" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('safety.data_fim')}</Label>
                 <Input
                   id="data-fim"
                   type="date"
@@ -513,8 +513,8 @@ export default function Safety() {
         isOpen={isEmailModalOpen}
         onClose={() => setIsEmailModalOpen(false)}
         onSend={handleSendEmail}
-        defaultSubject={`Relatório de Ocorrências de Safety - ${new Date().toLocaleDateString('pt-AO')}`}
-        title="Enviar Relatório de Safety"
+        defaultSubject={`${t('safety.relatorio_default_subject')} - ${new Date().toLocaleDateString('pt-AO')}`}
+        title={t('safety.enviar_relatorio')}
       />
 
       <AlertModal

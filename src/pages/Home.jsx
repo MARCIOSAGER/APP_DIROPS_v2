@@ -57,7 +57,7 @@ const formatCurrency = (value) =>
 new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(value || 0);
 
 export default function DashboardInterno() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [voos, setVoos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -79,18 +79,18 @@ export default function DashboardInterno() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      setLoadingStatus('Carregando utilizador...');
+      setLoadingStatus(t('common.loading'));
       const user = await User.me();
       const userWithProfiles = ensureUserProfilesExist(user);
       setCurrentUser(userWithProfiles);
 
       if (hasUserProfile(userWithProfiles, 'gestor_empresa')) {
-        setLoadingStatus('Redirecionando...');
+        setLoadingStatus(t('layout.redirecting'));
         window.location.href = createPageUrl('Credenciamento');
         return;
       }
 
-      setLoadingStatus('Carregando aeroportos...');
+      setLoadingStatus(t('common.loading'));
       let aeroportosData = [];
       try {
         const empresaIdFiltro = effectiveEmpresaId || userWithProfiles.empresa_id;
@@ -104,7 +104,7 @@ export default function DashboardInterno() {
 
       setAeroportos(aeroportosFiltrados);
 
-      setLoadingStatus('Carregando dados para gráficos...');
+      setLoadingStatus(t('common.loading'));
       const [voosDataResult, ocorrenciasDataResult, inspecoesDataResult, calculosTarifaResult, ordensServicoResult] = await Promise.allSettled([
       Voo.list('-data_operacao', 500),
       OcorrenciaSafety.list('-data_ocorrencia', 50),
@@ -145,11 +145,11 @@ export default function DashboardInterno() {
       const calculosFiltrados = calculosTarifaData.filter(c => vooIdsFiltrados.has(c.voo_id));
       setCalculosTarifa(calculosFiltrados);
 
-      setLoadingStatus('Concluído!');
+      setLoadingStatus(t('general.success'));
     } catch (error) {
       console.error("❌ Erro ao carregar dados específicos:", error);
-      setLoadingStatus('Dados carregados parcialmente');
-      setError(error.message || 'Erro ao carregar dados para gráficos.');
+      setLoadingStatus(t('common.loading'));
+      setError(error.message || t('common.error'));
     } finally {
       setIsLoading(false);
     }
@@ -172,7 +172,7 @@ export default function DashboardInterno() {
       setPreviousPeriodStats(prevResponse.data);
     } catch (error) {
       console.error('❌ Erro ao carregar estatísticas:', error);
-      setError(error.message || 'Erro ao carregar estatísticas do dashboard.');
+      setError(error.message || t('common.error'));
       setDashboardStats(null);
       setPreviousPeriodStats(null);
     } finally {
@@ -185,7 +185,7 @@ export default function DashboardInterno() {
     setError(null);
 
     try {
-      setLoadingStatus('Verificando utilizador...');
+      setLoadingStatus(t('common.loading'));
       // loadData já carrega o user internamente, não precisa carregar duas vezes
       await loadData();
 
@@ -203,9 +203,9 @@ export default function DashboardInterno() {
           window.location.href = createPageUrl('Credenciamento');
           return;
         }
-        setError('Acesso negado. Você não tem permissão para visualizar este dashboard.');
+        setError(t('operacoes.acesso_negado'));
       } else {
-        setError(error.message || 'Ocorreu um erro desconhecido.');
+        setError(error.message || t('common.error'));
       }
     } finally {
       setIsLoading(false);
@@ -261,14 +261,15 @@ export default function DashboardInterno() {
   }, [voosLigados, voos, selectedAeroporto]);
 
   const aeroportoOptions = useMemo(() => [
-  { value: 'todos', label: 'Todos os Aeroportos' },
+  { value: 'todos', label: t('home.todos_aeroportos') },
   ...aeroportos.map((aeroporto) => ({ value: aeroporto.codigo_icao, label: aeroporto.nome }))],
-  [aeroportos]);
+  [aeroportos, t]);
 
-  const periodoOptions = [
-  { value: '7', label: '7 dias' },
-  { value: '30', label: '30 dias' },
-  { value: '90', label: '90 dias' }];
+  const periodoOptions = useMemo(() => [
+  { value: '7', label: `7 ${t('home.dias')}` },
+  { value: '30', label: `30 ${t('home.dias')}` },
+  { value: '90', label: `90 ${t('home.dias')}` }],
+  [t]);
 
   // Trend calculation: current period vs remainder of double-period (i.e. previous equivalent period)
   const calcTrend = useCallback((currentVal, doubleVal) => {
@@ -300,7 +301,7 @@ export default function DashboardInterno() {
         icon: Plane,
         iconColor: 'text-blue-600',
         iconBg: 'bg-blue-50 dark:bg-blue-950',
-        description: `Voo ${v.numero_voo || ''} ${v.tipo_movimento || ''} - ${v.aeroporto_operacao || ''}`,
+        description: `${t('home.voo')} ${v.numero_voo || ''} ${v.tipo_movimento || ''} - ${v.aeroporto_operacao || ''}`,
         date: v.created_date || v.data_operacao,
         link: createPageUrl('Operacoes'),
       });
@@ -313,7 +314,7 @@ export default function DashboardInterno() {
         icon: ClipboardCheck,
         iconColor: 'text-yellow-600',
         iconBg: 'bg-yellow-50 dark:bg-yellow-950',
-        description: `Inspeção ${i.tipo || ''} - ${i.status || 'Pendente'}`,
+        description: `${t('home.inspecao')} ${i.tipo || ''} - ${i.status || t('home.pendente')}`,
         date: i.created_date || i.data_inspecao,
         link: createPageUrl('Inspecoes'),
       });
@@ -326,7 +327,7 @@ export default function DashboardInterno() {
         icon: Wrench,
         iconColor: 'text-purple-600',
         iconBg: 'bg-purple-50 dark:bg-purple-950',
-        description: `OS${os.numero ? ` #${os.numero}` : ''} - ${os.titulo || os.descricao?.substring(0, 40) || 'Ordem de Serviço'}`,
+        description: `OS${os.numero ? ` #${os.numero}` : ''} - ${os.titulo || os.descricao?.substring(0, 40) || t('home.ordem_servico')}`,
         date: os.created_date,
         link: createPageUrl('Manutencao'),
       });
@@ -356,16 +357,16 @@ export default function DashboardInterno() {
           <Alert variant="destructive" className="mb-6">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Erro:</strong> {error}
+              <strong>{t('home.erro')}:</strong> {error}
             </AlertDescription>
           </Alert>
           <div className="flex gap-4">
             <Button onClick={checkUserAndLoadData} className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4" />
-              Tentar Novamente
+              {t('home.tentar_novamente')}
             </Button>
             <Button variant="outline" onClick={() => window.location.href = '/Home'}>
-              Tentar Novamente
+              {t('home.tentar_novamente')}
             </Button>
           </div>
         </div>
@@ -390,7 +391,7 @@ export default function DashboardInterno() {
               onClick={() => window.location.href = createPageUrl('Operacoes')}
             >
               <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Novo Voo
+              {t('home.novo_voo')}
             </Button>
             <Button
               size="sm"
@@ -399,7 +400,7 @@ export default function DashboardInterno() {
               onClick={() => window.location.href = createPageUrl('Inspecoes')}
             >
               <Search className="h-3.5 w-3.5 mr-1.5" />
-              Nova Inspeção
+              {t('home.nova_inspecao')}
             </Button>
             <Button
               size="sm"
@@ -408,7 +409,7 @@ export default function DashboardInterno() {
               onClick={() => window.location.href = createPageUrl('Manutencao')}
             >
               <Wrench className="h-3.5 w-3.5 mr-1.5" />
-              Nova OS
+              {t('home.nova_os')}
             </Button>
           </div>
         </div>
@@ -419,7 +420,7 @@ export default function DashboardInterno() {
             options={aeroportoOptions}
             value={selectedAeroporto}
             onValueChange={setSelectedAeroporto}
-            placeholder="Todos os Aeroportos" />
+            placeholder={t('home.todos_aeroportos')} />
 
 
           <Select
@@ -427,12 +428,12 @@ export default function DashboardInterno() {
             options={periodoOptions}
             value={selectedPeriodo}
             onValueChange={setSelectedPeriodo}
-            placeholder="Período" />
+            placeholder={t('home.periodo')} />
 
 
           <Button onClick={() => {checkUserAndLoadData();loadDashboardStats();}} variant="outline" disabled={isLoading || isLoadingStats}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading || isLoadingStats ? 'animate-spin' : ''}`} />
-            Atualizar
+            {t('home.atualizar')}
           </Button>
         </div>
 
@@ -472,10 +473,10 @@ export default function DashboardInterno() {
                         <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats?.totalVoos || 0}</span>
                         <TrendIndicator trend={trends.voos} />
                       </div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Total de Voos</p>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.total_voos')}</p>
                       {dashboardStats?.voosUnicosLigados > 0 &&
                   <p className="text-[9px] text-slate-400">
-                          {dashboardStats.voosUnicosLigados} ligados, {dashboardStats.voosSemLink} sem link
+                          {dashboardStats.voosUnicosLigados} {t('home.ligados')}, {dashboardStats.voosSemLink} {t('home.sem_link')}
                         </p>
                   }
                     </CardContent>
@@ -489,7 +490,7 @@ export default function DashboardInterno() {
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
                       <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.chegadasHoje || 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Chegadas Hoje</p>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.chegadas_hoje')}</p>
                     </CardContent>
                   </Card>
 
@@ -501,7 +502,7 @@ export default function DashboardInterno() {
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
                       <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.partidasHoje || 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Partidas Hoje</p>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.partidas_hoje')}</p>
                     </CardContent>
                   </Card>
 
@@ -516,7 +517,7 @@ export default function DashboardInterno() {
                         <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{(dashboardStats?.taxaPontualidade || 0).toFixed(1)}%</span>
                         <TrendIndicator trend={trends.pontualidade} />
                       </div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Pontualidade</p>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.pontualidade')}</p>
                     </CardContent>
                   </Card>
 
@@ -528,7 +529,7 @@ export default function DashboardInterno() {
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
                       <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.ocorrenciasAbertas || 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Ocorrências Abertas</p>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.ocorrencias_abertas')}</p>
                     </CardContent>
                   </Card>
 
@@ -540,7 +541,7 @@ export default function DashboardInterno() {
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
                       <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.inspecoesPendentes || 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Inspeções Pendentes</p>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.inspecoes_pendentes')}</p>
                     </CardContent>
                   </Card>
 
@@ -559,7 +560,7 @@ export default function DashboardInterno() {
                         </span>
                         <TrendIndicator trend={trends.passageiros} />
                       </div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Passageiros (Período)</p>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.passageiros_periodo')}</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -569,7 +570,7 @@ export default function DashboardInterno() {
                     <CardHeader className="pb-4">
                       <div className="flex items-center gap-2">
                         <LinkIcon className="w-5 h-5 text-green-600" />
-                        <CardTitle className="text-lg">Voos Ligados & Tarifas</CardTitle>
+                        <CardTitle className="text-lg">{t('home.voos_ligados_tarifas')}</CardTitle>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -578,7 +579,7 @@ export default function DashboardInterno() {
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Total de Voos Ligados</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('home.total_voos_ligados')}</p>
                                 <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats.voosLigados || 0}</p>
                               </div>
                               <div className="bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 p-2 rounded-lg">
@@ -592,7 +593,7 @@ export default function DashboardInterno() {
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Tempo Médio Permanência</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('home.tempo_medio_permanencia')}</p>
                                 <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{(dashboardStats.tempoMedioPermanencia || 0).toFixed(2)}h</p>
                               </div>
                               <div className="bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400 p-2 rounded-lg">
@@ -606,7 +607,7 @@ export default function DashboardInterno() {
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Total de Tarifas</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('home.total_tarifas')}</p>
                                 <p className="text-slate-900 dark:text-slate-100 text-lg font-bold">{formatCurrency(dashboardStats.totalTarifas || 0)}</p>
                               </div>
                               <div className="flex-shrink-0 bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 p-2 rounded-lg">
@@ -620,7 +621,7 @@ export default function DashboardInterno() {
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Voos Sem Cálculo</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('home.voos_sem_calculo')}</p>
                                 <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats.voosSemCalculo || 0}</p>
                               </div>
                               <div className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 p-2 rounded-lg">
@@ -634,7 +635,7 @@ export default function DashboardInterno() {
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Voos Isentos</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('home.voos_isentos')}</p>
                                 <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats.voosIsentos || 0}</p>
                               </div>
                               <div className="bg-yellow-50 dark:bg-yellow-950 text-yellow-600 dark:text-yellow-400 p-2 rounded-lg">
@@ -653,7 +654,7 @@ export default function DashboardInterno() {
                     <CardHeader className="pb-4">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-5 h-5 text-blue-600" />
-                        <CardTitle className="text-lg">Top 10 Aeroportos por Volume</CardTitle>
+                        <CardTitle className="text-lg">{t('home.top10_aeroportos')}</CardTitle>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -673,7 +674,7 @@ export default function DashboardInterno() {
 
                               <div className="space-y-1.5">
                                 <div className="bg-slate-50 dark:bg-slate-800 rounded p-1.5">
-                                  <p className="text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">Movimentos:</p>
+                                  <p className="text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">{t('home.movimentos')}:</p>
                                   <p className="text-base font-bold text-slate-900 dark:text-slate-100">{aeroporto.totalMovimentos || 0}</p>
                                   <div className="flex justify-between text-[10px] mt-0.5">
                                     <span className="text-green-600">ARR: {aeroporto.movimentosArr || aeroporto.arr || 0}</span>
@@ -682,7 +683,7 @@ export default function DashboardInterno() {
                                 </div>
 
                                 <div className="bg-blue-50 dark:bg-blue-950 rounded p-1.5">
-                                  <p className="text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">Passageiros:</p>
+                                  <p className="text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">{t('home.passageiros')}:</p>
                                   <p className="text-base font-bold text-blue-900 dark:text-blue-300">{(aeroporto.passageiros || 0).toLocaleString()}</p>
                                   <div className="flex justify-between text-[10px] mt-0.5">
                                     <span className="text-green-600">ARR: {(aeroporto.passageirosArr || 0).toLocaleString()}</span>
@@ -691,7 +692,7 @@ export default function DashboardInterno() {
                                 </div>
 
                                 <div className="bg-orange-50 dark:bg-orange-950 rounded p-1.5">
-                                  <p className="text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">Carga Total:</p>
+                                  <p className="text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">{t('home.carga_total')}:</p>
                                   <p className="text-base font-bold text-orange-900 dark:text-orange-300">{(aeroporto.carga || 0).toLocaleString()} kg</p>
                                   <div className="flex justify-between text-[10px] mt-0.5">
                                     <span className="text-green-600">ARR: {(aeroporto.cargaArr || 0).toLocaleString()} kg</span>
@@ -755,7 +756,7 @@ export default function DashboardInterno() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <Activity className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-                    <CardTitle className="text-lg">Actividade Recente</CardTitle>
+                    <CardTitle className="text-lg">{t('home.actividade_recente')}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -764,7 +765,7 @@ export default function DashboardInterno() {
                       const IconComponent = item.icon;
                       let timeAgo = '';
                       try {
-                        timeAgo = formatDistanceToNow(new Date(item.date), { addSuffix: true, locale: pt });
+                        timeAgo = formatDistanceToNow(new Date(item.date), { addSuffix: true, ...(language === 'pt' ? { locale: pt } : {}) });
                       } catch {
                         timeAgo = '';
                       }

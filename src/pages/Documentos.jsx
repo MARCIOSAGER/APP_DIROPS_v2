@@ -531,19 +531,19 @@ export default function Documentos() {
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Atualizar
+              {t('documentos.atualizar')}
             </Button>
             <Button variant="outline" onClick={handleExportCSV}>
               <FileDown className="w-4 h-4 mr-2" />
-              Exportar CSV
+              {t('documentos.exportarCSV')}
             </Button>
             <Button variant="outline" onClick={() => setIsUploadMassaOpen(true)} className="border-purple-300 text-purple-700 hover:bg-purple-50">
               <FolderUp className="w-4 h-4 mr-2" />
-              Upload em Massa
+              {t('documentos.uploadMassa')}
             </Button>
             <Button onClick={() => { setEditingDocumento(null); setIsFormOpen(true); }}>
               <Upload className="w-4 h-4 mr-2" />
-              Novo Documento
+              {t('documentos.novoDocumento')}
             </Button>
           </div>
         </div>
@@ -560,7 +560,7 @@ export default function Documentos() {
           <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
             <AlertDescription className="flex items-center justify-between">
               <span className="text-blue-900 dark:text-blue-100">
-                📄 Exibindo documentos do voo ligado específico
+                {t('documentos.docVooLigado')}
               </span>
               <Button
                 variant="outline"
@@ -571,7 +571,7 @@ export default function Documentos() {
                 }}
                 className="border-blue-300 text-blue-700 hover:bg-blue-100"
               >
-                Limpar Filtro
+                {t('documentos.limparFiltro')}
               </Button>
             </AlertDescription>
           </Alert>
@@ -591,18 +591,18 @@ export default function Documentos() {
             <div className="flex flex-wrap gap-4 items-center">
               <div className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
                 <FileText className="w-5 h-5" />
-                <span className="font-semibold">Filtros Globais:</span>
+                <span className="font-semibold">{t('documentos.filtrosGlobais')}</span>
               </div>
               
               <div className="flex-1 min-w-[200px] space-y-1">
-                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Aeroporto</label>
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">{t('documentos.aeroporto')}</label>
                 <select
                   value={aeroportoFilter}
                   onChange={(e) => setAeroportoFilter(e.target.value)}
                   className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="todos">Todos os Aeroportos</option>
-                  <option value="null">📋 Documentos Gerais</option>
+                  <option value="todos">{t('documentos.todosAeroportos')}</option>
+                  <option value="null">{t('documentos.documentosGerais')}</option>
                   {aeroportosComDocumentos.map(a => (
                     <option key={a.codigo_icao} value={a.codigo_icao}>
                       ✈️ {a.nome}
@@ -612,14 +612,14 @@ export default function Documentos() {
               </div>
 
               <div className="flex-1 min-w-[200px] space-y-1">
-                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Localização</label>
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">{t('documentos.localizacao')}</label>
                 <select
                   value={pastaFilter}
                   onChange={(e) => setPastaFilter(e.target.value)}
                   className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="todos">Todas as Localizações</option>
-                  <option value="null">📂 Sem Pasta</option>
+                  <option value="todos">{t('documentos.todasLocalizacoes')}</option>
+                  <option value="null">{t('documentos.semPasta')}</option>
                   {pastasComDocumentos.map(p => (
                     <option key={p.id} value={p.id}>
                       📁 {p.nome}
@@ -629,7 +629,7 @@ export default function Documentos() {
               </div>
               
               <div className="text-sm font-medium text-blue-900 dark:text-blue-100 px-4 py-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-blue-200 dark:border-blue-800">
-                <strong className="text-blue-600 dark:text-blue-400">{documentosVisiveis.length}</strong> documento(s) encontrado(s)
+                <strong className="text-blue-600 dark:text-blue-400">{documentosVisiveis.length}</strong> {t('documentos.documentosEncontrados')}
               </div>
             </div>
           </CardContent>
@@ -643,7 +643,7 @@ export default function Documentos() {
               className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
             >
               <Home className="w-4 h-4" />
-              Raiz
+              {t('documentos.raiz')}
             </button>
             {caminhoPasta.map((pasta, index) => (
               <React.Fragment key={pasta.id}>
@@ -672,7 +672,7 @@ export default function Documentos() {
               onClick={() => { setEditingPasta(null); setIsFormPastaOpen(true); }}
             >
               <FolderPlus className="w-4 h-4 mr-2" />
-              Nova Pasta
+              {t('documentos.novaPasta')}
             </Button>
           </div>
         </div>
@@ -681,7 +681,7 @@ export default function Documentos() {
         {pastasVisiveis.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              Pastas
+              {t('documentos.pastas')}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {pastasVisiveis.map(pasta => {
@@ -707,14 +707,14 @@ export default function Documentos() {
 
         {/* Título da seção de documentos */}
         {documentosVisiveis.length > 0 && (
-          <h2 className="text-lg font-semibold text-slate-900 mt-6">Documentos</h2>
+          <h2 className="text-lg font-semibold text-slate-900 mt-6">{t('documentos.documentos')}</h2>
         )}
 
         {/* Estatísticas */}
         <div className="hidden grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Total de Documentos</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('documentos.totalDocumentos')}</CardTitle>
               <BookOpen className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
@@ -723,7 +723,7 @@ export default function Documentos() {
           </Card>
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Documentos Ativos</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('documentos.documentosAtivos')}</CardTitle>
               <FileText className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
@@ -732,7 +732,7 @@ export default function Documentos() {
           </Card>
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Por Categoria</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('documentos.porCategoria')}</CardTitle>
               <BarChart2 className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
@@ -764,7 +764,7 @@ export default function Documentos() {
         {buscaInteligente && (
           <div className="mt-4">
             <Button variant="outline" onClick={() => setBuscaInteligente(null)}>
-              Limpar Busca Inteligente
+              {t('documentos.limparBuscaInteligente')}
             </Button>
           </div>
         )}
@@ -818,7 +818,7 @@ export default function Documentos() {
             setShowDeleteOptions(false);
           }}
           type="info"
-          title="Escolha uma Opção"
+          title={t('documentos.escolhaOpcao')}
           message={`O que deseja fazer com "${deleteModalInfo.nome}"?`}
           confirmText=""
           showCancel={false}
@@ -828,13 +828,13 @@ export default function Documentos() {
               onClick={() => handleDeleteOption('arquivar')}
               className="w-full bg-orange-600 hover:bg-orange-700"
             >
-              Arquivar Documento
+              {t('documentos.arquivarDocumento')}
             </Button>
             <Button
               onClick={() => handleDeleteOption('excluir')}
               className="w-full bg-red-600 hover:bg-red-700"
             >
-              Excluir Permanentemente
+              {t('documentos.excluirPermanentemente')}
             </Button>
           </div>
         </AlertModal>

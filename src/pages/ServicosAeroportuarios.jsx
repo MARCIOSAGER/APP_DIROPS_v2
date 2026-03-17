@@ -178,21 +178,21 @@ export default function ServicosAeroportuarios() {
         {/* Filters */}
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
-            <Label className="text-xs">Cliente</Label>
+            <Label className="text-xs">{t('servicos.cliente')}</Label>
             <Select
-              options={[{ value: '', label: 'Todos' }, ...clientes.map(e => ({ value: e.id, label: e.nome }))]}
+              options={[{ value: '', label: t('servicos.todos') }, ...clientes.map(e => ({ value: e.id, label: e.nome }))]}
               value={filtroEmpresa}
               onValueChange={setFiltroEmpresa}
-              placeholder="Todos"
+              placeholder={t('servicos.todos')}
               className="min-w-[280px] w-auto"
             />
           </div>
           <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white h-9" onClick={() => handleNovaCobranca(cat)}>
-            <Plus className="w-4 h-4 mr-1" /> Nova Cobrança
+            <Plus className="w-4 h-4 mr-1" /> {t('servicos.novaCobranca')}
           </Button>
           {total > 0 && (
             <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 ml-auto text-sm px-3 py-1">
-              Total: {total.toFixed(2)} USD
+              {t('servicos.total')}: {total.toFixed(2)} USD
             </Badge>
           )}
         </div>
@@ -201,20 +201,20 @@ export default function ServicosAeroportuarios() {
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-400 dark:text-slate-500" /></div>
         ) : items.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-8">Nenhuma cobrança registada neste período.</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-8">{t('servicos.semCobrancas')}</p>
         ) : (
           <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Serviço</TableHead>
-                  {cat === 'cursos_licencas' && <TableHead>Participante</TableHead>}
-                  <TableHead className="text-right">Qtd</TableHead>
-                  <TableHead className="text-right">Unit. (USD)</TableHead>
-                  <TableHead className="text-right">Total (USD)</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t('servicos.data')}</TableHead>
+                  <TableHead>{t('servicos.cliente')}</TableHead>
+                  <TableHead>{t('servicos.servico')}</TableHead>
+                  {cat === 'cursos_licencas' && <TableHead>{t('servicos.participante')}</TableHead>}
+                  <TableHead className="text-right">{t('servicos.qtd')}</TableHead>
+                  <TableHead className="text-right">{t('servicos.unitario')}</TableHead>
+                  <TableHead className="text-right">{t('servicos.totalUSD')}</TableHead>
+                  <TableHead>{t('servicos.statusCol')}</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -230,7 +230,7 @@ export default function ServicosAeroportuarios() {
                     <TableCell className="text-sm text-right font-semibold">{Number(c.valor_total_usd).toFixed(2)}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={c.status === 'facturado' ? 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300' : 'bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300'}>
-                        {c.status === 'facturado' ? 'Facturado' : 'Pendente'}
+                        {c.status === 'facturado' ? t('servicos.facturado') : t('servicos.pendente')}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -240,10 +240,10 @@ export default function ServicosAeroportuarios() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleEditCobranca(c, cat)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Editar
+                            <Pencil className="mr-2 h-4 w-4" /> {t('servicos.editar')}
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={() => setDeleteTarget(c)}>
-                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                            <Trash2 className="mr-2 h-4 w-4" /> {t('servicos.excluirCobranca')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -276,11 +276,11 @@ export default function ServicosAeroportuarios() {
           {/* Period filters (shared) */}
           <div className="flex flex-wrap items-end gap-3 mb-4">
             <div className="space-y-1">
-              <Label className="text-xs">Data Início</Label>
+              <Label className="text-xs">{t('servicos.dataInicio')}</Label>
               <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="w-40 h-9" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Data Fim</Label>
+              <Label className="text-xs">{t('servicos.dataFim')}</Label>
               <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="w-40 h-9" />
             </div>
           </div>
@@ -288,10 +288,10 @@ export default function ServicosAeroportuarios() {
           <Tabs defaultValue="servicos_aeroportuarios" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="servicos_aeroportuarios" className="flex items-center gap-1">
-                <Plane className="w-4 h-4" /> Serviços Aeroportuários
+                <Plane className="w-4 h-4" /> {t('servicos.tabServicos')}
               </TabsTrigger>
               <TabsTrigger value="cursos_licencas" className="flex items-center gap-1">
-                <GraduationCap className="w-4 h-4" /> Cursos e Licenças
+                <GraduationCap className="w-4 h-4" /> {t('servicos.tabCursos')}
               </TabsTrigger>
             </TabsList>
 
@@ -322,8 +322,8 @@ export default function ServicosAeroportuarios() {
           isOpen={!!deleteTarget}
           onClose={() => setDeleteTarget(null)}
           onConfirm={handleDeleteCobranca}
-          title="Excluir Cobrança"
-          message={`Tem certeza que deseja excluir esta cobrança de ${deleteTarget.descricao || deleteTarget.tipo}?`}
+          title={t('servicos.excluirCobrancaTitle')}
+          message={`${t('common.deleteConfirm')} (${deleteTarget.descricao || deleteTarget.tipo})`}
         />
       )}
     </div>

@@ -564,11 +564,11 @@ export default function Reclamacoes() {
           <TabsList className="grid w-full grid-cols-2 lg:grid-cols-2 mb-6">
             <TabsTrigger value="lista" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              Lista de Reclamações
+              {t('reclamacoes.tabLista')}
             </TabsTrigger>
             <TabsTrigger value="configuracoes" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
-              Configurações
+              {t('reclamacoes.tabConfiguracoes')}
             </TabsTrigger>
           </TabsList>
 
@@ -578,10 +578,10 @@ export default function Reclamacoes() {
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={loadData} disabled={isLoading}>
                     <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                    Atualizar
+                    {t('reclamacoes.atualizar')}
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={async () => {
                       if (selectedReclamacoes.length === 0) {
                         setAlertInfo({ isOpen: true, type: 'warning', title: 'Seleção Vazia', message: 'Selecione pelo menos uma reclamação para classificar.' });
@@ -616,7 +616,7 @@ export default function Reclamacoes() {
                     className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Classificar IA {selectedReclamacoes.length > 0 && `(${selectedReclamacoes.length})`}
+                    {t('reclamacoes.classificarIA')} {selectedReclamacoes.length > 0 && `(${selectedReclamacoes.length})`}
                   </Button>
                   <Button
                     variant="outline"
@@ -624,7 +624,7 @@ export default function Reclamacoes() {
                     disabled={selectedReclamacoes.length === 0 && filteredReclamacoes.length === 0}
                   >
                     <FileDown className="w-4 h-4 mr-2" />
-                    Exportar CSV
+                    {t('reclamacoes.exportarCSV')}
                     {selectedReclamacoes.length > 0 && ` (${selectedReclamacoes.length})`}
                   </Button>
                   <Button
@@ -633,7 +633,7 @@ export default function Reclamacoes() {
                     disabled={selectedReclamacoes.length === 0 && filteredReclamacoes.length === 0}
                   >
                     <FileText className="w-4 h-4 mr-2" />
-                    Exportar PDF
+                    {t('reclamacoes.exportarPDF')}
                     {selectedReclamacoes.length > 0 && ` (${selectedReclamacoes.length})`}
                   </Button>
                   <Button
@@ -642,13 +642,13 @@ export default function Reclamacoes() {
                     disabled={selectedReclamacoes.length === 0 && filteredReclamacoes.length === 0}
                   >
                     <Mail className="w-4 h-4 mr-2" />
-                    Enviar Relatório
+                    {t('reclamacoes.enviarRelatorio')}
                     {selectedReclamacoes.length > 0 && ` (${selectedReclamacoes.length})`}
                   </Button>
                 </div>
                 <Button onClick={() => { setEditingReclamacao(null); setIsFormOpen(true); }} size="lg">
                   <Plus className="w-4 h-4 mr-2" />
-                  Nova Reclamação
+                  {t('reclamacoes.novaReclamacao')}
                 </Button>
               </div>
 
@@ -660,7 +660,7 @@ export default function Reclamacoes() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-                      Filtros de Pesquisa
+                      {t('reclamacoes.filtrosPesquisa')}
                     </CardTitle>
                     {hasActiveFilters && (
                       <Button
@@ -670,7 +670,7 @@ export default function Reclamacoes() {
                         className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
                       >
                         <X className="w-4 h-4 mr-1" />
-                        Limpar Filtros
+                        {t('reclamacoes.limparFiltros')}
                       </Button>
                     )}
                   </div>
@@ -678,12 +678,12 @@ export default function Reclamacoes() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="lg:col-span-3">
-                      <Label htmlFor="busca">Pesquisar</Label>
+                      <Label htmlFor="busca">{t('reclamacoes.pesquisar')}</Label>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
                         <Input
                           id="busca"
-                          placeholder="Pesquisar por protocolo, título, descrição ou reclamante..."
+                          placeholder={t('reclamacoes.placeholderPesquisa')}
                           value={filtros.busca}
                           onChange={(e) => setFiltros(prev => ({...prev, busca: e.target.value}))}
                           className="pl-10"
@@ -692,7 +692,7 @@ export default function Reclamacoes() {
                     </div>
 
                     <div>
-                      <Label htmlFor="status">Status</Label>
+                      <Label htmlFor="status">{t('reclamacoes.status')}</Label>
                       <Select 
                         id="status"
                         options={STATUS_OPTIONS}
@@ -702,7 +702,7 @@ export default function Reclamacoes() {
                     </div>
 
                     <div>
-                      <Label htmlFor="area">Área Responsável</Label>
+                      <Label htmlFor="area">{t('reclamacoes.areaResponsavel')}</Label>
                       <Select 
                         id="area"
                         options={AREA_RESPONSAVEL_OPTIONS}
@@ -712,7 +712,7 @@ export default function Reclamacoes() {
                     </div>
 
                     <div>
-                      <Label htmlFor="prioridade">Prioridade</Label>
+                      <Label htmlFor="prioridade">{t('reclamacoes.prioridade')}</Label>
                       <Select 
                         id="prioridade"
                         options={PRIORIDADE_OPTIONS}
@@ -722,7 +722,7 @@ export default function Reclamacoes() {
                     </div>
 
                     <div>
-                      <Label htmlFor="aeroporto">Aeroporto</Label>
+                      <Label htmlFor="aeroporto">{t('reclamacoes.aeroporto')}</Label>
                       <Select 
                         id="aeroporto"
                         options={aeroportoOptions}
@@ -732,7 +732,7 @@ export default function Reclamacoes() {
                     </div>
 
                     <div>
-                      <Label htmlFor="dataInicio">Data Início</Label>
+                      <Label htmlFor="dataInicio">{t('reclamacoes.dataInicio')}</Label>
                       <Input
                         id="dataInicio"
                         type="date"
@@ -742,7 +742,7 @@ export default function Reclamacoes() {
                     </div>
 
                     <div>
-                      <Label htmlFor="dataFim">Data Fim</Label>
+                      <Label htmlFor="dataFim">{t('reclamacoes.dataFim')}</Label>
                       <Input
                         id="dataFim"
                         type="date"
@@ -757,10 +757,10 @@ export default function Reclamacoes() {
               <Card className="border-0 shadow-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Reclamações ({filteredReclamacoes.length})</span>
+                    <span>{t('reclamacoes.reclamacoes')} ({filteredReclamacoes.length})</span>
                     {selectedReclamacoes.length > 0 && (
                       <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                        {selectedReclamacoes.length} selecionada(s)
+                        {selectedReclamacoes.length} {t('reclamacoes.selecionadas')}
                       </Badge>
                     )}
                   </CardTitle>

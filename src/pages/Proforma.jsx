@@ -52,11 +52,11 @@ import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
 
 const STATUS_CONFIG = {
-  emitida: { label: 'Emitida', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700', icon: FileText },
-  enviada: { label: 'Enviada', color: 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-700', icon: CheckCircle },
-  paga: { label: 'Paga', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700', icon: CheckCircle },
-  vencida: { label: 'Vencida', color: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700', icon: AlertCircle },
-  cancelada: { label: 'Cancelada', color: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700', icon: X }
+  emitida: { labelKey: 'proforma.status_emitida', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700', icon: FileText },
+  enviada: { labelKey: 'proforma.status_enviada', color: 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-700', icon: CheckCircle },
+  paga: { labelKey: 'proforma.status_paga', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700', icon: CheckCircle },
+  vencida: { labelKey: 'proforma.status_vencida', color: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700', icon: AlertCircle },
+  cancelada: { labelKey: 'proforma.status_cancelada', color: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700', icon: X }
 };
 
 export default function ProformaPage() {
@@ -121,8 +121,8 @@ export default function ProformaPage() {
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Carregar Dados',
-        message: 'Não foi possível carregar os dados. Por favor, recarregue a página.'
+        title: t('proforma.error_load_title'),
+        message: t('proforma.error_load_msg')
       });
     } finally {
       setIsLoading(false);
@@ -218,16 +218,16 @@ export default function ProformaPage() {
       setEditingProforma(null);
       setSuccessInfo({
         isOpen: true,
-        title: 'Proforma Atualizada!',
-        message: `A proforma ${proformaData.numero_proforma} foi atualizada com sucesso.`
+        title: t('proforma.success_updated_title'),
+        message: t('proforma.success_updated_msg')
       });
     } catch (error) {
       console.error('Erro ao atualizar proforma:', error);
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Atualizar',
-        message: 'Não foi possível atualizar a proforma. Tente novamente.'
+        title: t('proforma.error_update_title'),
+        message: t('proforma.error_update_msg')
       });
     }
   };
@@ -238,8 +238,8 @@ export default function ProformaPage() {
       setAlertInfo({
         isOpen: true,
         type: 'info',
-        title: 'Gerando PDF...',
-        message: 'Por favor aguarde enquanto o PDF é gerado.',
+        title: t('proforma.generating_pdf_title'),
+        message: t('proforma.generating_pdf_msg'),
         showCancel: false,
         confirmText: null
       });
@@ -261,8 +261,8 @@ export default function ProformaPage() {
 
         setSuccessInfo({
           isOpen: true,
-          title: 'PDF Gerado!',
-          message: 'O PDF da proforma foi gerado e o download iniciará automaticamente.'
+          title: t('proforma.pdf_generated_title'),
+          message: t('proforma.pdf_generated_msg')
         });
       } else {
         throw new Error('URL do PDF não foi retornada');
@@ -272,8 +272,8 @@ export default function ProformaPage() {
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Gerar PDF',
-        message: `Não foi possível gerar o PDF da proforma. Detalhes: ${error.message || 'Erro desconhecido'}`
+        title: t('proforma.error_pdf_title'),
+        message: `${t('proforma.error_pdf_msg')} ${error.message || ''}`
       });
     }
   };
@@ -341,16 +341,16 @@ export default function ProformaPage() {
 
       setSuccessInfo({
         isOpen: true,
-        title: 'Proforma Consolidada Gerada!',
-        message: `A proforma ${numeroProforma} foi criada com ${items.length} voo(s) consolidados.`
+        title: t('proforma.consolidated_success_title'),
+        message: `${numeroProforma} — ${items.length} voo(s)`
       });
     } catch (error) {
       console.error('Erro ao gerar proforma consolidada:', error);
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Gerar Consolidada',
-        message: `Não foi possível gerar a proforma consolidada. ${error.message}`
+        title: t('proforma.error_consolidated_title'),
+        message: `${t('proforma.error_consolidated_msg')} ${error.message}`
       });
     }
   };
@@ -360,8 +360,8 @@ export default function ProformaPage() {
       setAlertInfo({
         isOpen: true,
         type: 'info',
-        title: 'Nenhum dado para exportar',
-        message: 'Não há proformas nos filtros atuais para serem exportadas.'
+        title: t('proforma.no_data_export_title'),
+        message: t('proforma.no_data_export_msg')
       });
       return;
     }
@@ -403,18 +403,18 @@ export default function ProformaPage() {
   };
 
   const companhiaOptions = [
-  { value: 'todos', label: 'Todas as Companhias' },
+  { value: 'todos', label: t('proforma.all_companies') },
   ...companhias.map((c) => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }))];
 
 
   const aeroportoOptions = [
-  { value: 'todos', label: 'Todos os Aeroportos' },
+  { value: 'todos', label: t('proforma.all_airports') },
   ...aeroportos.map((a) => ({ value: a.id, label: `${a.nome} (${a.codigo_icao})` }))];
 
 
   const statusOptions = [
-  { value: 'todos', label: 'Todos os Status' },
-  ...Object.entries(STATUS_CONFIG).map(([key, { label }]) => ({ value: key, label }))];
+  { value: 'todos', label: t('proforma.all_statuses') },
+  ...Object.entries(STATUS_CONFIG).map(([key, { labelKey }]) => ({ value: key, label: t(labelKey) }))];
 
 
   return (
@@ -430,19 +430,19 @@ export default function ProformaPage() {
             <div className="flex gap-2">
               <Button variant="outline" onClick={loadData} disabled={isLoading}>
                 <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Atualizar
+                {t('proforma.refresh')}
               </Button>
               <Button onClick={() => setIsConsolidadaModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Layers className="w-4 h-4 mr-2" />
-                Gerar Consolidada
+                {t('proforma.generate_consolidated')}
               </Button>
               <Button onClick={() => setIsRelatorioModalOpen(true)} variant="outline" className="border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950">
                 <FileText className="w-4 h-4 mr-2" />
-                Extrato
+                {t('proforma.statement')}
               </Button>
               <Button variant="outline" onClick={handleExportCSV}>
                 <Download className="w-4 h-4 mr-2" />
-                Exportar CSV
+                {t('proforma.export_csv')}
               </Button>
             </div>
           )}
@@ -455,14 +455,14 @@ export default function ProformaPage() {
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'proformas' ? 'border-blue-600 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
           >
             <FileText className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-            Proformas
+            {t('proforma.tab_proformas')}
           </button>
           <button
             onClick={() => setActiveTab('dashboard')}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'dashboard' ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
           >
             <BarChart3 className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-            Dashboard de Facturação
+            {t('proforma.tab_dashboard')}
           </button>
         </div>
 
@@ -479,7 +479,7 @@ export default function ProformaPage() {
                   <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Total Proformas</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{t('proforma.kpi_total')}</p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{kpiData.totalProformas}</p>
                 </div>
               </div>
@@ -493,7 +493,7 @@ export default function ProformaPage() {
                   <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Total (USD)</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{t('proforma.kpi_total_usd')}</p>
                   <p className="text-green-700 text-sm font-bold" title={`${formatCurrency(kpiData.totalValorUSD, 'USD')} US$`}>
                     {formatCurrency(kpiData.totalValorUSD, 'USD')} US$
                   </p>
@@ -509,7 +509,7 @@ export default function ProformaPage() {
                   <DollarSign className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Total (AOA)</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{t('proforma.kpi_total_aoa')}</p>
                   <p className="text-emerald-700 text-sm font-bold" title={`${formatCurrency(kpiData.totalValorAOA)} Kz`}>
                     {formatCurrency(kpiData.totalValorAOA)} Kz
                   </p>
@@ -525,7 +525,7 @@ export default function ProformaPage() {
                   <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Pagas</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{t('proforma.kpi_paid')}</p>
                   <p className="text-2xl font-bold text-green-700">{kpiData.proformasPagas}</p>
                 </div>
               </div>
@@ -539,7 +539,7 @@ export default function ProformaPage() {
                   <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Pendentes</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{t('proforma.kpi_pending')}</p>
                   <p className="text-2xl font-bold text-yellow-700">{kpiData.proformasPendentes}</p>
                 </div>
               </div>
@@ -553,7 +553,7 @@ export default function ProformaPage() {
                   <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Vencidas</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{t('proforma.kpi_overdue')}</p>
                   <p className="text-2xl font-bold text-red-700">{kpiData.proformasVencidas}</p>
                 </div>
               </div>
@@ -566,18 +566,18 @@ export default function ProformaPage() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-              Filtros
+              {t('proforma.filters')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="lg:col-span-2">
-                <Label htmlFor="busca">Pesquisar por Nº Proforma</Label>
+                <Label htmlFor="busca">{t('proforma.search_number')}</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
                   <Input
                     id="busca"
-                    placeholder="Ex: PF-2025-001234..."
+                    placeholder={t('proforma.search_placeholder')}
                     value={filtros.busca}
                     onChange={(e) => handleFilterChange('busca', e.target.value)}
                     className="pl-9" />
@@ -586,7 +586,7 @@ export default function ProformaPage() {
               </div>
 
               <div>
-                <Label htmlFor="data-inicio">Data Início</Label>
+                <Label htmlFor="data-inicio">{t('proforma.date_start')}</Label>
                 <Input
                   id="data-inicio"
                   type="date"
@@ -596,7 +596,7 @@ export default function ProformaPage() {
               </div>
 
               <div>
-                <Label htmlFor="data-fim">Data Fim</Label>
+                <Label htmlFor="data-fim">{t('proforma.date_end')}</Label>
                 <Input
                   id="data-fim"
                   type="date"
@@ -606,42 +606,42 @@ export default function ProformaPage() {
               </div>
 
               <div>
-                <Label htmlFor="filtro-status">Status</Label>
+                <Label htmlFor="filtro-status">{t('proforma.status')}</Label>
                 <Select
                   id="filtro-status"
                   options={statusOptions}
                   value={filtros.status}
                   onValueChange={(v) => handleFilterChange('status', v)}
-                  placeholder="Selecione..." />
+                  placeholder={t('proforma.select_placeholder')} />
 
               </div>
 
               <div>
-                <Label htmlFor="filtro-companhia">Companhia</Label>
+                <Label htmlFor="filtro-companhia">{t('proforma.company')}</Label>
                 <Select
                   id="filtro-companhia"
                   options={companhiaOptions}
                   value={filtros.companhia}
                   onValueChange={(v) => handleFilterChange('companhia', v)}
-                  placeholder="Selecione..." />
+                  placeholder={t('proforma.select_placeholder')} />
 
               </div>
 
               <div>
-                <Label htmlFor="filtro-aeroporto">Aeroporto</Label>
+                <Label htmlFor="filtro-aeroporto">{t('proforma.airport')}</Label>
                 <Select
                   id="filtro-aeroporto"
                   options={aeroportoOptions}
                   value={filtros.aeroporto}
                   onValueChange={(v) => handleFilterChange('aeroporto', v)}
-                  placeholder="Selecione..." />
+                  placeholder={t('proforma.select_placeholder')} />
 
               </div>
 
               <div className="flex items-end">
                 <Button variant="outline" onClick={clearFilters}>
                   <X className="w-4 h-4 mr-2" />
-                  Limpar Filtros
+                  {t('proforma.clear_filters')}
                 </Button>
               </div>
             </div>
@@ -651,9 +651,9 @@ export default function ProformaPage() {
         {/* Tabela de Proformas */}
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Proformas</CardTitle>
+            <CardTitle>{t('proforma.list_title')}</CardTitle>
             <CardDescription>
-              {proformasFiltradas.length} proforma(s) encontrada(s)
+              {proformasFiltradas.length} {t('proforma.found_count')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -662,26 +662,26 @@ export default function ProformaPage() {
                 <TableHeader className="bg-slate-50 dark:bg-slate-950">
                   <TableRow>
                     <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('numero_proforma')}>
-                      Nº Proforma
+                      {t('proforma.col_number')}
                     </TableHead>
                     <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('data_emissao')}>
-                      Data Emissão
+                      {t('proforma.col_issue_date')}
                     </TableHead>
                     <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('data_vencimento')}>
-                      Vencimento
+                      {t('proforma.col_due_date')}
                     </TableHead>
-                    <TableHead>Companhia</TableHead>
-                    <TableHead>Aeroporto</TableHead>
+                    <TableHead>{t('proforma.col_company')}</TableHead>
+                    <TableHead>{t('proforma.col_airport')}</TableHead>
                     <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('valor_total_usd')}>
-                      Valor (USD)
+                      {t('proforma.col_value_usd')}
                     </TableHead>
                     <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('valor_total_aoa')}>
-                      Valor (AOA)
+                      {t('proforma.col_value_aoa')}
                     </TableHead>
                     <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('status')}>
-                      Status
+                      {t('proforma.col_status')}
                     </TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead className="text-right">{t('proforma.col_actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -698,7 +698,7 @@ export default function ProformaPage() {
                   proformasFiltradas.length === 0 ?
                   <TableRow>
                       <TableCell colSpan={9} className="text-center py-10 text-slate-500 dark:text-slate-400">
-                        Nenhuma proforma encontrada com os filtros selecionados.
+                        {t('proforma.empty_state')}
                       </TableCell>
                     </TableRow> :
 
@@ -716,7 +716,7 @@ export default function ProformaPage() {
                               {proforma.numero_proforma}
                               {proforma.tipo === 'consolidada' && (
                                 <Badge variant="outline" className="text-[10px] px-1 py-0 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
-                                  Consolidada
+                                  {t('proforma.consolidated')}
                                 </Badge>
                               )}
                             </div>
@@ -743,7 +743,7 @@ export default function ProformaPage() {
                           <TableCell>
                             <Badge variant="outline" className={`${statusConfig.color} border font-medium flex items-center gap-1 w-fit`}>
                               <StatusIcon className="w-3 h-3" />
-                              {statusConfig.label}
+                              {t(statusConfig.labelKey)}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
@@ -756,11 +756,11 @@ export default function ProformaPage() {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => handleDownloadPDF(proforma)}>
                                   <Download className="mr-2 h-4 w-4" />
-                                  Baixar PDF
+                                  {t('proforma.download_pdf')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleEditProforma(proforma)}>
                                   <Edit className="mr-2 h-4 w-4" />
-                                  Editar
+                                  {t('proforma.edit')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>

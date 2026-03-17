@@ -255,7 +255,7 @@ export default function Manutencao() {
       setIsFormOSOpen(false);
       setEditingOrdem(null);
       loadData();
-      setSuccessInfo({ isOpen: true, title: 'Sucesso!', message: 'Ordem de Serviço salva com sucesso.' });
+      setSuccessInfo({ isOpen: true, title: t('manutencao.successTitle'), message: t('manutencao.successOSSaved') });
     } catch (error) {
       console.error("Erro ao salvar OS:", error);
     }
@@ -306,7 +306,7 @@ export default function Manutencao() {
       y = addTable(doc, y, { columns, rows, headerOpts: { logoBase64 } });
       addFooter(doc, { generatedBy: currentUser?.full_name || currentUser?.email });
       doc.save(`relatorio_manutencao_${new Date().toISOString().split('T')[0]}.pdf`);
-      setSuccessInfo({ isOpen: true, title: 'Relatório Exportado!', message: 'PDF gerado com sucesso.' });
+      setSuccessInfo({ isOpen: true, title: t('manutencao.reportExported'), message: t('manutencao.pdfSuccess') });
     } catch (error) {
       console.error("Erro ao exportar PDF:", error);
     } finally {
@@ -335,19 +335,19 @@ export default function Manutencao() {
   }), [solicitacoes]);
 
   const aeroportoOptions = useMemo(() => [
-    { value: 'todos', label: 'Todos' },
+    { value: 'todos', label: t('manutencao.todos') },
     ...aeroportos.map(a => ({ value: a.id, label: a.nome }))
-  ], [aeroportos]);
+  ], [aeroportos, t]);
 
   const statusOSOptions = [
-    { value: 'todos', label: 'Todos' }, { value: 'pendente', label: 'Pendente' }, { value: 'atribuida', label: 'Atribuída' },
-    { value: 'em_execucao', label: 'Em Execução' }, { value: 'aguardando_verificacao', label: 'Aguardando Verificação' },
-    { value: 'concluida', label: 'Concluída' }, { value: 'rejeitada', label: 'Rejeitada' }
+    { value: 'todos', label: t('manutencao.todos') }, { value: 'pendente', label: t('manutencao.pendente') }, { value: 'atribuida', label: t('manutencao.atribuida') },
+    { value: 'em_execucao', label: t('manutencao.emExecucao') }, { value: 'aguardando_verificacao', label: t('manutencao.aguardandoVerificacao') },
+    { value: 'concluida', label: t('manutencao.concluida') }, { value: 'rejeitada', label: t('manutencao.rejeitada') }
   ];
 
   const prioridadeOptions = [
-    { value: 'todos', label: 'Todas' }, { value: 'baixa', label: 'Baixa' },
-    { value: 'media', label: 'Média' }, { value: 'alta', label: 'Alta' }, { value: 'urgente', label: 'Urgente' }
+    { value: 'todos', label: t('manutencao.todas') }, { value: 'baixa', label: t('manutencao.baixa') },
+    { value: 'media', label: t('manutencao.media') }, { value: 'alta', label: t('manutencao.alta') }, { value: 'urgente', label: t('manutencao.urgente') }
   ];
 
   return (
@@ -386,17 +386,17 @@ export default function Manutencao() {
           <TabsContent value="solicitacoes" className="space-y-6">
             {/* SS Stats */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{ssStats.total}</p><p className="text-sm text-slate-500 dark:text-slate-400">Total SS</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{ssStats.abertas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Abertas</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{ssStats.em_analise}</p><p className="text-sm text-slate-500 dark:text-slate-400">Em Analise</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600 dark:text-green-400">{ssStats.aprovadas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Aprovadas</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-red-600 dark:text-red-400">{ssStats.rejeitadas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Rejeitadas</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{ssStats.total}</p><p className="text-sm text-slate-500 dark:text-slate-400">{t('manutencao.totalSS')}</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{ssStats.abertas}</p><p className="text-sm text-slate-500 dark:text-slate-400">{t('manutencao.abertas')}</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{ssStats.em_analise}</p><p className="text-sm text-slate-500 dark:text-slate-400">{t('manutencao.emAnalise')}</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600 dark:text-green-400">{ssStats.aprovadas}</p><p className="text-sm text-slate-500 dark:text-slate-400">{t('manutencao.aprovadas')}</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-red-600 dark:text-red-400">{ssStats.rejeitadas}</p><p className="text-sm text-slate-500 dark:text-slate-400">{t('manutencao.rejeitadas')}</p></CardContent></Card>
             </div>
 
             <div className="flex justify-end">
               <Button onClick={() => setIsFormSSOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Plus className="w-4 h-4 mr-2" />
-                Nova Solicitação
+                {t('manutencao.novaSolicitacao')}
               </Button>
             </div>
 
@@ -418,7 +418,7 @@ export default function Manutencao() {
               {canManage && (
                 <Button onClick={() => setIsFormOSOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Plus className="w-4 h-4 mr-2" />
-                  Nova Ordem de Serviço
+                  {t('manutencao.novaOS')}
                 </Button>
               )}
             </div>
@@ -428,30 +428,30 @@ export default function Manutencao() {
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-                    Filtros e Exportação
+                    {t('manutencao.filtrosExportacao')}
                   </CardTitle>
                   <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={isLoading}>
                     <FileDown className="w-4 h-4 mr-2" />
-                    Exportar PDF ({selectedOrdens.length > 0 ? selectedOrdens.length : filteredOrdens.length})
+                    {t('manutencao.exportarPDF')} ({selectedOrdens.length > 0 ? selectedOrdens.length : filteredOrdens.length})
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                   <div className="lg:col-span-2">
-                    <Label>Pesquisar por Nº ou Título</Label>
+                    <Label>{t('manutencao.pesquisarNumeroTitulo')}</Label>
                     <Input value={filtrosOS.busca} onChange={e => setFiltrosOS(prev => ({ ...prev, busca: e.target.value }))} />
                   </div>
                   <div>
-                    <Label>Status</Label>
+                    <Label>{t('manutencao.status')}</Label>
                     <Select options={statusOSOptions} value={filtrosOS.status} onValueChange={v => setFiltrosOS(prev => ({ ...prev, status: v }))} />
                   </div>
                   <div>
-                    <Label>Prioridade</Label>
+                    <Label>{t('manutencao.prioridade')}</Label>
                     <Select options={prioridadeOptions} value={filtrosOS.prioridade} onValueChange={v => setFiltrosOS(prev => ({ ...prev, prioridade: v }))} />
                   </div>
                   <div>
-                    <Label>Aeroporto</Label>
+                    <Label>{t('manutencao.aeroporto')}</Label>
                     <Select options={aeroportoOptions} value={filtrosOS.aeroporto} onValueChange={v => setFiltrosOS(prev => ({ ...prev, aeroporto: v }))} />
                   </div>
                 </div>
@@ -494,7 +494,7 @@ export default function Manutencao() {
           onClose={() => setIsFormSSOpen(false)}
           aeroportos={aeroportos}
           currentUser={currentUser}
-          onSuccess={(ssData) => { loadData(); notifyNewSS(ssData); setSuccessInfo({ isOpen: true, title: 'Sucesso!', message: 'Solicitação de Serviço criada com sucesso. Gestores notificados por email.' }); }}
+          onSuccess={(ssData) => { loadData(); notifyNewSS(ssData); setSuccessInfo({ isOpen: true, title: t('manutencao.successTitle'), message: t('manutencao.successSSSaved') }); }}
         />
       )}
 
@@ -505,7 +505,7 @@ export default function Manutencao() {
           solicitacao={analisarSS}
           aeroportos={aeroportos}
           currentUser={currentUser}
-          onSuccess={() => { setAnalisarSS(null); loadData(); setSuccessInfo({ isOpen: true, title: 'Sucesso!', message: 'Solicitação analisada com sucesso.' }); }}
+          onSuccess={() => { setAnalisarSS(null); loadData(); setSuccessInfo({ isOpen: true, title: t('manutencao.successTitle'), message: t('manutencao.successSSAnalyzed') }); }}
           onApproved={(ss, os) => notifySSApproved(ss, os)}
           onRejected={(ss, motivo) => notifySSRejected(ss, motivo)}
         />
@@ -544,7 +544,7 @@ export default function Manutencao() {
           isOpen={!!atribuirOrdem}
           onClose={() => setAtribuirOrdem(null)}
           ordem={atribuirOrdem}
-          onSuccess={() => { setAtribuirOrdem(null); loadData(); setSuccessInfo({ isOpen: true, title: 'Sucesso', message: 'Ordem de serviço atribuída com sucesso! Responsável notificado por email.' }); }}
+          onSuccess={() => { setAtribuirOrdem(null); loadData(); setSuccessInfo({ isOpen: true, title: t('manutencao.successTitle'), message: t('manutencao.successOSAssigned') }); }}
           onAssigned={(os, email, name) => notifyOSAssigned(os, email, name)}
         />
       )}
@@ -568,7 +568,7 @@ export default function Manutencao() {
             setResponderOrdem(null);
             setResponderAcao('aceitar');
             loadData();
-            setSuccessInfo({ isOpen: true, title: 'Sucesso', message: 'Resposta à OS enviada com sucesso!' });
+            setSuccessInfo({ isOpen: true, title: t('manutencao.successTitle'), message: t('manutencao.successOSResponse') });
           }}
         />
       )}

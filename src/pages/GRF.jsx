@@ -510,27 +510,27 @@ Por favor tente novamente ou contacte o suporte técnico.`;
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <Button variant="outline" onClick={loadData} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <RefreshCw className="w-4 h-4 mr-2" />
-              Atualizar
+              {t('grf.atualizar')}
             </Button>
             <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileDown className="w-4 h-4 mr-2" />
-              Exportar CSV
+              {t('grf.exportarCSV')}
               {selectedRegistos.length > 0 && ` (${selectedRegistos.length})`}
             </Button>
             <Button variant="outline" onClick={handleExportPDF} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileText className="w-4 h-4 mr-2" />
-              Exportar PDF
+              {t('grf.exportarPDF')}
               {selectedRegistos.length > 0 && ` (${selectedRegistos.length})`}
             </Button>
             {selectedRegistos.length > 0 && (
               <Button variant="outline" onClick={() => setIsEmailModalOpen(true)} className="border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950">
                 <Mail className="w-4 h-4 mr-2" />
-                Enviar Email ({selectedRegistos.length})
+                {t('grf.enviarEmail')} ({selectedRegistos.length})
               </Button>
             )}
             <Button onClick={() => setIsFormOpen(true)} className="bg-blue-500 hover:bg-blue-600 text-white">
               <Plus className="w-4 h-4 mr-2" />
-              Novo Registo GRF
+              {t('grf.novoRegisto')}
             </Button>
           </div>
         </div>
@@ -538,18 +538,18 @@ Por favor tente novamente ou contacte o suporte técnico.`;
         {/* Filtros */}
         <Card className="border-0 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg">Filtros</CardTitle>
+            <CardTitle className="text-lg">{t('grf.filtros')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Aeroporto</label>
-                <select 
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('grf.aeroporto')}</label>
+                <select
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={filtros.aeroporto} 
+                  value={filtros.aeroporto}
                   onChange={(e) => setFiltros({...filtros, aeroporto: e.target.value})}
                 >
-                  <option value="todos">Todos</option>
+                  <option value="todos">{t('grf.todos')}</option>
                   {aeroportos.map(a => (
                     <option key={a.id} value={a.codigo_icao}>{a.nome} ({a.codigo_icao})</option>
                   ))}
@@ -557,7 +557,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Mês</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('grf.mes')}</label>
                 <select 
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   value={filtros.mes?.toString()} 
@@ -572,13 +572,13 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Pista</label>
-                <select 
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('grf.pista')}</label>
+                <select
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={filtros.pista} 
+                  value={filtros.pista}
                   onChange={(e) => setFiltros({...filtros, pista: e.target.value})}
                 >
-                  <option value="todas">Todas</option>
+                  <option value="todas">{t('grf.todas')}</option>
                   <option value="05">05</option>
                   <option value="07">07</option>
                   <option value="23">23</option>
@@ -592,22 +592,22 @@ Por favor tente novamente ou contacte o suporte técnico.`;
         {/* Lista de Registos */}
         <Card className="border-0 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg">Registos GRF</CardTitle>
+            <CardTitle className="text-lg">{t('grf.registosGRF')}</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-slate-500 dark:text-slate-400 mt-2">A carregar registos...</p>
+                <p className="text-slate-500 dark:text-slate-400 mt-2">{t('grf.carregando')}</p>
               </div>
             ) : filteredRegistos.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
                 <Plane className="w-16 h-16 mx-auto text-slate-300 mb-4" />
                 <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Nenhum registo encontrado
+                  {t('grf.nenhumRegisto')}
                 </h3>
                 <p className="text-slate-500 dark:text-slate-400">
-                  Não há registos GRF que correspondam aos filtros selecionados.
+                  {t('grf.nenhumRegistoDesc')}
                 </p>
               </div>
             ) : (
@@ -622,15 +622,15 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                         className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                       />
                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {selectedRegistos.length > 0 
-                          ? `${selectedRegistos.length} de ${filteredRegistos.length} selecionados`
-                          : `Selecionar todos (${filteredRegistos.length})`
+                        {selectedRegistos.length > 0
+                          ? `${selectedRegistos.length} de ${filteredRegistos.length} ${t('grf.selecionados')}`
+                          : `${t('grf.selecionarTodos')} (${filteredRegistos.length})`
                         }
                       </span>
                     </div>
                     {selectedRegistos.length > 0 && (
                       <span className="text-xs text-slate-500 dark:text-slate-400">
-                        Use os botões de exportação/email para os itens selecionados
+                        {t('grf.exportarEmailDica')}
                       </span>
                     )}
                   </div>
@@ -643,16 +643,16 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                         <TableHead className="w-12">
                           <span className="sr-only">Seleção</span>
                         </TableHead>
-                        <TableHead>Aeroporto</TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Hora UTC</TableHead>
-                        <TableHead>Pista</TableHead>
-                        <TableHead>RWYCC</TableHead>
-                        <TableHead>Perc. Troço</TableHead>
-                        <TableHead>Lâmina</TableHead>
-                        <TableHead>Condição</TableHead>
-                        <TableHead>Observações</TableHead>
-                        <TableHead className="text-center">Ações</TableHead>
+                        <TableHead>{t('grf.aeroporto')}</TableHead>
+                        <TableHead>{t('grf.data')}</TableHead>
+                        <TableHead>{t('grf.horaUTC')}</TableHead>
+                        <TableHead>{t('grf.pista')}</TableHead>
+                        <TableHead>{t('grf.rwycc')}</TableHead>
+                        <TableHead>{t('grf.percTroco')}</TableHead>
+                        <TableHead>{t('grf.lamina')}</TableHead>
+                        <TableHead>{t('grf.condicao')}</TableHead>
+                        <TableHead>{t('grf.observacoes')}</TableHead>
+                        <TableHead className="text-center">{t('grf.acoes')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -709,7 +709,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                                   size="icon"
                                   onClick={() => handleEdit(registo)}
                                   className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                  title="Editar registo"
+                                  title={t('grf.editarRegisto')}
                                 >
                                   <Edit className="w-4 h-4" />
                                 </Button>
@@ -718,7 +718,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                                   size="icon"
                                   onClick={() => handleDelete(registo.id)}
                                   className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  title="Excluir registo"
+                                  title={t('grf.excluirRegisto')}
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
@@ -784,7 +784,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
           <AlertDialogFooter>
             {alertInfo.showCancel && (
               <AlertDialogCancel onClick={() => setAlertInfo({ isOpen: false, type: '', title: '', message: '', showCancel: false, onConfirm: () => {}, confirmText: 'Ok' })}>
-                Cancelar
+                {t('grf.cancelar')}
               </AlertDialogCancel>
             )}
             <AlertDialogAction 

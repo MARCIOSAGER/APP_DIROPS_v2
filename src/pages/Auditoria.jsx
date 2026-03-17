@@ -62,30 +62,35 @@ import { createPdfDoc, addHeader, addFooter, addSectionTitle, addKeyValuePairs, 
 
 const CATEGORIAS_CONFIG = {
   seguranca_operacional: {
+    labelKey: 'auditoria.segurancaOperacional',
     label: 'Segurança Operacional',
     icon: Shield,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50'
   },
   seguranca_avsec: {
+    labelKey: 'auditoria.segurancaAvsec',
     label: 'Segurança AVSEC',
     icon: AlertTriangle,
     color: 'text-red-600',
     bgColor: 'bg-red-50'
   },
   resposta_emergencia: {
+    labelKey: 'auditoria.respostaEmergencia',
     label: 'Resposta a Emergência',
     icon: AlertTriangle,
     color: 'text-orange-600',
     bgColor: 'bg-orange-50'
   },
   infraestrutura: {
+    labelKey: 'auditoria.infraestrutura',
     label: 'Infraestrutura',
     icon: Building,
     color: 'text-green-600',
     bgColor: 'bg-green-50'
   },
   operacoes: {
+    labelKey: 'auditoria.operacoes',
     label: 'Operações',
     icon: Plane,
     color: 'text-purple-600',
@@ -210,8 +215,8 @@ export default function Auditoria() {
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro de Carregamento',
-        message: 'Não foi possível carregar os dados. Tente novamente mais tarde.'
+        title: t('auditoria.erroCarregamento'),
+        message: t('auditoria.erroCarregamentoDesc')
       });
     } finally {
       setIsLoading(false);
@@ -239,7 +244,7 @@ export default function Auditoria() {
     setEditingPAC(null); // Clear editing PAC state
     setSelectedProcesso(null);
     setNonConformitiesForPAC([]);
-    showSuccess('Operação Realizada', 'Dados atualizados com sucesso!');
+    showSuccess(t('auditoria.operacaoRealizada'), t('auditoria.dadosAtualizados'));
   };
 
   const handleViewAuditoria = (processo) => {
@@ -256,11 +261,11 @@ export default function Auditoria() {
     if (deleteProcessoInfo.processo) {
       try {
         await ProcessoAuditoria.delete(deleteProcessoInfo.processo.id);
-        showSuccess('Auditoria Excluída', 'Auditoria excluída com sucesso!');
+        showSuccess(t('auditoria.auditoriaExcluida'), t('auditoria.auditoriaExcluidaMsg'));
         loadData();
       } catch (error) {
         console.error('Erro ao excluir auditoria:', error);
-        showError('Erro ao Excluir', 'Não foi possível excluir a auditoria. Tente novamente.');
+        showError(t('auditoria.erroExcluir'), t('auditoria.erroExcluirAuditoriaMsg'));
       }
       setDeleteProcessoInfo({ isOpen: false, processo: null });
     }
@@ -278,11 +283,11 @@ export default function Auditoria() {
     if (deletePACInfo.pac) {
       try {
         await PlanoAcaoCorretiva.delete(deletePACInfo.pac.id);
-        showSuccess('PAC Excluído', 'Plano de Ação Corretiva excluído com sucesso!');
+        showSuccess(t('auditoria.pacExcluido'), t('auditoria.pacExcluidoMsg'));
         loadData();
       } catch (error) {
         console.error('Erro ao excluir PAC:', error);
-        showError('Erro ao Excluir', 'Não foi possível excluir o PAC. Tente novamente.');
+        showError(t('auditoria.erroExcluir'), t('auditoria.erroExcluirPACMsg'));
       }
       setDeletePACInfo({ isOpen: false, pac: null });
     }
@@ -309,13 +314,13 @@ export default function Auditoria() {
       });
 
       if (respostasNC.length === 0) {
-        showError("Sem Não Conformidades", "Não é possível criar um PAC pois não há não conformidades nesta auditoria.");
+        showError(t("auditoria.semNaoConformidades"), t("auditoria.semNaoConformidadesMsg"));
         return;
       }
 
       const tipoAuditoria = tiposAuditoria.find((t) => t.id === processo.tipo_auditoria_id);
       if (!tipoAuditoria) {
-        showError("Erro ao preparar PAC", "Tipo de auditoria não encontrado.");
+        showError(t("auditoria.erroPrepararPAC"), t("auditoria.tipoNaoEncontrado"));
         return;
       }
 
@@ -331,7 +336,7 @@ export default function Auditoria() {
       setSelectedProcesso(processo);
       setShowFormPAC(true); // Changed to showFormPAC
     } catch (error) {
-      showError("Erro ao preparar PAC", "Não foi possível carregar os dados das não conformidades.");
+      showError(t("auditoria.erroPrepararPAC"), t("auditoria.erroCarregarNCs"));
       console.error("Erro ao carregar NCs para o PAC:", error);
     }
   };
@@ -362,7 +367,7 @@ export default function Auditoria() {
     await loadData();
     setShowChecklistModal(false); // Changed to showChecklistModal
     setSelectedProcesso(null);
-    showSuccess('Checklist Concluído', 'Checklist da auditoria finalizado com sucesso!');
+    showSuccess(t('auditoria.checklistConcluido'), t('auditoria.checklistConcluidoMsg'));
   };
 
   const handleExportPDF = useCallback(async (processo) => {
@@ -577,11 +582,11 @@ export default function Auditoria() {
 
       doc.save(`relatorio_auditoria_${processo.auditor_responsavel?.replace(/\s/g, '_') || 'auditoria'}_${new Date().toISOString().split('T')[0]}.pdf`);
 
-      showSuccess('Relatório Exportado!', 'O relatório PDF foi gerado com sucesso.');
+      showSuccess(t('auditoria.relatorioExportado'), t('auditoria.relatorioExportadoMsg'));
 
     } catch (error) {
       console.error("Erro ao exportar PDF:", error);
-      showError('Erro ao Exportar PDF', `Ocorreu um erro ao gerar o relatório PDF: ${error.message || 'Erro desconhecido'}`);
+      showError(t('auditoria.erroExportarPDF'), `${error.message || ''}`);
     } finally {
       setIsLoading(false);
     }
@@ -679,28 +684,28 @@ export default function Auditoria() {
   const hasActiveFilters = filtros.aeroporto !== 'todos' || filtros.status !== 'todos' || filtros.dataInicio || filtros.dataFim || filtros.responsavel;
 
   const statusOptions = [
-  { value: "todos", label: "Todos" },
-  { value: "planejada", label: "Planejada" },
-  { value: "em_andamento", label: "Em Andamento" },
-  { value: "concluida", label: "Concluída" },
-  { value: "aprovada", label: "Aprovada" }];
+  { value: "todos", label: t('auditoria.todasCategorias') },
+  { value: "planejada", label: t('auditoria.planejada') },
+  { value: "em_andamento", label: t('auditoria.em_andamento') },
+  { value: "concluida", label: t('auditoria.concluidas') },
+  { value: "aprovada", label: t('auditoria.aprovada') }];
 
 
   const pacStatusOptions = [
-  { value: "todos", label: "Todos" },
-  { value: "elaboracao", label: "Em Elaboração" },
-  { value: "submetido", label: "Submetido" },
-  { value: "aprovado", label: "Aprovado" },
-  { value: "em_execucao", label: "Em Execução" },
-  { value: "concluido", label: "Concluído" },
-  { value: "vencido", label: "Vencido" }];
+  { value: "todos", label: t('auditoria.todasCategorias') },
+  { value: "elaboracao", label: t('auditoria.elaboracao') },
+  { value: "submetido", label: t('auditoria.submetido') },
+  { value: "aprovado", label: t('auditoria.aprovado') },
+  { value: "em_execucao", label: t('auditoria.em_execucao') },
+  { value: "concluido", label: t('auditoria.concluido') },
+  { value: "vencido", label: t('auditoria.vencido') }];
 
 
   // Options for aeroporto combobox, based on user access
   const aeroportoOptions = useMemo(() => [
-  { value: 'todos', label: 'Todos os Aeroportos' },
+  { value: 'todos', label: t('auditoria.todosAeroportos') },
   ...aeroportosAcesso.map((a) => ({ value: a.codigo_icao, label: `${a.nome} (${a.codigo_icao})` }))],
-  [aeroportosAcesso]);
+  [aeroportosAcesso, t]);
 
 
   return (
@@ -718,11 +723,11 @@ export default function Auditoria() {
             {gestaoPermission &&
             <Button variant="outline" onClick={() => setShowConfigModal(true)}> {/* Changed to setShowConfigModal */}
                 <Settings className="w-4 h-4 mr-2" />
-                Configurações
+                {t('auditoria.configuracoes')}
               </Button>
             }
             <Button className="bg-blue-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-10 hover:bg-blue-700" onClick={() => openForm()}>
-              <Plus className="w-4 h-4 mr-2" /> Nova Auditoria
+              <Plus className="w-4 h-4 mr-2" /> {t('auditoria.novaAuditoria')}
             </Button>
           </div>
         </div>
@@ -730,9 +735,9 @@ export default function Auditoria() {
         {currentUser === null && !isLoading &&
         <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Não Autenticado</AlertTitle>
+            <AlertTitle>{t('auditoria.naoAutenticado')}</AlertTitle>
             <AlertDescription>
-              Você não está logado ou não tem permissão para acessar algumas funcionalidades. Por favor, faça login.
+              {t('auditoria.naoAutenticadoDesc')}
             </AlertDescription>
           </Alert>
         }
@@ -750,7 +755,7 @@ export default function Auditoria() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Auditorias</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('auditoria.totalAuditorias')}</p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{estatisticas.total}</p>
                 </div>
                 <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400" />
@@ -762,7 +767,7 @@ export default function Auditoria() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Concluídas</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('auditoria.concluidas')}</p>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400">{estatisticas.concluidas}</p>
                 </div>
                 <Shield className="h-8 w-8 text-green-600 dark:text-green-400" />
@@ -774,7 +779,7 @@ export default function Auditoria() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Em Andamento</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('auditoria.emAndamento')}</p>
                   <p className="text-2xl font-bold text-orange-600">{estatisticas.emAndamento}</p>
                 </div>
                 <Settings className="h-8 w-8 text-orange-600" />
@@ -786,7 +791,7 @@ export default function Auditoria() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Conformidade Média</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('auditoria.conformidadeMedia')}</p>
                   <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{estatisticas.conformidadeMedia.toFixed(1)}%</p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
@@ -802,7 +807,7 @@ export default function Auditoria() {
             className="justify-start h-auto p-3 flex-col gap-2">
 
             <FileText className="w-5 h-5" />
-            <span className="text-xs">Todas</span>
+            <span className="text-xs">{t('auditoria.todasCategorias')}</span>
           </Button>
           {Object.entries(CATEGORIAS_CONFIG).map(([key, config]) => {
             const Icon = config.icon;
@@ -814,7 +819,7 @@ export default function Auditoria() {
                 className="justify-start h-auto p-3 flex-col gap-2">
 
                 <Icon className={`w-5 h-5 ${selectedCategoria === key ? 'text-white' : config.color}`} />
-                <span className="text-xs text-center leading-tight">{config.label}</span>
+                <span className="text-xs text-center leading-tight">{t(config.labelKey)}</span>
               </Button>);
 
           })}
@@ -825,16 +830,16 @@ export default function Auditoria() {
             <TabsList className="grid w-full grid-cols-2 bg-transparent border-b-0 p-0 m-0">
               <TabsTrigger value="processos" className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:shadow-none -mb-px">
                 <ClipboardCheck className="w-4 h-4" />
-                <span className="hidden sm:inline">Processos de Auditoria</span>
+                <span className="hidden sm:inline">{t('auditoria.processosAuditoria')}</span>
               </TabsTrigger>
               <TabsTrigger value="pacs" className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:shadow-none -mb-px">
                 <CheckCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Planos de Ação Corretiva (PACs)</span>
+                <span className="hidden sm:inline">{t('auditoria.planosAcaoCorretiva')}</span>
               </TabsTrigger>
             </TabsList>
             <Button onClick={loadData} variant="outline" className="ml-4 shrink-0">
               <RefreshCw className="w-4 h-4 mr-2" />
-              Atualizar
+              {t('auditoria.atualizar')}
             </Button>
           </div>
 
@@ -844,12 +849,12 @@ export default function Auditoria() {
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-                    Filtros de Pesquisa
+                    {t('auditoria.filtrosPesquisa')}
                   </CardTitle>
                   {hasActiveFilters &&
                   <Button variant="ghost" size="sm" onClick={clearFilters} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600">
                       <X className="w-4 h-4 mr-1" />
-                      Limpar Filtros
+                      {t('auditoria.limparFiltros')}
                     </Button>
                   }
                 </div>
@@ -857,37 +862,37 @@ export default function Auditoria() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="space-y-1">
-                    <Label htmlFor="filtro-aeroporto">Aeroporto</Label>
+                    <Label htmlFor="filtro-aeroporto">{t('auditoria.aeroporto')}</Label>
                     <Combobox
                       options={aeroportoOptions}
                       value={filtros.aeroporto}
                       onValueChange={(value) => setFiltros((f) => ({ ...f, aeroporto: value || 'todos' }))}
-                      placeholder="Todos os Aeroportos"
-                      noResultsMessage="Nenhum aeroporto encontrado."
-                      searchPlaceholder="Procurar aeroporto..." />
+                      placeholder={t('auditoria.todosAeroportos')}
+                      noResultsMessage={t('auditoria.nenhumAeroporto')}
+                      searchPlaceholder={t('auditoria.procurarAeroporto')} />
 
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="filtro-status">Status</Label>
+                    <Label htmlFor="filtro-status">{t('auditoria.status')}</Label>
                     <Select
                       id="filtro-status"
                       options={statusOptions}
                       value={filtros.status}
                       onValueChange={(value) => setFiltros((f) => ({ ...f, status: value }))}
-                      placeholder="Todos" />
+                      placeholder={t('auditoria.todasCategorias')} />
 
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="filtro-responsavel">Responsável</Label>
+                    <Label htmlFor="filtro-responsavel">{t('auditoria.responsavel')}</Label>
                     <Input
                       id="filtro-responsavel"
-                      placeholder="Nome do auditor..."
+                      placeholder={t('auditoria.nomeAuditor')}
                       value={filtros.responsavel}
                       onChange={(e) => setFiltros((f) => ({ ...f, responsavel: e.target.value }))} />
 
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="filtro-data-inicio">Data Início</Label>
+                    <Label htmlFor="filtro-data-inicio">{t('auditoria.dataInicio')}</Label>
                     <Input
                       id="filtro-data-inicio"
                       type="date"
@@ -896,7 +901,7 @@ export default function Auditoria() {
 
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="filtro-data-fim">Data Fim</Label>
+                    <Label htmlFor="filtro-data-fim">{t('auditoria.dataFim')}</Label>
                     <Input
                       id="filtro-data-fim"
                       type="date"
@@ -911,7 +916,7 @@ export default function Auditoria() {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Processos de Auditoria ({filteredProcessos.length})</CardTitle>
+                  <CardTitle>{t('auditoria.processosAuditoria')} ({filteredProcessos.length})</CardTitle>
                   <div className="flex gap-2">
                     <Button
                       variant={viewMode === 'list' ? 'default' : 'outline'}
@@ -931,18 +936,18 @@ export default function Auditoria() {
                       onClick={toggleSortOrder}
                       className="flex items-center gap-2">
                       <ArrowUpDown className="w-4 h-4" />
-                      {sortOrder === 'asc' ? 'Crescente' : 'Decrescente'}
+                      {sortOrder === 'asc' ? t('auditoria.crescente') : t('auditoria.decrescente')}
                     </Button>
                     <Select
                       options={[
-                        { value: 'data_auditoria', label: 'Data' },
-                        { value: 'numero_auditoria', label: 'Número' },
-                        { value: 'conformidade', label: 'Conformidade' },
-                        { value: 'status', label: 'Status' }
+                        { value: 'data_auditoria', label: t('auditoria.ordenarPorData') },
+                        { value: 'numero_auditoria', label: t('auditoria.ordenarPorNumero') },
+                        { value: 'conformidade', label: t('auditoria.ordenarPorConformidade') },
+                        { value: 'status', label: t('auditoria.ordenarPorStatus') }
                       ]}
                       value={sortField}
                       onValueChange={setSortField}
-                      placeholder="Ordenar por" />
+                      placeholder={t('auditoria.ordenarPor')} />
                   </div>
                 </div>
               </CardHeader>
@@ -950,16 +955,16 @@ export default function Auditoria() {
                 {isLoading ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-slate-600 dark:text-slate-400">Carregando auditorias...</p>
+                    <p className="text-slate-600 dark:text-slate-400">{t('auditoria.carregandoAuditorias')}</p>
                   </div>
                 ) : filteredProcessos.length === 0 ? (
                   <div className="text-center py-8">
                     <FileText className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                     <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                      Nenhuma auditoria encontrada
+                      {t('auditoria.nenhumaAuditoria')}
                     </h3>
                     <p className="text-slate-500 dark:text-slate-400">
-                      Não há processos de auditoria que correspondam aos filtros selecionados.
+                      {t('auditoria.nenhumaAuditoriaDesc')}
                     </p>
                   </div>
                 ) : (
@@ -970,10 +975,10 @@ export default function Auditoria() {
                       const categoriaConfig = tipo ? CATEGORIAS_CONFIG[tipo.categoria] : null;
                       
                       const statusConfig = {
-                        planejada: { label: 'Planejada', color: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200' },
-                        em_andamento: { label: 'Em Andamento', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' },
-                        concluida: { label: 'Concluída', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' },
-                        aprovada: { label: 'Aprovada', color: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200' }
+                        planejada: { label: t('auditoria.planejada'), color: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200' },
+                        em_andamento: { label: t('auditoria.em_andamento'), color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' },
+                        concluida: { label: t('auditoria.concluidas'), color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' },
+                        aprovada: { label: t('auditoria.aprovada'), color: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200' }
                       };
                       
                       const config = statusConfig[processo.status] || statusConfig.planejada;
@@ -989,7 +994,7 @@ export default function Auditoria() {
                                 className="flex-1 cursor-pointer"
                                 onClick={() => handleViewAuditoria(processo)}>
                                 <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">{processo.numero_auditoria}</h3>
-                                <p className="text-slate-600 dark:text-slate-400">{tipo?.nome || 'Tipo não encontrado'}</p>
+                                <p className="text-slate-600 dark:text-slate-400">{tipo?.nome || t('auditoria.tipoNaoEncontrado')}</p>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Badge className={config.color}>{config.label}</Badge>
@@ -1024,23 +1029,23 @@ export default function Auditoria() {
                               <div className="flex items-center gap-2">
                                 <MapPin className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500 dark:text-slate-400">Aeroporto</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('auditoria.aeroporto')}</p>
                                   <p className="font-medium text-sm">{aeroporto?.nome || processo.aeroporto_id}</p>
                                 </div>
                               </div>
-                              
+
                               <div className="flex items-center gap-2">
                                 <UserIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500 dark:text-slate-400">Auditor</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('auditoria.auditor')}</p>
                                   <p className="font-medium text-sm">{processo.auditor_responsavel}</p>
                                 </div>
                               </div>
-                              
+
                               <div className="flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500 dark:text-slate-400">Data</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('auditoria.data')}</p>
                                   <p className="font-medium text-sm">
                                     {processo.data_auditoria ? format(new Date(processo.data_auditoria), 'dd/MM/yyyy', { locale: pt }) : 'N/A'}
                                   </p>
@@ -1050,15 +1055,15 @@ export default function Auditoria() {
                               <div className="flex items-center gap-2">
                                 <BarChart3 className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500 dark:text-slate-400">Conformidade</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('auditoria.conformidade')}</p>
                                   <p className="font-medium text-sm">{(processo.percentual_conformidade || 0).toFixed(1)}%</p>
                                 </div>
                               </div>
                             </div>
-                            
+
                             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                              <span>{processo.total_itens || 0} itens</span>
-                              <span className="text-green-600 dark:text-green-400">{processo.itens_conformes || 0} conformes</span>
+                              <span>{processo.total_itens || 0} {t('auditoria.itens')}</span>
+                              <span className="text-green-600 dark:text-green-400">{processo.itens_conformes || 0} {t('auditoria.conformes')}</span>
                               <span className="text-red-600 dark:text-red-400">{processo.itens_nao_conformes || 0} NC</span>
                             </div>
                           </CardContent>
@@ -1078,12 +1083,12 @@ export default function Auditoria() {
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-                    Filtros de Pesquisa
+                    {t('auditoria.filtrosPesquisa')}
                   </CardTitle>
                   {hasActiveFilters &&
                   <Button variant="ghost" size="sm" onClick={clearFilters} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600">
                       <X className="w-4 h-4 mr-1" />
-                      Limpar Filtros
+                      {t('auditoria.limparFiltros')}
                     </Button>
                   }
                 </div>
@@ -1091,37 +1096,37 @@ export default function Auditoria() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="space-y-1">
-                    <Label htmlFor="filtro-aeroporto-pac">Aeroporto</Label>
+                    <Label htmlFor="filtro-aeroporto-pac">{t('auditoria.aeroporto')}</Label>
                     <Combobox
                       options={aeroportoOptions}
                       value={filtros.aeroporto}
                       onValueChange={(value) => setFiltros((f) => ({ ...f, aeroporto: value || 'todos' }))}
-                      placeholder="Todos os Aeroportos"
-                      noResultsMessage="Nenhum aeroporto encontrado."
-                      searchPlaceholder="Procurar aeroporto..." />
+                      placeholder={t('auditoria.todosAeroportos')}
+                      noResultsMessage={t('auditoria.nenhumAeroporto')}
+                      searchPlaceholder={t('auditoria.procurarAeroporto')} />
 
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="filtro-status-pac">Status</Label>
+                    <Label htmlFor="filtro-status-pac">{t('auditoria.status')}</Label>
                     <Select
                       id="filtro-status-pac"
                       options={pacStatusOptions}
                       value={filtros.status}
                       onValueChange={(value) => setFiltros((f) => ({ ...f, status: value }))}
-                      placeholder="Todos" />
+                      placeholder={t('auditoria.todasCategorias')} />
 
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="filtro-responsavel-pac">Responsável</Label>
+                    <Label htmlFor="filtro-responsavel-pac">{t('auditoria.responsavel')}</Label>
                     <Input
                       id="filtro-responsavel-pac"
-                      placeholder="Nome do responsável..."
+                      placeholder={t('auditoria.nomeResponsavel')}
                       value={filtros.responsavel}
                       onChange={(e) => setFiltros((f) => ({ ...f, responsavel: e.target.value }))} />
 
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="filtro-data-inicio-pac">Data Criação Início</Label>
+                    <Label htmlFor="filtro-data-inicio-pac">{t('auditoria.dataCriacaoInicio')}</Label>
                     <Input
                       id="filtro-data-inicio-pac"
                       type="date"
@@ -1130,7 +1135,7 @@ export default function Auditoria() {
 
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="filtro-data-fim-pac">Data Criação Fim</Label>
+                    <Label htmlFor="filtro-data-fim-pac">{t('auditoria.dataCriacaoFim')}</Label>
                     <Input
                       id="filtro-data-fim-pac"
                       type="date"
@@ -1145,7 +1150,7 @@ export default function Auditoria() {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Planos de Ação Corretiva ({filteredPacs.length})</CardTitle>
+                  <CardTitle>{t('auditoria.planosAcaoCorretiva')} ({filteredPacs.length})</CardTitle>
                   <div className="flex gap-2">
                     <Button
                       variant={viewModePAC === 'list' ? 'default' : 'outline'}
@@ -1165,19 +1170,19 @@ export default function Auditoria() {
                       onClick={toggleSortOrderPAC}
                       className="flex items-center gap-2">
                       <ArrowUpDown className="w-4 h-4" />
-                      {sortOrderPAC === 'asc' ? 'Crescente' : 'Decrescente'}
+                      {sortOrderPAC === 'asc' ? t('auditoria.crescente') : t('auditoria.decrescente')}
                     </Button>
                     <Select
                       options={[
-                        { value: 'data_criacao', label: 'Data Criação' },
-                        { value: 'numero_pac', label: 'Número' },
-                        { value: 'prazo_conclusao', label: 'Prazo' },
-                        { value: 'progresso', label: 'Progresso' },
-                        { value: 'status', label: 'Status' }
+                        { value: 'data_criacao', label: t('auditoria.ordenarPorDataCriacao') },
+                        { value: 'numero_pac', label: t('auditoria.ordenarPorNumero') },
+                        { value: 'prazo_conclusao', label: t('auditoria.ordenarPorPrazo') },
+                        { value: 'progresso', label: t('auditoria.ordenarPorProgresso') },
+                        { value: 'status', label: t('auditoria.ordenarPorStatus') }
                       ]}
                       value={sortFieldPAC}
                       onValueChange={setSortFieldPAC}
-                      placeholder="Ordenar por" />
+                      placeholder={t('auditoria.ordenarPor')} />
                   </div>
                 </div>
               </CardHeader>
@@ -1185,16 +1190,16 @@ export default function Auditoria() {
                 {isLoading ?
                 <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-slate-600 dark:text-slate-400">Carregando PACs...</p>
+                    <p className="text-slate-600 dark:text-slate-400">{t('auditoria.carregandoPACs')}</p>
                   </div> :
                 filteredPacs.length === 0 ?
                 <div className="text-center py-8">
                     <FileText className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                     <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                      Nenhum PAC encontrado
+                      {t('auditoria.nenhumPAC')}
                     </h3>
                     <p className="text-slate-500 dark:text-slate-400">
-                      Não há Planos de Ação Corretiva que correspondam aos filtros selecionados.
+                      {t('auditoria.nenhumPACDesc')}
                     </p>
                   </div> :
 
@@ -1205,12 +1210,12 @@ export default function Auditoria() {
                     const tipo = processo ? tiposAuditoria.find((t) => t.id === processo.tipo_auditoria_id) : null;
 
                     const statusConfig = {
-                      elaboracao: { label: 'Em Elaboração', color: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200' },
-                      submetido: { label: 'Submetido', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' },
-                      aprovado: { label: 'Aprovado', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' },
-                      em_execucao: { label: 'Em Execução', color: 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200' },
-                      concluido: { label: 'Concluído', color: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200' },
-                      vencido: { label: 'Vencido', color: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' }
+                      elaboracao: { label: t('auditoria.elaboracao'), color: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200' },
+                      submetido: { label: t('auditoria.submetido'), color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' },
+                      aprovado: { label: t('auditoria.aprovado'), color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' },
+                      em_execucao: { label: t('auditoria.em_execucao'), color: 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200' },
+                      concluido: { label: t('auditoria.concluido'), color: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200' },
+                      vencido: { label: t('auditoria.vencido'), color: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' }
                     };
 
                     const config = statusConfig[pac.status] || statusConfig.elaboracao;
@@ -1227,7 +1232,7 @@ export default function Auditoria() {
                                 onClick={() => handleEditPAC(pac)}>
                                 <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">{pac.numero_pac}</h3>
                                 <p className="text-slate-600 dark:text-slate-400 capitalize">
-                                  {pac.tipo === 'formal_anac' ? 'Formal ANAC' : 'Interno'}
+                                  {pac.tipo === 'formal_anac' ? t('auditoria.formalAnac') : t('auditoria.interno')}
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
@@ -1265,7 +1270,7 @@ export default function Auditoria() {
                               <div className="flex items-center gap-2">
                                 <MapPin className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500 dark:text-slate-400">Aeroporto</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('auditoria.aeroporto')}</p>
                                   <p className="font-medium text-sm">{aeroporto?.nome || pac.aeroporto_id}</p>
                                 </div>
                               </div>
@@ -1273,7 +1278,7 @@ export default function Auditoria() {
                               <div className="flex items-center gap-2">
                                 <UserIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500 dark:text-slate-400">Responsável</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('auditoria.responsavel')}</p>
                                   <p className="font-medium text-sm">{pac.responsavel_elaboracao}</p>
                                 </div>
                               </div>
@@ -1281,7 +1286,7 @@ export default function Auditoria() {
                               <div className="flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500 dark:text-slate-400">Prazo</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('auditoria.prazo')}</p>
                                   <p className="font-medium text-sm">
                                     {pac.prazo_conclusao ? format(new Date(pac.prazo_conclusao), 'dd/MM/yyyy', { locale: pt }) : 'N/A'}
                                   </p>
@@ -1291,7 +1296,7 @@ export default function Auditoria() {
                               <div className="flex items-center gap-2">
                                 <BarChart3 className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500 dark:text-slate-400">Progresso</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('auditoria.progresso')}</p>
                                   <p className="font-medium text-sm">{(pac.percentual_conclusao || 0).toFixed(0)}%</p>
                                 </div>
                               </div>
@@ -1299,15 +1304,15 @@ export default function Auditoria() {
 
                             {tipo && processo &&
                           <div className="mb-4">
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Auditoria Relacionada</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t('auditoria.auditoriaRelacionada')}</p>
                                 <p className="font-medium text-sm">{tipo.nome} ({processo.numero_auditoria})</p>
                               </div>
                           }
 
                             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
                               <span>{pac.total_nao_conformidades || 0} NC</span>
-                              <span>{pac.nao_conformidades_concluidas || 0} concluídas</span>
-                              <span className="text-xs">Criado em {format(new Date(pac.data_criacao), 'dd/MM/yyyy', { locale: pt })}</span>
+                              <span>{pac.nao_conformidades_concluidas || 0} {t('auditoria.concluidas_items')}</span>
+                              <span className="text-xs">{t('auditoria.criadoEm')} {format(new Date(pac.data_criacao), 'dd/MM/yyyy', { locale: pt })}</span>
                             </div>
                           </CardContent>
                         </Card>);
@@ -1384,7 +1389,7 @@ export default function Auditoria() {
         <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
             <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Configurações de Auditoria</DialogTitle>
+                <DialogTitle>{t('auditoria.configuracoesAuditoria')}</DialogTitle>
               </DialogHeader>
               <ConfiguracaoAuditoria
               tipos={tiposAuditoria}
@@ -1398,20 +1403,20 @@ export default function Auditoria() {
           isOpen={deleteProcessoInfo.isOpen}
           onClose={() => setDeleteProcessoInfo({ isOpen: false, processo: null })}
           onConfirm={handleDeleteProcesso}
-          title="Confirmar Exclusão"
-          message={`Tem certeza que deseja excluir a auditoria "${deleteProcessoInfo.processo?.numero_auditoria}"? Esta ação não pode ser desfeita.`}
+          title={t('auditoria.confirmarExclusao')}
+          message={t('auditoria.confirmarExclusaoAuditoria').replace('{0}', deleteProcessoInfo.processo?.numero_auditoria || '')}
           type="warning"
-          confirmText="Excluir"
+          confirmText={t('auditoria.excluir')}
           showCancel />
 
         <AlertModal
           isOpen={deletePACInfo.isOpen}
           onClose={() => setDeletePACInfo({ isOpen: false, pac: null })}
           onConfirm={handleDeletePAC}
-          title="Confirmar Exclusão"
-          message={`Tem certeza que deseja excluir o PAC "${deletePACInfo.pac?.numero_pac}"? Esta ação não pode ser desfeita.`}
+          title={t('auditoria.confirmarExclusao')}
+          message={t('auditoria.confirmarExclusaoPAC').replace('{0}', deletePACInfo.pac?.numero_pac || '')}
           type="warning"
-          confirmText="Excluir"
+          confirmText={t('auditoria.excluir')}
           showCancel />
 
       </div>

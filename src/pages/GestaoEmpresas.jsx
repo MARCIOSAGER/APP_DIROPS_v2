@@ -208,7 +208,7 @@ export default function GestaoEmpresas() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{empresas.length}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Empresas</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('empresas.empresas')}</p>
               </div>
             </div>
           </CardContent>
@@ -221,7 +221,7 @@ export default function GestaoEmpresas() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{aeroportos.length}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Aeroportos</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('empresas.aeroportos')}</p>
               </div>
             </div>
           </CardContent>
@@ -234,7 +234,7 @@ export default function GestaoEmpresas() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{users.length}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Utilizadores</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('empresas.utilizadores')}</p>
               </div>
             </div>
           </CardContent>
@@ -245,7 +245,7 @@ export default function GestaoEmpresas() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
         <Input
-          placeholder="Pesquisar empresa..."
+          placeholder={t('empresas.pesquisar')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
@@ -258,21 +258,21 @@ export default function GestaoEmpresas() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">Logo</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>NIF</TableHead>
-                <TableHead>Contacto</TableHead>
-                <TableHead className="text-center">Aeroportos</TableHead>
-                <TableHead className="text-center">Utilizadores</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="w-12">{t('empresas.logo')}</TableHead>
+                <TableHead>{t('empresas.nome')}</TableHead>
+                <TableHead>{t('empresas.nif')}</TableHead>
+                <TableHead>{t('empresas.contacto')}</TableHead>
+                <TableHead className="text-center">{t('empresas.aeroportos')}</TableHead>
+                <TableHead className="text-center">{t('empresas.utilizadores')}</TableHead>
+                <TableHead>{t('empresas.statusCol')}</TableHead>
+                <TableHead className="text-right">{t('empresas.acoesCol')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredEmpresas.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-slate-500 dark:text-slate-400">
-                    Nenhuma empresa encontrada
+                    {t('empresas.nenhumaEmpresa')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -314,13 +314,13 @@ export default function GestaoEmpresas() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenDetail(empresa)} title="Ver detalhes">
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenDetail(empresa)} title={t('empresas.verDetalhes')}>
                             <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(empresa)} title="Editar">
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(empresa)} title={t('empresas.editar')}>
                             <Edit className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(empresa)} title="Eliminar">
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(empresa)} title={t('empresas.eliminar')}>
                             <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
                           </Button>
                         </div>
@@ -340,17 +340,17 @@ export default function GestaoEmpresas() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              {editingEmpresa ? 'Editar Empresa' : 'Nova Empresa'}
+              {editingEmpresa ? t('empresas.editarEmpresa') : t('empresas.novaEmpresa')}
             </DialogTitle>
             <DialogDescription>
-              {editingEmpresa ? 'Altere os dados da empresa.' : 'Preencha os dados da nova empresa.'}
+              {editingEmpresa ? t('empresas.editarDesc') : t('empresas.novaDesc')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-2">
             {/* Logo Upload */}
             <div>
-              <Label>Logo da Empresa</Label>
+              <Label>{t('empresas.logoEmpresa')}</Label>
               <div className="flex items-center gap-4 mt-2">
                 {formData.logo_url ? (
                   <img src={formData.logo_url} alt="Logo" className="h-12 w-auto max-w-[120px] object-contain border rounded p-1" />
@@ -364,7 +364,7 @@ export default function GestaoEmpresas() {
                     <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
                     <span className="inline-flex items-center gap-1 px-3 py-2 text-sm border dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800">
                       <Upload className="w-4 h-4" />
-                      {isUploading ? 'A carregar...' : 'Upload'}
+                      {isUploading ? t('empresas.carregando') : t('empresas.upload')}
                     </span>
                   </label>
                   {formData.logo_url && (
@@ -375,22 +375,22 @@ export default function GestaoEmpresas() {
                 </div>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Quando não houver logo, será exibido o logo DIROPS padrão.
+                {t('empresas.logoFallback')}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="nome">Nome da Empresa *</Label>
+              <Label htmlFor="nome">{t('empresas.nomeEmpresa')}</Label>
               <Input id="nome" value={formData.nome} onChange={(e) => handleChange('nome', e.target.value)} placeholder="Ex: SGA, SA" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="nif">NIF</Label>
+                <Label htmlFor="nif">{t('empresas.nif')}</Label>
                 <Input id="nif" value={formData.nif} onChange={(e) => handleChange('nif', e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('empresas.statusCol')}</Label>
                 <select
                   id="status"
                   value={formData.status}
@@ -405,28 +405,28 @@ export default function GestaoEmpresas() {
             </div>
 
             <div>
-              <Label htmlFor="endereco">Endereço</Label>
+              <Label htmlFor="endereco">{t('empresas.endereco')}</Label>
               <Input id="endereco" value={formData.endereco} onChange={(e) => handleChange('endereco', e.target.value)} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="telefone">Telefone</Label>
+                <Label htmlFor="telefone">{t('empresas.telefone')}</Label>
                 <Input id="telefone" value={formData.telefone} onChange={(e) => handleChange('telefone', e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('empresas.email')}</Label>
                 <Input id="email" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="website">Website</Label>
+              <Label htmlFor="website">{t('empresas.website')}</Label>
               <Input id="website" value={formData.website} onChange={(e) => handleChange('website', e.target.value)} placeholder="https://..." />
             </div>
 
             <div>
-              <Label htmlFor="observacoes">Observações</Label>
+              <Label htmlFor="observacoes">{t('empresas.observacoes')}</Label>
               <textarea
                 id="observacoes"
                 value={formData.observacoes}
@@ -439,11 +439,11 @@ export default function GestaoEmpresas() {
           <DialogFooter className="border-t pt-4">
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>
               <X className="w-4 h-4 mr-1" />
-              Cancelar
+              {t('empresas.cancelar')}
             </Button>
             <Button onClick={handleSave} disabled={isSaving || !formData.nome.trim()} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Save className="w-4 h-4 mr-1" />
-              {isSaving ? 'A salvar...' : 'Salvar'}
+              {isSaving ? t('empresas.aSalvar') : t('empresas.salvar')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -461,7 +461,7 @@ export default function GestaoEmpresas() {
               )}
               {selectedEmpresa?.nome}
             </DialogTitle>
-            <DialogDescription>Detalhes da empresa e recursos associados.</DialogDescription>
+            <DialogDescription>{t('empresas.detalhes')}</DialogDescription>
           </DialogHeader>
 
           {selectedEmpresa && (
@@ -504,11 +504,11 @@ export default function GestaoEmpresas() {
               <div>
                 <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-3">
                   <MapPin className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  Aeroportos ({getAeroportosDaEmpresa(selectedEmpresa.id).length})
+                  {t('empresas.aeroportos')} ({getAeroportosDaEmpresa(selectedEmpresa.id).length})
                 </h3>
                 <div className="space-y-2">
                   {getAeroportosDaEmpresa(selectedEmpresa.id).length === 0 ? (
-                    <p className="text-sm text-slate-500 dark:text-slate-400 italic">Nenhum aeroporto associado.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 italic">{t('empresas.nenhumAeroporto')}</p>
                   ) : (
                     getAeroportosDaEmpresa(selectedEmpresa.id).map(aeroporto => (
                       <div key={aeroporto.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-950 rounded">
@@ -529,11 +529,11 @@ export default function GestaoEmpresas() {
               <div>
                 <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-3">
                   <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  Utilizadores ({getUsersDaEmpresa(selectedEmpresa.id).length})
+                  {t('empresas.utilizadores')} ({getUsersDaEmpresa(selectedEmpresa.id).length})
                 </h3>
                 <div className="space-y-2">
                   {getUsersDaEmpresa(selectedEmpresa.id).length === 0 ? (
-                    <p className="text-sm text-slate-500 dark:text-slate-400 italic">Nenhum utilizador associado.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 italic">{t('empresas.nenhumUtilizador')}</p>
                   ) : (
                     getUsersDaEmpresa(selectedEmpresa.id).map(u => (
                       <div key={u.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-950 rounded">
@@ -554,7 +554,7 @@ export default function GestaoEmpresas() {
 
               {selectedEmpresa.observacoes && (
                 <div>
-                  <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Observações</h3>
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">{t('empresas.observacoes')}</h3>
                   <p className="text-sm text-slate-600 dark:text-slate-400">{selectedEmpresa.observacoes}</p>
                 </div>
               )}
@@ -562,10 +562,10 @@ export default function GestaoEmpresas() {
           )}
 
           <DialogFooter className="border-t pt-4">
-            <Button variant="outline" onClick={() => setIsDetailOpen(false)}>Fechar</Button>
+            <Button variant="outline" onClick={() => setIsDetailOpen(false)}>{t('empresas.fechar')}</Button>
             <Button onClick={() => { setIsDetailOpen(false); handleOpenEdit(selectedEmpresa); }} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Edit className="w-4 h-4 mr-1" />
-              Editar
+              {t('empresas.editar')}
             </Button>
           </DialogFooter>
         </DialogContent>

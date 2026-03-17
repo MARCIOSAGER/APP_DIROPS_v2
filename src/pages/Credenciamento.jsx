@@ -327,24 +327,24 @@ export default function Credenciamento() {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('page.credenciamento.title')}</h1>
             <p className="text-slate-600 dark:text-slate-400">
-              {isGestorEmpresa 
-                ? 'Portal de gestão das suas solicitações de credencial' 
-                : 'Sistema de gestão de credenciais aeroportuárias'
+              {isGestorEmpresa
+                ? t('credenciamento.subtitleGestor')
+                : t('credenciamento.subtitleInterno')
               }
             </p>
           </div>
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <Button variant="outline" onClick={loadData} disabled={isLoading} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Atualizar
+              {t('credenciamento.atualizar')}
             </Button>
             <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileDown className="w-4 h-4 mr-2" />
-              Exportar CSV
+              {t('credenciamento.exportarCSV')}
             </Button>
             <Button onClick={() => { setEditingCredenciamento(null); setIsFormOpen(true); }} className="bg-blue-500 hover:bg-blue-600 text-white">
               <Plus className="w-4 h-4 mr-2" />
-              Nova Solicitação
+              {t('credenciamento.novaSolicitacao')}
             </Button>
           </div>
         </div>
@@ -360,11 +360,11 @@ export default function Credenciamento() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="credenciamentos">Credenciamentos</TabsTrigger>
+            <TabsTrigger value="credenciamentos">{t('credenciamento.tabCredenciamentos')}</TabsTrigger>
             {!isGestorEmpresa && (
               <TabsTrigger value="configuracao">
                 <Settings className="w-4 h-4 mr-2" />
-                Configuração
+                {t('credenciamento.tabConfiguracao')}
               </TabsTrigger>
             )}
           </TabsList>

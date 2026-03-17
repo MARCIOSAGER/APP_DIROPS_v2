@@ -57,12 +57,6 @@ import LixeiraVoosModal from '../components/operacoes/LixeiraVoosModal';
 import DocumentosVooModal from '../components/operacoes/DocumentosVooModal';
 import UploadMultiplosDocumentosModal from '../components/operacoes/UploadMultiplosDocumentosModal';
 
-const STATUS_CONFIG = {
-  "Programado": { label: "Programado", color: "blue" },
-  "Realizado": { label: "Realizado", color: "green" },
-  "Cancelado": { label: "Cancelado", color: "red" },
-};
-
 const formatCurrency = (value, currency = 'AOA') => {
   return new Intl.NumberFormat('pt-AO', { style: 'currency', currency: currency }).format(value || 0);
 };
@@ -172,7 +166,7 @@ export default function Operacoes() {
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   const getErrorMessage = (error) => {
-    if (!error) return 'Erro desconhecido';
+    if (!error) return t('common.error');
     if (typeof error === 'string') return error;
     if (error.message) return error.message;
     if (error.error) return error.error;
@@ -259,10 +253,10 @@ export default function Operacoes() {
       }
 
       if (error.message?.includes('You must be logged in')) {
-        alert('Sessão expirada. Por favor, faça login novamente.');
+        alert(t('operacoes.sessao_expirada'));
         await User.login();
       } else if (error.response?.status === 403) {
-        alert('Acesso negado. Será redirecionado.');
+        alert(t('operacoes.acesso_negado'));
         window.location.href = createPageUrl('Home');
       }
 
@@ -421,8 +415,8 @@ export default function Operacoes() {
         setAlertInfo({
           isOpen: true,
           type: 'error',
-          title: 'Erro ao Filtrar',
-          message: 'Não foi possível buscar voos do período selecionado.'
+          title: t('operacoes.erro_filtrar'),
+          message: t('operacoes.erro_filtrar_msg')
         });
       } finally {
         setIsFiltering(false);
@@ -490,8 +484,8 @@ export default function Operacoes() {
         setAlertInfo({
           isOpen: true,
           type: 'error',
-          title: 'Erro ao Filtrar',
-          message: 'Não foi possível buscar voos ligados do período selecionado.'
+          title: t('operacoes.erro_filtrar'),
+          message: t('operacoes.erro_filtrar_ligados_msg')
         });
       } finally {
         setIsFilteringLigados(false);
@@ -843,10 +837,10 @@ export default function Operacoes() {
             setAlertInfo({
               isOpen: true,
               type: 'error',
-              title: 'Erro no Cálculo Automático',
-              message: `Voo salvo, mas cálculo falhou:\n\n${errorMessage}\n\nVerifique:\n• Aeronave tem MTOW?\n• Aeroporto tem categoria?\n• Tarifas cadastradas?`,
+              title: t('operacoes.erro_calculo_automatico'),
+              message: `${errorMessage}`,
               showCancel: false,
-              confirmText: 'Entendi'
+              confirmText: t('operacoes.entendi')
             });
           }
         } else {
@@ -914,8 +908,8 @@ export default function Operacoes() {
             setAlertInfo({
               isOpen: true,
               type: 'warning',
-              title: 'Aviso',
-              message: `Voo atualizado, mas recálculo falhou:\n\n${errorMessage}`
+              title: t('operacoes.aviso'),
+              message: errorMessage
             });
           }
         }
@@ -929,10 +923,8 @@ export default function Operacoes() {
 
       setSuccessInfo({
         isOpen: true,
-        title: editingVoo ? 'Voo Atualizado!' : 'Voo Criado!',
-        message: editingVoo
-          ? `Voo ${vooData.numero_voo} atualizado${tariffsCalculatedSuccessfully ? ' e tarifas recalculadas' : ''}.`
-          : `Voo ${vooData.numero_voo} criado${tariffsCalculatedSuccessfully ? ' e tarifas calculadas' : ''}.`
+        title: editingVoo ? t('operacoes.voo_atualizado') : t('operacoes.voo_criado'),
+        message: `${vooData.numero_voo}${tariffsCalculatedSuccessfully ? t(editingVoo ? 'operacoes.e_tarifas_recalculadas' : 'operacoes.e_tarifas_calculadas') : ''}.`
       });
     } catch (error) {
       console.error('Erro ao salvar voo:', error);
@@ -940,8 +932,8 @@ export default function Operacoes() {
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Salvar Voo',
-        message: errorMessage || 'Não foi possível salvar o voo.'
+        title: t('operacoes.erro_salvar_voo'),
+        message: errorMessage || t('operacoes.erro_salvar_voo_msg')
       });
     }
   };
@@ -950,10 +942,10 @@ export default function Operacoes() {
     setAlertInfo({
       isOpen: true,
       type: 'warning',
-      title: 'Cancelar Voo',
-      message: `Tem certeza que deseja cancelar o voo ${voo.numero_voo}?`,
+      title: t('operacoes.cancelar_voo'),
+      message: `${t('operacoes.cancelar_voo')} ${voo.numero_voo}?`,
       showCancel: true,
-      confirmText: 'Cancelar Voo',
+      confirmText: t('operacoes.cancelar_voo'),
       onConfirm: async () => {
         setAlertInfo(prev => ({ ...prev, isOpen: false }));
         try {
@@ -961,16 +953,16 @@ export default function Operacoes() {
           await refreshSpecificData(['voos']);
           setSuccessInfo({
             isOpen: true,
-            title: 'Voo Cancelado!',
-            message: `O voo ${voo.numero_voo} foi cancelado.`
+            title: t('operacoes.voo_cancelado'),
+            message: `${voo.numero_voo}`
           });
         } catch (error) {
           console.error('Erro ao cancelar voo:', error);
           setAlertInfo({
             isOpen: true,
             type: 'error',
-            title: 'Erro ao Cancelar',
-            message: 'Não foi possível cancelar o voo.'
+            title: t('operacoes.erro_cancelar'),
+            message: t('operacoes.erro_cancelar_msg')
           });
         }
       }
@@ -981,10 +973,10 @@ export default function Operacoes() {
     setAlertInfo({
       isOpen: true,
       type: 'error',
-      title: 'Mover para Lixeira',
-      message: `Tem certeza que deseja mover o voo ${voo.numero_voo} para a lixeira?`,
+      title: t('operacoes.mover_lixeira'),
+      message: `${voo.numero_voo}?`,
       showCancel: true,
-      confirmText: 'Mover',
+      confirmText: t('operacoes.mover'),
       onConfirm: async () => {
         setAlertInfo(prev => ({ ...prev, isOpen: false }));
         try {
@@ -997,16 +989,16 @@ export default function Operacoes() {
 
           setSuccessInfo({
             isOpen: true,
-            title: 'Voo Movido para Lixeira!',
-            message: `O voo ${voo.numero_voo} foi movido para a lixeira.`
+            title: t('operacoes.voo_lixeira'),
+            message: `${voo.numero_voo}`
           });
         } catch (error) {
           console.error('Erro ao mover voo:', error);
           setAlertInfo({
             isOpen: true,
             type: 'error',
-            title: 'Erro ao Mover',
-            message: 'Não foi possível mover o voo para a lixeira.'
+            title: t('operacoes.erro_mover'),
+            message: t('operacoes.erro_mover_msg')
           });
         }
       }
@@ -1018,8 +1010,8 @@ export default function Operacoes() {
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Acesso Negado',
-        message: 'Apenas administradores podem excluir voos permanentemente.'
+        title: t('operacoes.acesso_negado_titulo'),
+        message: t('operacoes.acesso_negado_excluir')
       });
       return;
     }
@@ -1027,10 +1019,10 @@ export default function Operacoes() {
     setAlertInfo({
       isOpen: true,
       type: 'error',
-      title: 'Excluir Permanentemente',
-      message: `Tem certeza que deseja EXCLUIR PERMANENTEMENTE o voo ${voo.numero_voo}? Esta ação não pode ser revertida.`,
+      title: t('operacoes.excluir_permanentemente'),
+      message: `${voo.numero_voo}? ${t('operacoes.excluir_permanentemente')}`,
       showCancel: true,
-      confirmText: 'Excluir Permanentemente',
+      confirmText: t('operacoes.excluir_permanentemente'),
       onConfirm: async () => {
         setAlertInfo(prev => ({ ...prev, isOpen: false }));
         try {
@@ -1038,16 +1030,16 @@ export default function Operacoes() {
           await refreshSpecificData(['voos']);
           setSuccessInfo({
             isOpen: true,
-            title: 'Voo Excluído Permanentemente!',
-            message: `O voo ${voo.numero_voo} foi removido definitivamente do sistema.`
+            title: t('operacoes.voo_excluido'),
+            message: `${voo.numero_voo}`
           });
         } catch (error) {
           console.error('Erro ao excluir permanentemente:', error);
           setAlertInfo({
             isOpen: true,
             type: 'error',
-            title: 'Erro ao Excluir',
-            message: 'Não foi possível excluir o voo permanentemente.'
+            title: t('operacoes.erro_excluir'),
+            message: t('operacoes.erro_excluir_msg')
           });
         }
       }
@@ -1061,10 +1053,10 @@ export default function Operacoes() {
     setAlertInfo({
       isOpen: true,
       type: 'error',
-      title: 'Excluir Vinculação',
-      message: `Tem certeza que deseja excluir a vinculação entre os voos ${arrVoo?.numero_voo || 'N/A'} (ARR) e ${depVoo?.numero_voo || 'N/A'} (DEP)? Isso também removerá os cálculos de tarifas associados.`,
+      title: t('operacoes.excluir_vinculacao'),
+      message: `${arrVoo?.numero_voo || 'N/A'} (ARR) / ${depVoo?.numero_voo || 'N/A'} (DEP)`,
       showCancel: true,
-      confirmText: 'Excluir Vinculação',
+      confirmText: t('operacoes.excluir_vinculacao'),
       onConfirm: async () => {
         setAlertInfo(prev => ({ ...prev, isOpen: false }));
         try {
@@ -1091,16 +1083,16 @@ export default function Operacoes() {
 
           setSuccessInfo({
             isOpen: true,
-            title: 'Vinculação Excluída!',
-            message: `A vinculação entre os voos foi removida com sucesso.`
+            title: t('operacoes.vinculacao_excluida'),
+            message: t('operacoes.vinculacao_excluida_msg')
           });
         } catch (error) {
           console.error('Erro ao excluir vinculação:', error);
           setAlertInfo({
             isOpen: true,
             type: 'error',
-            title: 'Erro ao Excluir',
-            message: 'Não foi possível excluir a vinculação.'
+            title: t('operacoes.erro_excluir'),
+            message: t('operacoes.erro_excluir_vinculacao')
           });
         }
       }
@@ -1119,8 +1111,8 @@ export default function Operacoes() {
       setAlertInfo({
         isOpen: true,
         type: 'info',
-        title: 'Nenhum Voo',
-        message: 'Não há voos ligados para recalcular.'
+        title: t('operacoes.nenhum_voo'),
+        message: t('operacoes.nenhum_voo_recalcular')
       });
       return;
     }
@@ -1137,10 +1129,10 @@ export default function Operacoes() {
     setAlertInfo({
       isOpen: true,
       type: 'warning',
-      title: 'Recalcular Tarifas',
+      title: t('operacoes.recalcular_tarifas'),
       message: confirmMessage,
       showCancel: true,
-      confirmText: 'Recalcular',
+      confirmText: t('operacoes.recalcular'),
       onConfirm: async () => {
         setAlertInfo(prev => ({ ...prev, isOpen: false }));
         
@@ -1177,9 +1169,9 @@ export default function Operacoes() {
           const end = Math.min(start + BATCH_SIZE, targets.length);
           const batch = targets.slice(start, end);
           
-          const batchTitle = totalBatches > 1 
-            ? `Recalculando Tarifas - Lote ${batchIndex + 1}/${totalBatches}`
-            : 'Recalculando Tarifas';
+          const batchTitle = totalBatches > 1
+            ? `${t('operacoes.recalculando_tarifas')} - ${batchIndex + 1}/${totalBatches}`
+            : t('operacoes.recalculando_tarifas');
 
           setProgressModal({
             isOpen: true,
@@ -1202,7 +1194,7 @@ export default function Operacoes() {
             setProgressModal(prev => ({
               ...prev,
               currentStep: globalIndex,
-              currentItem: `Voo ${depVooNum} (${globalIndex + 1}/${targets.length})`,
+              currentItem: `${t('home.voo')} ${depVooNum} (${globalIndex + 1}/${targets.length})`,
               successCount: successCount,
               errorCount: errorCount
             }));
@@ -1259,7 +1251,7 @@ export default function Operacoes() {
         setProgressModal(prev => ({
           ...prev,
           currentStep: targets.length,
-          currentItem: 'Finalizando...',
+          currentItem: t('operacoes.finalizando'),
           successCount: successCount,
           errorCount: errorCount
         }));
@@ -1272,15 +1264,15 @@ export default function Operacoes() {
           if (errorCount === 0) {
             setSuccessInfo({
               isOpen: true,
-              title: 'Recálculo Concluído!',
-              message: `${successCount} voo(s) recalculado(s) com sucesso em ${totalBatches} lote(s).`
+              title: t('operacoes.recalculo_concluido'),
+              message: `${successCount} / ${totalBatches}`
             });
           } else {
             setAlertInfo({
               isOpen: true,
               type: 'warning',
-              title: 'Recálculo Parcial',
-              message: `${successCount} voo(s) recalculado(s). ${errorCount} erro(s). Verifique os detalhes.`
+              title: t('operacoes.recalculo_parcial'),
+              message: `${successCount} OK, ${errorCount} ${t('operacoes.erro')}`
             });
           }
         }, 2000);
@@ -1312,16 +1304,16 @@ export default function Operacoes() {
 
       setSuccessInfo({
         isOpen: true,
-        title: 'Câmbio Atualizado!',
-        message: `Taxa alterada para ${novaTaxaCambio} AOA/USD.`
+        title: t('operacoes.cambio_atualizado'),
+        message: `${novaTaxaCambio} AOA/USD`
       });
     } catch (error) {
       console.error('Erro ao alterar câmbio:', error);
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro',
-        message: 'Não foi possível alterar.'
+        title: t('operacoes.erro'),
+        message: t('operacoes.erro_alterar')
       });
     }
   };
@@ -1335,8 +1327,8 @@ export default function Operacoes() {
       setAlertInfo({
         isOpen: true,
         type: 'info',
-        title: 'Gerando PDF...',
-        message: 'Por favor aguarde enquanto o PDF é gerado.'
+        title: t('operacoes.gerando_pdf'),
+        message: t('operacoes.aguarde_pdf')
       });
 
       const { exportTariffDetailsPdf } = await import('@/functions/exportTariffDetailsPdf');
@@ -1357,8 +1349,8 @@ export default function Operacoes() {
         setAlertInfo({ isOpen: false });
         setSuccessInfo({
           isOpen: true,
-          title: 'PDF Exportado!',
-          message: 'O cálculo foi exportado com sucesso.'
+          title: t('operacoes.pdf_exportado'),
+          message: t('operacoes.pdf_exportado_msg')
         });
       }
     } catch (error) {
@@ -1366,8 +1358,8 @@ export default function Operacoes() {
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Exportar',
-        message: error.message || 'Não foi possível exportar o PDF.'
+        title: t('operacoes.erro_exportar'),
+        message: error.message || t('operacoes.erro_exportar_msg')
       });
     }
   };
@@ -1377,8 +1369,8 @@ export default function Operacoes() {
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro',
-        message: 'Dados do cálculo não encontrados.'
+        title: t('operacoes.erro'),
+        message: t('operacoes.erro_dados_msg')
       });
       return;
     }
@@ -1396,8 +1388,8 @@ export default function Operacoes() {
         setAlertInfo({
           isOpen: true,
           type: 'warning',
-          title: 'Já Existe',
-          message: `Proforma ${proformaExistente.numero_proforma} já foi emitida.`
+          title: t('operacoes.ja_existe'),
+          message: `Proforma ${proformaExistente.numero_proforma}`
         });
         return;
       }
@@ -1458,8 +1450,8 @@ export default function Operacoes() {
 
       setSuccessInfo({
         isOpen: true,
-        title: 'Proforma Gerada!',
-        message: `Proforma ${numeroProforma} criada.`
+        title: t('operacoes.proforma_gerada'),
+        message: `Proforma ${numeroProforma}`
       });
 
       setIsGerarProformaModalOpen(false);
@@ -1471,8 +1463,8 @@ export default function Operacoes() {
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro',
-        message: 'Não foi possível gerar a proforma.'
+        title: t('operacoes.erro'),
+        message: t('operacoes.erro_proforma')
       });
     }
   };
@@ -1545,7 +1537,7 @@ export default function Operacoes() {
 
       setSuccessInfo({
         isOpen: true,
-        title: 'Documento Enviado!',
+        title: t('operacoes.documento_enviado'),
         message: `${tiposNome[tipoDocumento]} foi salvo com sucesso.`
       });
 
@@ -1560,8 +1552,8 @@ export default function Operacoes() {
       setAlertInfo({
         isOpen: true,
         type: 'info',
-        title: 'Sem Dados',
-        message: 'Não há voos para exportar.'
+        title: t('operacoes.sem_dados'),
+        message: t('operacoes.sem_voos_exportar')
       });
       return;
     }
@@ -1606,8 +1598,8 @@ export default function Operacoes() {
       setAlertInfo({
         isOpen: true,
         type: 'info',
-        title: 'Sem Dados',
-        message: 'Não há voos ligados para exportar.'
+        title: t('operacoes.sem_dados'),
+        message: t('operacoes.sem_voos_ligados_exportar')
       });
       return;
     }
@@ -1687,8 +1679,8 @@ export default function Operacoes() {
     
     setSuccessInfo({
       isOpen: true,
-      title: 'Exportação Concluída!',
-      message: `${dataToExport.length} voo(s) ligado(s) exportado(s) com sucesso em formato Excel.`
+      title: t('operacoes.exportacao_concluida'),
+      message: `${dataToExport.length} Excel`
     });
   };
 
@@ -1950,7 +1942,7 @@ export default function Operacoes() {
   }, [voosLigadosValidos, voos, calculosTarifa, filtrosLigados, sortFieldLigados, sortDirectionLigados]);
 
   const companhiaOptions = useMemo(() => {
-    const options = [{ value: 'todos', label: 'Todas as Companhias' }];
+    const options = [{ value: 'todos', label: t('operacoes.todas_companhias') }];
     const knownCompanyCodes = new Set();
     companhias.forEach(c => {
       options.push({ value: c.codigo_icao, label: `${c.nome} (${c.codigo_icao})` });
@@ -1958,46 +1950,48 @@ export default function Operacoes() {
     });
     const hasOtherCompanies = voos.some(voo => voo.companhia_aerea && !knownCompanyCodes.has(voo.companhia_aerea));
     if (hasOtherCompanies) {
-      options.push({ value: 'outro', label: 'Outra Companhia' });
+      options.push({ value: 'outro', label: t('operacoes.outra_companhia') });
     }
     return options;
-  }, [companhias, voos]);
+  }, [companhias, voos, t]);
 
   const aeroportoOptions = useMemo(() => ([
-    { value: 'todos', label: 'Todos os Aeroportos' },
+    { value: 'todos', label: t('operacoes.todos_aeroportos') },
     ...aeroportos.map(a => ({ value: a.codigo_icao, label: `${a.nome} (${a.codigo_icao})` }))
-  ]), [aeroportos]);
+  ]), [aeroportos, t]);
 
-  const tipoMovimentoOptions = [
-      { value: "todos", label: "Todos" },
-      { value: "ARR", label: "Chegada (ARR)" },
-      { value: "DEP", label: "Partida (DEP)" },
-  ];
+  const tipoMovimentoOptions = useMemo(() => [
+      { value: "todos", label: t('operacoes.todos') },
+      { value: "ARR", label: t('operacoes.chegada') },
+      { value: "DEP", label: t('operacoes.partida') },
+  ], [t]);
 
-  const tipoVooOptions = [
-    { value: 'todos', label: 'Todos' },
-    { value: 'Regular', label: 'Regular' },
-    { value: 'Não Regular', label: 'Não Regular' },
-    { value: 'Humanitário', label: 'Humanitário' },
-    { value: 'Charter', label: 'Charter' },
-    { value: 'Carga', label: 'Carga' },
-    { value: 'Privado', label: 'Privado' },
-    { value: 'Militar', label: 'Militar' },
-    { value: 'Oficial', label: 'Oficial' },
-    { value: 'Técnico', label: 'Técnico' },
-    { value: 'Outro', label: 'Outro' }
-  ];
+  const tipoVooOptions = useMemo(() => [
+    { value: 'todos', label: t('operacoes.todos') },
+    { value: 'Regular', label: t('operacoes.regular') },
+    { value: 'Não Regular', label: t('operacoes.nao_regular') },
+    { value: 'Humanitário', label: t('operacoes.humanitario') },
+    { value: 'Charter', label: t('operacoes.charter') },
+    { value: 'Carga', label: t('operacoes.carga') },
+    { value: 'Privado', label: t('operacoes.privado') },
+    { value: 'Militar', label: t('operacoes.militar') },
+    { value: 'Oficial', label: t('operacoes.oficial') },
+    { value: 'Técnico', label: t('operacoes.tecnico') },
+    { value: 'Outro', label: t('operacoes.outro') }
+  ], [t]);
 
   const statusOptions = useMemo(() => ([
-    { value: 'todos', label: 'Todos' },
-    ...Object.entries(STATUS_CONFIG).map(([key, { label }]) => ({ value: key, label }))
-  ]), []);
+    { value: 'todos', label: t('operacoes.todos') },
+    { value: 'Programado', label: t('operacoes.programado') },
+    { value: 'Realizado', label: t('operacoes.realizado') },
+    { value: 'Cancelado', label: t('operacoes.cancelado') },
+  ]), [t]);
 
-  const statusVinculacaoOptions = [
-    { value: 'todos', label: 'Todos os Voos' },
-    { value: 'ligado', label: 'Apenas Voos Ligados' },
-    { value: 'sem_link', label: 'Apenas Voos Sem Link' }
-  ];
+  const statusVinculacaoOptions = useMemo(() => [
+    { value: 'todos', label: t('operacoes.todos_voos') },
+    { value: 'ligado', label: t('operacoes.apenas_ligados') },
+    { value: 'sem_link', label: t('operacoes.apenas_sem_link') }
+  ], [t]);
 
 
 
@@ -2036,7 +2030,7 @@ export default function Operacoes() {
             <TabsTrigger value="configuracoes" className="text-xs sm:text-sm px-2 py-2">
               <Settings className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('tab.config')}</span>
-              <span className="sm:hidden">Config</span>
+              <span className="sm:hidden">{t('operacoes.config')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -2045,14 +2039,14 @@ export default function Operacoes() {
               <CardHeader className="flex flex-col gap-3 sm:gap-4 p-4 sm:p-6">
                 <div>
                   <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-200">
-                    {language === 'en' ? 'Flight Management' : 'Gestão de Voos'}
+                    {t('operacoes.gestao_voos')}
                   </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">{language === 'en' ? 'Register and manage flight movements.' : 'Registe e gira os movimentos aéreos.'}</CardDescription>
+                  <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">{t('operacoes.gestao_voos_desc')}</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   <Button variant="outline" onClick={loadData} disabled={isLoading} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
                     <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                    <span className="hidden sm:inline ml-2 text-sm">Atualizar</span>
+                    <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.atualizar')}</span>
                   </Button>
                   <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
                     <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -2061,12 +2055,12 @@ export default function Operacoes() {
                   {(currentUser?.role === 'admin' || currentUser?.perfis?.includes('administrador')) && (
                     <Button variant="outline" onClick={() => setIsLixeiraModalOpen(true)} className="border-yellow-300 dark:border-yellow-600 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-950 h-8 sm:h-10 px-2 sm:px-4">
                       <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline ml-2 text-sm">Lixeira</span>
+                      <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.lixeira')}</span>
                     </Button>
                   )}
                   <Button className="bg-blue-500 hover:bg-blue-600 text-white h-8 sm:h-10 px-2 sm:px-4" onClick={() => handleOpenForm('ARR', null)}>
                     <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline ml-2 text-sm">Adicionar Voo</span>
+                    <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.adicionar_voo')}</span>
                   </Button>
                 </div>
               </CardHeader>
@@ -2075,32 +2069,32 @@ export default function Operacoes() {
                   <CardHeader className="p-3 sm:p-4">
                     <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-2">
                       <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500 dark:text-slate-400" />
-                      <span className="hidden sm:inline">Filtros e Pesquisa</span>
-                      <span className="sm:hidden">Filtros</span>
+                      <span className="hidden sm:inline">{t('operacoes.filtros_pesquisa')}</span>
+                      <span className="sm:hidden">{t('operacoes.filtros')}</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-3 sm:p-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                       <div className="sm:col-span-2 lg:col-span-4">
-                        <Label htmlFor="busca" className="text-xs sm:text-sm">Pesquisar</Label>
+                        <Label htmlFor="busca" className="text-xs sm:text-sm">{t('operacoes.pesquisar')}</Label>
                         <Input
                           id="busca"
-                          placeholder="Voo ou Matrícula..."
+                          placeholder={t('operacoes.voo_ou_matricula')}
                           value={filtros.busca}
                           onChange={(e) => handleFilterChange('busca', e.target.value)}
                           className="text-xs sm:text-sm"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="data-inicio" className="text-xs sm:text-sm">Data Início</Label>
+                        <Label htmlFor="data-inicio" className="text-xs sm:text-sm">{t('operacoes.data_inicio')}</Label>
                         <Input id="data-inicio" type="date" value={filtros.dataInicio} onChange={(e) => handleFilterChange('dataInicio', e.target.value)} className="text-xs sm:text-sm" />
                       </div>
                       <div>
-                        <Label htmlFor="data-fim" className="text-xs sm:text-sm">Data Fim</Label>
+                        <Label htmlFor="data-fim" className="text-xs sm:text-sm">{t('operacoes.data_fim')}</Label>
                         <Input id="data-fim" type="date" value={filtros.dataFim} onChange={(e) => handleFilterChange('dataFim', e.target.value)} className="text-xs sm:text-sm" />
                       </div>
                       <div>
-                        <Label htmlFor="filtro-tipo" className="text-xs sm:text-sm">Tipo</Label>
+                        <Label htmlFor="filtro-tipo" className="text-xs sm:text-sm">{t('operacoes.tipo')}</Label>
                         <Select
                           id="filtro-tipo"
                           options={tipoMovimentoOptions}
@@ -2109,7 +2103,7 @@ export default function Operacoes() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="filtro-status" className="text-xs sm:text-sm">Status</Label>
+                        <Label htmlFor="filtro-status" className="text-xs sm:text-sm">{t('operacoes.status')}</Label>
                         <Select
                           id="filtro-status"
                           options={statusOptions}
@@ -2118,37 +2112,37 @@ export default function Operacoes() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="filtro-tipo-voo" className="text-xs sm:text-sm">Tipo de Voo</Label>
+                        <Label htmlFor="filtro-tipo-voo" className="text-xs sm:text-sm">{t('operacoes.tipo_voo')}</Label>
                         <Combobox
                           id="filtro-tipo-voo"
                           options={tipoVooOptions}
                           value={filtros.tipoVoo}
                           onValueChange={(v) => handleFilterChange('tipoVoo', v)}
-                          placeholder="Todos..."
+                          placeholder={`${t('operacoes.todos')}...`}
                         />
                       </div>
                       <div>
-                        <Label htmlFor="filtro-companhia" className="text-xs sm:text-sm">Companhia</Label>
+                        <Label htmlFor="filtro-companhia" className="text-xs sm:text-sm">{t('operacoes.companhia')}</Label>
                         <Combobox
                           id="filtro-companhia"
                           options={companhiaOptions}
                           value={filtros.companhia}
                           onValueChange={(v) => handleFilterChange('companhia', v)}
-                          placeholder="Todas..."
+                          placeholder={`${t('operacoes.todos')}...`}
                         />
                       </div>
                       <div>
-                        <Label htmlFor="filtro-aeroporto" className="text-xs sm:text-sm">Aeroporto</Label>
+                        <Label htmlFor="filtro-aeroporto" className="text-xs sm:text-sm">{t('operacoes.aeroporto')}</Label>
                         <Combobox
                           id="filtro-aeroporto"
                           options={aeroportoOptions}
                           value={filtros.aeroporto}
                           onValueChange={(v) => handleFilterChange('aeroporto', v)}
-                          placeholder="Todos..."
+                          placeholder={`${t('operacoes.todos')}...`}
                         />
                       </div>
                       <div>
-                        <Label htmlFor="filtro-vinculacao" className="text-xs sm:text-sm">Vinculação</Label>
+                        <Label htmlFor="filtro-vinculacao" className="text-xs sm:text-sm">{t('operacoes.vinculacao')}</Label>
                         <Select
                           id="filtro-vinculacao"
                           options={statusVinculacaoOptions}
@@ -2159,7 +2153,7 @@ export default function Operacoes() {
 
 
                       <div>
-                        <Label htmlFor="passageiros-min" className="text-xs sm:text-sm">Passageiros Mín</Label>
+                        <Label htmlFor="passageiros-min" className="text-xs sm:text-sm">{t('operacoes.passageiros_min')}</Label>
                         <Input
                           id="passageiros-min"
                           type="number"
@@ -2170,7 +2164,7 @@ export default function Operacoes() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="passageiros-max" className="text-xs sm:text-sm">Passageiros Máx</Label>
+                        <Label htmlFor="passageiros-max" className="text-xs sm:text-sm">{t('operacoes.passageiros_max')}</Label>
                         <Input
                           id="passageiros-max"
                           type="number"
@@ -2181,7 +2175,7 @@ export default function Operacoes() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="carga-min" className="text-xs sm:text-sm">Carga Mín (kg)</Label>
+                        <Label htmlFor="carga-min" className="text-xs sm:text-sm">{t('operacoes.carga_min')}</Label>
                         <Input
                           id="carga-min"
                           type="number"
@@ -2192,7 +2186,7 @@ export default function Operacoes() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="carga-max" className="text-xs sm:text-sm">Carga Máx (kg)</Label>
+                        <Label htmlFor="carga-max" className="text-xs sm:text-sm">{t('operacoes.carga_max')}</Label>
                         <Input
                           id="carga-max"
                           type="number"
@@ -2205,7 +2199,7 @@ export default function Operacoes() {
                       
                       <div className="flex items-end">
                         <Button variant="outline" onClick={clearFilters} className="w-full text-xs sm:text-sm">
-                          <X className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> Limpar
+                          <X className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> {t('operacoes.limpar')}
                         </Button>
                       </div>
                     </div>
@@ -2216,7 +2210,7 @@ export default function Operacoes() {
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg text-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                      <p className="text-slate-700 dark:text-slate-300 font-medium">A carregar voos do período selecionado...</p>
+                      <p className="text-slate-700 dark:text-slate-300 font-medium">{t('operacoes.carregando_voos')}</p>
                     </div>
                   </div>
                 )}
@@ -2249,18 +2243,18 @@ export default function Operacoes() {
                   <CardTitle className="text-base sm:text-lg md:text-xl flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="w-fit text-xs">
-                        {voosLigadosValidos.length} pares
+                        {voosLigadosValidos.length} {t('operacoes.pares')}
                       </Badge>
                     </div>
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm mt-2">
-                    Voos ARR-DEP ligados com cálculos tarifários.
+                    {t('operacoes.voos_ligados_desc')}
                   </CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   <Button variant="outline" onClick={loadData} disabled={isLoading} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
                     <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                    <span className="hidden sm:inline ml-2 text-sm">Atualizar</span>
+                    <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.atualizar')}</span>
                   </Button>
                   <Button variant="outline" onClick={handleExportLinkedFlightsCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
                     <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -2281,14 +2275,14 @@ export default function Operacoes() {
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg text-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                      <p className="text-slate-700 dark:text-slate-300 font-medium">A carregar voos ligados do período selecionado...</p>
+                      <p className="text-slate-700 dark:text-slate-300 font-medium">{t('operacoes.carregando_ligados')}</p>
                     </div>
                   </div>
                 )}
 
                 {voosLigadosFiltrados.length === 0 && !isLoading ? (
                   <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                    <p className="text-sm sm:text-base">Nenhum voo ligado encontrado.</p>
+                    <p className="text-sm sm:text-base">{t('operacoes.nenhum_voo_ligado')}</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto -mx-4 sm:mx-0">
@@ -2314,16 +2308,16 @@ export default function Operacoes() {
                             }
                             setSuccessInfo({
                               isOpen: true,
-                              title: 'Tarifa Recalculada!',
-                              message: 'A tarifa foi recalculada com sucesso.'
+                              title: t('operacoes.tarifa_recalculada'),
+                              message: t('operacoes.tarifa_recalculada_msg')
                             });
                           } catch (error) {
                             console.error('Erro ao recalcular tarifa:', error);
                             setAlertInfo({
                               isOpen: true,
                               type: 'error',
-                              title: 'Erro ao Recalcular',
-                              message: error.message || 'Não foi possível recalcular a tarifa.'
+                              title: t('operacoes.erro_recalcular'),
+                              message: error.message || t('operacoes.erro_recalcular_msg')
                             });
                           }
                         }}
@@ -2349,16 +2343,16 @@ export default function Operacoes() {
           <TabsContent value="configuracoes" className="space-y-4 sm:space-y-6">
             <Card className="shadow-sm border-0">
               <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-base sm:text-lg md:text-xl">Configurações</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Gerencie as entidades relacionadas.</CardDescription>
+                <CardTitle className="text-base sm:text-lg md:text-xl">{t('operacoes.configuracoes')}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">{t('operacoes.configuracoes_desc')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <Tabs defaultValue="aeroportos" orientation="horizontal" className="w-full">
                   <TabsList className="grid w-full grid-cols-4 h-auto">
-                    <TabsTrigger value="aeroportos" className="text-xs sm:text-sm px-2 py-2">Aeroportos</TabsTrigger>
-                    <TabsTrigger value="companhias" className="text-xs sm:text-sm px-2 py-2">Companhias</TabsTrigger>
-                    <TabsTrigger value="modelos" className="text-xs sm:text-sm px-2 py-2">Modelos</TabsTrigger>
-                    <TabsTrigger value="registos" className="text-xs sm:text-sm px-2 py-2">Registos</TabsTrigger>
+                    <TabsTrigger value="aeroportos" className="text-xs sm:text-sm px-2 py-2">{t('operacoes.aeroportos')}</TabsTrigger>
+                    <TabsTrigger value="companhias" className="text-xs sm:text-sm px-2 py-2">{t('operacoes.companhias')}</TabsTrigger>
+                    <TabsTrigger value="modelos" className="text-xs sm:text-sm px-2 py-2">{t('operacoes.modelos')}</TabsTrigger>
+                    <TabsTrigger value="registos" className="text-xs sm:text-sm px-2 py-2">{t('operacoes.registos')}</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="aeroportos" className="mt-4 sm:mt-6">

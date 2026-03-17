@@ -26,12 +26,12 @@ import { createPdfDoc, addHeader, addFooter, addTable, loadImageAsBase64 } from 
 import { Empresa } from '@/entities/Empresa';
 import { useI18n } from '@/components/lib/i18n';
 
-const RecentMovimentosFinanceiros = ({ movimentos }) => (
+const RecentMovimentosFinanceiros = ({ movimentos, t }) => (
   <Card className="border-0 shadow-sm">
-    <CardHeader><CardTitle className="text-lg">Movimentos Recentes</CardTitle></CardHeader>
+    <CardHeader><CardTitle className="text-lg">{t('fundo.recent_movements')}</CardTitle></CardHeader>
     <CardContent>
       {movimentos.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-slate-400">Nenhum movimento recente.</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400">{t('fundo.no_recent')}</p>
       ) : (
         <ul className="space-y-2 text-sm">
           {movimentos.map((mov) => (
@@ -102,7 +102,7 @@ export default function FundoManeio() {
       setMovimentos(movimentosFiltrados);
     } catch (error) {
       console.error("Erro ao carregar dados do fundo de maneio:", error);
-      setAlertInfo({ isOpen: true, type: 'error', title: 'Erro de Carga', message: 'Ocorreu um erro ao carregar os dados. Tente novamente.' });
+      setAlertInfo({ isOpen: true, type: 'error', title: t('fundo.error_load_title'), message: t('fundo.error_load_msg') });
     } finally {
       setIsLoading(false);
     }
@@ -125,10 +125,10 @@ export default function FundoManeio() {
       setIsFormOpen(false);
       setEditingMovimento(null);
       loadData();
-      setAlertInfo({ isOpen: true, type: 'success', title: 'Sucesso', message: 'O registo foi criado/atualizado com sucesso.' });
+      setAlertInfo({ isOpen: true, type: 'success', title: t('fundo.success_title'), message: t('fundo.success_save_msg') });
     } catch (error) {
       console.error('Erro ao submeter formulário:', error);
-      setAlertInfo({ isOpen: true, type: 'error', title: 'Erro', message: 'Ocorreu um erro ao registar. Tente novamente.' });
+      setAlertInfo({ isOpen: true, type: 'error', title: t('fundo.error_title'), message: t('fundo.error_save_msg') });
     }
   };
 
@@ -148,18 +148,18 @@ export default function FundoManeio() {
     try {
       const dadosParaAuditoria = movimentos.find(m => m.id === id);
       if (!dadosParaAuditoria) {
-        setAlertInfo({ isOpen: true, type: 'warning', title: 'Registo Não Encontrado', message: 'Este movimento financeiro já foi excluído.' });
+        setAlertInfo({ isOpen: true, type: 'warning', title: t('fundo.not_found_title'), message: t('fundo.not_found_msg') });
         loadData();
         setDeleteInfo({ isOpen: false, entity: null, id: null });
         return;
       }
       await MovimentoFinanceiro.delete(id);
       await registarExclusao('MovimentoFinanceiro', dadosParaAuditoria, 'financeiro');
-      setAlertInfo({ isOpen: true, type: 'success', title: 'Sucesso', message: 'O registo foi excluído com sucesso.' });
+      setAlertInfo({ isOpen: true, type: 'success', title: t('fundo.success_title'), message: t('fundo.success_delete_msg') });
       loadData();
     } catch (error) {
       console.error('Erro ao excluir movimento:', error);
-      setAlertInfo({ isOpen: true, type: 'error', title: 'Erro de Exclusão', message: `Ocorreu um erro ao excluir o registo.` });
+      setAlertInfo({ isOpen: true, type: 'error', title: t('fundo.error_delete_title'), message: t('fundo.error_delete_msg') });
     } finally {
       setDeleteInfo({ isOpen: false, entity: null, id: null });
     }
@@ -219,12 +219,12 @@ export default function FundoManeio() {
 
   const handleExportCSV = async () => {
     const dataToExport = movimentosParaAcao.map(mov => ({
-      'Data': mov.data,
-      'Tipo': mov.tipo,
-      'Categoria': mov.categoria,
-      'Descrição': mov.descricao,
-      'Valor (Kz)': mov.valor_kz,
-      'Aeroporto': aeroportos.find(a => a.id === mov.aeroporto_id)?.nome || mov.aeroporto_id
+      [t('fundo.col_date')]: mov.data,
+      [t('fundo.col_type')]: mov.tipo,
+      [t('fundo.col_category')]: mov.categoria,
+      [t('fundo.col_description')]: mov.descricao,
+      [t('fundo.col_value')]: mov.valor_kz,
+      [t('fundo.col_airport')]: aeroportos.find(a => a.id === mov.aeroporto_id)?.nome || mov.aeroporto_id
     }));
     await registarExportacao('MovimentoFinanceiro', 'CSV', filtros, 'financeiro');
     downloadAsCSV(dataToExport, `relatorio_fundo_maneio_${new Date().toISOString().split('T')[0]}`);
@@ -242,23 +242,23 @@ export default function FundoManeio() {
       try { logoBase64 = await loadImageAsBase64(getEmpresaLogoByUser(currentUser, empresas)); } catch {}
 
       const headerOpts = {
-        title: 'Relatório Fundo de Maneio',
+        title: t('fundo.report_title'),
         logoBase64,
         date: new Date().toLocaleDateString('pt-AO'),
         meta: [
-          `Total de Receitas: ${fmt(totalReceitas)}`,
-          `Total de Despesas: ${fmt(totalDespesas)}`,
-          `Saldo: ${fmt(saldo)}`,
+          `${t('fundo.total_revenue')}: ${fmt(totalReceitas)}`,
+          `${t('fundo.total_expenses')}: ${fmt(totalDespesas)}`,
+          `${t('fundo.balance')}: ${fmt(saldo)}`,
         ],
       };
       let y = addHeader(doc, headerOpts);
 
       const columns = [
-        { label: 'Data', width: 30 },
-        { label: 'Tipo', width: 30 },
-        { label: 'Categoria', width: 45 },
-        { label: 'Aeroporto', width: 40 },
-        { label: 'Valor (Kz)', width: 35, align: 'right' },
+        { label: t('fundo.col_date'), width: 30 },
+        { label: t('fundo.col_type'), width: 30 },
+        { label: t('fundo.col_category'), width: 45 },
+        { label: t('fundo.col_airport'), width: 40 },
+        { label: t('fundo.col_value'), width: 35, align: 'right' },
       ];
 
       const rows = movimentosParaAcao.map((movimento) => {
@@ -277,74 +277,74 @@ export default function FundoManeio() {
       doc.save(`relatorio_fundo_maneio_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
-      setAlertInfo({ isOpen: true, type: 'error', title: 'Erro de Exportação', message: 'Ocorreu um erro ao gerar o PDF. Tente novamente.' });
+      setAlertInfo({ isOpen: true, type: 'error', title: t('fundo.error_export_title'), message: t('fundo.error_export_msg') });
     }
   };
 
   const handleSendEmail = async (to, subject) => {
     try {
       const emailData = movimentosParaAcao.map(mov => ({
-        'Data': mov.data,
-        'Tipo': mov.tipo,
-        'Categoria': mov.categoria,
-        'Descrição': mov.descricao,
-        'Valor (Kz)': new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(mov.valor_kz),
-        'Aeroporto': aeroportos.find(a => a.id === mov.aeroporto_id)?.nome || mov.aeroporto_id
+        [t('fundo.col_date')]: mov.data,
+        [t('fundo.col_type')]: mov.tipo,
+        [t('fundo.col_category')]: mov.categoria,
+        [t('fundo.col_description')]: mov.descricao,
+        [t('fundo.col_value')]: new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(mov.valor_kz),
+        [t('fundo.col_airport')]: aeroportos.find(a => a.id === mov.aeroporto_id)?.nome || mov.aeroporto_id
       }));
 
       const { totalReceitas, totalDespesas, saldo } = kpiData;
 
       let emailBody = `<div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">`;
       emailBody += `<div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">`;
-      emailBody += `<h1 style="margin: 0; font-size: 28px; font-weight: bold;">Relatório do Fundo de Maneio</h1>`;
+      emailBody += `<h1 style="margin: 0; font-size: 28px; font-weight: bold;">${t('fundo.report_heading')}</h1>`;
       emailBody += `<p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Gerado em ${new Date().toLocaleDateString('pt-AO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>`;
       emailBody += `</div>`;
 
       emailBody += `<div style="background: #f8fafc; padding: 25px; border-left: 4px solid #10b981;">`;
-      emailBody += `<h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px;">Resumo Financeiro</h2>`;
+      emailBody += `<h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px;">${t('fundo.financial_summary')}</h2>`;
       emailBody += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">`;
-      emailBody += `<div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;"><p style="margin: 0; font-size: 14px; color: #6b7280;">Total de Receitas</p><p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #10b981;">${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(totalReceitas)}</p></div>`;
-      emailBody += `<div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;"><p style="margin: 0; font-size: 14px; color: #6b7280;">Total de Despesas</p><p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #ef4444;">${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(totalDespesas)}</p></div>`;
-      emailBody += `<div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid ${saldo >= 0 ? '#3b82f6' : '#ef4444'};"><p style="margin: 0; font-size: 14px; color: #6b7280;">Saldo</p><p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: ${saldo >= 0 ? '#3b82f6' : '#ef4444'};">${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(saldo)}</p></div>`;
+      emailBody += `<div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;"><p style="margin: 0; font-size: 14px; color: #6b7280;">${t('fundo.total_revenue')}</p><p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #10b981;">${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(totalReceitas)}</p></div>`;
+      emailBody += `<div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;"><p style="margin: 0; font-size: 14px; color: #6b7280;">${t('fundo.total_expenses')}</p><p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #ef4444;">${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(totalDespesas)}</p></div>`;
+      emailBody += `<div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid ${saldo >= 0 ? '#3b82f6' : '#ef4444'};"><p style="margin: 0; font-size: 14px; color: #6b7280;">${t('fundo.balance')}</p><p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: ${saldo >= 0 ? '#3b82f6' : '#ef4444'};">${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(saldo)}</p></div>`;
       emailBody += `</div></div>`;
 
       emailBody += `<div style="background: white; padding: 25px;">`;
-      emailBody += `<h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px;">Movimentos (${movimentosParaAcao.length} registos)</h2>`;
+      emailBody += `<h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px;">Movimentos (${movimentosParaAcao.length} ${t('fundo.movements_count')})</h2>`;
 
       if (movimentosParaAcao.length > 0) {
         emailBody += `<table style="width: 100%; border-collapse: collapse; margin-top: 15px;">`;
         emailBody += `<thead><tr style="background: #f1f5f9;">`;
-        emailBody += `<th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Data</th>`;
-        emailBody += `<th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Tipo</th>`;
-        emailBody += `<th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Categoria</th>`;
-        emailBody += `<th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">Aeroporto</th>`;
-        emailBody += `<th style="padding: 12px; text-align: right; border: 1px solid #e2e8f0;">Valor</th>`;
+        emailBody += `<th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">${t('fundo.col_date')}</th>`;
+        emailBody += `<th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">${t('fundo.col_type')}</th>`;
+        emailBody += `<th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">${t('fundo.col_category')}</th>`;
+        emailBody += `<th style="padding: 12px; text-align: left; border: 1px solid #e2e8f0;">${t('fundo.col_airport')}</th>`;
+        emailBody += `<th style="padding: 12px; text-align: right; border: 1px solid #e2e8f0;">${t('fundo.col_value')}</th>`;
         emailBody += `</tr></thead><tbody>`;
         emailData.slice(0, 50).forEach((mov, index) => {
           const bgColor = index % 2 === 0 ? 'white' : '#f8fafc';
-          const tipoColor = mov.Tipo === 'receita' ? '#10b981' : '#ef4444';
+          const tipoColor = mov[t('fundo.col_type')] === 'receita' ? '#10b981' : '#ef4444';
           emailBody += `<tr style="background: ${bgColor};">`;
-          emailBody += `<td style="padding: 12px; border: 1px solid #e2e8f0;">${new Date(mov.Data).toLocaleDateString('pt-AO')}</td>`;
-          emailBody += `<td style="padding: 12px; border: 1px solid #e2e8f0;"><span style="background: ${tipoColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${mov.Tipo.toUpperCase()}</span></td>`;
-          emailBody += `<td style="padding: 12px; border: 1px solid #e2e8f0;">${mov.Categoria}</td>`;
-          emailBody += `<td style="padding: 12px; border: 1px solid #e2e8f0;">${mov.Aeroporto}</td>`;
-          emailBody += `<td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: 600; color: ${tipoColor};">${mov['Valor (Kz)']}</td>`;
+          emailBody += `<td style="padding: 12px; border: 1px solid #e2e8f0;">${new Date(mov[t('fundo.col_date')]).toLocaleDateString('pt-AO')}</td>`;
+          emailBody += `<td style="padding: 12px; border: 1px solid #e2e8f0;"><span style="background: ${tipoColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${mov[t('fundo.col_type')].toUpperCase()}</span></td>`;
+          emailBody += `<td style="padding: 12px; border: 1px solid #e2e8f0;">${mov[t('fundo.col_category')]}</td>`;
+          emailBody += `<td style="padding: 12px; border: 1px solid #e2e8f0;">${mov[t('fundo.col_airport')]}</td>`;
+          emailBody += `<td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: 600; color: ${tipoColor};">${mov[t('fundo.col_value')]}</td>`;
           emailBody += `</tr>`;
-          if (mov['Descrição']) {
-            emailBody += `<tr style="background: ${bgColor};"><td colspan="5" style="padding: 8px 12px; border: 1px solid #e2e8f0; font-size: 13px; color: #6b7280; font-style: italic;">${mov['Descrição']}</td></tr>`;
+          if (mov[t('fundo.col_description')]) {
+            emailBody += `<tr style="background: ${bgColor};"><td colspan="5" style="padding: 8px 12px; border: 1px solid #e2e8f0; font-size: 13px; color: #6b7280; font-style: italic;">${mov[t('fundo.col_description')]}</td></tr>`;
           }
         });
         emailBody += `</tbody></table>`;
         if (movimentosParaAcao.length > 50) {
-          emailBody += `<p style="margin-top: 15px; padding: 10px; background: #fef3c7; border-radius: 6px; color: #92400e; font-size: 14px;"><strong>Nota:</strong> Exibidos apenas os primeiros 50 registos. Total: ${movimentosParaAcao.length}</p>`;
+          emailBody += `<p style="margin-top: 15px; padding: 10px; background: #fef3c7; border-radius: 6px; color: #92400e; font-size: 14px;"><strong>Nota:</strong> ${t('fundo.note_first_50')} ${movimentosParaAcao.length}</p>`;
         }
       } else {
-        emailBody += `<p style="text-align: center; color: #6b7280; font-style: italic;">Nenhum movimento encontrado.</p>`;
+        emailBody += `<p style="text-align: center; color: #6b7280; font-style: italic;">${t('fundo.no_movements_found')}</p>`;
       }
       emailBody += `</div>`;
 
       emailBody += `<div style="background: #1f2937; color: white; padding: 20px; border-radius: 0 0 10px 10px; text-align: center;">`;
-      emailBody += `<p style="margin: 0; font-size: 14px; opacity: 0.8;">Relatório gerado pelo Sistema DIROPS</p>`;
+      emailBody += `<p style="margin: 0; font-size: 14px; opacity: 0.8;">${t('fundo.generated_by')}</p>`;
       emailBody += `</div></div>`;
 
       await sendEmailDirect({
@@ -376,24 +376,24 @@ export default function FundoManeio() {
   }, [filteredMovimentos]);
 
   const aeroportoOptions = useMemo(() => ([
-    { value: 'todos', label: 'Todos os Aeroportos' },
+    { value: 'todos', label: t('fundo.all_airports') },
     ...aeroportos.map(a => ({ value: a.id, label: a.nome }))
-  ]), [aeroportos]);
+  ]), [aeroportos, t]);
 
   const tipoOptions = [
-    { value: 'todos', label: 'Todos' },
-    { value: 'receita', label: 'Receita' },
-    { value: 'despesa', label: 'Despesa' },
+    { value: 'todos', label: t('fundo.all_types') },
+    { value: 'receita', label: t('fundo.type_revenue') },
+    { value: 'despesa', label: t('fundo.type_expense') },
   ];
 
   const categoriaOptions = [
-    { value: 'todos', label: 'Todas' },
-    { value: 'Apoio Financeiro', label: 'Apoio Financeiro' },
-    { value: 'Engenharia/Manutenção', label: 'Engenharia/Manutenção' },
-    { value: 'Operações', label: 'Operações' },
-    { value: 'SGSO', label: 'SGSO' },
-    { value: 'Segurança', label: 'Segurança' },
-    { value: 'Resposta a Emergência', label: 'Resposta a Emergência' },
+    { value: 'todos', label: t('fundo.all_categories') },
+    { value: 'Apoio Financeiro', label: t('fundo.cat_apoio_financeiro') },
+    { value: 'Engenharia/Manutenção', label: t('fundo.cat_engenharia') },
+    { value: 'Operações', label: t('fundo.cat_operacoes') },
+    { value: 'SGSO', label: t('fundo.cat_sgso') },
+    { value: 'Segurança', label: t('fundo.cat_seguranca') },
+    { value: 'Resposta a Emergência', label: t('fundo.cat_emergencia') },
   ];
 
   return (
@@ -410,15 +410,15 @@ export default function FundoManeio() {
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Atualizar
+              {t('fundo.refresh')}
             </Button>
             <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <Download className="w-4 h-4 mr-2" />
-              Exportar CSV
+              {t('fundo.export_csv')}
             </Button>
             <Button variant="outline" onClick={handleExportPDF} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileText className="w-4 h-4 mr-2" />
-              Exportar PDF
+              {t('fundo.export_pdf')}
             </Button>
             <Button
               variant="outline"
@@ -426,26 +426,26 @@ export default function FundoManeio() {
               className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <FileDown className="w-4 h-4 mr-2" />
-              Enviar Email
+              {t('fundo.send_email')}
             </Button>
             <Button onClick={() => handleOpenForm()} className="bg-emerald-500 hover:bg-emerald-600 text-white">
               <Plus className="w-4 h-4 mr-2" />
-              Novo Movimento
+              {t('fundo.new_movement')}
             </Button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Receitas</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('fundo.total_revenue')}</CardTitle></CardHeader>
             <CardContent><div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(kpiData.totalReceitas)}</div></CardContent>
           </Card>
           <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Despesas</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('fundo.total_expenses')}</CardTitle></CardHeader>
             <CardContent><div className="text-2xl font-bold text-red-600 dark:text-red-400">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(kpiData.totalDespesas)}</div></CardContent>
           </Card>
           <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Saldo</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('fundo.balance')}</CardTitle></CardHeader>
             <CardContent><div className={`text-2xl font-bold ${kpiData.saldo >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(kpiData.saldo)}</div></CardContent>
           </Card>
         </div>
@@ -456,11 +456,11 @@ export default function FundoManeio() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-                Filtros
+                {t('fundo.filters')}
               </CardTitle>
               {hasActiveFilters && (
                 <Button variant="outline" size="sm" onClick={clearFilters} className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950">
-                  <X className="w-4 h-4 mr-1" /> Limpar Filtros
+                  <X className="w-4 h-4 mr-1" /> {t('fundo.clear_filters')}
                 </Button>
               )}
             </div>
@@ -468,27 +468,27 @@ export default function FundoManeio() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
               <div className="space-y-2">
-                <Label>Pesquisar</Label>
-                <Input placeholder="Descrição ou Categoria" value={filtros.busca} onChange={(e) => handleFilterChange('busca', e.target.value)} />
+                <Label>{t('fundo.search')}</Label>
+                <Input placeholder={t('fundo.search_placeholder')} value={filtros.busca} onChange={(e) => handleFilterChange('busca', e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Aeroporto</Label>
-                <Combobox options={aeroportoOptions} value={filtros.aeroporto} onValueChange={(v) => handleFilterChange('aeroporto', v)} placeholder="Procurar aeroporto..." searchPlaceholder="Procurar aeroporto..." noResultsMessage="Nenhum aeroporto encontrado" />
+                <Label>{t('fundo.airport')}</Label>
+                <Combobox options={aeroportoOptions} value={filtros.aeroporto} onValueChange={(v) => handleFilterChange('aeroporto', v)} placeholder={t('fundo.airport_search')} searchPlaceholder={t('fundo.airport_search')} noResultsMessage={t('fundo.airport_no_results')} />
               </div>
               <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Combobox options={tipoOptions} value={filtros.tipo} onValueChange={(v) => handleFilterChange('tipo', v)} placeholder="Selecione..." />
+                <Label>{t('fundo.type')}</Label>
+                <Combobox options={tipoOptions} value={filtros.tipo} onValueChange={(v) => handleFilterChange('tipo', v)} placeholder={t('fundo.select_placeholder')} />
               </div>
               <div className="space-y-2">
-                <Label>Categoria</Label>
-                <Combobox options={categoriaOptions} value={filtros.categoria} onValueChange={(v) => handleFilterChange('categoria', v)} placeholder="Selecione..." />
+                <Label>{t('fundo.category')}</Label>
+                <Combobox options={categoriaOptions} value={filtros.categoria} onValueChange={(v) => handleFilterChange('categoria', v)} placeholder={t('fundo.select_placeholder')} />
               </div>
               <div className="space-y-2">
-                <Label>Data Início</Label>
+                <Label>{t('fundo.date_start')}</Label>
                 <Input type="date" value={filtros.dataInicio} onChange={(e) => handleFilterChange('dataInicio', e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Data Fim</Label>
+                <Label>{t('fundo.date_end')}</Label>
                 <Input type="date" value={filtros.dataFim} onChange={(e) => handleFilterChange('dataFim', e.target.value)} />
               </div>
             </div>
@@ -498,7 +498,7 @@ export default function FundoManeio() {
         {/* Tabela de Movimentos */}
         <Card className="border-0 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg">Movimentos do Fundo de Maneio</CardTitle>
+            <CardTitle className="text-lg">{t('fundo.movements_title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -511,13 +511,13 @@ export default function FundoManeio() {
                         onCheckedChange={handleSelectAllMovimentos}
                       />
                     </TableHead>
-                    <SortableTableHeader field="data" label="Data" currentSortField={sortField} currentSortDirection={sortDirection} onSort={handleSort} />
-                    <SortableTableHeader field="tipo" label="Tipo" currentSortField={sortField} currentSortDirection={sortDirection} onSort={handleSort} />
-                    <SortableTableHeader field="categoria" label="Categoria" currentSortField={sortField} currentSortDirection={sortDirection} onSort={handleSort} />
-                    <SortableTableHeader field="descricao" label="Descrição" currentSortField={sortField} currentSortDirection={sortDirection} onSort={handleSort} />
-                    <TableHead>Aeroporto</TableHead>
-                    <SortableTableHeader field="valor_kz" label="Valor (Kz)" currentSortField={sortField} currentSortDirection={sortDirection} onSort={handleSort} className="text-right" />
-                    <TableHead className="text-right">Ações</TableHead>
+                    <SortableTableHeader field="data" label={t('fundo.col_date')} currentSortField={sortField} currentSortDirection={sortDirection} onSort={handleSort} />
+                    <SortableTableHeader field="tipo" label={t('fundo.col_type')} currentSortField={sortField} currentSortDirection={sortDirection} onSort={handleSort} />
+                    <SortableTableHeader field="categoria" label={t('fundo.col_category')} currentSortField={sortField} currentSortDirection={sortDirection} onSort={handleSort} />
+                    <SortableTableHeader field="descricao" label={t('fundo.col_description')} currentSortField={sortField} currentSortDirection={sortDirection} onSort={handleSort} />
+                    <TableHead>{t('fundo.col_airport')}</TableHead>
+                    <SortableTableHeader field="valor_kz" label={t('fundo.col_value')} currentSortField={sortField} currentSortDirection={sortDirection} onSort={handleSort} className="text-right" />
+                    <TableHead className="text-right">{t('fundo.col_actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -562,7 +562,7 @@ export default function FundoManeio() {
             <MovimentosFinanceirosChart data={chartData} />
           </div>
           <div>
-            <RecentMovimentosFinanceiros movimentos={filteredMovimentos.slice(0, 10)} />
+            <RecentMovimentosFinanceiros movimentos={filteredMovimentos.slice(0, 10)} t={t} />
           </div>
         </div>
       </div>
@@ -584,7 +584,7 @@ export default function FundoManeio() {
         onClose={() => setEmailModal({ isOpen: false, subject: '', data: null })}
         onSend={handleSendEmail}
         defaultSubject={emailModal.subject}
-        title="Enviar Relatório por Email"
+        title={t('fundo.send_report_title')}
       />
 
       <AlertModal
@@ -592,9 +592,9 @@ export default function FundoManeio() {
         onClose={() => setDeleteInfo({ isOpen: false, entity: null, id: null })}
         onConfirm={handleDeleteConfirm}
         type="warning"
-        title="Confirmar Exclusão"
-        message="Tem a certeza que deseja excluir este registo? Esta ação não pode ser desfeita."
-        confirmText="Excluir"
+        title={t('fundo.confirm_delete_title')}
+        message={t('fundo.confirm_delete_msg')}
+        confirmText={t('fundo.delete_btn')}
         showCancel
       />
 

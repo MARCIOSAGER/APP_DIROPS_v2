@@ -173,7 +173,7 @@ export default function Lixeira() {
             </p>
           </div>
           <Badge variant="outline" className="text-lg px-4 py-2">
-            {totalItens} {totalItens === 1 ? 'item' : 'itens'}
+            {totalItens} {totalItens === 1 ? t('lixeira.item') : t('lixeira.itens')}
           </Badge>
         </div>
 
@@ -184,7 +184,7 @@ export default function Lixeira() {
           }`}>
             {message.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
             {message.text}
-            <button onClick={() => setMessage({ type: '', text: '' })} className="ml-auto text-sm underline">Fechar</button>
+            <button onClick={() => setMessage({ type: '', text: '' })} className="ml-auto text-sm underline">{t('lixeira.fechar')}</button>
           </div>
         )}
 
@@ -193,7 +193,7 @@ export default function Lixeira() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Pesquisar na lixeira..."
+            placeholder={t('lixeira.pesquisar')}
             value={busca}
             onChange={e => setBusca(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -204,42 +204,42 @@ export default function Lixeira() {
         <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2">
           <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-amber-800 dark:text-amber-200">
-            A eliminação permanente não pode ser desfeita. Restaurar um item devolve-o ao seu módulo original com o status anterior.
+            {t('lixeira.aviso')}
           </p>
         </div>
 
         {isLoading ? (
           <div className="text-center py-16">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-400 mb-3" />
-            <p className="text-slate-500 dark:text-slate-400">A carregar itens da lixeira...</p>
+            <p className="text-slate-500 dark:text-slate-400">{t('lixeira.carregando')}</p>
           </div>
         ) : totalItens === 0 ? (
           <div className="text-center py-16">
             <Trash2 className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-            <h3 className="text-lg font-medium text-slate-600 dark:text-slate-400">Lixeira vazia</h3>
-            <p className="text-slate-400 dark:text-slate-500">Não existem itens cancelados ou inativos.</p>
+            <h3 className="text-lg font-medium text-slate-600 dark:text-slate-400">{t('lixeira.vazia')}</h3>
+            <p className="text-slate-400 dark:text-slate-500">{t('lixeira.vaziaDesc')}</p>
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="inspecoes" className="flex items-center gap-2">
                 <ClipboardCheck className="w-4 h-4" />
-                Inspeções ({inspecoesCanceladas.length})
+                {t('lixeira.tabInspecoes')} ({inspecoesCanceladas.length})
               </TabsTrigger>
               <TabsTrigger value="proformas" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
-                Proformas ({proformasCanceladas.length})
+                {t('lixeira.tabProformas')} ({proformasCanceladas.length})
               </TabsTrigger>
               <TabsTrigger value="checklist" className="flex items-center gap-2">
                 <ClipboardCheck className="w-4 h-4" />
-                Itens Checklist ({checklistInativos.length})
+                {t('lixeira.tabChecklist')} ({checklistInativos.length})
               </TabsTrigger>
             </TabsList>
 
             {/* Inspeções Canceladas */}
             <TabsContent value="inspecoes">
               {filteredInspecoes.length === 0 ? (
-                <EmptyTab label="inspeções canceladas" />
+                <EmptyTab label={`${t('lixeira.naoExistem')} inspeções canceladas.`} />
               ) : (
                 <div className="space-y-3">
                   {filteredInspecoes.map(insp => (
@@ -261,7 +261,7 @@ export default function Lixeira() {
             {/* Proformas Canceladas */}
             <TabsContent value="proformas">
               {filteredProformas.length === 0 ? (
-                <EmptyTab label="proformas canceladas" />
+                <EmptyTab label={`${t('lixeira.naoExistem')} proformas canceladas.`} />
               ) : (
                 <div className="space-y-3">
                   {filteredProformas.map(prof => (
@@ -283,7 +283,7 @@ export default function Lixeira() {
             {/* Itens Checklist Inativos */}
             <TabsContent value="checklist">
               {filteredChecklist.length === 0 ? (
-                <EmptyTab label="itens de checklist inativos" />
+                <EmptyTab label={`${t('lixeira.naoExistem')} itens de checklist inativos.`} />
               ) : (
                 <div className="space-y-3">
                   {filteredChecklist.map(item => (
@@ -311,9 +311,9 @@ export default function Lixeira() {
           isOpen={confirmInfo.isOpen}
           onClose={() => setConfirmInfo({ isOpen: false, type: '', item: null, action: '' })}
           onConfirm={handleDeletePermanent}
-          title="Eliminar Permanentemente"
-          message="Esta ação não pode ser desfeita. O item e todos os dados associados serão removidos do sistema. Tem a certeza?"
-          confirmText="Eliminar"
+          title={t('lixeira.eliminarPermanente')}
+          message={t('lixeira.eliminarPermanenteDesc')}
+          confirmText={t('lixeira.eliminar')}
           variant="destructive"
         />
       )}
@@ -342,7 +342,7 @@ function TrashItem({ icon, title, subtitle, detail, isLoading, onRestore, onDele
             className="text-green-600 hover:text-green-700 hover:bg-green-50"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-1" />}
-            Restaurar
+            {t('lixeira.restaurar')}
           </Button>
           <Button
             variant="outline"
@@ -352,7 +352,7 @@ function TrashItem({ icon, title, subtitle, detail, isLoading, onRestore, onDele
             className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             <Trash2 className="w-4 h-4 mr-1" />
-            Eliminar
+            {t('lixeira.eliminar')}
           </Button>
         </div>
       </CardContent>
@@ -364,7 +364,7 @@ function EmptyTab({ label }) {
   return (
     <div className="text-center py-12">
       <Trash2 className="w-10 h-10 mx-auto text-slate-300 mb-3" />
-      <p className="text-slate-500 dark:text-slate-400">Não existem {label}.</p>
+      <p className="text-slate-500 dark:text-slate-400">{label}</p>
     </div>
   );
 }

@@ -418,7 +418,7 @@ export default function GerirPermissoes() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mr-3"></div>
-        <span className="text-lg text-slate-700 dark:text-slate-300">A carregar permissões...</span>
+        <span className="text-lg text-slate-700 dark:text-slate-300">{t('permissoes.carregando')}</span>
       </div>);
 
   }
@@ -430,12 +430,12 @@ export default function GerirPermissoes() {
           <CardHeader>
             <div className="flex items-center gap-3 text-red-600">
               <Lock className="w-8 h-8" />
-              <CardTitle>Acesso Restrito</CardTitle>
+              <CardTitle>{t('permissoes.acessoRestrito')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <p className="text-slate-600 dark:text-slate-400">
-              Apenas administradores podem aceder à gestão de permissões do sistema.
+              {t('permissoes.acessoRestritoDesc')}
             </p>
           </CardContent>
         </Card>
@@ -465,7 +465,7 @@ export default function GerirPermissoes() {
               disabled={!hasChanges || isSaving}>
 
               <RefreshCw className="w-4 h-4 mr-2" />
-              Cancelar
+              {t('permissoes.cancelar')}
             </Button>
             <Button
               onClick={handleSave}
@@ -475,12 +475,12 @@ export default function GerirPermissoes() {
               {isSaving ?
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  A Salvar...
+                  {t('permissoes.aSalvar')}
                 </> :
 
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Salvar Alterações
+                  {t('permissoes.salvarAlteracoes')}
                 </>
               }
             </Button>
@@ -492,7 +492,7 @@ export default function GerirPermissoes() {
           <Alert className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950">
             <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
             <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-              <strong>Alterações Não Salvas:</strong> Tem alterações pendentes. Não se esqueça de clicar em "Salvar Alterações" para aplicar.
+              <strong>{t('permissoes.alteracoesNaoSalvas')}</strong> {t('permissoes.alteracoesNaoSalvasDesc')}
             </AlertDescription>
           </Alert>
         }
@@ -515,7 +515,7 @@ export default function GerirPermissoes() {
                           {info.label}
                         </Badge>
                         <span className="text-sm text-slate-500 dark:text-slate-400">
-                          {paginasPermitidas.length} de {PAGINAS_DISPONIVEIS.length} páginas
+                          {paginasPermitidas.length} {t('permissoes.de')} {PAGINAS_DISPONIVEIS.length} {t('permissoes.paginas')}
                         </span>
                       </div>
                       <CardDescription className="text-slate-600 dark:text-slate-400">
@@ -530,7 +530,7 @@ export default function GerirPermissoes() {
                         onCheckedChange={(checked) => handleToggleAll(perfil, checked)} />
 
                       <Label htmlFor={`${perfil}-all`} className="text-sm font-medium cursor-pointer">
-                        Selecionar Todas
+                        {t('permissoes.selecionarTodas')}
                       </Label>
                     </div>
                   </div>
@@ -580,13 +580,13 @@ export default function GerirPermissoes() {
                   {/* Campo de Descrição Personalizada */}
                   <div className="pt-4 border-t">
                     <Label htmlFor={`${perfil}-descricao`} className="text-sm font-medium mb-2 block">
-                      Notas sobre este Perfil (Opcional)
+                      {t('permissoes.notasPerfil')}
                     </Label>
                     <Textarea
                       id={`${perfil}-descricao`}
                       value={descricao}
                       onChange={(e) => handleDescricaoChange(perfil, e.target.value)}
-                      placeholder="Adicione notas ou observações sobre este perfil..."
+                      placeholder={t('permissoes.notasPlaceholder')}
                       className="h-20" />
 
                   </div>
@@ -600,8 +600,7 @@ export default function GerirPermissoes() {
         <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
           <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           <AlertDescription className="text-blue-800 dark:text-blue-200">
-            <strong>Importante:</strong> As alterações de permissões serão aplicadas automaticamente no próximo login dos utilizadores.
-            Os utilizadores atualmente logados continuarão a ver as permissões antigas até fazerem logout e login novamente.
+            <strong>{t('permissoes.importante')}</strong> {t('permissoes.importanteDesc')}
           </AlertDescription>
         </Alert>
       </div>

@@ -94,7 +94,7 @@ export default function Inspecoes() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total de Inspeções</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('inspecoes.total')}</p>
                   <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{inspecoes.length}</p>
                 </div>
                 <ClipboardCheck className="h-8 w-8 text-blue-600" />
@@ -106,7 +106,7 @@ export default function Inspecoes() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Concluídas</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('inspecoes.concluidas')}</p>
                   <p className="text-3xl font-bold text-green-600">
                     {inspecoes.filter(i => i.status === 'concluida').length}
                   </p>
@@ -120,7 +120,7 @@ export default function Inspecoes() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Em Andamento</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('inspecoes.em_andamento')}</p>
                   <p className="text-3xl font-bold text-orange-600">
                     {inspecoes.filter(i => i.status === 'em_andamento').length}
                   </p>
@@ -134,7 +134,7 @@ export default function Inspecoes() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Taxa de Conformidade</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('inspecoes.taxa_conformidade')}</p>
                   <p className="text-3xl font-bold text-blue-600">
                     {inspecoes.length > 0 ? 
                       `${Math.round((inspecoes.filter(i => i.status === 'aprovada').length / inspecoes.length) * 100)}%`
@@ -151,15 +151,15 @@ export default function Inspecoes() {
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="inspecoes" className="flex items-center gap-2">
               <ClipboardCheck className="w-4 h-4" />
-              Inspeções
+              {t('inspecoes.tab_inspecoes')}
             </TabsTrigger>
             <TabsTrigger value="nova" className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
-              Nova Inspeção
+              {t('inspecoes.tab_nova')}
             </TabsTrigger>
             <TabsTrigger value="configurar" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              Configurar Tipos
+              {t('inspecoes.tab_configurar')}
             </TabsTrigger>
           </TabsList>
 
@@ -175,7 +175,7 @@ export default function Inspecoes() {
 
           <TabsContent value="nova" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tiposInspecao.filter(t => t.status === 'ativo').map((tipo) => (
+              {tiposInspecao.filter(ti => ti.status === 'ativo').map((tipo) => (
                 <Card key={tipo.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleNovaInspecao(tipo)}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -187,10 +187,10 @@ export default function Inspecoes() {
                     <p className="text-slate-600 dark:text-slate-400 text-sm mb-3">{tipo.descricao}</p>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-                        Frequência: {(tipo.frequencia || '').replace('_', ' ')}
+                        {t('inspecoes.frequencia')}: {(tipo.frequencia || '').replace('_', ' ')}
                       </span>
                       <Button size="sm">
-                        Iniciar Inspeção
+                        {t('inspecoes.iniciar')}
                       </Button>
                     </div>
                   </CardContent>
@@ -198,18 +198,18 @@ export default function Inspecoes() {
               ))}
             </div>
             
-            {tiposInspecao.filter(t => t.status === 'ativo').length === 0 && (
+            {tiposInspecao.filter(ti => ti.status === 'ativo').length === 0 && (
               <Card>
                 <CardContent className="text-center py-12">
                   <ClipboardCheck className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                   <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    Nenhum tipo de inspeção configurado
+                    {t('inspecoes.nenhum_tipo_configurado')}
                   </h3>
                   <p className="text-slate-500 dark:text-slate-400 mb-4">
-                    Configure os tipos de inspeção na aba "Configurar Tipos" primeiro.
+                    {t('inspecoes.configurar_tipos_primeiro')}
                   </p>
                   <Button onClick={() => document.querySelector('button[data-state="inactive"][value="configurar"]')?.click()}>
-                    Configurar Tipos
+                    {t('inspecoes.tab_configurar')}
                   </Button>
                 </CardContent>
               </Card>

@@ -751,7 +751,7 @@ export default function GestaoAcessos() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mr-3"></div>
-        <span className="text-lg text-slate-700">A carregar dados de gestão...</span>
+        <span className="text-lg text-slate-700">{t('acessos.carregando')}</span>
       </div>
     );
   }
@@ -775,10 +775,10 @@ export default function GestaoAcessos() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total de Utilizadores</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('acessos.totalUtilizadores')}</p>
                   <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1">{stats.totalUsers}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    {stats.activeUsers} ativos · {stats.inactiveUsers} inativos
+                    {stats.activeUsers} {t('acessos.ativos')} · {stats.inactiveUsers} {t('acessos.inativos')}
                   </p>
                 </div>
                 <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
@@ -792,10 +792,10 @@ export default function GestaoAcessos() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Utilizadores Ativos</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('acessos.utilizadoresAtivos')}</p>
                   <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{stats.activeUsers}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    {stats.totalUsers > 0 ? Math.round((stats.activeUsers / stats.totalUsers) * 100) : 0}% do total
+                    {stats.totalUsers > 0 ? Math.round((stats.activeUsers / stats.totalUsers) * 100) : 0}% {t('acessos.doTotal')}
                   </p>
                 </div>
                 <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg">
@@ -809,10 +809,10 @@ export default function GestaoAcessos() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Solicitações Pendentes</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('acessos.solicitacoesPendentes')}</p>
                   <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{stats.solicitacoesPendentes}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    {stats.novasSolicitacoesMes} novas este mês
+                    {stats.novasSolicitacoesMes} {t('acessos.novosEsteMes')}
                   </p>
                 </div>
                 <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
@@ -826,14 +826,14 @@ export default function GestaoAcessos() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Taxa de Aprovação</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('acessos.taxaAprovacao')}</p>
                   <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
                     {(stats.solicitacoesAprovadas + stats.solicitacoesRejeitadas) > 0 
                       ? Math.round((stats.solicitacoesAprovadas / (stats.solicitacoesAprovadas + stats.solicitacoesRejeitadas)) * 100)
                       : 0}%
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    {stats.solicitacoesAprovadas} aprovadas · {stats.solicitacoesRejeitadas} rejeitadas
+                    {stats.solicitacoesAprovadas} {t('acessos.aprovadas')} · {stats.solicitacoesRejeitadas} {t('acessos.rejeitadas')}
                   </p>
                 </div>
                 <div className="p-3 bg-indigo-50 dark:bg-indigo-950 rounded-lg">
@@ -851,7 +851,7 @@ export default function GestaoAcessos() {
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Shield className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                Distribuição por Perfil
+                {t('acessos.distribuicaoPerfil')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -874,7 +874,7 @@ export default function GestaoAcessos() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhum dado disponível</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">{t('acessos.nenhumDado')}</p>
                 )}
               </div>
             </CardContent>
@@ -885,7 +885,7 @@ export default function GestaoAcessos() {
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Globe className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                Distribuição por Aeroporto
+                {t('acessos.distribuicaoAeroporto')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -908,7 +908,7 @@ export default function GestaoAcessos() {
                       </div>
                     ))
                 ) : (
-                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhum dado disponível</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">{t('acessos.nenhumDado')}</p>
                 )}
               </div>
             </CardContent>
@@ -919,7 +919,7 @@ export default function GestaoAcessos() {
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Activity className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                Top Empresas
+                {t('acessos.topEmpresas')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -945,7 +945,7 @@ export default function GestaoAcessos() {
                       </div>
                     ))
                 ) : (
-                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhum dado disponível</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">{t('acessos.nenhumDado')}</p>
                 )}
               </div>
             </CardContent>
@@ -956,30 +956,30 @@ export default function GestaoAcessos() {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="solicitacoes">
               <MailCheck className="w-4 h-4 mr-2" />
-              Solicitações Pendentes ({solicitacoesPendentes.length})
+              {t('acessos.tabSolicitacoes')} ({solicitacoesPendentes.length})
             </TabsTrigger>
             <TabsTrigger value="utilizadores">
               <User className="w-4 h-4 mr-2" />
-              Utilizadores Ativos ({users.length})
+              {t('acessos.tabUtilizadores')} ({users.length})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="solicitacoes" className="space-y-4">
             <Card className="border-0 shadow-sm">
               <CardHeader>
-                <CardTitle>Novos Pedidos de Acesso</CardTitle>
-                <CardDescription>Reveja e processe os pedidos pendentes de acesso ao sistema.</CardDescription>
+                <CardTitle>{t('acessos.novosPedidos')}</CardTitle>
+                <CardDescription>{t('acessos.novosPedidosDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Solicitante</TableHead>
-                        <TableHead>Perfil Solicitado</TableHead>
-                        <TableHead>Empresa</TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
+                        <TableHead>{t('acessos.solicitante')}</TableHead>
+                        <TableHead>{t('acessos.perfilSolicitado')}</TableHead>
+                        <TableHead>{t('acessos.empresa')}</TableHead>
+                        <TableHead>{t('acessos.data')}</TableHead>
+                        <TableHead className="text-right">{t('acessos.acoes')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -997,8 +997,8 @@ export default function GestaoAcessos() {
                         <TableRow>
                           <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                             <Mail className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-                            <p className="text-lg font-medium">Nenhum resultado encontrado</p>
-                            <p className="text-sm mt-1">Não há solicitações pendentes de aprovação.</p>
+                            <p className="text-lg font-medium">{t('acessos.nenhumResultado')}</p>
+                            <p className="text-sm mt-1">{t('acessos.semSolicitacoes')}</p>
                           </TableCell>
                         </TableRow>
                       ) : solicitacoesPendentes.map((solicitacao) => {
@@ -1029,7 +1029,7 @@ export default function GestaoAcessos() {
                                 className="text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800"
                               >
                                 <XCircle className="w-4 h-4 mr-1" />
-                                Excluir
+                                {t('acessos.excluir')}
                               </Button>
                               <Button
                                 size="sm"
@@ -1038,7 +1038,7 @@ export default function GestaoAcessos() {
                                 className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
                               >
                                 <XCircle className="w-4 h-4 mr-1" />
-                                Rejeitar
+                                {t('acessos.rejeitar')}
                               </Button>
                               <Button
                                 size="sm"
@@ -1046,7 +1046,7 @@ export default function GestaoAcessos() {
                                 className="bg-green-600 hover:bg-green-700 text-white"
                               >
                                 <CheckCircle className="w-4 h-4 mr-1" />
-                                Aprovar
+                                {t('acessos.aprovar')}
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -1064,8 +1064,8 @@ export default function GestaoAcessos() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Gerir Utilizadores</CardTitle>
-                    <CardDescription>Edite perfis e permissões dos utilizadores existentes.</CardDescription>
+                    <CardTitle>{t('acessos.gerirUtilizadores')}</CardTitle>
+                    <CardDescription>{t('acessos.gerirUtilizadoresDesc')}</CardDescription>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -1074,14 +1074,14 @@ export default function GestaoAcessos() {
                       disabled={filteredUsers.length === 0}
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Exportar CSV
+                      {t('acessos.exportarCSV')}
                     </Button>
                     <Button
                       onClick={() => setIsAddUserModalOpen(true)}
                       className="bg-green-600 hover:bg-green-700 text-white"
                     >
                       <UserPlus className="w-4 h-4 mr-2" />
-                      Adicionar Utilizador
+                      {t('acessos.adicionarUtilizador')}
                     </Button>
                   </div>
                 </div>
@@ -1093,10 +1093,10 @@ export default function GestaoAcessos() {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-                        Filtros de Pesquisa
+                        {t('acessos.filtrosPesquisa')}
                         {activeFiltersCount > 0 && (
                           <Badge variant="secondary" className="ml-2">
-                            {activeFiltersCount} {activeFiltersCount === 1 ? 'filtro ativo' : 'filtros ativos'}
+                            {activeFiltersCount} {activeFiltersCount === 1 ? t('acessos.filtroAtivo') : t('acessos.filtrosAtivos')}
                           </Badge>
                         )}
                       </CardTitle>
@@ -1108,7 +1108,7 @@ export default function GestaoAcessos() {
                           className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
                         >
                           <X className="w-4 h-4 mr-1" />
-                          Limpar Filtros
+                          {t('acessos.limparFiltros')}
                         </Button>
                       )}
                     </div>
@@ -1117,12 +1117,12 @@ export default function GestaoAcessos() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                       {/* Busca por Texto */}
                       <div className="lg:col-span-2">
-                        <Label htmlFor="search">Pesquisar</Label>
+                        <Label htmlFor="search">{t('acessos.pesquisar')}</Label>
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                           <Input
                             id="search"
-                            placeholder="Nome, email, telefone ou perfil..."
+                            placeholder={t('acessos.placeholderPesquisa')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-9"
@@ -1132,7 +1132,7 @@ export default function GestaoAcessos() {
 
                       {/* Filtro de Status com Busca */}
                       <div>
-                        <Label htmlFor="filter-status">Status</Label>
+                        <Label htmlFor="filter-status">{t('acessos.status')}</Label>
                         <Popover open={openPopovers.status} onOpenChange={(open) => setOpenPopovers(prev => ({ ...prev, status: open }))}>
                           <PopoverTrigger asChild>
                             <Button
@@ -1141,14 +1141,14 @@ export default function GestaoAcessos() {
                               aria-expanded={openPopovers.status}
                               className="w-full justify-between text-left font-normal"
                             >
-                              {statusOptions.find(opt => opt.value === filtros.status)?.label || "Selecionar status..."}
+                              {statusOptions.find(opt => opt.value === filtros.status)?.label || t('acessos.selecionarStatus')}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-full p-0">
                             <Command>
-                              <CommandInput placeholder="Procurar status..." />
-                              <CommandEmpty>Nenhum status encontrado.</CommandEmpty>
+                              <CommandInput placeholder={t('acessos.procurarStatus')} />
+                              <CommandEmpty>{t('acessos.nenhumStatus')}</CommandEmpty>
                               <CommandGroup>
                                 {statusOptions.map((option) => (
                                   <CommandItem
@@ -1172,7 +1172,7 @@ export default function GestaoAcessos() {
 
                       {/* Filtro de Perfil com Busca */}
                       <div>
-                        <Label htmlFor="filter-perfil">Perfil</Label>
+                        <Label htmlFor="filter-perfil">{t('acessos.perfil')}</Label>
                         <Popover open={openPopovers.perfil} onOpenChange={(open) => setOpenPopovers(prev => ({ ...prev, perfil: open }))}>
                           <PopoverTrigger asChild>
                             <Button
@@ -1181,14 +1181,14 @@ export default function GestaoAcessos() {
                               aria-expanded={openPopovers.perfil}
                               className="w-full justify-between text-left font-normal"
                             >
-                              {perfilOptions.find(opt => opt.value === filtros.perfil)?.label || "Selecionar perfil..."}
+                              {perfilOptions.find(opt => opt.value === filtros.perfil)?.label || t('acessos.selecionarPerfil')}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-full p-0">
                             <Command>
-                              <CommandInput placeholder="Procurar perfil..." />
-                              <CommandEmpty>Nenhum perfil encontrado.</CommandEmpty>
+                              <CommandInput placeholder={t('acessos.procurarPerfil')} />
+                              <CommandEmpty>{t('acessos.nenhumPerfil')}</CommandEmpty>
                               <CommandGroup>
                                 {perfilOptions.map((option) => (
                                   <CommandItem
@@ -1212,7 +1212,7 @@ export default function GestaoAcessos() {
 
                       {/* Filtro de Aeroporto com Busca */}
                       <div>
-                        <Label htmlFor="filter-aeroporto">Aeroporto</Label>
+                        <Label htmlFor="filter-aeroporto">{t('acessos.aeroporto')}</Label>
                         <Popover open={openPopovers.aeroporto} onOpenChange={(open) => setOpenPopovers(prev => ({ ...prev, aeroporto: open }))}>
                           <PopoverTrigger asChild>
                             <Button
@@ -1221,14 +1221,14 @@ export default function GestaoAcessos() {
                               aria-expanded={openPopovers.aeroporto}
                               className="w-full justify-between text-left font-normal"
                             >
-                              {aeroportoOptions.find(opt => opt.value === filtros.aeroporto)?.label || "Selecionar aeroporto..."}
+                              {aeroportoOptions.find(opt => opt.value === filtros.aeroporto)?.label || t('acessos.selecionarAeroporto')}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-full p-0">
                             <Command>
-                              <CommandInput placeholder="Procurar aeroporto..." />
-                              <CommandEmpty>Nenhum aeroporto encontrado.</CommandEmpty>
+                              <CommandInput placeholder={t('acessos.procurarAeroporto')} />
+                              <CommandEmpty>{t('acessos.nenhumAeroporto')}</CommandEmpty>
                               <CommandGroup>
                                 {aeroportoOptions.map((option) => (
                                   <CommandItem
@@ -1252,7 +1252,7 @@ export default function GestaoAcessos() {
 
                       {/* Filtro de Empresa com Busca */}
                       <div className="lg:col-span-2">
-                        <Label htmlFor="filter-empresa">Empresa</Label>
+                        <Label htmlFor="filter-empresa">{t('acessos.empresa')}</Label>
                         <Popover open={openPopovers.empresa} onOpenChange={(open) => setOpenPopovers(prev => ({ ...prev, empresa: open }))}>
                           <PopoverTrigger asChild>
                             <Button
@@ -1261,14 +1261,14 @@ export default function GestaoAcessos() {
                               aria-expanded={openPopovers.empresa}
                               className="w-full justify-between text-left font-normal"
                             >
-                              {empresaOptions.find(opt => opt.value === filtros.empresa)?.label || "Selecionar empresa..."}
+                              {empresaOptions.find(opt => opt.value === filtros.empresa)?.label || t('acessos.selecionarEmpresa')}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-full p-0">
                             <Command>
-                              <CommandInput placeholder="Procurar empresa..." />
-                              <CommandEmpty>Nenhuma empresa encontrada.</CommandEmpty>
+                              <CommandInput placeholder={t('acessos.procurarEmpresa')} />
+                              <CommandEmpty>{t('acessos.nenhumaEmpresa')}</CommandEmpty>
                               <CommandGroup>
                                 {empresaOptions.map((option) => (
                                   <CommandItem
@@ -1294,8 +1294,8 @@ export default function GestaoAcessos() {
                     {/* Resultado da Filtragem */}
                     <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                       <p className="text-sm text-slate-600 dark:text-slate-400">
-                        <span className="font-semibold">{filteredUsers.length}</span> {filteredUsers.length === 1 ? 'utilizador encontrado' : 'utilizadores encontrados'}
-                        {activeFiltersCount > 0 && <span> com os filtros aplicados</span>}
+                        <span className="font-semibold">{filteredUsers.length}</span> {filteredUsers.length === 1 ? t('acessos.utilizadorEncontrado') : t('acessos.utilizadoresEncontrados')}
+                        {activeFiltersCount > 0 && <span> {t('acessos.comFiltros')}</span>}
                       </p>
                     </div>
                   </CardContent>
@@ -1305,13 +1305,13 @@ export default function GestaoAcessos() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Utilizador</TableHead>
-                        <TableHead>Telefone</TableHead>
-                        <TableHead>Perfis</TableHead>
-                        <TableHead>Empresa</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Aeroportos de Acesso</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
+                        <TableHead>{t('acessos.utilizador')}</TableHead>
+                        <TableHead>{t('acessos.telefone')}</TableHead>
+                        <TableHead>{t('acessos.perfis')}</TableHead>
+                        <TableHead>{t('acessos.empresa')}</TableHead>
+                        <TableHead>{t('acessos.status')}</TableHead>
+                        <TableHead>{t('acessos.aeroportosAcesso')}</TableHead>
+                        <TableHead className="text-right">{t('acessos.acoes')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1331,11 +1331,11 @@ export default function GestaoAcessos() {
                         <TableRow>
                           <TableCell colSpan={7} className="text-center text-slate-500 dark:text-slate-400 py-8">
                             <Users className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-                            <p className="font-medium">Nenhum utilizador encontrado</p>
+                            <p className="font-medium">{t('acessos.nenhumUtilizador')}</p>
                             <p className="text-sm mt-1">
-                              {activeFiltersCount > 0 
-                                ? 'Tente ajustar os filtros para encontrar utilizadores.' 
-                                : 'Não há utilizadores cadastrados no sistema.'}
+                              {activeFiltersCount > 0
+                                ? t('acessos.ajustarFiltros')
+                                : t('acessos.semUtilizadores')}
                             </p>
                           </TableCell>
                         </TableRow>
@@ -1396,7 +1396,7 @@ export default function GestaoAcessos() {
                                 className="text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950"
                               >
                                 <Edit className="w-3 h-3 mr-1" />
-                                Editar
+                                {t('acessos.editar')}
                               </Button>
                               {/* Não permitir excluir o próprio utilizador */}
                               {user.id !== currentUser?.id && (
@@ -1407,7 +1407,7 @@ export default function GestaoAcessos() {
                                   className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
                                 >
                                   <Trash2 className="w-3 h-3 mr-1" />
-                                  Excluir
+                                  {t('acessos.excluir')}
                                 </Button>
                               )}
                             </div>
