@@ -534,7 +534,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
           <Card><CardContent className="p-3">
             <div className="flex items-center gap-2">
               <div className="bg-amber-50 p-2 rounded-lg"><TrendingUp className="w-4 h-4 text-amber-600" /></div>
-              <div><p className="text-[11px] text-slate-500">TX Pouso</p><p className="text-sm font-bold text-amber-700">${fmtNum(kpis.totalPouso)}</p></div>
+              <div><p className="text-[11px] text-slate-500">TX Aterr./Desc.</p><p className="text-sm font-bold text-amber-700">${fmtNum(kpis.totalPouso)}</p></div>
             </div>
           </CardContent></Card>
 
