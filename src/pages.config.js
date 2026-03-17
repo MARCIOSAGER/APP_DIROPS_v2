@@ -16,6 +16,7 @@ const FundoManeio = lazy(() => import('./pages/FundoManeio'));
 const GRF = lazy(() => import('./pages/GRF'));
 const GerirPermissoes = lazy(() => import('./pages/GerirPermissoes'));
 const GestaoAcessos = lazy(() => import('./pages/GestaoAcessos'));
+const GestaoAPIKeys = lazy(() => import('./pages/GestaoAPIKeys'));
 const GestaoEmpresas = lazy(() => import('./pages/GestaoEmpresas'));
 const GestaoNotificacoes = lazy(() => import('./pages/GestaoNotificacoes'));
 const GuiaUtilizador = lazy(() => import('./pages/GuiaUtilizador'));
@@ -23,6 +24,7 @@ const HistoricoAcessoDocumentos = lazy(() => import('./pages/HistoricoAcessoDocu
 const Home = lazy(() => import('./pages/Home'));
 const Inspecoes = lazy(() => import('./pages/Inspecoes'));
 const KPIsOperacionais = lazy(() => import('./pages/KPIsOperacionais'));
+const Lixeira = lazy(() => import('./pages/Lixeira'));
 const LogAuditoria = lazy(() => import('./pages/LogAuditoria'));
 const LogAuditoriaDetalhes = lazy(() => import('./pages/LogAuditoriaDetalhes'));
 const Manutencao = lazy(() => import('./pages/Manutencao'));
@@ -59,6 +61,7 @@ export const PAGES = {
     "GRF": GRF,
     "GerirPermissoes": GerirPermissoes,
     "GestaoAcessos": GestaoAcessos,
+    "GestaoAPIKeys": GestaoAPIKeys,
     "GestaoEmpresas": GestaoEmpresas,
     "GestaoNotificacoes": GestaoNotificacoes,
     "GuiaUtilizador": GuiaUtilizador,
@@ -66,6 +69,7 @@ export const PAGES = {
     "Home": Home,
     "Inspecoes": Inspecoes,
     "KPIsOperacionais": KPIsOperacionais,
+    "Lixeira": Lixeira,
     "LogAuditoria": LogAuditoria,
     "LogAuditoriaDetalhes": LogAuditoriaDetalhes,
     "Manutencao": Manutencao,

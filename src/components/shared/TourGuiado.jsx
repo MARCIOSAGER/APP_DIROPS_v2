@@ -41,7 +41,19 @@ const TOUR_STEPS = [
   },
   {
     title: "Safety e Inspeções",
-    description: "Regista ocorrências de safety (FOD, incursões de pista, bird strike) e gere checklists de inspeção aeroportuária com relatórios automáticos.",
+    description: "Regista ocorrências de safety (FOD, incursões de pista, bird strike) e realiza inspeções com checklists. Itens não conformes geram automaticamente Solicitações de Serviço (SS) na Manutenção.",
+    target: null,
+    position: "center",
+  },
+  {
+    title: "Auditoria Interna",
+    description: "Cria processos de auditoria com checklists e Planos de Ação Corretiva (PAC). Não conformidades na auditoria também geram SS automáticas na Manutenção.",
+    target: null,
+    position: "center",
+  },
+  {
+    title: "Manutenção (SS → OS)",
+    description: "O módulo de Manutenção recebe Solicitações de Serviço (SS) — criadas manualmente ou via inspeções/auditorias. A equipa de infraestrutura analisa cada SS e, se aprovada, gera uma Ordem de Serviço (OS) para execução interna ou terceirizada.",
     target: null,
     position: "center",
   },

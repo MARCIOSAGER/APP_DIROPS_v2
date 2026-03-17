@@ -71,8 +71,10 @@ const sections = [
     title: "Inspeções",
     badge: "Inspecoes",
     conteudo: [
-      { subtitulo: "Nova Inspeção", texto: "Selecione o tipo de inspeção, aeroporto, data e inspetor responsável. O sistema carrega automaticamente o checklist correspondente." },
-      { subtitulo: "Checklist", texto: "Responda cada item do checklist como Conforme, Não Conforme ou Não Aplicável. Pode adicionar observações por item." },
+      { subtitulo: "Nova Inspeção", texto: "Selecione o tipo de inspeção e aeroporto. O inspetor é automaticamente preenchido com o utilizador logado. Se tiver acesso a apenas um aeroporto, este é auto-selecionado." },
+      { subtitulo: "Checklist", texto: "Responda cada item do checklist como Conforme, Não Conforme ou Não Aplicável. Pode adicionar observações e evidências fotográficas por item." },
+      { subtitulo: "Não Conformidades → SS", texto: "Itens marcados como 'Não Conforme' geram automaticamente uma Solicitação de Serviço (SS) na Manutenção ao concluir a inspeção, dispensando o inspetor de definir prazos ou responsáveis." },
+      { subtitulo: "Cancelar Inspeção", texto: "As inspeções podem ser canceladas (soft delete) — ficam ocultas da lista mas preservadas no histórico." },
       { subtitulo: "Relatório", texto: "Após concluir, o sistema gera um resumo com percentagem de conformidade. Pode exportar o relatório em PDF." },
     ]
   },
@@ -85,8 +87,25 @@ const sections = [
     badge: "Auditoria",
     conteudo: [
       { subtitulo: "Processo de Auditoria", texto: "Crie um novo processo de auditoria definindo o tipo, âmbito, datas e equipa auditora." },
+      { subtitulo: "Checklist de Auditoria", texto: "Avalie cada item como Conforme (C), Não Conforme (NC) ou Não Aplicável (N/A). Itens NC geram automaticamente Solicitações de Serviço (SS) na Manutenção ao finalizar." },
       { subtitulo: "Plano de Ação Corretiva (PAC)", texto: "Para cada não conformidade detetada, crie itens de PAC com responsável, prazo e ações previstas." },
       { subtitulo: "Acompanhamento", texto: "O sistema alerta automaticamente sobre prazos a vencer nos PACs." },
+    ]
+  },
+  {
+    id: "manutencao",
+    icon: Wrench,
+    color: "text-orange-600",
+    bg: "bg-orange-50",
+    title: "Manutenção",
+    badge: "Manutencao",
+    conteudo: [
+      { subtitulo: "Solicitações de Serviço (SS)", texto: "As SS são pedidos de intervenção que podem ser criados manualmente (botão 'Nova Solicitação') ou automaticamente a partir de inspeções e auditorias com itens não conformes." },
+      { subtitulo: "Análise e Triagem", texto: "Administradores e equipa de Infraestrutura analisam cada SS: podem aprovar (gerando uma Ordem de Serviço) ou rejeitar (com justificação). Na aprovação definem categoria, prioridade e tipo de execução." },
+      { subtitulo: "Ordens de Serviço (OS)", texto: "As OS são criadas a partir de SS aprovadas. Contêm detalhes da intervenção: categoria, prioridade, tipo de execução (interna ou terceirizada), fornecedor e prazo." },
+      { subtitulo: "Atribuição e Execução", texto: "O responsável pela manutenção atribui a OS a um técnico ou fornecedor, acompanha a execução e regista custos, fotos (antes/depois) e observações de conclusão." },
+      { subtitulo: "Verificação", texto: "Após a conclusão, o administrador ou equipa de infraestrutura verifica o trabalho realizado e fecha a OS." },
+      { subtitulo: "Permissões", texto: "Perfis 'administrador' e 'infraestrutura' podem analisar SS, criar/atribuir/verificar OS. Perfil 'operacoes' pode abrir SS e visualizar OS." },
     ]
   },
   {

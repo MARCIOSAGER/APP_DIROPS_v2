@@ -116,10 +116,17 @@ export function getAeroportosPermitidos(user, todosAeroportos, effectiveEmpresaI
 
 // Filtra dados operacionais por aeroporto do utilizador
 // campo = nome do campo que contém o ICAO do aeroporto no registo (ex: 'aeroporto_operacao', 'aeroporto')
-export function filtrarDadosPorAcesso(user, dados, campo, todosAeroportos) {
+export function filtrarDadosPorAcesso(user, dados, campo, todosAeroportos, effectiveEmpresaId) {
   if (!user || !dados) return [];
 
-  // Superadmin → vê tudo
+  // Superadmin com empresa selecionada → filtrar por empresa
+  if (isSuperAdmin(user) && effectiveEmpresaId) {
+    const aeroportosEmpresa = todosAeroportos.filter(a => a.empresa_id === effectiveEmpresaId);
+    const icaosEmpresa = new Set(aeroportosEmpresa.map(a => a.codigo_icao?.trim().toUpperCase()));
+    return dados.filter(item => icaosEmpresa.has(item[campo]?.trim().toUpperCase()));
+  }
+
+  // Superadmin sem empresa selecionada → vê tudo
   if (isSuperAdmin(user)) {
     return dados;
   }
@@ -131,10 +138,17 @@ export function filtrarDadosPorAcesso(user, dados, campo, todosAeroportos) {
 }
 
 // Filtra dados por ID do aeroporto (para entidades que usam aeroporto_id em vez de ICAO)
-export function filtrarDadosPorAeroportoId(user, dados, campo, todosAeroportos) {
+export function filtrarDadosPorAeroportoId(user, dados, campo, todosAeroportos, effectiveEmpresaId) {
   if (!user || !dados) return [];
 
-  // Superadmin → vê tudo
+  // Superadmin com empresa selecionada → filtrar por empresa
+  if (isSuperAdmin(user) && effectiveEmpresaId) {
+    const aeroportosEmpresa = todosAeroportos.filter(a => a.empresa_id === effectiveEmpresaId);
+    const idsEmpresa = new Set(aeroportosEmpresa.map(a => a.id));
+    return dados.filter(item => idsEmpresa.has(item[campo]));
+  }
+
+  // Superadmin sem empresa selecionada → vê tudo
   if (isSuperAdmin(user)) {
     return dados;
   }
