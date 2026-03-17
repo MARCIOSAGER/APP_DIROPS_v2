@@ -236,11 +236,11 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       const vooLabel = [numArr, numDep].filter(Boolean).join('/') || '—';
 
       const aterragem = vooArr
-        ? fmtDateTime(vooArr.data_operacao, vooArr.hora_aterragem || vooArr.hora_operacao)
-        : (voo?.hora_aterragem ? fmtDateTime(voo.data_operacao, voo.hora_aterragem) : '—');
+        ? fmtDateTime(vooArr.data_operacao, vooArr.horario_real || vooArr.horario_previsto)
+        : (voo?.horario_real ? fmtDateTime(voo.data_operacao, voo.horario_real) : '—');
       const descolagem = vooDep
-        ? fmtDateTime(vooDep.data_operacao, vooDep.hora_descolagem || vooDep.hora_operacao)
-        : (voo?.hora_descolagem ? fmtDateTime(voo.data_operacao, voo.hora_descolagem) : '—');
+        ? fmtDateTime(vooDep.data_operacao, vooDep.horario_real || vooDep.horario_previsto)
+        : (voo?.horario_real ? fmtDateTime(voo.data_operacao, voo.horario_real) : '—');
 
       const txAterr = calc.tarifa_pouso_usd || 0;
       const estacH = calc.tempo_permanencia_horas || det.permanencia?.tempoPermanencia || 0;

@@ -592,12 +592,13 @@ export default function Operacoes() {
 
       const calculoComVooLigado = {
         ...calculatedTariffs,
-        voo_ligado_id: vooLigado.id
+        voo_ligado_id: vooLigado.id,
+        empresa_id: vooLigado.empresa_id || vooDep.empresa_id
       };
 
       // Use freshData.calculosTarifa if available, otherwise use state, only fetch as last resort
       const calculosAtualizados = freshData?.calculosTarifa || calculosTarifa;
-      const existingCalculo = calculosAtualizados.find(ct => ct.voo_id === vooDep.id);
+      const existingCalculo = calculosAtualizados.find(ct => ct.voo_ligado_id === vooLigado.id || ct.voo_id === vooDep.id);
 
       if (existingCalculo) {
         await CalculoTarifa.update(existingCalculo.id, calculoComVooLigado);
@@ -812,11 +813,12 @@ export default function Operacoes() {
 
             const calculoComVooLigado = {
               ...calculatedTariffs,
-              voo_ligado_id: vooLigadoInstance.id
+              voo_ligado_id: vooLigadoInstance.id,
+              empresa_id: vooLigadoInstance.empresa_id || vooDep.empresa_id
             };
 
             // Verificar se já existe cálculo (usar state em vez de buscar do banco)
-            const existingCalculo = calculosTarifa.find(ct => ct.voo_id === vooDep.id);
+            const existingCalculo = calculosTarifa.find(ct => ct.voo_ligado_id === vooLigadoInstance.id || ct.voo_id === vooDep.id);
 
             if (existingCalculo) {
               await CalculoTarifa.update(existingCalculo.id, calculoComVooLigado);
@@ -883,11 +885,12 @@ export default function Operacoes() {
                 if (calculatedTariffs) {
                   const calculoComVooLigado = {
                     ...calculatedTariffs,
-                    voo_ligado_id: vooLigadoExistente.id
+                    voo_ligado_id: vooLigadoExistente.id,
+                    empresa_id: vooLigadoExistente.empresa_id || vooDepAtualizado.empresa_id
                   };
 
                   // Use state instead of fetching from DB
-                  const existingCalculo = calculosTarifa.find(ct => ct.voo_id === vooDepAtualizado.id);
+                  const existingCalculo = calculosTarifa.find(ct => ct.voo_ligado_id === vooLigadoExistente.id || ct.voo_id === vooDepAtualizado.id);
 
                   if (existingCalculo) {
                     await CalculoTarifa.update(existingCalculo.id, calculoComVooLigado);

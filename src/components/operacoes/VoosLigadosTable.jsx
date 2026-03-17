@@ -541,7 +541,18 @@ export default function VoosLigadosTable({
                      </TableCell>
 
                     <TableCell className="text-sm text-slate-600 whitespace-nowrap py-2">
-                       {calculo?.updated_date ? format(parseISO(calculo.updated_date), 'dd MMM HH:mm', { locale: pt }) : 'N/A'}
+                      {(() => {
+                        const updatedBy = calculo?.updated_by || depVoo?.updated_by || depVoo?.created_by;
+                        const updatedDate = calculo?.updated_date || depVoo?.updated_date;
+                        const userName = updatedBy ? updatedBy.split('@')[0] : null;
+                        const dateStr = updatedDate ? format(parseISO(updatedDate), 'dd/MM/yyyy HH:mm', { locale: pt }) : null;
+                        return userName ? (
+                          <div>
+                            <div className="font-medium text-slate-700">{userName}</div>
+                            {dateStr && <div className="text-xs text-slate-400">{dateStr}</div>}
+                          </div>
+                        ) : 'N/A';
+                      })()}
                     </TableCell>
 
                     <TableCell className="text-right py-2">

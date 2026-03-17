@@ -11,7 +11,7 @@ import { Plus, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { normalizeAircraftRegistration, normalizeFlightNumber, createDateTime } from '@/components/lib/utils';
 import { notifyAdminsCreation } from '@/components/lib/notificacoes';
-import { getAeroportosPermitidos } from '@/components/lib/userUtils';
+import { getAeroportosPermitidos, isSuperAdmin } from '@/components/lib/userUtils';
 import { differenceInMinutes } from 'date-fns';
 
 // Importar entidades corretas
@@ -141,22 +141,31 @@ export default function FormVoo({
     }
 
     const permitidos = getAeroportosPermitidos(currentUser, aeroportos);
-    // Para FormVoo, filtrar apenas aeroportos SGA se for admin/superadmin
-    if (currentUser.role === 'admin' || (currentUser.perfis && currentUser.perfis.includes('administrador'))) {
-      return permitidos.filter((a) => a.isSGA === true);
+    // Para admin/superadmin: filtrar SGA, mas incluir o aeroporto do voo em edição
+    if (isSuperAdmin(currentUser) || (currentUser.role === 'admin' || (currentUser.perfis && currentUser.perfis.includes('administrador')))) {
+      const sgaAeroportos = permitidos.filter((a) => a.isSGA === true);
+      // Se editando, garantir que o aeroporto do voo está incluído
+      if (vooInicial?.aeroporto_operacao) {
+        const jaInclui = sgaAeroportos.some(a => a.codigo_icao === vooInicial.aeroporto_operacao);
+        if (!jaInclui) {
+          const aeroVoo = permitidos.find(a => a.codigo_icao === vooInicial.aeroporto_operacao);
+          if (aeroVoo) sgaAeroportos.push(aeroVoo);
+        }
+      }
+      return sgaAeroportos;
     }
     return permitidos;
-  }, [aeroportos, currentUser]);
+  }, [aeroportos, currentUser, vooInicial]);
 
-  // Auto-selecionar aeroporto se o usuário tem acesso a apenas um (para ARR)
+  // Auto-selecionar aeroporto se o usuário tem acesso a apenas um
   useEffect(() => {
-    if (formData.tipo_movimento === 'ARR' && aeroportosAcesso.length === 1 && !formData.aeroporto_operacao && !vooInicial) {
+    if (aeroportosAcesso.length === 1 && !formData.aeroporto_operacao) {
       setFormData((prev) => ({
         ...prev,
         aeroporto_operacao: aeroportosAcesso[0].codigo_icao
       }));
     }
-  }, [aeroportosAcesso, formData.aeroporto_operacao, formData.tipo_movimento, vooInicial]);
+  }, [aeroportosAcesso, formData.aeroporto_operacao]);
 
   // Função para verificar duplicidade de voo
   const checkDuplicateVoo = useCallback(() => {
@@ -540,21 +549,41 @@ export default function FormVoo({
           // Criar datetimes completos para comparação precisa
           const dateTimeArr = createDateTime(vooArr.data_operacao, horarioArrReal, vooArr.horario_previsto);
           
+          // Determinar tipo de operação para tempo mínimo
+          const aeroportoOrigem = aeroportosOrigemDestino.find(a => a.codigo_icao === vooArr.aeroporto_origem_destino);
+          const aeroportoDestino = aeroportosOrigemDestino.find(a => a.codigo_icao === formData.aeroporto_origem_destino);
+          const aeroportoOp = aeroportos.find(a => a.codigo_icao === formData.aeroporto_operacao);
+          const isInternacional = (aeroportoOrigem && aeroportoOrigem.pais !== 'AO') ||
+                                  (aeroportoDestino && aeroportoDestino.pais !== 'AO') ||
+                                  (aeroportoOp && aeroportoOp.pais !== 'AO');
+          const minMinutos = isInternacional ? 30 : 20;
+          const tipoLabel = isInternacional ? 'Internacional' : 'Doméstico';
+
           // Validar horário previsto DEP
           if (formData.horario_previsto) {
             const dateTimeDepPrevisto = createDateTime(formData.data_operacao, formData.horario_previsto, formData.horario_previsto);
-            
+
             if (dateTimeArr && dateTimeDepPrevisto && dateTimeDepPrevisto <= dateTimeArr) {
               newErrors.horario_previsto = `O horário previsto de partida deve ser posterior ao horário de chegada (${horarioArrReal}).`;
+            } else if (dateTimeArr && dateTimeDepPrevisto) {
+              const diffMin = (dateTimeDepPrevisto - dateTimeArr) / 60000;
+              if (diffMin < minMinutos) {
+                newErrors.horario_previsto = `Voo ${tipoLabel} requer permanência mínima de ${minMinutos} minutos. Diferença atual: ${Math.round(diffMin)} min.`;
+              }
             }
           }
 
           // Validar horário real DEP (se preenchido)
           if (formData.horario_real) {
             const dateTimeDepReal = createDateTime(formData.data_operacao, formData.horario_real, formData.horario_previsto);
-            
+
             if (dateTimeArr && dateTimeDepReal && dateTimeDepReal <= dateTimeArr) {
               newErrors.horario_real = `O horário real de partida deve ser posterior ao horário de chegada (${horarioArrReal}).`;
+            } else if (dateTimeArr && dateTimeDepReal) {
+              const diffMin = (dateTimeDepReal - dateTimeArr) / 60000;
+              if (diffMin < minMinutos) {
+                newErrors.horario_real = `Voo ${tipoLabel} requer permanência mínima de ${minMinutos} minutos. Diferença atual: ${Math.round(diffMin)} min.`;
+              }
             }
           }
         }
