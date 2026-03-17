@@ -12,6 +12,7 @@ import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos, ordemInicial = null }) {
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     titulo: '',
     descricao_problema: '',
@@ -67,8 +68,27 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
     }
   }, [ordemInicial, isOpen]);
 
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.titulo?.trim()) newErrors.titulo = 'Campo obrigatório';
+    if (!formData.descricao_problema?.trim()) newErrors.descricao_problema = 'Campo obrigatório';
+    if (!formData.aeroporto_id) newErrors.aeroporto_id = 'Campo obrigatório';
+    if (!formData.prioridade) newErrors.prioridade = 'Campo obrigatório';
+    if (!formData.categoria_manutencao) newErrors.categoria_manutencao = 'Campo obrigatório';
+    if (formData.tipo_execucao === 'terceirizado' && !formData.fornecedor?.trim()) {
+      newErrors.fornecedor = 'Fornecedor é obrigatório para execução terceirizada';
+    }
+    if (formData.custos_estimados !== '' && formData.custos_estimados !== null) {
+      const custos = parseFloat(formData.custos_estimados);
+      if (isNaN(custos) || custos < 0) newErrors.custos_estimados = 'Valor deve ser maior ou igual a zero';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
     guardedSubmit(async () => {
       const cleanData = {
         ...formData,
@@ -81,6 +101,7 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
   const prioridadeOptions = [
@@ -123,8 +144,9 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
                 value={formData.titulo}
                 onChange={(e) => handleChange('titulo', e.target.value)}
                 placeholder="Título resumido do problema..."
-                required
+                className={errors.titulo ? 'border-red-500' : ''}
               />
+              {errors.titulo && <p className="text-red-500 text-xs mt-1">{errors.titulo}</p>}
             </div>
 
             <div className="space-y-2">
@@ -135,6 +157,7 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
                 onValueChange={(value) => handleChange('aeroporto_id', value)}
                 placeholder="Selecionar aeroporto"
               />
+              {errors.aeroporto_id && <p className="text-red-500 text-xs mt-1">{errors.aeroporto_id}</p>}
             </div>
           </div>
 
@@ -145,8 +168,9 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
               onChange={(e) => handleChange('descricao_problema', e.target.value)}
               placeholder="Descrição detalhada do problema identificado..."
               rows={3}
-              required
+              className={errors.descricao_problema ? 'border-red-500' : ''}
             />
+            {errors.descricao_problema && <p className="text-red-500 text-xs mt-1">{errors.descricao_problema}</p>}
           </div>
 
           <div className="space-y-2">
@@ -167,6 +191,7 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
                 value={formData.prioridade}
                 onValueChange={(value) => handleChange('prioridade', value)}
               />
+              {errors.prioridade && <p className="text-red-500 text-xs mt-1">{errors.prioridade}</p>}
             </div>
 
             <div className="space-y-2">
@@ -177,6 +202,7 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
                 onValueChange={(value) => handleChange('categoria_manutencao', value)}
                 placeholder="Selecionar categoria"
               />
+              {errors.categoria_manutencao && <p className="text-red-500 text-xs mt-1">{errors.categoria_manutencao}</p>}
             </div>
 
             <div className="space-y-2">
@@ -205,12 +231,14 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
             {formData.tipo_execucao === 'terceirizado' && (
               <>
                 <div className="space-y-2">
-                  <Label>Fornecedor</Label>
+                  <Label>Fornecedor *</Label>
                   <Input
                     value={formData.fornecedor}
                     onChange={(e) => handleChange('fornecedor', e.target.value)}
                     placeholder="Nome do fornecedor..."
+                    className={errors.fornecedor ? 'border-red-500' : ''}
                   />
+                  {errors.fornecedor && <p className="text-red-500 text-xs mt-1">{errors.fornecedor}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label>Contacto do Fornecedor</Label>
@@ -243,7 +271,9 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
                 value={formData.custos_estimados}
                 onChange={(e) => handleChange('custos_estimados', e.target.value)}
                 placeholder="0.00"
+                className={errors.custos_estimados ? 'border-red-500' : ''}
               />
+              {errors.custos_estimados && <p className="text-red-500 text-xs mt-1">{errors.custos_estimados}</p>}
             </div>
           </div>
 

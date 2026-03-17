@@ -157,7 +157,7 @@ export function createEntity(tableName) {
         })
         .select()
         .single();
-      if (error) throw error;
+      if (error) throw new Error(`Erro ao criar ${tableName}: ${error.message}`);
       return data;
     },
 
@@ -173,7 +173,7 @@ export function createEntity(tableName) {
         .eq('id', id)
         .select()
         .single();
-      if (error) throw error;
+      if (error) throw new Error(`Erro ao atualizar ${tableName}: ${error.message}`);
       return data;
     },
 
@@ -182,7 +182,7 @@ export function createEntity(tableName) {
         .from(tableName)
         .delete()
         .eq('id', id);
-      if (error) throw error;
+      if (error) throw new Error(`Erro ao eliminar ${tableName}: ${error.message}`);
     },
 
     // === New professional methods ===

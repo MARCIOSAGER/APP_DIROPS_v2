@@ -22,6 +22,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
   const [step, setStep] = useState(1); // 1: Dados Gerais, 2: Checklist, 3: Concluído
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   // Step 1 State
@@ -64,11 +65,31 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
 
   const handleDadosGeraisChange = (field, value) => {
     setDadosGerais(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
+  };
+
+  const validateStep1 = () => {
+    const newErrors = {};
+    if (!dadosGerais.aeroporto_id) newErrors.aeroporto_id = 'Campo obrigatório';
+    if (!dadosGerais.data_inspecao) {
+      newErrors.data_inspecao = 'Campo obrigatório';
+    } else {
+      const hoje = new Date().toISOString().split('T')[0];
+      if (dadosGerais.data_inspecao > hoje) newErrors.data_inspecao = 'A data não pode ser no futuro';
+    }
+    if (!dadosGerais.hora_inicio) {
+      newErrors.hora_inicio = 'Campo obrigatório';
+    } else if (!/^\d{2}:\d{2}$/.test(dadosGerais.hora_inicio)) {
+      newErrors.hora_inicio = 'Formato inválido (HH:MM)';
+    }
+    if (!dadosGerais.inspetor_responsavel?.trim()) newErrors.inspetor_responsavel = 'Campo obrigatório';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleNextStep = async () => {
-    if (!dadosGerais.aeroporto_id || !dadosGerais.data_inspecao || !dadosGerais.hora_inicio || !dadosGerais.inspetor_responsavel) {
-      setError('Por favor, preencha todos os campos obrigatórios.');
+    if (!validateStep1()) {
+      setError('Por favor, corrija os campos assinalados.');
       return;
     }
 
@@ -168,6 +189,15 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       return;
     }
 
+    // Verificar se itens NC possuem observações
+    const ncSemObservacao = Object.entries(respostas).filter(
+      ([_, r]) => r.resultado === 'nao_conforme' && !r.observacoes?.trim()
+    );
+    if (ncSemObservacao.length > 0) {
+      setError(`${ncSemObservacao.length} item(ns) Não Conforme(s) sem observações. Adicione observações a todos os itens NC antes de finalizar.`);
+      return;
+    }
+
     guardedSubmit(async () => {
     setIsLoading(true);
     setError('');
@@ -256,6 +286,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
               onValueChange={(value) => handleDadosGeraisChange('aeroporto_id', value)}
               placeholder="Selecione o aeroporto"
             />
+            {errors.aeroporto_id && <p className="text-red-500 text-xs mt-1">{errors.aeroporto_id}</p>}
           </div>
           <div className="space-y-2">
             <Label>Data da Inspeção *</Label>
@@ -263,7 +294,9 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
               type="date"
               value={dadosGerais.data_inspecao}
               onChange={(e) => handleDadosGeraisChange('data_inspecao', e.target.value)}
+              className={errors.data_inspecao ? 'border-red-500' : ''}
             />
+            {errors.data_inspecao && <p className="text-red-500 text-xs mt-1">{errors.data_inspecao}</p>}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -273,7 +306,9 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
               type="time"
               value={dadosGerais.hora_inicio}
               onChange={(e) => handleDadosGeraisChange('hora_inicio', e.target.value)}
+              className={errors.hora_inicio ? 'border-red-500' : ''}
             />
+            {errors.hora_inicio && <p className="text-red-500 text-xs mt-1">{errors.hora_inicio}</p>}
           </div>
           <div className="space-y-2">
             <Label>Inspetor Responsável</Label>
@@ -360,8 +395,15 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
             </div>
 
             {respostas[item.id]?.resultado === 'nao_conforme' && (
-              <div className="p-3 border-l-4 border-red-500 bg-red-50 rounded">
-                <p className="text-sm text-red-700 font-medium">⚠ Uma Solicitação de Serviço (SS) será criada automaticamente na Manutenção ao concluir a inspeção.</p>
+              <div className="space-y-2">
+                <div className="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                  <p className="text-sm text-red-700 font-medium">⚠ Uma Solicitação de Serviço (SS) será criada automaticamente na Manutenção ao concluir a inspeção.</p>
+                </div>
+                {!respostas[item.id]?.observacoes?.trim() && (
+                  <div className="p-2 bg-amber-50 border border-amber-300 rounded">
+                    <p className="text-sm text-amber-700 font-medium">⚠ Observação obrigatória para itens Não Conforme</p>
+                  </div>
+                )}
               </div>
             )}
 

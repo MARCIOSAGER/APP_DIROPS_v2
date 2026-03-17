@@ -157,6 +157,23 @@ export default function FormChecklist({
   };
 
   const handleSave = async (finalizar = false) => {
+    if (finalizar) {
+      // Validar mínimo 80% respondidos
+      if (!podeFinializar) {
+        const minimo = Math.floor(itens.length * 0.8);
+        setMessage({ type: 'error', text: `É necessário responder pelo menos ${minimo} de ${itens.length} itens (80%) para finalizar a auditoria. Respondidos: ${totalRespondidas}.` });
+        return;
+      }
+      // Validar que itens NC possuem observação
+      const ncSemObs = Object.entries(respostas).filter(
+        ([_, r]) => r.situacao_encontrada === 'NC' && !r.observacao?.trim()
+      );
+      if (ncSemObs.length > 0) {
+        setMessage({ type: 'error', text: `${ncSemObs.length} item(ns) Não Conforme(s) sem observação. Preencha as observações de todos os itens NC antes de finalizar.` });
+        return;
+      }
+    }
+
     guardedSubmit(async () => {
     setIsSaving(true);
     setMessage({ type: '', text: '' });
@@ -457,8 +474,15 @@ export default function FormChecklist({
 
                   {/* Aviso NC → SS */}
                   {currentResposta.situacao_encontrada === 'NC' && (
-                    <div className="p-3 border-l-4 border-red-500 bg-red-50 rounded">
-                      <p className="text-sm text-red-700 font-medium">⚠ Uma Solicitação de Serviço (SS) será criada automaticamente na Manutenção ao finalizar a auditoria.</p>
+                    <div className="space-y-2">
+                      <div className="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                        <p className="text-sm text-red-700 font-medium">⚠ Uma Solicitação de Serviço (SS) será criada automaticamente na Manutenção ao finalizar a auditoria.</p>
+                      </div>
+                      {!currentResposta.observacao?.trim() && (
+                        <div className="p-2 bg-amber-50 border border-amber-300 rounded">
+                          <p className="text-sm text-amber-700 font-medium">⚠ Observação obrigatória para itens Não Conforme</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -479,14 +503,21 @@ export default function FormChecklist({
                   <Save className="w-4 h-4 mr-2" />
                   {isSaving ? 'Salvando...' : 'Salvar Progresso'}
                 </Button>
-                <Button
-                  onClick={() => handleSave(true)}
-                  disabled={isSaving || !podeFinializar}
-                  title={!podeFinializar ? `Responda pelo menos ${Math.floor(itens.length * 0.8)} itens para finalizar` : ''}
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Finalizar Auditoria
-                </Button>
+                <div className="flex flex-col items-end gap-1">
+                  <Button
+                    onClick={() => handleSave(true)}
+                    disabled={isSaving || !podeFinializar}
+                    title={!podeFinializar ? `Responda pelo menos ${Math.floor(itens.length * 0.8)} itens para finalizar` : ''}
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Finalizar Auditoria
+                  </Button>
+                  {!podeFinializar && (
+                    <p className="text-red-500 text-xs">
+                      Mínimo {Math.floor(itens.length * 0.8)} de {itens.length} itens respondidos para finalizar
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

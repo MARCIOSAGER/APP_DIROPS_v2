@@ -76,11 +76,11 @@ export default function VoosTable({
 
   const isAdmin = currentUser?.role === 'admin' || currentUser?.perfis?.includes('administrador');
   
-  // Cálculos de paginação
+  // Cálculos de paginação (memoized to avoid re-slicing on every render)
   const totalPages = Math.ceil(voos.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const currentVoos = voos.slice(startIndex, endIndex);
+  const currentVoos = useMemo(() => voos.slice(startIndex, endIndex), [voos, startIndex, endIndex]);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {

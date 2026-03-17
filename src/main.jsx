@@ -4,6 +4,13 @@ import * as Sentry from '@sentry/react'
 import App from '@/App.jsx'
 import '@/index.css'
 
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('[Unhandled Promise Rejection]', event.reason);
+  if (window.Sentry) {
+    Sentry.captureException(event.reason);
+  }
+});
+
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,

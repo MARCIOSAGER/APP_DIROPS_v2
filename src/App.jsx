@@ -42,7 +42,7 @@ class ErrorBoundary extends React.Component {
             <p className="text-slate-600 mb-2">{this.state.error?.message || 'Ocorreu um erro inesperado.'}</p>
             <button onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-              Recarregar Página
+              Tentar novamente
             </button>
           </div>
         </div>
@@ -120,6 +120,7 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <NavigationTracker />
+          <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -127,9 +128,10 @@ function App() {
                 const Page = Pages[page];
                 return Page ? <Route key={page} path={`/${page}`} element={<Page />} /> : null;
               })}
-              <Route path="*" element={<ErrorBoundary><AuthenticatedApp /></ErrorBoundary>} />
+              <Route path="*" element={<AuthenticatedApp />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
         </Router>
         <Toaster />
         <CookieConsent />

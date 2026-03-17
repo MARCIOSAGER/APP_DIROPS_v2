@@ -5,6 +5,12 @@ import path from 'path'
 
 export default defineConfig({
   logLevel: 'error',
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    include: ['src/**/__tests__/**/*.test.{js,jsx}'],
+  },
   plugins: [
     react(),
     VitePWA({
@@ -86,6 +92,8 @@ export default defineConfig({
           'vendor-query': ['@tanstack/react-query'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-dates': ['date-fns'],
+          'vendor-xlsx': ['xlsx'],
+          'vendor-motion': ['framer-motion'],
         },
       },
     },
