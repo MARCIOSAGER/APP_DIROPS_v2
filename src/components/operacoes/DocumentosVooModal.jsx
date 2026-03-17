@@ -11,8 +11,10 @@ import AlertModal from '@/components/shared/AlertModal';
 import SuccessModal from '@/components/shared/SuccessModal';
 import SendEmailModal from '@/components/shared/SendEmailModal';
 import { base44 } from '@/api/base44Client';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, onOpenUploadModal, currentUser }) {
+  const { t } = useI18n();
   const [documentos, setDocumentos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
@@ -63,8 +65,8 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
     setAlertInfo({
       isOpen: true,
       type: 'error',
-      title: 'Excluir Documento',
-      message: `Tem certeza que deseja excluir o documento "${doc.titulo}"? Esta ação é irreversível.`,
+      title: t('docVoo.excluirDocumento'),
+      message: `${t('docVoo.confirmarExcluir')} "${doc.titulo}"? ${t('docVoo.acaoIrreversivel')}`,
       showCancel: true,
       confirmText: 'Excluir',
       onConfirm: async () => {
@@ -74,16 +76,16 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
           loadDocumentos();
           setSuccessInfo({
             isOpen: true,
-            title: 'Documento Excluído!',
-            message: `O documento "${doc.titulo}" foi excluído com sucesso.`
+            title: t('docVoo.documentoExcluido'),
+            message: `"${doc.titulo}" ${t('docVoo.documentoExcluidoMsg')}`
           });
         } catch (error) {
           console.error('Erro ao excluir documento:', error);
           setAlertInfo({
             isOpen: true,
             type: 'error',
-            title: 'Erro ao Excluir',
-            message: 'Não foi possível excluir o documento.'
+            title: t('docVoo.erroExcluir'),
+            message: t('docVoo.erroExcluirMsg')
           });
         }
       }
@@ -201,8 +203,8 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
       
       setSuccessInfo({
         isOpen: true,
-        title: 'Email Enviado!',
-        message: `O documento "${documentoParaEmail.titulo}" foi enviado por email com sucesso.`
+        title: t('docVoo.emailEnviado'),
+        message: `"${documentoParaEmail.titulo}" ${t('docVoo.emailEnviadoMsg')}`
       });
       setIsEmailModalOpen(false);
       setDocumentoParaEmail(null);
@@ -211,20 +213,20 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Enviar Email',
-        message: `Não foi possível enviar o email: ${getErrorMessage(error)}`
+        title: t('docVoo.erroEmail'),
+        message: `${t('docVoo.erroEmailMsg')} ${getErrorMessage(error)}`
       });
     }
   };
 
   const getCategoriaLabel = (categoria) => {
     const labels = {
-      'manual_operacoes': 'Manual de Operações',
-      'procedimento': 'Procedimento',
-      'regulamentacao': 'Regulamentação',
-      'formulario': 'Formulário',
-      'relatorio': 'Relatório',
-      'outro': 'Outro'
+      'manual_operacoes': t('docVoo.manualOperacoes'),
+      'procedimento': t('docVoo.procedimento'),
+      'regulamentacao': t('docVoo.regulamentacao'),
+      'formulario': t('docVoo.formulario'),
+      'relatorio': t('docVoo.relatorio'),
+      'outro': t('docVoo.outro')
     };
     return labels[categoria] || categoria;
   };
@@ -236,7 +238,7 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-slate-900">
-            Documentos - {arrVoo.numero_voo} → {depVoo.numero_voo}
+            {t('docVoo.documentos')} - {arrVoo.numero_voo} → {depVoo.numero_voo}
           </DialogTitle>
         </DialogHeader>
 
@@ -245,7 +247,7 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
             <div className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
               <span className="font-semibold text-slate-900">
-                {documentos.length} documento{documentos.length !== 1 ? 's' : ''} encontrado{documentos.length !== 1 ? 's' : ''}
+                {documentos.length} {documentos.length !== 1 ? t('docVoo.documentosEncontrados') : t('docVoo.documentoEncontrado')}
               </span>
             </div>
             <div className="flex gap-2">
@@ -256,7 +258,7 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
                 disabled={isLoading}
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Atualizar
+                {t('docVoo.atualizar')}
               </Button>
               <Button
                 size="sm"
@@ -269,7 +271,7 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Upload className="w-4 h-4 mr-2" />
-                Carregar Documento
+                {t('docVoo.carregarDocumento')}
               </Button>
             </div>
           </div>
@@ -282,10 +284,10 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
             <div className="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
               <FolderOpen className="w-16 h-16 mx-auto mb-4 text-slate-300" />
               <p className="text-slate-600 font-medium mb-2">
-                Nenhum documento encontrado
+                {t('docVoo.nenhumDocumento')}
               </p>
               <p className="text-sm text-slate-500 mb-4">
-                Carregue documentos relacionados a este voo usando o botão acima.
+                {t('docVoo.carreguePeloBtn')}
               </p>
             </div>
           ) : (

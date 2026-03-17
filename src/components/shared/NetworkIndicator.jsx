@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useI18n } from '@/components/lib/i18n';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const PING_INTERVAL = 10000; // 10 seconds
 const PING_SAMPLES = 5; // median of last 5 pings — more stable than average
 
-function getSignalInfo(latency) {
-  if (latency === null) return { label: 'Offline', color: 'text-red-500', barColor: 'bg-red-500', bars: 0 };
-  if (latency < 150) return { label: 'Forte', color: 'text-green-600', barColor: 'bg-green-500', bars: 4 };
-  if (latency < 300) return { label: 'Bom', color: 'text-green-500', barColor: 'bg-green-400', bars: 3 };
-  if (latency < 600) return { label: 'Fraco', color: 'text-yellow-500', barColor: 'bg-yellow-500', bars: 2 };
-  return { label: 'Lento', color: 'text-orange-500', barColor: 'bg-orange-500', bars: 1 };
+function getSignalInfo(latency, t) {
+  if (latency === null) return { label: t('shared.network.offline'), color: 'text-red-500', barColor: 'bg-red-500', bars: 0 };
+  if (latency < 150) return { label: t('shared.network.forte'), color: 'text-green-600', barColor: 'bg-green-500', bars: 4 };
+  if (latency < 300) return { label: t('shared.network.bom'), color: 'text-green-500', barColor: 'bg-green-400', bars: 3 };
+  if (latency < 600) return { label: t('shared.network.fraco'), color: 'text-yellow-500', barColor: 'bg-yellow-500', bars: 2 };
+  return { label: t('shared.network.lento'), color: 'text-orange-500', barColor: 'bg-orange-500', bars: 1 };
 }
 
 function median(arr) {
@@ -39,6 +40,7 @@ export default function NetworkIndicator() {
   const intervalRef = useRef(null);
   const samplesRef = useRef([]);
   const controllerRef = useRef(null);
+  const { t } = useI18n();
 
   const ping = useCallback(async () => {
     if (!navigator.onLine) {
@@ -94,7 +96,7 @@ export default function NetworkIndicator() {
     };
   }, [ping]);
 
-  const signal = isOnline ? getSignalInfo(latency) : getSignalInfo(null);
+  const signal = isOnline ? getSignalInfo(latency, t) : getSignalInfo(null, t);
 
   return (
     <div

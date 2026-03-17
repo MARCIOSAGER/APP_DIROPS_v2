@@ -13,6 +13,7 @@ import { Calendar, User, FileText, AlertCircle, List } from 'lucide-react';
 import { ProcessoAuditoria } from '@/entities/ProcessoAuditoria';
 import { ItemAuditoria } from '@/entities/ItemAuditoria';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function FormProcessoAuditoria({ 
   isOpen, 
@@ -23,6 +24,7 @@ export default function FormProcessoAuditoria({
   processoInicial = null,
   tipoAuditoriaInicial = null
 }) {
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
   const { guardedSubmit } = useSubmitGuard();
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -60,7 +62,7 @@ export default function FormProcessoAuditoria({
       }
     } catch (error) {
       console.error('Erro ao carregar itens:', error);
-      setMessage({ type: 'error', text: 'Erro ao carregar itens do checklist.' });
+      setMessage({ type: 'error', text: t('formAuditoria.erroItens') });
     } finally {
       setIsLoadingItens(false);
     }
@@ -97,7 +99,7 @@ export default function FormProcessoAuditoria({
     if (!formData.tipo_auditoria_id || !formData.aeroporto_id || !formData.data_auditoria || !formData.auditor_responsavel) {
       setMessage({
         type: 'error',
-        text: 'Por favor, preencha todos os campos obrigatórios.'
+        text: t('formAuditoria.camposObrigatorios')
       });
       return;
     }
@@ -105,7 +107,7 @@ export default function FormProcessoAuditoria({
     if (itensSelecionados.length === 0) {
       setMessage({
         type: 'error',
-        text: 'Por favor, selecione pelo menos um item do checklist.'
+        text: t('formAuditoria.selecioneItem')
       });
       return;
     }
@@ -174,7 +176,7 @@ export default function FormProcessoAuditoria({
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
-            {processoInicial ? 'Editar Processo de Auditoria' : 'Nova Auditoria'}
+            {processoInicial ? t('formAuditoria.editarProcesso') : t('formAuditoria.novaAuditoria')}
           </DialogTitle>
         </DialogHeader>
 
@@ -192,29 +194,29 @@ export default function FormProcessoAuditoria({
           {/* Informações Básicas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="tipo_auditoria">Tipo de Auditoria *</Label>
+              <Label htmlFor="tipo_auditoria">{t('formAuditoria.tipoAuditoria')}</Label>
               <Select
                 options={tipoAuditoriaOptions}
                 value={formData.tipo_auditoria_id}
                 onValueChange={(value) => handleInputChange('tipo_auditoria_id', value)}
-                placeholder="Selecione o tipo de auditoria"
+                placeholder={t('formAuditoria.selecioneTipo')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="aeroporto">Aeroporto *</Label>
+              <Label htmlFor="aeroporto">{t('formAuditoria.aeroporto')}</Label>
               <Select
                 options={aeroportoOptions}
                 value={formData.aeroporto_id}
                 onValueChange={(value) => handleInputChange('aeroporto_id', value)}
-                placeholder="Selecione o aeroporto"
+                placeholder={t('formAuditoria.selecioneAeroporto')}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="data_auditoria">Data da Auditoria *</Label>
+              <Label htmlFor="data_auditoria">{t('formAuditoria.dataAuditoria')}</Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
@@ -229,12 +231,12 @@ export default function FormProcessoAuditoria({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="auditor_responsavel">Auditor Responsável *</Label>
+              <Label htmlFor="auditor_responsavel">{t('formAuditoria.auditorResponsavel')}</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   id="auditor_responsavel"
-                  placeholder="Nome do auditor responsável"
+                  placeholder={t('formAuditoria.nomeAuditor')}
                   value={formData.auditor_responsavel}
                   onChange={(e) => handleInputChange('auditor_responsavel', e.target.value)}
                   className="pl-10"
@@ -245,23 +247,23 @@ export default function FormProcessoAuditoria({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="equipe_auditoria">Equipe de Auditoria</Label>
+            <Label htmlFor="equipe_auditoria">{t('formAuditoria.equipeAuditoria')}</Label>
             <Input
               id="equipe_auditoria"
-              placeholder="Nomes dos membros da equipe (separados por vírgula)"
+              placeholder={t('formAuditoria.equipePlaceholder')}
               value={formData.equipe_auditoria}
               onChange={(e) => handleInputChange('equipe_auditoria', e.target.value)}
             />
             <p className="text-xs text-slate-500">
-              Exemplo: João Silva, Maria Santos, Pedro Costa
+              {t('formAuditoria.equipeExemplo')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="observacoes_gerais">Observações Gerais</Label>
+            <Label htmlFor="observacoes_gerais">{t('formAuditoria.observacoesGerais')}</Label>
             <Textarea
               id="observacoes_gerais"
-              placeholder="Observações ou notas sobre esta auditoria..."
+              placeholder={t('formAuditoria.observacoesPlaceholder')}
               value={formData.observacoes_gerais}
               onChange={(e) => handleInputChange('observacoes_gerais', e.target.value)}
               rows={4}
@@ -276,7 +278,7 @@ export default function FormProcessoAuditoria({
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-base flex items-center gap-2">
                       <List className="w-5 h-5 text-blue-600" />
-                      Itens do Checklist ({itensSelecionados.length}/{itensDisponiveis.length} selecionados)
+                      {t('formAuditoria.itensChecklist')} ({itensSelecionados.length}/{itensDisponiveis.length} {t('formAuditoria.selecionados')})
                     </CardTitle>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -287,43 +289,43 @@ export default function FormProcessoAuditoria({
                       onClick={selecionarTodos}
                       disabled={isLoadingItens}
                     >
-                      Selecionar Todos
+                      {t('formAuditoria.selecionarTodos')}
                     </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       onClick={desselecionarTodos}
                       disabled={isLoadingItens}
                     >
-                      Limpar
+                      {t('formAuditoria.limpar')}
                     </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       onClick={() => selecionarAleatorio(5)}
                       disabled={isLoadingItens}
                     >
-                      5 Aleatórios
+                      5 {t('formAuditoria.aleatorios')}
                     </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       onClick={() => selecionarAleatorio(10)}
                       disabled={isLoadingItens}
                     >
-                      10 Aleatórios
+                      10 {t('formAuditoria.aleatorios')}
                     </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       onClick={() => selecionarAleatorio(20)}
                       disabled={isLoadingItens}
                     >
-                      20 Aleatórios
+                      20 {t('formAuditoria.aleatorios')}
                     </Button>
                   </div>
                 </div>
@@ -331,11 +333,11 @@ export default function FormProcessoAuditoria({
               <CardContent className="p-4">
                 {isLoadingItens ? (
                   <div className="text-center py-4">
-                    <p className="text-sm text-slate-600">Carregando itens...</p>
+                    <p className="text-sm text-slate-600">{t('formAuditoria.carregandoItens')}</p>
                   </div>
                 ) : itensDisponiveis.length === 0 ? (
                   <div className="text-center py-4">
-                    <p className="text-sm text-slate-600">Nenhum item encontrado para este tipo de auditoria.</p>
+                    <p className="text-sm text-slate-600">{t('formAuditoria.nenhumItem')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2">
@@ -351,7 +353,7 @@ export default function FormProcessoAuditoria({
                           htmlFor={`item-${item.id}`} 
                           className="flex-1 cursor-pointer text-sm leading-relaxed"
                         >
-                          <span className="font-medium text-slate-700">Item {item.numero}:</span>{' '}
+                          <span className="font-medium text-slate-700">{t('formAuditoria.item')} {item.numero}:</span>{' '}
                           <span className="text-slate-600">{item.item}</span>
                         </label>
                       </div>
@@ -364,12 +366,12 @@ export default function FormProcessoAuditoria({
 
           <DialogFooter className="flex-shrink-0 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
+              {t('formAuditoria.cancelar')}
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading 
-                ? (processoInicial ? 'A atualizar...' : 'A criar...') 
-                : (processoInicial ? 'Atualizar' : 'Criar Auditoria')
+              {isLoading
+                ? (processoInicial ? t('formAuditoria.aAtualizar') : t('formAuditoria.aCriar'))
+                : (processoInicial ? t('formAuditoria.atualizar') : t('formAuditoria.criarAuditoria'))
               }
             </Button>
           </DialogFooter>

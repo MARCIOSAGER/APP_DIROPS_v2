@@ -7,26 +7,31 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { User, Save, X } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
-const PERFIL_OPTIONS = [
-  { value: 'administrador', label: 'Administrador' },
-  { value: 'operacoes', label: 'Operações' },
-  { value: 'safety', label: 'Safety' },
-  { value: 'infraestrutura', label: 'Infraestrutura' },
-  { value: 'credenciamento', label: 'Credenciamento' },
-  { value: 'gestor_empresa', label: 'Gestor de Empresa' },
-  { value: 'visualizador', label: 'Visualizador' }
+const PERFIL_OPTIONS_KEYS = [
+  { value: 'administrador', key: 'gestao.perfil.administrador' },
+  { value: 'operacoes', key: 'gestao.perfil.operacoes' },
+  { value: 'safety', key: 'gestao.perfil.safety' },
+  { value: 'infraestrutura', key: 'gestao.perfil.infraestrutura' },
+  { value: 'credenciamento', key: 'gestao.perfil.credenciamento' },
+  { value: 'gestor_empresa', key: 'gestao.perfil.gestorEmpresa' },
+  { value: 'visualizador', key: 'gestao.perfil.visualizador' }
 ];
 
-const STATUS_OPTIONS = [
-  { value: 'ativo', label: 'Ativo' },
-  { value: 'inativo', label: 'Inativo' },
-  { value: 'pendente', label: 'Pendente' }
+const STATUS_OPTIONS_KEYS = [
+  { value: 'ativo', key: 'gestao.status.ativo' },
+  { value: 'inativo', key: 'gestao.status.inativo' },
+  { value: 'pendente', key: 'gestao.status.pendente' }
 ];
 
 export default function EditUserModal({ isOpen, onClose, user, aeroportos, empresas, onSave }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({});
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
+
+  const PERFIL_OPTIONS = PERFIL_OPTIONS_KEYS.map(p => ({ value: p.value, label: t(p.key) }));
+  const STATUS_OPTIONS = STATUS_OPTIONS_KEYS.map(s => ({ value: s.value, label: t(s.key) }));
 
   useEffect(() => {
     if (user && isOpen) {
@@ -70,7 +75,7 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
       const newPerfis = currentPerfis.includes(perfil)
         ? currentPerfis.filter(p => p !== perfil)
         : [...currentPerfis, perfil];
-      
+
       return { ...prev, perfis: newPerfis };
     });
   };
@@ -115,7 +120,7 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
   if (!user) return null;
 
   const empresaOptions = [
-    { value: '', label: 'Nenhuma empresa associada' },
+    { value: '', label: t('gestao.editUser.nenhumaEmpresa') },
     ...empresas.map(e => ({ value: e.id, label: e.nome }))
   ];
 
@@ -134,10 +139,10 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="w-5 h-5 text-blue-600" />
-            Editar Utilizador
+            {t('gestao.editUser.title')}
           </DialogTitle>
           <DialogDescription>
-            Altere as informações e permissões do utilizador.
+            {t('gestao.editUser.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -146,36 +151,36 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
           <div className="space-y-4 p-4 max-h-[65vh] overflow-y-auto pr-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="full_name">Nome Completo</Label>
-                <Input 
-                  id="full_name" 
-                  value={formData.full_name || ''} 
-                  onChange={(e) => handleChange('full_name', e.target.value)} 
+                <Label htmlFor="full_name">{t('gestao.editUser.fullName')}</Label>
+                <Input
+                  id="full_name"
+                  value={formData.full_name || ''}
+                  onChange={(e) => handleChange('full_name', e.target.value)}
                 />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  value={formData.email || ''} 
-                  disabled 
+                <Label htmlFor="email">{t('gestao.editUser.email')}</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email || ''}
+                  disabled
                   className="bg-gray-100"
                 />
               </div>
             </div>
-            
+
             <div>
-              <Label htmlFor="telefone">Telefone</Label>
-              <Input 
-                id="telefone" 
-                value={formData.telefone || ''} 
-                onChange={(e) => handleChange('telefone', e.target.value)} 
+              <Label htmlFor="telefone">{t('gestao.editUser.telefone')}</Label>
+              <Input
+                id="telefone"
+                value={formData.telefone || ''}
+                onChange={(e) => handleChange('telefone', e.target.value)}
               />
             </div>
-            
+
             <div>
-              <Label>Perfis de Acesso</Label>
+              <Label>{t('gestao.editUser.perfisAcesso')}</Label>
               <div className="grid grid-cols-2 gap-2 mt-2 p-3 border rounded-lg bg-slate-50">
                 {PERFIL_OPTIONS.map(perfil => (
                   <div key={perfil.value} className="flex items-center space-x-2">
@@ -191,13 +196,13 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
                 ))}
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                Selecione um ou mais perfis.
+                {t('gestao.editUser.perfisHint')}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('gestao.editUser.status')}</Label>
                 <select
                   id="status"
                   value={formData.status || 'ativo'}
@@ -213,7 +218,7 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
               </div>
 
               <div>
-                <Label htmlFor="empresa">Empresa Associada</Label>
+                <Label htmlFor="empresa">{t('gestao.editUser.empresaAssociada')}</Label>
                 <select
                   id="empresa"
                   value={formData.empresa_id || ''}
@@ -234,7 +239,7 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
             </div>
 
             <div>
-              <Label>Aeroportos de Acesso</Label>
+              <Label>{t('gestao.editUser.aeroportosAcesso')}</Label>
               <div className="space-y-2 mt-2 max-h-48 overflow-y-auto border rounded-lg p-3">
                 {/* Opção Selecionar Todos */}
                 <div className="flex items-center space-x-2 pb-2 border-b">
@@ -244,10 +249,10 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
                     onCheckedChange={handleSelectAllAeroportos}
                   />
                   <Label htmlFor="select-all-aeroportos" className="text-sm font-medium cursor-pointer">
-                    Selecionar Todos os Aeroportos
+                    {t('gestao.editUser.selecionarTodos')}
                   </Label>
                 </div>
-                
+
                 {/* Lista de aeroportos individuais (filtrado por empresa) */}
                 <div className="grid grid-cols-1 gap-2 pt-2">
                   {aeroportosFiltrados.map(aeroporto => (
@@ -265,7 +270,7 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
                 </div>
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                Selecione os aeroportos aos quais o utilizador terá acesso.
+                {t('gestao.editUser.aeroportosHint')}
               </p>
             </div>
           </div>
@@ -273,11 +278,11 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
           <DialogFooter className="border-t pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               <X className="w-4 h-4 mr-1" />
-              Cancelar
+              {t('gestao.editUser.cancelar')}
             </Button>
             <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Save className="w-4 h-4 mr-1" />
-              {isSubmitting ? 'A guardar...' : 'Salvar Alterações'}
+              {isSubmitting ? t('gestao.editUser.guardando') : t('gestao.editUser.salvar')}
             </Button>
           </DialogFooter>
         </form>

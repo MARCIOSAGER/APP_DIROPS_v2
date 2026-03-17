@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Cookie } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 
 const COOKIE_KEY = 'dirops_cookie_consent';
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     const consent = localStorage.getItem(COOKIE_KEY);
@@ -29,14 +31,13 @@ export default function CookieConsent() {
         <Cookie className="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5 sm:mt-0" />
         <div className="flex-1 text-sm leading-relaxed">
           <p>
-            Este site utiliza cookies essenciais para autenticação e funcionamento do sistema.
-            Ao continuar a utilizar o DIROPS, concorda com a nossa{' '}
+            {t('shared.cookie.texto')}{' '}
             <a href="/PoliticaPrivacidade" className="text-blue-400 hover:text-blue-300 underline">
-              Política de Privacidade
+              {t('shared.cookie.politica')}
             </a>
-            {' '}e{' '}
+            {' '}{t('shared.cookie.e')}{' '}
             <a href="/TermosServico" className="text-blue-400 hover:text-blue-300 underline">
-              Termos de Serviço
+              {t('shared.cookie.termos')}
             </a>.
           </p>
         </div>
@@ -44,7 +45,7 @@ export default function CookieConsent() {
           onClick={accept}
           className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 whitespace-nowrap"
         >
-          Aceitar
+          {t('shared.cookie.aceitar')}
         </Button>
       </div>
     </div>

@@ -2,9 +2,10 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 
-export default function ProgressModal({ 
-  isOpen, 
+export default function ProgressModal({
+  isOpen,
   title = "Processando...",
   currentStep = 0,
   totalSteps = 0,
@@ -13,6 +14,7 @@ export default function ProgressModal({
   currentItem = "",
   errors = []
 }) {
+  const { t } = useI18n();
   const progress = totalSteps > 0 ? (currentStep / totalSteps) * 100 : 0;
   const isComplete = currentStep === totalSteps;
 
@@ -32,8 +34,8 @@ export default function ProgressModal({
           {/* Barra de progresso */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-gray-600">
-              <span>Progresso</span>
-              <span className="font-medium">{currentStep} de {totalSteps}</span>
+              <span>{t('progressModal.progresso')}</span>
+              <span className="font-medium">{currentStep} {t('progressModal.de')} {totalSteps}</span>
             </div>
             <Progress value={progress} className="h-3" />
           </div>
@@ -42,7 +44,7 @@ export default function ProgressModal({
           {!isComplete && currentItem && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-900">
-                <span className="font-medium">Processando:</span> {currentItem}
+                <span className="font-medium">{t('progressModal.processandoItem')}</span> {currentItem}
               </p>
             </div>
           )}
@@ -53,7 +55,7 @@ export default function ProgressModal({
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-600" />
                 <div>
-                  <p className="text-xs text-green-600 font-medium">Sucesso</p>
+                  <p className="text-xs text-green-600 font-medium">{t('progressModal.sucesso')}</p>
                   <p className="text-lg font-bold text-green-900">{successCount}</p>
                 </div>
               </div>
@@ -63,7 +65,7 @@ export default function ProgressModal({
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-red-600" />
                 <div>
-                  <p className="text-xs text-red-600 font-medium">Erros</p>
+                  <p className="text-xs text-red-600 font-medium">{t('progressModal.erros')}</p>
                   <p className="text-lg font-bold text-red-900">{errorCount}</p>
                 </div>
               </div>
@@ -73,7 +75,7 @@ export default function ProgressModal({
           {/* Lista de erros (se houver) */}
           {errors.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 max-h-40 overflow-y-auto">
-              <p className="text-sm font-medium text-red-900 mb-2">Erros encontrados:</p>
+              <p className="text-sm font-medium text-red-900 mb-2">{t('progressModal.errosEncontrados')}</p>
               <ul className="space-y-1">
                 {errors.map((error, index) => (
                   <li key={index} className="text-xs text-red-700">
@@ -88,9 +90,9 @@ export default function ProgressModal({
           {isComplete && (
             <div className={`${errorCount === 0 ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'} border rounded-lg p-3`}>
               <p className={`text-sm font-medium ${errorCount === 0 ? 'text-green-900' : 'text-orange-900'}`}>
-                {errorCount === 0 
-                  ? '✅ Processamento concluído com sucesso!'
-                  : `⚠️ Processamento concluído com ${errorCount} erro(s).`
+                {errorCount === 0
+                  ? t('progressModal.concluidoSucesso')
+                  : `${t('progressModal.concluidoComErros')} ${errorCount} ${t('progressModal.erroS')}`
                 }
               </p>
             </div>

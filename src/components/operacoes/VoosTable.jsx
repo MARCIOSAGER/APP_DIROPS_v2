@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import Select from '@/components/ui/select';
+import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_CONFIG = {
   Programado: { color: 'bg-blue-100 text-blue-800 border-blue-200' },
@@ -36,6 +37,7 @@ export default function VoosTable({
   sortDirection = 'desc',
   onSort
 }) {
+  const { t } = useI18n();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -94,10 +96,10 @@ export default function VoosTable({
   };
 
   const pageSizeOptions = [
-    { value: '10', label: '10 por página' },
-    { value: '25', label: '25 por página' },
-    { value: '50', label: '50 por página' },
-    { value: '100', label: '100 por página' }
+    { value: '10', label: t('voosTable.porPagina10') },
+    { value: '25', label: t('voosTable.porPagina25') },
+    { value: '50', label: t('voosTable.porPagina50') },
+    { value: '100', label: t('voosTable.porPagina100') }
   ];
 
   const getTableHeight = () => {
@@ -123,63 +125,63 @@ export default function VoosTable({
             <TableRow>
               <SortableTableHeader
                 field="tipo_movimento"
-                label="Tipo"
+                label={t('voosTable.tipo')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
               />
               <SortableTableHeader
                 field="data_operacao"
-                label="Data"
+                label={t('voosTable.data')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
               />
               <SortableTableHeader
                 field="numero_voo"
-                label="Voo"
+                label={t('voosTable.voo')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
               />
-              <TableHead>Rota</TableHead>
+              <TableHead>{t('voosTable.rota')}</TableHead>
               <SortableTableHeader
                 field="registo_aeronave"
-                label="Registo"
+                label={t('voosTable.registo')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
               />
-              <TableHead>Horário (Prev/Real)</TableHead>
+              <TableHead>{t('voosTable.horarioPrevReal')}</TableHead>
               <SortableTableHeader
                 field="passageiros_total"
-                label="Passageiros"
+                label={t('voosTable.passageiros')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
               />
               <SortableTableHeader
                 field="carga_kg"
-                label="Carga (kg)"
+                label={t('voosTable.cargaKg')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
               />
               <SortableTableHeader
                 field="status"
-                label="Status"
+                label={t('voosTable.status')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
               />
               <SortableTableHeader
                 field="updated_by"
-                label="Atualizado Por"
+                label={t('voosTable.atualizadoPor')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
               />
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="text-right">{t('voosTable.acoes')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -235,7 +237,7 @@ export default function VoosTable({
                     </TableCell>
                     <TableCell>
                       <div className="font-mono text-sm font-medium text-slate-900">{voo.registo_aeronave}</div>
-                      <div className="text-xs text-slate-500">{voo.tipo_voo || 'Regular'}</div>
+                      <div className="text-xs text-slate-500">{voo.tipo_voo || t('voosTable.regular')}</div>
                     </TableCell>
                     <TableCell>
                       <div className="font-mono">{voo.horario_previsto}</div>
@@ -278,21 +280,21 @@ export default function VoosTable({
                             size="icon"
                             onClick={() => handleExcluirVoo(voo)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            title="Mover para Lixeira"
-                            aria-label="Mover para Lixeira"
+                            title={t('voosTable.moverLixeira')}
+                            aria-label={t('voosTable.moverLixeira')}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button type="button" variant="ghost" size="icon" aria-label="Mais opções">
+                            <Button type="button" variant="ghost" size="icon" aria-label={t('voosTable.maisOpcoes')}>
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => onEditVoo(voo)}>
                               <Edit className="mr-2 h-4 w-4" />
-                              Editar Voo
+                              {t('voosTable.editarVoo')}
                             </DropdownMenuItem>
 
                             {!isLinked && voo.tipo_movimento === 'ARR' && onLinkVoo &&
@@ -300,7 +302,7 @@ export default function VoosTable({
                                 className="text-blue-600 focus:text-blue-600 focus:bg-blue-50"
                                 onClick={() => onLinkVoo(voo)}>
                                 <LinkIcon className="mr-2 h-4 w-4" />
-                                Criar Voo DEP Linkado
+                                {t('voosTable.criarVooDepLinkado')}
                               </DropdownMenuItem>
                             }
 
@@ -309,7 +311,7 @@ export default function VoosTable({
                                 className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
                                 onClick={() => handleCancelarVoo(voo)}>
                                 <XCircle className="mr-2 h-4 w-4" />
-                                Cancelar Voo
+                                {t('voosTable.cancelarVoo')}
                               </DropdownMenuItem>
                             }
                           </DropdownMenuContent>
@@ -325,8 +327,8 @@ export default function VoosTable({
         {voos.length === 0 && !isLoading &&
           <div className="text-center py-12 text-muted-foreground">
             <Plane className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-            <p className="text-lg font-medium">Nenhum resultado encontrado</p>
-            <p className="text-sm mt-1">Tente ajustar os filtros ou adicionar novos registos.</p>
+            <p className="text-lg font-medium">{t('voosTable.nenhumResultado')}</p>
+            <p className="text-sm mt-1">{t('voosTable.ajustarFiltros')}</p>
           </div>
         }
       </div>
@@ -335,7 +337,7 @@ export default function VoosTable({
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
           <div className="flex items-center gap-2">
             <span className="text-sm text-slate-600">
-              Mostrando {startIndex + 1} a {Math.min(endIndex, voos.length)} de {voos.length} voos
+              {t('voosTable.mostrando')} {startIndex + 1} {t('voosTable.a')} {Math.min(endIndex, voos.length)} {t('voosTable.de')} {voos.length} {t('voosTable.voos')}
             </span>
           </div>
 
@@ -356,7 +358,7 @@ export default function VoosTable({
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4" />
-              Anterior
+              {t('voosTable.anterior')}
             </Button>
 
             <div className="flex items-center gap-1">
@@ -392,7 +394,7 @@ export default function VoosTable({
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
             >
-              Próxima
+              {t('voosTable.proxima')}
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

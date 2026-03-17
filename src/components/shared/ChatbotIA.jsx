@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 import { chatbotIA } from "@/functions/chatbotIA";
 import { enviarTicketSuporte } from "@/functions/enviarTicketSuporte";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { useI18n } from '@/components/lib/i18n';
 
 const TICKET_DATA_PREFIX = "TICKET_DATA:";
 
 export default function ChatbotIA() {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Olá! Sou o **Assistente Virtual** do DIROPS. 👋\n\nPosso ajudar-te com dúvidas sobre o sistema ou abrir um ticket de suporte. Como posso ajudar?"
+      content: t('shared.chatbot.mensagem_inicial')
     }
   ]);
   const [input, setInput] = useState("");
@@ -38,7 +40,7 @@ export default function ChatbotIA() {
 
     try {
       const res = await chatbotIA({ messages: newMessages });
-      const reply = res?.reply || res?.data?.reply || "Desculpa, nao consegui processar a tua mensagem.";
+      const reply = res?.reply || res?.data?.reply || t('shared.chatbot.erro_processar');
 
       // Check if reply contains ticket data
       if (reply.includes(TICKET_DATA_PREFIX)) {
@@ -53,7 +55,7 @@ export default function ChatbotIA() {
           setTicketPending(ticketData);
           setMessages(prev => [...prev, {
             role: "assistant",
-            content: visibleText || "Vou abrir um ticket com as seguintes informações:"
+            content: visibleText || t('shared.chatbot.abrir_ticket')
           }]);
         } else {
           setMessages(prev => [...prev, { role: "assistant", content: reply }]);
@@ -62,7 +64,7 @@ export default function ChatbotIA() {
         setMessages(prev => [...prev, { role: "assistant", content: reply }]);
       }
     } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "Erro ao comunicar com o assistente. Tente novamente." }]);
+      setMessages(prev => [...prev, { role: "assistant", content: t('shared.chatbot.erro_comunicar') }]);
     } finally {
       setIsLoading(false);
     }
@@ -82,10 +84,10 @@ export default function ChatbotIA() {
       setTicketPending(null);
       setMessages(prev => [...prev, {
         role: "assistant",
-        content: `✅ Ticket **${numero}** criado com sucesso! A nossa equipa irá analisar e responder brevemente. Posso ajudar com mais alguma coisa?`
+        content: t('shared.chatbot.ticket_criado').replace('{numero}', numero)
       }]);
     } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "Erro ao criar o ticket. Por favor tenta mais tarde ou vai à página de Suporte." }]);
+      setMessages(prev => [...prev, { role: "assistant", content: t('shared.chatbot.erro_ticket') }]);
       setTicketPending(null);
     } finally {
       setIsLoading(false);
@@ -110,8 +112,8 @@ export default function ChatbotIA() {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-all duration-200"
-        title="Assistente Virtual"
-        aria-label="Assistente Virtual"
+        title={t('shared.chatbot.assistente_virtual')}
+        aria-label={t('shared.chatbot.assistente_virtual')}
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
@@ -125,8 +127,8 @@ export default function ChatbotIA() {
               <Bot className="w-5 h-5" />
             </div>
             <div>
-              <div className="font-semibold text-sm">Assistente Virtual</div>
-              <div className="text-xs text-blue-100">DIROPS • Online</div>
+              <div className="font-semibold text-sm">{t('shared.chatbot.assistente_virtual')}</div>
+              <div className="text-xs text-blue-100">DIROPS • {t('shared.chatbot.online')}</div>
             </div>
             <button onClick={() => setIsOpen(false)} className="ml-auto hover:bg-white/20 rounded-full p-1">
               <X className="w-4 h-4" />
@@ -174,19 +176,19 @@ export default function ChatbotIA() {
               <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-700 rounded-xl p-3 text-sm space-y-2">
                 <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-semibold">
                   <AlertCircle className="w-4 h-4" />
-                  Confirmar Ticket de Suporte
+                  {t('shared.chatbot.confirmar_ticket')}
                 </div>
                 <div className="text-slate-700 dark:text-slate-300 space-y-1">
-                  <p><strong>Assunto:</strong> {ticketPending.assunto}</p>
-                  <p><strong>Categoria:</strong> {ticketPending.categoria}</p>
-                  <p><strong>Mensagem:</strong> {ticketPending.mensagem}</p>
+                  <p><strong>{t('shared.chatbot.assunto')}</strong> {ticketPending.assunto}</p>
+                  <p><strong>{t('shared.chatbot.categoria')}</strong> {ticketPending.categoria}</p>
+                  <p><strong>{t('shared.chatbot.mensagem')}</strong> {ticketPending.mensagem}</p>
                 </div>
                 <div className="flex gap-2 pt-1">
                   <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs" onClick={handleCreateTicket}>
-                    Criar Ticket
+                    {t('shared.chatbot.criar_ticket')}
                   </Button>
                   <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => setTicketPending(null)}>
-                    Cancelar
+                    {t('shared.cancelar')}
                   </Button>
                 </div>
               </div>
@@ -202,7 +204,7 @@ export default function ChatbotIA() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-              placeholder="Escreve a tua mensagem..."
+              placeholder={t('shared.chatbot.placeholder')}
               className="flex-1 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={isLoading}
             />

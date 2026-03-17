@@ -3,6 +3,7 @@ import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { cn } from '@/components/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { useI18n } from '@/components/lib/i18n';
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
@@ -19,8 +20,8 @@ export default function Combobox({
   value,
   onValueChange,
   placeholder = 'Selecione...',
-  searchPlaceholder = 'Pesquisar...',
-  noResultsMessage = 'Nenhum resultado encontrado.',
+  searchPlaceholder,
+  noResultsMessage,
   className,
   id,
   disabled = false,
@@ -32,6 +33,10 @@ export default function Combobox({
   const comboboxRef = useRef(null);
   const searchInputRef = useRef(null);
   const isMobile = useIsMobile();
+  const { t } = useI18n();
+
+  const displaySearchPlaceholder = searchPlaceholder || t('ui.pesquisar');
+  const displayNoResultsMessage = noResultsMessage || t('ui.nenhum_resultado');
 
   const selectedOption = options.find(opt => opt.value === value);
   const displayText = selectedOption
@@ -108,7 +113,7 @@ export default function Combobox({
         <Input
           ref={searchInputRef}
           type="text"
-          placeholder={searchPlaceholder}
+          placeholder={displaySearchPlaceholder}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="h-8"
@@ -117,10 +122,10 @@ export default function Combobox({
       <div className={cn("overflow-auto", isMobile ? "max-h-64" : "")} style={!isMobile ? { maxHeight: `calc(${maxHeight} - 56px)` } : {}}>
         {!searchTerm && options.length > 100 ? (
           <div className="py-4 px-4 text-center text-sm text-slate-600 bg-blue-50">
-            Digite para pesquisar... ({options.length} opções disponíveis)
+            {t('ui.digite_pesquisar')} ({options.length} {t('ui.opcoes_disponiveis')})
           </div>
         ) : filteredOptions.length === 0 ? (
-          <div className="py-6 text-center text-sm text-slate-500">{noResultsMessage}</div>
+          <div className="py-6 text-center text-sm text-slate-500">{displayNoResultsMessage}</div>
         ) : (
           filteredOptions.slice(0, 100).map((option) => (
             <div
@@ -142,7 +147,7 @@ export default function Combobox({
         )}
         {filteredOptions.length > 100 && (
           <div className="py-2 px-4 text-center text-xs text-slate-500 bg-slate-50 border-t">
-            Mostrando 100 de {filteredOptions.length} resultados. Refine a pesquisa.
+            {t('ui.mostrando_resultados').replace('{total}', String(filteredOptions.length))}
           </div>
         )}
       </div>

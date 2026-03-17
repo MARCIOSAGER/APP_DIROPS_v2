@@ -3,8 +3,11 @@ import { createPageUrl } from '@/utils';
 import { User } from '@/entities/User';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { getAeroportosPermitidos } from '@/components/lib/userUtils';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function AccessDenied() {
+  const { t } = useI18n();
+
   useEffect(() => {
     const checkUserAndRedirect = async () => {
       try {
@@ -30,7 +33,7 @@ export default function AccessDenied() {
     <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-slate-700 dark:text-slate-300">A verificar acesso...</p>
+        <p className="text-slate-700 dark:text-slate-300">{t('shared.verificando_acesso')}</p>
       </div>
     </div>
   );

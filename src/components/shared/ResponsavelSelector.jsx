@@ -3,18 +3,24 @@ import React, { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { User } from '@/entities/User';
+import { useI18n } from '@/components/lib/i18n';
 
-export default function ResponsavelSelector({ 
-  aeroporto, 
-  value, 
-  onValueChange, 
-  label = "Responsável",
-  placeholder = "Selecionar responsável...",
+export default function ResponsavelSelector({
+  aeroporto,
+  value,
+  onValueChange,
+  label,
+  placeholder,
   includeEmpty = true,
-  emptyLabel = "Nenhum responsável específico"
+  emptyLabel
 }) {
   const [usuarios, setUsuarios] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { t } = useI18n();
+
+  const displayLabel = label || t('shared.responsavel');
+  const displayPlaceholder = placeholder || t('shared.selecionar_responsavel');
+  const displayEmptyLabel = emptyLabel || t('shared.nenhum_responsavel');
 
   useEffect(() => {
     loadUsuarios();
@@ -37,10 +43,10 @@ export default function ResponsavelSelector({
   if (isLoading) {
     return (
       <div>
-        <Label>{label}</Label>
+        <Label>{displayLabel}</Label>
         <Select disabled>
           <SelectTrigger>
-            <SelectValue placeholder="Carregando..." />
+            <SelectValue placeholder={t('shared.carregando')} />
           </SelectTrigger>
         </Select>
       </div>
@@ -49,14 +55,14 @@ export default function ResponsavelSelector({
 
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      <Label>{displayLabel}</Label>
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger>
-          <SelectValue placeholder={placeholder} />
+          <SelectValue placeholder={displayPlaceholder} />
         </SelectTrigger>
         <SelectContent>
           {includeEmpty && (
-            <SelectItem value={null}>{emptyLabel}</SelectItem>
+            <SelectItem value={null}>{displayEmptyLabel}</SelectItem>
           )}
           {usuariosFiltrados.map(usuario => (
             <SelectItem key={usuario.id} value={usuario.email}>
@@ -73,7 +79,7 @@ export default function ResponsavelSelector({
           ))}
           {usuariosFiltrados.length === 0 && (
             <SelectItem value={null} disabled>
-              Nenhum usuário disponível
+              {t('shared.nenhum_usuario_disponivel')}
             </SelectItem>
           )}
         </SelectContent>

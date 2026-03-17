@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { 
+import {
   Shield,
   Clock,
   CheckCircle,
@@ -8,8 +8,10 @@ import {
   UserCheck,
   Calendar
 } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function CredenciamentoStats({ credenciamentos, isLoading }) {
+  const { t } = useI18n();
   const calculateStats = () => {
     if (!credenciamentos || credenciamentos.length === 0) {
       return {
@@ -48,7 +50,7 @@ export default function CredenciamentoStats({ credenciamentos, isLoading }) {
 
   const statCards = [
     {
-      title: "Total de Credenciamentos",
+      title: t('cred.stats.totalCredenciais'),
       value: stats.total,
       icon: Shield,
       color: "text-blue-600",
@@ -56,7 +58,7 @@ export default function CredenciamentoStats({ credenciamentos, isLoading }) {
       borderColor: "border-blue-200"
     },
     {
-      title: "Pendentes",
+      title: t('cred.stats.pendentes'),
       value: stats.pendentes,
       icon: Clock,
       color: "text-yellow-600",
@@ -88,7 +90,7 @@ export default function CredenciamentoStats({ credenciamentos, isLoading }) {
       borderColor: "border-emerald-200"
     },
     {
-      title: "Expirando em 30 dias",
+      title: t('cred.stats.aExpirar'),
       value: stats.expirandoEm30Dias,
       icon: Calendar,
       color: "text-red-600",

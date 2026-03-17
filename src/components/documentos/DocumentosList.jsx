@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useI18n } from '@/components/lib/i18n';
 
 const CATEGORIA_CONFIG = {
   manual_operacoes: { color: 'bg-blue-100 text-blue-800', label: 'Manual de Operações' },
@@ -36,6 +37,7 @@ const STATUS_CONFIG = {
 };
 
 export default function DocumentosList({ documentos, aeroportos, isLoading, onReload, onEdit, onDelete, onMove, onGerenciarAcesso, user, viewMode = 'list' }) {
+  const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoriaFilter, setCategoriaFilter] = useState('todos');
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -44,6 +46,7 @@ export default function DocumentosList({ documentos, aeroportos, isLoading, onRe
   const [sortField, setSortField] = useState('data_publicacao');
   const [sortDirection, setSortDirection] = useState('desc');
   const [selectedDocs, setSelectedDocs] = useState([]);
+
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -178,7 +181,7 @@ export default function DocumentosList({ documentos, aeroportos, isLoading, onRe
 
   // Create options arrays for Select components
   const categoriaOptions = [
-    { value: 'todos', label: 'Todas as Categorias' },
+    { value: 'todos', label: t('docs.todosTipos') },
     ...Object.entries(CATEGORIA_CONFIG).map(([key, config]) => ({
       value: key,
       label: config.label

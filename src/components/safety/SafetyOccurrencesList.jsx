@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Edit, AlertTriangle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { useI18n } from '@/components/lib/i18n';
 
 const GRAVIDADE_CONFIG = {
   baixa: { color: 'bg-blue-100 text-blue-800' },
@@ -22,18 +23,19 @@ const STATUS_CONFIG = {
   fechada: { color: 'bg-green-100 text-green-800' }
 };
 
-export default function SafetyOccurrencesList({ 
-  ocorrencias, 
-  aeroportos, 
-  isLoading, 
-  onReload, 
-  onEdit, 
-  onDelete, // Add onDelete prop
-  selectedOcorrencias = [], // Default empty array
+export default function SafetyOccurrencesList({
+  ocorrencias,
+  aeroportos,
+  isLoading,
+  onReload,
+  onEdit,
+  onDelete,
+  selectedOcorrencias = [],
   onSelectOcorrencia,
   onSelectAll
 }) {
-  
+  const { t } = useI18n();
+
   const getAeroportoNome = (codigo) => {
     if (!aeroportos || !Array.isArray(aeroportos)) return codigo || 'N/A';
     const aeroporto = aeroportos.find(a => a.codigo_icao === codigo);
@@ -51,17 +53,17 @@ export default function SafetyOccurrencesList({
               <Checkbox
                 checked={allSelected}
                 onCheckedChange={onSelectAll}
-                aria-label="Selecionar todos"
+                aria-label={t('safety.list.selecionarTodos')}
                 className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
               />
             </TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Aeroporto</TableHead>
-            <TableHead>Data</TableHead>
-            <TableHead>Local</TableHead>
-            <TableHead>Gravidade</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
+            <TableHead>{t('safety.list.tipo')}</TableHead>
+            <TableHead>{t('safety.list.aeroporto')}</TableHead>
+            <TableHead>{t('safety.list.data')}</TableHead>
+            <TableHead>{t('safety.list.local')}</TableHead>
+            <TableHead>{t('safety.list.gravidade')}</TableHead>
+            <TableHead>{t('safety.list.status')}</TableHead>
+            <TableHead className="text-right">{t('safety.list.acoes')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -82,7 +84,7 @@ export default function SafetyOccurrencesList({
             <TableRow>
               <TableCell colSpan={8} className="text-center py-8 text-slate-500">
                 <AlertTriangle className="w-12 h-12 mx-auto text-slate-300 mb-2" />
-                <p>Nenhuma ocorrência encontrada</p>
+                <p>{t('safety.list.nenhumaOcorrencia')}</p>
               </TableCell>
             </TableRow>
           ) : (
@@ -95,7 +97,7 @@ export default function SafetyOccurrencesList({
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={(checked) => onSelectOcorrencia(ocorrencia.id, checked)}
-                        aria-label={`Selecionar ocorrência ${ocorrencia.id}`}
+                        aria-label={`${t('safety.list.selecionarTodos')} ${ocorrencia.id}`}
                         className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
                       />
                     )}
@@ -143,7 +145,7 @@ export default function SafetyOccurrencesList({
                         size="icon"
                         onClick={() => onEdit(ocorrencia)}
                         className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        title="Editar ocorrência"
+                        title={t('safety.list.editarOcorrencia')}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -153,7 +155,7 @@ export default function SafetyOccurrencesList({
                           size="icon"
                           onClick={() => onDelete(ocorrencia)}
                           className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          title="Excluir ocorrência"
+                          title={t('safety.list.excluirOcorrencia')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

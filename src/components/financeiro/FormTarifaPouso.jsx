@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 const FormTarifaPouso = ({ isOpen, onClose, onSubmit, tarifa }) => {
+  const { t } = useI18n();
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     faixa_min: '',
@@ -51,20 +53,20 @@ const FormTarifaPouso = ({ isOpen, onClose, onSubmit, tarifa }) => {
   ];
 
   const statusOptions = [
-    { value: 'ativa', label: 'Ativa' },
-    { value: 'inativa', label: 'Inativa' }
+    { value: 'ativa', label: t('formTarifaPouso.ativa') },
+    { value: 'inativa', label: t('formTarifaPouso.inativa') }
   ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{tarifa ? 'Editar' : 'Nova'} Tarifa de Pouso</DialogTitle>
+          <DialogTitle>{tarifa ? t('formTarifaPouso.editar') : t('formTarifaPouso.nova')} {t('formTarifaPouso.titulo')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="faixa_min">Faixa Mínima (kg)</Label>
+              <Label htmlFor="faixa_min">{t('formTarifaPouso.faixaMin')}</Label>
               <Input 
                 id="faixa_min" 
                 type="number" 
@@ -74,7 +76,7 @@ const FormTarifaPouso = ({ isOpen, onClose, onSubmit, tarifa }) => {
               />
             </div>
             <div>
-              <Label htmlFor="faixa_max">Faixa Máxima (kg)</Label>
+              <Label htmlFor="faixa_max">{t('formTarifaPouso.faixaMax')}</Label>
               <Input 
                 id="faixa_max" 
                 type="number" 
@@ -86,7 +88,7 @@ const FormTarifaPouso = ({ isOpen, onClose, onSubmit, tarifa }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="tarifa_domestica">Tarifa Doméstica (USD)</Label>
+              <Label htmlFor="tarifa_domestica">{t('formTarifaPouso.tarifaDomestica')}</Label>
               <Input 
                 id="tarifa_domestica" 
                 type="number" 
@@ -97,7 +99,7 @@ const FormTarifaPouso = ({ isOpen, onClose, onSubmit, tarifa }) => {
               />
             </div>
             <div>
-              <Label htmlFor="tarifa_internacional">Tarifa Internacional (USD)</Label>
+              <Label htmlFor="tarifa_internacional">{t('formTarifaPouso.tarifaInternacional')}</Label>
               <Input 
                 id="tarifa_internacional" 
                 type="number" 
@@ -110,20 +112,20 @@ const FormTarifaPouso = ({ isOpen, onClose, onSubmit, tarifa }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="categoria_aeroporto">Categoria do Aeroporto</Label>
+              <Label htmlFor="categoria_aeroporto">{t('formTarifaPouso.categoriaAeroporto')}</Label>
               <select
                 id="categoria_aeroporto"
                 value={formData.categoria_aeroporto}
                 onChange={(e) => handleChange('categoria_aeroporto', e.target.value)}
                 className="w-full h-10 px-3 py-2 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 border-slate-200"
               >
-                {categoriaOptions.map(option => 
+                {categoriaOptions.map(option =>
                   <option key={option.value} value={option.value}>{option.label}</option>
                 )}
               </select>
             </div>
             <div>
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t('formTarifaPouso.status')}</Label>
               <select
                 id="status"
                 value={formData.status}

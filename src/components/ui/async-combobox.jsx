@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Check, ChevronsUpDown, X, Loader2 } from 'lucide-react';
 import { cn } from '@/components/lib/utils';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function AsyncCombobox({
   value,
   onValueChange,
   placeholder = 'Selecione...',
-  searchPlaceholder = 'Digite para pesquisar...',
-  noResultsMessage = 'Nenhum resultado encontrado.',
+  searchPlaceholder,
+  noResultsMessage,
   className,
   id,
   disabled = false,
@@ -26,6 +27,10 @@ export default function AsyncCombobox({
   const [selectedOption, setSelectedOption] = useState(null);
   const comboboxRef = useRef(null);
   const searchInputRef = useRef(null);
+  const { t } = useI18n();
+
+  const displaySearchPlaceholder = searchPlaceholder || t('ui.digite_pesquisar');
+  const displayNoResultsMessage = noResultsMessage || t('ui.nenhum_resultado');
 
   // Carregar opção inicial quando value muda
   useEffect(() => {
@@ -46,21 +51,21 @@ export default function AsyncCombobox({
     loadInitialOption();
   }, [value, getInitialOption]);
 
-  const displayText = selectedOption 
+  const displayText = selectedOption
     ? (useDisplayLabel && selectedOption.displayLabel ? selectedOption.displayLabel : selectedOption.label)
     : placeholder;
 
   // Buscar opções quando searchTerm muda
   useEffect(() => {
     if (!isOpen || !onSearch) return;
-    
+
     if (searchTerm.length < minSearchLength) {
       setOptions([]);
       return;
     }
 
     setIsLoading(true);
-    
+
     const performSearch = async () => {
       try {
         const results = await onSearch(searchTerm);
@@ -133,8 +138,8 @@ export default function AsyncCombobox({
         <span className="truncate">{displayText}</span>
         <div className="flex items-center gap-1">
           {value && (
-            <X 
-              className="h-4 w-4 opacity-50 hover:opacity-100" 
+            <X
+              className="h-4 w-4 opacity-50 hover:opacity-100"
               onClick={handleClear}
             />
           )}
@@ -143,7 +148,7 @@ export default function AsyncCombobox({
       </button>
 
       {isOpen && (
-        <div 
+        <div
           className="absolute top-full left-0 z-50 w-full mt-1 rounded-md border border-slate-200 bg-white shadow-lg"
           style={{ maxHeight: maxHeight, overflow: 'hidden' }}
         >
@@ -151,26 +156,26 @@ export default function AsyncCombobox({
             <Input
               ref={searchInputRef}
               type="text"
-              placeholder={searchPlaceholder}
+              placeholder={displaySearchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="h-8"
             />
           </div>
-          
+
           <div className="overflow-auto" style={{ maxHeight: `calc(${maxHeight} - 56px)` }}>
             {isLoading ? (
               <div className="py-6 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                A pesquisar...
+                {t('ui.a_pesquisar')}
               </div>
             ) : searchTerm.length < minSearchLength ? (
               <div className="py-6 text-center text-sm text-slate-500">
-                Digite pelo menos {minSearchLength} caracteres para pesquisar
+                {t('ui.digite_minimo').replace('{min}', String(minSearchLength))}
               </div>
             ) : options.length === 0 ? (
               <div className="py-6 text-center text-sm text-slate-500">
-                {noResultsMessage}
+                {displayNoResultsMessage}
               </div>
             ) : (
               options.map((option) => (

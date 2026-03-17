@@ -2,16 +2,20 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { safeRedirectUrl } from '@/lib/sanitize';
+import { useI18n } from '@/components/lib/i18n';
 
-export default function SuccessModal({ 
-  isOpen, 
-  onClose, 
-  title, 
-  message, 
-  details, 
-  buttonText = "Entendido",
-  redirectPath 
+export default function SuccessModal({
+  isOpen,
+  onClose,
+  title,
+  message,
+  details,
+  buttonText,
+  redirectPath
 }) {
+  const { t } = useI18n();
+  const displayButtonText = buttonText || t('shared.entendido');
+
   const handleClose = () => {
     if (redirectPath) {
       window.location.href = safeRedirectUrl(redirectPath, '/');
@@ -46,12 +50,12 @@ export default function SuccessModal({
               ))}
             </div>
           )}
-          
-          <Button 
+
+          <Button
             onClick={handleClose}
             className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
-            {buttonText}
+            {displayButtonText}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

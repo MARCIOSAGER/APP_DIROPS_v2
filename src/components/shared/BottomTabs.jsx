@@ -2,16 +2,18 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Plane, Shield, UserCog } from 'lucide-react';
 import { createPageUrl } from '@/utils';
-
-const tabs = [
-  { label: 'Dashboard', icon: Home, url: createPageUrl('Home') },
-  { label: 'Operações', icon: Plane, url: createPageUrl('Operacoes') },
-  { label: 'Safety', icon: Shield, url: createPageUrl('Safety') },
-  { label: 'Perfil', icon: UserCog, url: createPageUrl('ConfigurarPerfil') },
-];
+import { useI18n } from '@/components/lib/i18n';
 
 export default function BottomTabs() {
   const location = useLocation();
+  const { t } = useI18n();
+
+  const tabs = [
+    { label: t('shared.tabs.dashboard'), icon: Home, url: createPageUrl('Home') },
+    { label: t('shared.tabs.operacoes'), icon: Plane, url: createPageUrl('Operacoes') },
+    { label: t('shared.tabs.safety'), icon: Shield, url: createPageUrl('Safety') },
+    { label: t('shared.tabs.perfil'), icon: UserCog, url: createPageUrl('ConfigurarPerfil') },
+  ];
 
   return (
     <nav

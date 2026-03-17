@@ -26,6 +26,7 @@ import { SendEmail } from '@/integrations/Core';
 
 import { exportPacPdf } from '@/functions/exportPacPdf';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function FormPAC({
   isOpen,
@@ -35,6 +36,7 @@ export default function FormPAC({
   naoConformidades,
   pacInicial
 }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     tipo: pacInicial?.tipo || 'interno',
     responsavel_elaboracao: pacInicial?.responsavel_elaboracao || '',
@@ -279,7 +281,7 @@ export default function FormPAC({
 
   const handleSendEmail = async () => {
     if (!emailAddress || !emailAddress.includes('@')) {
-      setGeneralMessage({ type: 'error', text: 'Por favor, insira um email válido.' });
+      setGeneralMessage({ type: 'error', text: t('formPAC.emailInvalido') });
       return;
     }
 
@@ -301,7 +303,7 @@ export default function FormPAC({
         body: htmlContent
       });
 
-      setGeneralMessage({ type: 'success', text: 'Email enviado com sucesso!' });
+      setGeneralMessage({ type: 'success', text: t('formPAC.emailEnviado') });
       setShowEmailModal(false);
       setEmailAddress('');
     } catch (error) {
@@ -313,30 +315,30 @@ export default function FormPAC({
   };
 
   const tipoPacOptions = [
-    { value: 'interno', label: 'Interno' },
-    { value: 'formal_anac', label: 'Formal ANAC' },
+    { value: 'interno', label: t('formPAC.interno') },
+    { value: 'formal_anac', label: t('formPAC.formalANAC') },
   ];
 
   const statusOptions = [
-    { value: 'elaboracao', label: 'Elaboração' },
-    { value: 'submetido', label: 'Submetido' },
-    { value: 'aprovado', label: 'Aprovado' },
-    { value: 'em_execucao', label: 'Em Execução' },
-    { value: 'concluido', label: 'Concluído' },
-    { value: 'vencido', label: 'Vencido' },
+    { value: 'elaboracao', label: t('formPAC.elaboracao') },
+    { value: 'submetido', label: t('formPAC.submetido') },
+    { value: 'aprovado', label: t('formPAC.aprovado') },
+    { value: 'em_execucao', label: t('formPAC.emExecucao') },
+    { value: 'concluido', label: t('formPAC.concluido') },
+    { value: 'vencido', label: t('formPAC.vencido') },
   ];
 
   const categoriaPrazoOptions = [
-    { value: 'curto', label: 'Curto Prazo' },
-    { value: 'medio', label: 'Médio Prazo' },
-    { value: 'longo', label: 'Longo Prazo' },
-    { value: 'mitigadora', label: 'Mitigadora até Conformação' },
+    { value: 'curto', label: t('formPAC.curtoPrazo') },
+    { value: 'medio', label: t('formPAC.medioPrazo') },
+    { value: 'longo', label: t('formPAC.longoPrazo') },
+    { value: 'mitigadora', label: t('formPAC.mitigadora') },
   ];
 
   const itemStatusOptions = [
-      { value: 'pendente', label: 'Pendente' },
-      { value: 'em_andamento', label: 'Em Andamento' },
-      { value: 'concluida', label: 'Concluída' },
+      { value: 'pendente', label: t('formPAC.pendente') },
+      { value: 'em_andamento', label: t('formPAC.emAndamento') },
+      { value: 'concluida', label: t('formPAC.itemConcluida') },
   ];
 
   if (!isOpen || (!processoAuditoria && !pacInicial)) return null;
@@ -349,16 +351,16 @@ export default function FormPAC({
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-blue-600" />
-                <span>{pacInicial ? 'Editar Plano de Ação Corretiva (PAC)' : 'Criar Plano de Ação Corretiva (PAC)'}</span>
+                <span>{pacInicial ? t('formPAC.editarTitulo') : t('formPAC.criarTitulo')}</span>
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={handleExportPDF} disabled={isExporting}>
                   <Download className="w-4 h-4 mr-1" />
-                  {isExporting ? 'A gerar...' : 'PDF'}
+                  {isExporting ? t('formPAC.aGerar') : t('formPAC.pdf')}
                 </Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => setShowEmailModal(true)} disabled={isSendingEmail}>
                   <Mail className="w-4 h-4 mr-1" />
-                  Email
+                  {t('formPAC.email')}
                 </Button>
               </div>
             </DialogTitle>
@@ -377,17 +379,17 @@ export default function FormPAC({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Informações Gerais do PAC</span>
+                  <span>{t('formPAC.infoGerais')}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Aeroporto</Label>
+                    <Label>{t('formPAC.aeroporto')}</Label>
                     <Input value={aeroporto?.nome} disabled />
                   </div>
                   <div className="space-y-2">
-                    <Label>Tipo de PAC *</Label>
+                    <Label>{t('formPAC.tipoPAC')}</Label>
                     <Select
                       options={tipoPacOptions}
                       value={formData.tipo}
@@ -398,32 +400,32 @@ export default function FormPAC({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Responsável pela Elaboração *</Label>
+                    <Label>{t('formPAC.responsavelElaboracao')}</Label>
                     <Input
-                      placeholder="Nome do responsável"
+                      placeholder={t('formPAC.nomeResponsavel')}
                       value={formData.responsavel_elaboracao}
                       onChange={(e) => handleInputChange('responsavel_elaboracao', e.target.value)}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Prazo de Conclusão *</Label>
+                    <Label>{t('formPAC.prazoConclusao')}</Label>
                     <Input
                       type="date"
                       value={formData.prazo_conclusao}
                       disabled={true}
                       className="bg-gray-50 cursor-not-allowed"
-                      title="Calculado automaticamente baseado na última data de implementação dos itens"
+                      title={t('formPAC.prazoAutoCalc')}
                     />
                     <p className="text-xs text-gray-500">
-                      Calculado automaticamente baseado na última data de implementação dos itens
+                      {t('formPAC.prazoAutoCalc')}
                     </p>
                   </div>
                 </div>
 
                 {pacInicial && (
                   <div className="space-y-2">
-                    <Label>Status do PAC</Label>
+                    <Label>{t('formPAC.statusPAC')}</Label>
                     <Select
                       options={statusOptions}
                       value={formData.status}
@@ -433,9 +435,9 @@ export default function FormPAC({
                 )}
 
                 <div className="space-y-2">
-                  <Label>Observações Gerais</Label>
+                  <Label>{t('formPAC.observacoesGerais')}</Label>
                   <Textarea
-                    placeholder="Observações gerais sobre o PAC..."
+                    placeholder={t('formPAC.observacoesPlaceholder')}
                     value={formData.observacoes_gerais}
                     onChange={(e) => handleInputChange('observacoes_gerais', e.target.value)}
                     rows={3}
@@ -448,14 +450,14 @@ export default function FormPAC({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <XCircle className="w-5 h-5 text-red-600" />
-                  Itens do PAC ({itensPac.length})
+                  {t('formPAC.itensPAC')} ({itensPac.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {itensPac.length === 0 ? (
                   <div className="text-center py-8">
                     <CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
-                    <p className="text-slate-600">Não há não conformidades para criar PAC ou itens PAC para exibir.</p>
+                    <p className="text-slate-600">{t('formPAC.semItens')}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -470,7 +472,7 @@ export default function FormPAC({
                                 <Badge variant="outline">Item {originalNC?.item?.numero}</Badge>
                                 <span className="font-medium">{originalNC?.item?.item}</span>
                               </div>
-                              <Badge className="bg-red-100 text-red-800">Não Conforme</Badge>
+                              <Badge className="bg-red-100 text-red-800">{t('formPAC.naoConforme')}</Badge>
                             </div>
                           </CardHeader>
                           <CardContent className="space-y-4">
@@ -480,9 +482,9 @@ export default function FormPAC({
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                <Label>Ação Corretiva Proposta *</Label>
+                                <Label>{t('formPAC.acaoCorretiva')}</Label>
                                 <Textarea
-                                  placeholder="Descreva a ação corretiva..."
+                                  placeholder={t('formPAC.acaoPlaceholder')}
                                   value={itemPAC.acao_corretiva_proposta}
                                   onChange={(e) => handleItemChange(index, 'acao_corretiva_proposta', e.target.value)}
                                   rows={2}
@@ -490,9 +492,9 @@ export default function FormPAC({
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label>Observações</Label>
+                                <Label>{t('formPAC.observacoes')}</Label>
                                 <Textarea
-                                  placeholder="Observações adicionais..."
+                                  placeholder={t('formPAC.obsAdicionais')}
                                   value={itemPAC.observacoes}
                                   onChange={(e) => handleItemChange(index, 'observacoes', e.target.value)}
                                   rows={2}
@@ -502,16 +504,16 @@ export default function FormPAC({
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                               <div className="space-y-2">
-                                <Label>Responsável *</Label>
+                                <Label>{t('formPAC.responsavel')}</Label>
                                 <Input
-                                  placeholder="Nome do responsável"
+                                  placeholder={t('formPAC.nomeResponsavel')}
                                   value={itemPAC.responsavel}
                                   onChange={(e) => handleItemChange(index, 'responsavel', e.target.value)}
                                   required
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label>Prazo de Implementação *</Label>
+                                <Label>{t('formPAC.prazoImplementacao')}</Label>
                                 <Input
                                   type="date"
                                   value={itemPAC.prazo_implementacao}
@@ -520,7 +522,7 @@ export default function FormPAC({
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label>Categoria do Prazo</Label>
+                                <Label>{t('formPAC.categoriaPrazo')}</Label>
                                 <Select
                                   options={categoriaPrazoOptions}
                                   value={itemPAC.categoria_prazo}
@@ -528,11 +530,11 @@ export default function FormPAC({
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label>Status do Item</Label>
+                                <Label>{t('formPAC.statusItem')}</Label>
                                 {itemPAC.status === 'vencida' ? (
                                   <Badge className="bg-red-200 text-red-900 text-sm py-1.5 px-3 w-full justify-center">
                                     <AlertCircle className="w-4 h-4 mr-2" />
-                                    Vencido
+                                    {t('formPAC.itemVencido')}
                                   </Badge>
                                 ) : (
                                   <Select
@@ -554,10 +556,10 @@ export default function FormPAC({
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onClose(false)}>
-                Cancelar
+                {t('formPAC.cancelar')}
               </Button>
               <Button type="submit" disabled={isLoading || (pacInicial ? false : itensPac.length === 0)}>
-                {isLoading ? (pacInicial ? 'Atualizando PAC...' : 'Criando PAC...') : (pacInicial ? 'Atualizar PAC' : 'Criar PAC')}
+                {isLoading ? (pacInicial ? t('formPAC.atualizandoPAC') : t('formPAC.criandoPAC')) : (pacInicial ? t('formPAC.atualizarPAC') : t('formPAC.criarPAC'))}
               </Button>
             </DialogFooter>
           </form>
@@ -573,14 +575,14 @@ export default function FormPAC({
                 <Mail className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <DialogTitle>Enviar PAC por Email</DialogTitle>
+                <DialogTitle>{t('formPAC.enviarPACEmail')}</DialogTitle>
                 <p className="text-sm text-slate-500 mt-1">Sistema DIROPS</p>
               </div>
             </div>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email de destino</Label>
+              <Label htmlFor="email">{t('formPAC.emailDestino')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -593,14 +595,14 @@ export default function FormPAC({
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" onClick={() => setShowEmailModal(false)}>
-              Cancelar
+              {t('formPAC.cancelar')}
             </Button>
-            <Button 
-              onClick={handleSendEmail} 
+            <Button
+              onClick={handleSendEmail}
               disabled={isSendingEmail || !emailAddress || !emailAddress.includes('@')}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {isSendingEmail ? 'Enviando...' : 'Enviar'}
+              {isSendingEmail ? t('formPAC.enviando') : t('formPAC.enviar')}
             </Button>
           </div>
         </DialogContent>

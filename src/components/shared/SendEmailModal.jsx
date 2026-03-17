@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Mail, Loader2 } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function SendEmailModal({
   isOpen,
@@ -16,6 +17,7 @@ export default function SendEmailModal({
   defaultRecipient = '',
   defaultBody = ''
 }) {
+  const { t } = useI18n();
   const [emailData, setEmailData] = useState({
     to: defaultRecipient,
     subject: defaultSubject,
@@ -39,13 +41,13 @@ export default function SendEmailModal({
     const newErrors = {};
 
     if (!emailData.to || !emailData.to.trim()) {
-      newErrors.to = 'O destinatário é obrigatório';
+      newErrors.to = t('shared.email.destinatario_obrigatorio');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailData.to)) {
-      newErrors.to = 'Email inválido';
+      newErrors.to = t('shared.email.email_invalido');
     }
 
     if (!emailData.subject || !emailData.subject.trim()) {
-      newErrors.subject = 'O assunto é obrigatório';
+      newErrors.subject = t('shared.email.assunto_obrigatorio');
     }
 
     setErrors(newErrors);
@@ -85,13 +87,13 @@ export default function SendEmailModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            Enviar por Email
+            {t('shared.email.enviar_por_email')}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="to">Destinatário(s) *</Label>
+            <Label htmlFor="to">{t('shared.email.destinatarios')}</Label>
             <Input
               id="to"
               type="email"
@@ -105,16 +107,16 @@ export default function SendEmailModal({
             <p className="text-sm text-red-500 mt-1">{errors.to}</p>
             }
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Para múltiplos destinatários, separe os emails por vírgula
+              {t('shared.email.multiplos')}
             </p>
           </div>
 
           <div>
-            <Label htmlFor="subject">Assunto *</Label>
+            <Label htmlFor="subject">{t('shared.email.assunto')}</Label>
             <Input
               id="subject"
               type="text"
-              placeholder="Assunto do email"
+              placeholder={t('shared.email.placeholder_assunto')}
               value={emailData.subject}
               onChange={(e) => setEmailData({ ...emailData, subject: e.target.value })}
               className={errors.subject ? 'border-red-500' : ''}
@@ -126,10 +128,10 @@ export default function SendEmailModal({
           </div>
 
           <div>
-            <Label htmlFor="message">Mensagem Adicional (Opcional)</Label>
+            <Label htmlFor="message">{t('shared.email.mensagem_adicional')}</Label>
             <Textarea
               id="message"
-              placeholder="Adicione uma mensagem personalizada..."
+              placeholder={t('shared.email.placeholder_mensagem')}
               value={emailData.message}
               onChange={(e) => setEmailData({ ...emailData, message: e.target.value })}
               rows={4}
@@ -139,7 +141,7 @@ export default function SendEmailModal({
 
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Nota:</strong> O relatório será enviado em formato HTML no corpo do email.
+              <strong>Nota:</strong> {t('shared.email.nota_html')}
             </p>
           </div>
 
@@ -150,7 +152,7 @@ export default function SendEmailModal({
               onClick={handleClose}
               disabled={isSending}>
 
-              Cancelar
+              {t('shared.cancelar')}
             </Button>
             <Button
               type="submit"
@@ -160,12 +162,12 @@ export default function SendEmailModal({
               {isSending ?
               <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Enviando...
+                  {t('shared.email.enviando')}
                 </> :
 
               <>
                   <Mail className="w-4 h-4 mr-2" />
-                  Enviar Email
+                  {t('shared.email.enviar_email')}
                 </>
               }
             </Button>

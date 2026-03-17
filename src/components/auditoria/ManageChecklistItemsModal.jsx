@@ -29,8 +29,10 @@ import { ItemAuditoria } from '@/entities/ItemAuditoria';
 import * as XLSX from 'xlsx';
 import AlertModal from '../shared/AlertModal';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditoria, onUpdate }) {
+  const { t } = useI18n();
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -327,17 +329,17 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
       <div className="flex items-center gap-2 mb-4">
         <Button variant="ghost" size="sm" onClick={() => setIsFormOpen(false)}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
+          {t('checklistItems.voltar')}
         </Button>
         <h3 className="text-lg font-medium">
-          {editingItem ? 'Editar Item' : 'Novo Item'}
+          {editingItem ? t('checklistItems.editarItem') : t('checklistItems.novoItem')}
         </h3>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="numero">Número *</Label>
+            <Label htmlFor="numero">{t('checklistItems.numero')}</Label>
             <Input
               id="numero"
               placeholder="Ex: 1, 2, 3..."
@@ -347,27 +349,27 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="categoria">Categoria *</Label>
+            <Label htmlFor="categoria">{t('checklistItems.categoriaLabel')}</Label>
             <Select
               options={[
-                { value: 'seguranca_operacional', label: 'Segurança Operacional' },
-                { value: 'seguranca_avsec', label: 'Segurança AVSEC' },
-                { value: 'resposta_emergencia', label: 'Resposta a Emergência' },
-                { value: 'infraestrutura', label: 'Infraestrutura' },
-                { value: 'operacoes', label: 'Operações' }
+                { value: 'seguranca_operacional', label: t('configAuditoria.segurancaOperacional') },
+                { value: 'seguranca_avsec', label: t('configAuditoria.segurancaAvsec') },
+                { value: 'resposta_emergencia', label: t('configAuditoria.respostaEmergencia') },
+                { value: 'infraestrutura', label: t('configAuditoria.infraestrutura') },
+                { value: 'operacoes', label: t('configAuditoria.operacoes') }
               ]}
               value={formData.categoria}
               onValueChange={(value) => setFormData({ ...formData, categoria: value })}
-              placeholder="Selecione a categoria"
+              placeholder={t('checklistItems.selecioneCategoria')}
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="item">Item *</Label>
+          <Label htmlFor="item">{t('checklistItems.itemLabel')}</Label>
           <Textarea
             id="item"
-            placeholder="Descrição do item a ser auditado..."
+            placeholder={t('checklistItems.itemPlaceholder')}
             value={formData.item}
             onChange={(e) => setFormData({ ...formData, item: e.target.value })}
             rows={3}
@@ -376,7 +378,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="referencia_norma">Referência Norma *</Label>
+          <Label htmlFor="referencia_norma">{t('checklistItems.referenciaNorma')}</Label>
           <Input
             id="referencia_norma"
             placeholder="Ex: NTA 22A.903.c)"
@@ -387,10 +389,10 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="exemplo_situacao">Exemplo/Situação</Label>
+          <Label htmlFor="exemplo_situacao">{t('checklistItems.exemploSituacao')}</Label>
           <Textarea
             id="exemplo_situacao"
-            placeholder="Exemplo de situação esperada e orientações..."
+            placeholder={t('checklistItems.exemploPlaceholder')}
             value={formData.exemplo_situacao}
             onChange={(e) => setFormData({ ...formData, exemplo_situacao: e.target.value })}
             rows={3}
@@ -398,11 +400,11 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
+          <Label htmlFor="status">{t('checklistItems.statusLabel')}</Label>
           <Select
             options={[
-              { value: 'ativo', label: 'Ativo' },
-              { value: 'inativo', label: 'Inativo' }
+              { value: 'ativo', label: t('checklistItems.ativo') },
+              { value: 'inativo', label: t('checklistItems.inativo') }
             ]}
             value={formData.status}
             onValueChange={(value) => setFormData({ ...formData, status: value })}
@@ -411,10 +413,10 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
 
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
-            Cancelar
+            {t('checklistItems.cancelar')}
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'A guardar...' : (editingItem ? 'Salvar Item' : 'Criar Item')}
+            {isSubmitting ? t('checklistItems.aGuardar') : (editingItem ? t('checklistItems.salvarItem') : t('checklistItems.criarItem'))}
           </Button>
         </div>
       </form>
@@ -425,23 +427,23 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
     <div className="mt-6 flex-1 overflow-hidden">
       <div className="border rounded-lg h-full flex flex-col">
         <div className="p-4 border-b flex justify-between items-center">
-          <h3 className="text-lg font-medium">Itens do Checklist ({items.length})</h3>
+          <h3 className="text-lg font-medium">{t('checklistItems.itensChecklist')} ({items.length})</h3>
           <div className="flex gap-2">
             <Button variant="outline" onClick={downloadTemplate}>
               <Download className="w-4 h-4 mr-2" />
-              Baixar Modelo
+              {t('checklistItems.baixarModelo')}
             </Button>
             <Button variant="outline" onClick={downloadItems}>
               <Download className="w-4 h-4 mr-2" />
-              Descarregar Itens
+              {t('checklistItems.descarregarItens')}
             </Button>
             <Button onClick={() => setIsUploadView(true)}>
               <FileUp className="w-4 h-4 mr-2" />
-              Upload Excel
+              {t('checklistItems.uploadExcel')}
             </Button>
             <Button onClick={() => openForm()}>
               <Plus className="w-4 h-4 mr-2" />
-              Adicionar Manualmente
+              {t('checklistItems.adicionarManual')}
             </Button>
           </div>
         </div>
@@ -451,27 +453,27 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
             <TableHeader className="sticky top-0 bg-slate-50 z-10">
               <TableRow>
                 <TableHead className="w-16">#</TableHead>
-                <TableHead className="min-w-[300px]">Item</TableHead>
-                <TableHead className="min-w-[300px]">Exemplo/Situação</TableHead>
-                <TableHead className="min-w-[250px]">Norma de Referência</TableHead>
-                <TableHead className="min-w-[180px]">Categoria</TableHead>
-                <TableHead className="min-w-[100px]">Status</TableHead>
-                <TableHead className="text-right min-w-[120px] sticky right-0 bg-slate-50">Ações</TableHead>
+                <TableHead className="min-w-[300px]">{t('checklistItems.colItem')}</TableHead>
+                <TableHead className="min-w-[300px]">{t('checklistItems.colExemplo')}</TableHead>
+                <TableHead className="min-w-[250px]">{t('checklistItems.colNorma')}</TableHead>
+                <TableHead className="min-w-[180px]">{t('checklistItems.colCategoria')}</TableHead>
+                <TableHead className="min-w-[100px]">{t('checklistItems.colStatus')}</TableHead>
+                <TableHead className="text-right min-w-[120px] sticky right-0 bg-slate-50">{t('checklistItems.colAcoes')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
-                    Carregando itens...
+                    {t('checklistItems.carregandoItens')}
                   </TableCell>
                 </TableRow>
               ) : items.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
                     <List className="mx-auto w-12 h-12 text-slate-300 mb-2" />
-                    <p className="font-medium text-slate-600">Nenhum item de checklist encontrado.</p>
-                    <p className="text-sm text-slate-500">Adicione o primeiro item manualmente ou via upload de Excel.</p>
+                    <p className="font-medium text-slate-600">{t('checklistItems.nenhumItem')}</p>
+                    <p className="text-sm text-slate-500">{t('checklistItems.adicionePrimeiro')}</p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -530,18 +532,18 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
       <div className="flex items-center gap-2 mb-4">
         <Button variant="ghost" size="sm" onClick={() => setIsUploadView(false)}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
+          {t('checklistItems.voltar')}
         </Button>
-        <h3 className="text-lg font-medium">Upload de Itens Excel</h3>
+        <h3 className="text-lg font-medium">{t('checklistItems.uploadTitulo')}</h3>
       </div>
 
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
         <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Carregue o ficheiro Excel
+          {t('checklistItems.carregueExcel')}
         </h3>
         <p className="text-gray-500 mb-4">
-          Faça upload de um ficheiro Excel (.xlsx) com os itens do checklist
+          {t('checklistItems.uploadDesc')}
         </p>
         
         <input
@@ -557,7 +559,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
           variant="outline"
           className="mb-4"
         >
-          Selecionar Ficheiro
+          {t('checklistItems.selecionarFicheiro')}
         </Button>
         
         {selectedFile && (
@@ -569,7 +571,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
         {isUploading && (
           <div className="mb-4">
             <Progress value={uploadProgress} className="w-full" />
-            <p className="text-sm text-gray-500 mt-2">A processar ficheiro...</p>
+            <p className="text-sm text-gray-500 mt-2">{t('checklistItems.aProcessar')}</p>
           </div>
         )}
         
@@ -578,7 +580,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
           disabled={!selectedFile || isUploading}
           className="w-full"
         >
-          {isUploading ? 'A carregar...' : 'Processar Ficheiro'}
+          {isUploading ? t('checklistItems.aCarregar') : t('checklistItems.processarFicheiro')}
         </Button>
       </div>
     </div>
@@ -590,7 +592,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <List className="w-5 h-5 text-blue-600" />
-            Gerir Itens de Checklist - {tipoAuditoria?.nome}
+            {t('checklistItems.titulo')} - {tipoAuditoria?.nome}
           </DialogTitle>
         </DialogHeader>
 
@@ -612,10 +614,10 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
         isOpen={deleteItemInfo.isOpen}
         onClose={() => setDeleteItemInfo({ isOpen: false, item: null })}
         onConfirm={handleDeleteConfirm}
-        title="Confirmar Exclusão"
+        title={t('checklistItems.confirmarExclusao')}
         message={`Tem certeza que deseja excluir o item "${deleteItemInfo.item?.item}"?`}
         type="warning"
-        confirmText="Excluir"
+        confirmText={t('checklistItems.excluir')}
         showCancel
       />
     </Dialog>

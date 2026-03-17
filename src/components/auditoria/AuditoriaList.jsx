@@ -30,6 +30,7 @@ import { ProcessoAuditoria } from '@/entities/ProcessoAuditoria';
 import { RespostaAuditoria } from '@/entities/RespostaAuditoria';
 import { PlanoAcaoCorretiva } from '@/entities/PlanoAcaoCorretiva';
 import { ItemPAC } from '@/entities/ItemPAC';
+import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_CONFIG = {
   planejada: { label: 'Planejada', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
@@ -50,6 +51,7 @@ export default function AuditoriaList({
   onCreatePAC = () => {}, // Nova prop
   onExportPDF = () => {} // New prop for PDF export
 }) {
+  const { t } = useI18n();
   const [deleteInfo, setDeleteInfo] = useState({ isOpen: false, id: null, error: null });
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -87,7 +89,7 @@ export default function AuditoriaList({
         onReload();
       } catch (error) {
         console.error('Erro ao excluir processo e dados relacionados:', error);
-        setDeleteInfo(prev => ({ ...prev, error: 'Ocorreu um erro ao excluir a auditoria. Tente novamente.' }));
+        setDeleteInfo(prev => ({ ...prev, error: t('auditoriaList.erroExcluir') }));
       } finally {
         setIsDeleting(false);
       }
@@ -112,16 +114,16 @@ export default function AuditoriaList({
     return (
       <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="text-slate-900 dark:text-slate-100">Auditorias (0)</CardTitle>
+          <CardTitle className="text-slate-900 dark:text-slate-100">{t('auditoriaList.title')} (0)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <FileText className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
             <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              Nenhuma auditoria encontrada
+              {t('auditoriaList.emptyTitle')}
             </h3>
             <p className="text-slate-500 dark:text-slate-400">
-              Não há auditorias que correspondam aos filtros selecionados.
+              {t('auditoriaList.emptyDesc')}
             </p>
           </div>
         </CardContent>
@@ -135,7 +137,7 @@ export default function AuditoriaList({
       <Card className="hidden md:block bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
         <CardHeader>
           <CardTitle className="text-slate-900 dark:text-slate-100">
-            Auditorias ({processosAuditoria.length})
+            {t('auditoriaList.title')} ({processosAuditoria.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -143,13 +145,13 @@ export default function AuditoriaList({
             <Table>
               <TableHeader>
                 <TableRow className="border-slate-200 dark:border-slate-700">
-                  <TableHead className="text-slate-600 dark:text-slate-300">Tipo de Auditoria</TableHead>
-                  <TableHead className="text-slate-600 dark:text-slate-300">Aeroporto</TableHead>
-                  <TableHead className="text-slate-600 dark:text-slate-300">Data</TableHead>
-                  <TableHead className="text-slate-600 dark:text-slate-300">Auditor</TableHead>
-                  <TableHead className="text-slate-600 dark:text-slate-300">Status</TableHead>
-                  <TableHead className="text-slate-600 dark:text-slate-300">Conformidade</TableHead>
-                  <TableHead className="text-right text-slate-600 dark:text-slate-300">Ações</TableHead>
+                  <TableHead className="text-slate-600 dark:text-slate-300">{t('auditoriaList.colTipoAuditoria')}</TableHead>
+                  <TableHead className="text-slate-600 dark:text-slate-300">{t('auditoriaList.colAeroporto')}</TableHead>
+                  <TableHead className="text-slate-600 dark:text-slate-300">{t('auditoriaList.colData')}</TableHead>
+                  <TableHead className="text-slate-600 dark:text-slate-300">{t('auditoriaList.colAuditor')}</TableHead>
+                  <TableHead className="text-slate-600 dark:text-slate-300">{t('auditoriaList.colStatus')}</TableHead>
+                  <TableHead className="text-slate-600 dark:text-slate-300">{t('auditoriaList.colConformidade')}</TableHead>
+                  <TableHead className="text-right text-slate-600 dark:text-slate-300">{t('auditoriaList.colAcoes')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -211,34 +213,34 @@ export default function AuditoriaList({
                          <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Abrir menu</span>
+                              <span className="sr-only">{t('auditoriaList.abrirMenu')}</span>
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => onOpenDetail(processo)}>
                               <Eye className="mr-2 h-4 w-4" />
-                              <span>Ver detalhes</span>
+                              <span>{t('auditoriaList.verDetalhes')}</span>
                             </DropdownMenuItem>
                             {(processo.status === 'planejada' || processo.status === 'em_andamento') && (
                               <DropdownMenuItem onClick={() => onEdit(processo)}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                <span>{processo.status === 'planejada' ? 'Editar' : 'Continuar'}</span>
+                                <span>{processo.status === 'planejada' ? t('auditoriaList.editar') : t('auditoriaList.continuar')}</span>
                               </DropdownMenuItem>
                             )}
                             {processo.status === 'concluida' && processo.itens_nao_conformes > 0 && (
                               <DropdownMenuItem onClick={() => onCreatePAC(processo)} className="text-blue-600 focus:text-blue-600">
                                 <PlusCircle className="mr-2 h-4 w-4" />
-                                <span>Criar PAC</span>
+                                <span>{t('auditoriaList.criarPAC')}</span>
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem onClick={() => onExportPDF(processo)}>
                               <FileDown className="mr-2 h-4 w-4" />
-                              <span>Exportar Relatório (PDF)</span>
+                              <span>{t('auditoriaList.exportarPDF')}</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDeleteClick(processo.id)} className="text-red-600 focus:text-red-600">
                               <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Excluir auditoria</span>
+                              <span>{t('auditoriaList.excluirAuditoria')}</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -254,7 +256,7 @@ export default function AuditoriaList({
 
       {/* Mobile card list */}
       <div className="md:hidden space-y-3">
-        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Auditorias ({processosAuditoria.length})</p>
+        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('auditoriaList.title')} ({processosAuditoria.length})</p>
         {processosAuditoria.map((processo) => {
           const tipo = tiposAuditoria.find(t => t.id === processo.tipo_auditoria_id);
           const aeroporto = aeroportos.find(a => a.codigo_icao === processo.aeroporto_id);
@@ -278,9 +280,9 @@ export default function AuditoriaList({
                   )}
                 </div>
                 <div className="flex gap-2 pt-1">
-                  <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => onOpenDetail(processo)}><Eye className="w-3 h-3 mr-1" />Ver</Button>
+                  <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => onOpenDetail(processo)}><Eye className="w-3 h-3 mr-1" />{t('auditoriaList.ver')}</Button>
                   {(processo.status === 'planejada' || processo.status === 'em_andamento') && (
-                    <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => onEdit(processo)}><Edit className="w-3 h-3 mr-1" />{processo.status === 'planejada' ? 'Editar' : 'Continuar'}</Button>
+                    <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => onEdit(processo)}><Edit className="w-3 h-3 mr-1" />{processo.status === 'planejada' ? t('auditoriaList.editar') : t('auditoriaList.continuar')}</Button>
                   )}
                   <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => onExportPDF(processo)}><FileDown className="w-3 h-3 mr-1" />PDF</Button>
                   <Button size="sm" variant="ghost" className="text-red-600 px-2" onClick={() => handleDeleteClick(processo.id)}><Trash2 className="w-4 h-4" /></Button>
@@ -295,10 +297,10 @@ export default function AuditoriaList({
         isOpen={deleteInfo.isOpen}
         onClose={() => setDeleteInfo({ isOpen: false, id: null, error: null })}
         onConfirm={handleDeleteConfirm}
-        title="Confirmar Exclusão"
-        message="Tem a certeza que deseja excluir esta auditoria e todos os seus dados relacionados (respostas, PACs, etc)? Esta ação não pode ser desfeita."
+        title={t('auditoriaList.confirmarExclusao')}
+        message={t('auditoriaList.confirmarExclusaoMsg')}
         type="warning"
-        confirmText={isDeleting ? "Excluindo..." : "Excluir"}
+        confirmText={isDeleting ? t('auditoriaList.excluindo') : t('auditoriaList.excluir')}
         showCancel
         isConfirmDisabled={isDeleting}
         errorMessage={deleteInfo.error}

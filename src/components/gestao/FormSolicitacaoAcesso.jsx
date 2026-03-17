@@ -10,8 +10,10 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { Empresa } from '@/entities/Empresa';
 import { Send, Search, X } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading }) {
+  const { t } = useI18n();
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     nome_completo: userData?.full_name || '',
@@ -49,12 +51,12 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
   const handleInputChange = (field, value) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
-      
+
       // Se mudou o perfil e não é mais gestor_empresa, limpar empresa_solicitante_id
       if (field === 'perfil_solicitado' && value !== 'gestor_empresa') {
         newData.empresa_solicitante_id = '';
       }
-      
+
       return newData;
     });
   };
@@ -86,17 +88,17 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
 
     // Validação final antes de enviar
     if (!formData.nome_completo || !formData.telefone || !formData.perfil_solicitado || !formData.justificativa) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+      alert(t('gestao.solicitacao.erroObrigatorios'));
       return;
     }
 
     if (formData.perfil_solicitado === 'gestor_empresa' && !formData.empresa_solicitante_id) {
-      alert('Por favor, selecione a empresa que você representa.');
+      alert(t('gestao.solicitacao.erroEmpresa'));
       return;
     }
 
     if (formData.perfil_solicitado !== 'gestor_empresa' && formData.aeroportos_solicitados.length === 0) {
-      alert('Por favor, selecione pelo menos um aeroporto.');
+      alert(t('gestao.solicitacao.erroAeroporto'));
       return;
     }
 
@@ -106,17 +108,17 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
   };
 
   const perfilOptions = [
-    { value: '', label: 'Selecione um perfil...' },
-    { value: 'operacoes', label: 'Operações' },
-    { value: 'safety', label: 'Safety' },
-    { value: 'infraestrutura', label: 'Infraestrutura' },
-    { value: 'credenciamento', label: 'Credenciamento' },
-    { value: 'gestor_empresa', label: 'Gestor de Empresa' },
-    { value: 'visualizador', label: 'Visualizador' }
+    { value: '', label: t('gestao.solicitacao.selecionarPerfil') },
+    { value: 'operacoes', label: t('gestao.perfil.operacoes') },
+    { value: 'safety', label: t('gestao.perfil.safety') },
+    { value: 'infraestrutura', label: t('gestao.perfil.infraestrutura') },
+    { value: 'credenciamento', label: t('gestao.perfil.credenciamento') },
+    { value: 'gestor_empresa', label: t('gestao.perfil.gestorEmpresa') },
+    { value: 'visualizador', label: t('gestao.perfil.visualizador') }
   ];
 
   const empresaOptions = [
-    { value: '', label: 'Selecione uma empresa...' },
+    { value: '', label: t('gestao.solicitacao.selecionarEmpresa') },
     ...empresas.map(e => ({ value: e.id, label: e.nome }))
   ];
 
@@ -134,11 +136,11 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
       {/* Campos de Confirmação - Nome e Email */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="nome_completo">Nome Completo *</Label>
+          <Label htmlFor="nome_completo">{t('gestao.solicitacao.nomeCompleto')}</Label>
           <Input
             id="nome_completo"
             type="text"
-            placeholder="Ex: João Silva"
+            placeholder={t('gestao.solicitacao.nomePlaceholder')}
             value={formData.nome_completo}
             onChange={(e) => handleInputChange('nome_completo', e.target.value)}
             required
@@ -146,7 +148,7 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t('gestao.solicitacao.email')}</Label>
           <Input
             id="email"
             type="email"
@@ -158,11 +160,11 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="telefone">Telefone de Contacto *</Label>
+        <Label htmlFor="telefone">{t('gestao.solicitacao.telefoneContacto')}</Label>
         <Input
           id="telefone"
           type="tel"
-          placeholder="Ex: +244 912 345 678"
+          placeholder={t('gestao.solicitacao.telefonePlaceholder')}
           value={formData.telefone}
           onChange={(e) => handleInputChange('telefone', e.target.value)}
           required
@@ -170,29 +172,29 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="perfil">Perfil Solicitado *</Label>
+        <Label htmlFor="perfil">{t('gestao.solicitacao.perfilSolicitado')}</Label>
         <Select
           id="perfil"
           options={perfilOptions}
           value={formData.perfil_solicitado}
           onValueChange={(value) => handleInputChange('perfil_solicitado', value)}
-          placeholder="Selecione um perfil..."
+          placeholder={t('gestao.solicitacao.selecionarPerfil')}
         />
       </div>
 
       {/* Campo de Empresa - Apenas para Gestor de Empresa */}
       {formData.perfil_solicitado === 'gestor_empresa' && (
         <div className="space-y-2">
-          <Label htmlFor="empresa">Empresa que Representa *</Label>
+          <Label htmlFor="empresa">{t('gestao.solicitacao.empresaRepresenta')}</Label>
           <Select
             id="empresa"
             options={empresaOptions}
             value={formData.empresa_solicitante_id}
             onValueChange={(value) => handleInputChange('empresa_solicitante_id', value)}
-            placeholder="Selecione uma empresa..."
+            placeholder={t('gestao.solicitacao.selecionarEmpresa')}
           />
           <p className="text-xs text-slate-500">
-            💼 Selecione a empresa que você representa (ex: companhia aérea, empresa de handling, etc.)
+            {t('gestao.solicitacao.empresaHint')}
           </p>
         </div>
       )}
@@ -201,16 +203,16 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
       {formData.perfil_solicitado && formData.perfil_solicitado !== 'gestor_empresa' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label>Aeroportos Solicitados *</Label>
+            <Label>{t('gestao.solicitacao.aeroportosSolicitados')}</Label>
             <div className="flex items-center gap-2 text-sm text-slate-600">
-              <span>{formData.aeroportos_solicitados.length} selecionado(s)</span>
+              <span>{formData.aeroportos_solicitados.length} {t('gestao.solicitacao.selecionados')}</span>
               <Checkbox
                 id="select-all"
                 checked={todosAeroportosFiltradosSelecionados}
                 onCheckedChange={handleSelectAllAeroportos}
               />
               <label htmlFor="select-all" className="cursor-pointer">
-                Selecionar Todos
+                {t('gestao.solicitacao.selecionarTodos')}
               </label>
             </div>
           </div>
@@ -218,7 +220,7 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
             <Input
-              placeholder="Buscar aeroporto por nome, código ou cidade..."
+              placeholder={t('gestao.solicitacao.buscarAeroporto')}
               value={searchAeroporto}
               onChange={(e) => setSearchAeroporto(e.target.value)}
               className="pl-10"
@@ -237,7 +239,7 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
           <div className="border border-slate-200 rounded-lg p-4 max-h-64 overflow-y-auto bg-slate-50">
             {aeroportosFiltrados.length === 0 ? (
               <p className="text-center text-slate-500 py-4">
-                Nenhum aeroporto encontrado com "{searchAeroporto}"
+                {t('gestao.solicitacao.nenhumAeroporto')} "{searchAeroporto}"
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -268,17 +270,17 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
 
           {searchAeroporto && aeroportosFiltrados.length > 0 && (
             <p className="text-xs text-slate-500">
-              Mostrando {aeroportosFiltrados.length} de {aeroportos.length} aeroportos
+              {t('gestao.solicitacao.mostrando')} {aeroportosFiltrados.length} {t('gestao.solicitacao.deAeroportos')} {aeroportos.length} {t('gestao.solicitacao.aeroportos')}
             </p>
           )}
         </div>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="justificativa">Justificativa *</Label>
+        <Label htmlFor="justificativa">{t('gestao.solicitacao.justificativa')}</Label>
         <Textarea
           id="justificativa"
-          placeholder="Explique o motivo da sua solicitação de acesso..."
+          placeholder={t('gestao.solicitacao.justificativaPlaceholder')}
           value={formData.justificativa}
           onChange={(e) => handleInputChange('justificativa', e.target.value)}
           rows={4}
@@ -289,22 +291,22 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
       <Button
         type="submit"
         className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-        disabled={isLoading || isLoadingData || isSubmitting} // Disable if data is still loading
+        disabled={isLoading || isLoadingData || isSubmitting}
       >
         {isLoading ? (
           <>
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            Enviando...
+            {t('gestao.solicitacao.enviando')}
           </>
         ) : isLoadingData ? (
           <>
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            Carregando dados...
+            {t('gestao.solicitacao.carregandoDados')}
           </>
         ) : (
           <>
             <Send className="w-4 h-4 mr-2" />
-            Enviar Solicitação
+            {t('gestao.solicitacao.enviarSolicitacao')}
           </>
         )}
       </Button>

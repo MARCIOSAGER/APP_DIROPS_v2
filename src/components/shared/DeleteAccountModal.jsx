@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Trash2, AlertTriangle, X } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 
 /**
  * Double-confirmation Delete Account modal.
@@ -12,6 +13,7 @@ import { Trash2, AlertTriangle, X } from 'lucide-react';
 export default function DeleteAccountModal({ isOpen, onClose, onConfirm, userEmail }) {
   const [step, setStep] = useState(1);
   const [confirmText, setConfirmText] = useState('');
+  const { t } = useI18n();
 
   if (!isOpen) return null;
 
@@ -43,7 +45,7 @@ export default function DeleteAccountModal({ isOpen, onClose, onConfirm, userEma
               <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              {step === 1 ? 'Eliminar Conta' : 'Confirmação Final'}
+              {step === 1 ? t('shared.delete_account.titulo') : t('shared.delete_account.confirmacao_final')}
             </h2>
           </div>
           <button onClick={handleClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
@@ -56,36 +58,36 @@ export default function DeleteAccountModal({ isOpen, onClose, onConfirm, userEma
             <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950 rounded-xl mb-6 border border-red-200 dark:border-red-700">
               <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-red-800 dark:text-red-200 space-y-1">
-                <p className="font-semibold">Aviso: Esta ação é permanente e irreversível.</p>
+                <p className="font-semibold">{t('shared.delete_account.aviso')}</p>
                 <ul className="list-disc ml-4 space-y-0.5 text-red-700 dark:text-red-300">
-                  <li>Todos os seus dados pessoais serão eliminados</li>
-                  <li>O seu acesso ao sistema será revogado imediatamente</li>
-                  <li>Esta ação não pode ser desfeita</li>
+                  <li>{t('shared.delete_account.dados_eliminados')}</li>
+                  <li>{t('shared.delete_account.acesso_revogado')}</li>
+                  <li>{t('shared.delete_account.nao_desfazer')}</li>
                 </ul>
               </div>
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-              Conta associada a: <span className="font-medium text-slate-900 dark:text-slate-100">{userEmail}</span>
+              {t('shared.delete_account.conta_associada')} <span className="font-medium text-slate-900 dark:text-slate-100">{userEmail}</span>
             </p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={handleClose}>
-                Cancelar
+                {t('shared.cancelar')}
               </Button>
               <Button
                 variant="destructive"
                 className="flex-1"
                 onClick={() => setStep(2)}
               >
-                Continuar
+                {t('shared.continuar')}
               </Button>
             </div>
           </>
         ) : (
           <>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-              Para confirmar a eliminação da sua conta, escreva{' '}
+              {t('shared.delete_account.para_confirmar')}{' '}
               <span className="font-mono font-bold text-red-700 dark:text-red-400">{CONFIRM_WORD}</span>{' '}
-              no campo abaixo:
+              {t('shared.delete_account.no_campo')}
             </p>
             <Input
               value={confirmText}
@@ -96,7 +98,7 @@ export default function DeleteAccountModal({ isOpen, onClose, onConfirm, userEma
             />
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => { setStep(1); setConfirmText(''); }}>
-                Voltar
+                {t('shared.voltar')}
               </Button>
               <Button
                 variant="destructive"
@@ -105,7 +107,7 @@ export default function DeleteAccountModal({ isOpen, onClose, onConfirm, userEma
                 onClick={handleConfirm}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Eliminar Conta
+                {t('shared.delete_account.eliminar_conta')}
               </Button>
             </div>
           </>

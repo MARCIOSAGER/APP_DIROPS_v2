@@ -34,6 +34,7 @@ import { getEmpresaLogoByAeroporto } from '@/components/lib/userUtils';
 import AlertModal from '../shared/AlertModal';
 import FormPAC from './FormPAC';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_CONFIG = {
   planejada: { label: 'Planejada', color: 'bg-gray-100 text-gray-800' },
@@ -55,6 +56,7 @@ export default function AuditoriaDetailModal({
   tipo,
   aeroporto,
 }) {
+  const { t } = useI18n();
   const [respostas, setRespostas] = useState([]);
   const [itens, setItens] = useState([]);
   const [pacs, setPacs] = useState([]);
@@ -94,7 +96,7 @@ export default function AuditoriaDetailModal({
       setPacs(pacsData);
     } catch (error) {
       console.error('Erro ao carregar detalhes:', error);
-      setErrorMessage('Erro ao carregar os detalhes da auditoria.');
+      setErrorMessage(t('auditoriaDetail.erroCarregar'));
     } finally {
       setIsLoading(false);
     }
@@ -147,7 +149,7 @@ export default function AuditoriaDetailModal({
 
   const handleSendEmail = async () => {
     if (!emailAddress || !emailAddress.includes('@')) {
-      setErrorMessage('Por favor, insira um email válido.');
+      setErrorMessage(t('auditoriaDetail.emailInvalido'));
       return;
     }
 
@@ -245,12 +247,12 @@ export default function AuditoriaDetailModal({
           </div>
         `
       });
-      setSuccessMessage('Email enviado com sucesso!');
+      setSuccessMessage(t('auditoriaDetail.emailEnviado'));
       setShowEmailModal(false);
       setEmailAddress('');
     } catch (error) {
       console.error('Erro ao enviar email:', error);
-      setErrorMessage('Erro ao enviar email. Tente novamente.');
+      setErrorMessage(t('auditoriaDetail.erroEmail'));
     } finally {
       setIsSendingEmail(false);
     }
@@ -269,11 +271,11 @@ export default function AuditoriaDetailModal({
     if (deletePacInfo.id) {
       try {
         await PlanoAcaoCorretiva.delete(deletePacInfo.id);
-        setSuccessMessage('PAC excluído com sucesso!');
+        setSuccessMessage(t('auditoriaDetail.pacExcluido'));
         loadAuditoriaDetails();
       } catch (error) {
         console.error('Erro ao excluir PAC:', error);
-        setErrorMessage('Erro ao excluir PAC. Tente novamente.');
+        setErrorMessage(t('auditoriaDetail.erroPacExcluir'));
       } finally {
         setDeletePacInfo({ isOpen: false, id: null });
       }
@@ -295,7 +297,7 @@ export default function AuditoriaDetailModal({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
-              Detalhes da Auditoria - {tipo?.nome}
+              {t('auditoriaDetail.detalhes')} - {tipo?.nome}
             </DialogTitle>
           </DialogHeader>
 
@@ -317,7 +319,7 @@ export default function AuditoriaDetailModal({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Informações Gerais</span>
+                  <span>{t('auditoriaDetail.infoGerais')}</span>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -326,7 +328,7 @@ export default function AuditoriaDetailModal({
                       disabled={isExporting}
                     >
                       <Download className="w-4 h-4 mr-1" />
-                      {isExporting ? 'Gerando...' : 'Exportar'}
+                      {isExporting ? t('auditoriaDetail.gerando') : t('auditoriaDetail.exportar')}
                     </Button>
                     <Button
                       variant="outline"
@@ -335,7 +337,7 @@ export default function AuditoriaDetailModal({
                       disabled={isSendingEmail}
                     >
                       <Mail className="w-4 h-4 mr-1" />
-                      Email
+                      {t('auditoriaDetail.email')}
                     </Button>
                   </div>
                 </CardTitle>
@@ -345,14 +347,14 @@ export default function AuditoriaDetailModal({
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-slate-400" />
                     <div>
-                      <p className="text-sm text-slate-500">Aeroporto</p>
+                      <p className="text-sm text-slate-500">{t('auditoriaDetail.aeroporto')}</p>
                       <p className="font-medium">{aeroporto?.nome}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-slate-400" />
                     <div>
-                      <p className="text-sm text-slate-500">Data</p>
+                      <p className="text-sm text-slate-500">{t('auditoriaDetail.data')}</p>
                       <p className="font-medium">
                         {processo.data_auditoria ? format(new Date(processo.data_auditoria), 'dd/MM/yyyy', { locale: pt }) : 'N/A'}
                       </p>
@@ -361,12 +363,12 @@ export default function AuditoriaDetailModal({
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-slate-400" />
                     <div>
-                      <p className="text-sm text-slate-500">Auditor</p>
+                      <p className="text-sm text-slate-500">{t('auditoriaDetail.auditor')}</p>
                       <p className="font-medium">{processo.auditor_responsavel}</p>
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Status</p>
+                    <p className="text-sm text-slate-500">{t('auditoriaDetail.status')}</p>
                     <Badge className={statusConfig?.color}>
                       {statusConfig?.label}
                     </Badge>
@@ -381,7 +383,7 @@ export default function AuditoriaDetailModal({
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-600">Total Itens</p>
+                      <p className="text-sm font-medium text-slate-600">{t('auditoriaDetail.totalItens')}</p>
                       <p className="text-2xl font-bold">{processo.total_itens || 0}</p>
                     </div>
                     <FileText className="h-8 w-8 text-blue-600" />
@@ -393,7 +395,7 @@ export default function AuditoriaDetailModal({
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-600">Conformes</p>
+                      <p className="text-sm font-medium text-slate-600">{t('auditoriaDetail.conformes')}</p>
                       <p className="text-2xl font-bold text-green-600">
                         {processo.itens_conformes || 0}
                       </p>
@@ -407,7 +409,7 @@ export default function AuditoriaDetailModal({
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-600">Não Conformes</p>
+                      <p className="text-sm font-medium text-slate-600">{t('auditoriaDetail.naoConformes')}</p>
                       <p className="text-2xl font-bold text-red-600">
                         {naoConformidades.length}
                       </p>
@@ -421,7 +423,7 @@ export default function AuditoriaDetailModal({
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-600">Conformidade</p>
+                      <p className="text-sm font-medium text-slate-600">{t('auditoriaDetail.conformidade')}</p>
                       <p className="text-2xl font-bold text-blue-600">
                         {processo.percentual_conformidade?.toFixed(1) || '0.0'}%
                       </p>
@@ -437,12 +439,12 @@ export default function AuditoriaDetailModal({
             {/* Tabs */}
             <Tabs defaultValue="respostas" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="respostas">Respostas da Auditoria</TabsTrigger>
+                <TabsTrigger value="respostas">{t('auditoriaDetail.tabRespostas')}</TabsTrigger>
                 <TabsTrigger value="nao-conformidades">
-                  Não Conformidades ({naoConformidades.length})
+                  {t('auditoriaDetail.tabNC')} ({naoConformidades.length})
                 </TabsTrigger>
                 <TabsTrigger value="pac">
-                  PAC ({pacs.length})
+                  {t('auditoriaDetail.tabPAC')} ({pacs.length})
                 </TabsTrigger>
               </TabsList>
 
@@ -483,7 +485,7 @@ export default function AuditoriaDetailModal({
                             )}
                             {resposta.evidencias && resposta.evidencias.length > 0 && (
                               <div className="mt-3">
-                                <p className="text-sm font-medium text-slate-700 mb-2">Evidências:</p>
+                                <p className="text-sm font-medium text-slate-700 mb-2">{t('auditoriaDetail.evidencias')}</p>
                                 <div className="flex flex-wrap gap-2">
                                   {resposta.evidencias.map((evidencia, index) => (
                                     <Button
@@ -493,7 +495,7 @@ export default function AuditoriaDetailModal({
                                       onClick={() => window.open(evidencia, '_blank')}
                                     >
                                       <FileText className="w-4 h-4 mr-1" />
-                                      Evidência {index + 1}
+                                      {t('auditoriaDetail.evidencia')} {index + 1}
                                     </Button>
                                   ))}
                                 </div>
@@ -509,11 +511,11 @@ export default function AuditoriaDetailModal({
 
               <TabsContent value="nao-conformidades" className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Não Conformidades Identificadas</h3>
+                  <h3 className="text-lg font-semibold">{t('auditoriaDetail.ncIdentificadas')}</h3>
                   {naoConformidades.length > 0 && pacs.length === 0 && (
                     <Button onClick={() => setIsPacFormOpen(true)}>
                       <Plus className="w-4 h-4 mr-2" />
-                      Criar PAC
+                      {t('auditoriaDetail.criarPAC')}
                     </Button>
                   )}
                 </div>
@@ -523,10 +525,10 @@ export default function AuditoriaDetailModal({
                     <CardContent className="text-center py-8">
                       <CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
                       <h3 className="text-lg font-semibold text-green-700 mb-2">
-                        Parabéns! Nenhuma não conformidade identificada.
+                        {t('auditoriaDetail.parabensNC')}
                       </h3>
                       <p className="text-slate-500">
-                        Esta auditoria está em total conformidade com os requisitos.
+                        {t('auditoriaDetail.emConformidade')}
                       </p>
                     </CardContent>
                   </Card>
@@ -552,7 +554,7 @@ export default function AuditoriaDetailModal({
                               {resposta.acao_corretiva_recomendada && (
                                 <div className="mt-3 bg-blue-50 p-3 rounded-lg">
                                   <p className="text-sm font-medium text-blue-800 mb-1">
-                                    Ação Corretiva Recomendada:
+                                    {t('auditoriaDetail.acaoCorretiva')}
                                   </p>
                                   <p className="text-sm text-blue-700">
                                     {resposta.acao_corretiva_recomendada}
@@ -570,7 +572,7 @@ export default function AuditoriaDetailModal({
 
               <TabsContent value="pac" className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Planos de Ação Corretiva</h3>
+                  <h3 className="text-lg font-semibold">{t('auditoriaDetail.planosAcao')}</h3>
                 </div>
 
                 {pacs.length === 0 ? (
@@ -578,12 +580,12 @@ export default function AuditoriaDetailModal({
                     <CardContent className="text-center py-8">
                       <FileText className="w-16 h-16 mx-auto text-slate-300 mb-4" />
                       <h3 className="text-lg font-semibold text-slate-700 mb-2">
-                        Nenhum PAC criado
+                        {t('auditoriaDetail.nenhumPAC')}
                       </h3>
                       <p className="text-slate-500">
                         {naoConformidades.length > 0
-                          ? 'Crie um Plano de Ação Corretiva para as não conformidades identificadas.'
-                          : 'Não há não conformidades que necessitem de PAC.'}
+                          ? t('auditoriaDetail.criePAC')
+                          : t('auditoriaDetail.semNC')}
                       </p>
                     </CardContent>
                   </Card>
@@ -594,7 +596,7 @@ export default function AuditoriaDetailModal({
                         <div className="flex justify-between items-start">
                           <div>
                               <CardTitle>{pac.numero_pac}</CardTitle>
-                              <p className="text-sm text-slate-500 capitalize">Tipo: {pac.tipo.replace('_', ' ')}</p>
+                              <p className="text-sm text-slate-500 capitalize">{t('auditoriaDetail.tipo')} {pac.tipo.replace('_', ' ')}</p>
                           </div>
                           <div className="flex items-center gap-2">
                               <Badge variant={pac.status === 'elaboracao' ? 'secondary' : 'default'} className="capitalize">{pac.status.replace('_', ' ')}</Badge>
@@ -615,17 +617,17 @@ export default function AuditoriaDetailModal({
                       <CardContent className="pt-0">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                           <div>
-                            <span className="text-slate-500">Responsável:</span>
+                            <span className="text-slate-500">{t('auditoriaDetail.responsavel')}</span>
                             <p className="font-medium">{pac.responsavel_elaboracao}</p>
                           </div>
                           <div>
-                            <span className="text-slate-500">Prazo:</span>
+                            <span className="text-slate-500">{t('auditoriaDetail.prazo')}</span>
                             <p className="font-medium">
                               {format(new Date(pac.prazo_conclusao), 'dd/MM/yyyy', { locale: pt })}
                             </p>
                           </div>
                           <div>
-                            <span className="text-slate-500">Progresso:</span>
+                            <span className="text-slate-500">{t('auditoriaDetail.progresso')}</span>
                             <p className="font-medium">{pac.percentual_conclusao?.toFixed(0) || 0}%</p>
                           </div>
                         </div>
@@ -648,14 +650,14 @@ export default function AuditoriaDetailModal({
                 <Mail className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <DialogTitle>Enviar Relatório por Email</DialogTitle>
+                <DialogTitle>{t('auditoriaDetail.enviarRelatorio')}</DialogTitle>
                 <p className="text-sm text-slate-500 mt-1">Sistema DIROPS</p>
               </div>
             </div>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email de destino</Label>
+              <Label htmlFor="email">{t('auditoriaDetail.emailDestino')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -668,14 +670,14 @@ export default function AuditoriaDetailModal({
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" onClick={() => setShowEmailModal(false)}>
-              Cancelar
+              {t('auditoriaDetail.cancelar')}
             </Button>
-            <Button 
-              onClick={handleSendEmail} 
+            <Button
+              onClick={handleSendEmail}
               disabled={isSendingEmail || !emailAddress || !emailAddress.includes('@')}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {isSendingEmail ? 'Enviando...' : 'Enviar'}
+              {isSendingEmail ? t('auditoriaDetail.enviando') : t('auditoriaDetail.enviar')}
             </Button>
           </div>
         </DialogContent>
@@ -685,10 +687,10 @@ export default function AuditoriaDetailModal({
         isOpen={deletePacInfo.isOpen}
         onClose={() => setDeletePacInfo({ isOpen: false, id: null })}
         onConfirm={handleDeletePacConfirm}
-        title="Confirmar Exclusão do PAC"
-        message="Tem a certeza que deseja excluir este Plano de Ação Corretiva? Esta ação é irreversível."
+        title={t('auditoriaDetail.confirmarExclusaoPAC')}
+        message={t('auditoriaDetail.confirmarExclusaoPACMsg')}
         type="warning"
-        confirmText="Excluir"
+        confirmText={t('auditoriaList.excluir')}
         showCancel
       />
       {isPacFormOpen && (

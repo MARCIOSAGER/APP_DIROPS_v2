@@ -8,26 +8,26 @@ import { pt } from 'date-fns/locale';
 import AlertModal from '@/components/shared/AlertModal';
 import SendEmailModal from '@/components/shared/SendEmailModal';
 import { OrdemServico } from '@/entities/OrdemServico';
+import { useI18n } from '@/components/lib/i18n';
 
 const PRIORIDADE_CONFIG = {
-  baixa: { label: 'Baixa', color: 'bg-green-100 text-green-800' },
-  media: { label: 'Média', color: 'bg-yellow-100 text-yellow-800' },
-  alta: { label: 'Alta', color: 'bg-orange-100 text-orange-800' },
-  urgente: { label: 'Urgente', color: 'bg-red-100 text-red-800' },
+  baixa: { labelKey: 'manutencao.baixa', color: 'bg-green-100 text-green-800' },
+  media: { labelKey: 'manutencao.media', color: 'bg-yellow-100 text-yellow-800' },
+  alta: { labelKey: 'manutencao.alta', color: 'bg-orange-100 text-orange-800' },
+  urgente: { labelKey: 'manutencao.urgente', color: 'bg-red-100 text-red-800' },
 };
 
 const STATUS_CONFIG = {
-  pendente: { label: 'Pendente', color: 'bg-gray-100 text-gray-800' },
-  atribuida: { label: 'Atribuída', color: 'bg-blue-100 text-blue-800' },
-  em_execucao: { label: 'Em Execução', color: 'bg-purple-100 text-purple-800' },
-  aguardando_verificacao: { label: 'Aguardando Verificação', color: 'bg-cyan-100 text-cyan-800' },
-  concluida: { label: 'Concluída', color: 'bg-green-100 text-green-800' },
-  rejeitada: { label: 'Rejeitada', color: 'bg-red-100 text-red-800' },
+  pendente: { labelKey: 'osList.statusPendente', color: 'bg-gray-100 text-gray-800' },
+  atribuida: { labelKey: 'osList.statusAtribuida', color: 'bg-blue-100 text-blue-800' },
+  em_execucao: { labelKey: 'osList.statusEmExecucao', color: 'bg-purple-100 text-purple-800' },
+  aguardando_verificacao: { labelKey: 'osList.statusAguardandoVerificacao', color: 'bg-cyan-100 text-cyan-800' },
+  concluida: { labelKey: 'osList.statusConcluida', color: 'bg-green-100 text-green-800' },
+  rejeitada: { labelKey: 'osList.statusRejeitada', color: 'bg-red-100 text-red-800' },
 };
 
 const getPriorityColor = (prioridade) => PRIORIDADE_CONFIG[prioridade]?.color || 'bg-gray-200 text-gray-800';
 const getStatusColor = (status) => STATUS_CONFIG[status]?.color || 'bg-gray-200 text-gray-800';
-const getStatusLabel = (status) => STATUS_CONFIG[status]?.label || 'Desconhecido';
 
 const generateEmailBody = (ordem) => {
   if (!ordem) return '';
@@ -64,6 +64,7 @@ export default function ManutencaoList({
   onEdit,
   onSendEmail
 }) {
+  const { t } = useI18n();
   const [deleteInfo, setDeleteInfo] = useState({ isOpen: false, id: null, title: '', message: '' });
   const [selectedOrdem, setSelectedOrdem] = useState(null);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
@@ -88,8 +89,8 @@ export default function ManutencaoList({
     setDeleteInfo({
       isOpen: true,
       id: ordem.id,
-      title: 'Excluir Ordem de Serviço',
-      message: `Tem certeza que deseja excluir a ordem ${ordem.numero_ordem}? Esta ação não pode ser desfeita.`
+      title: t('osList.excluirOS'),
+      message: t('osList.confirmarExcluir').replace('{numero}', ordem.numero_ordem)
     });
   };
 
@@ -100,7 +101,7 @@ export default function ManutencaoList({
       if (onReload) onReload();
     } catch (error) {
       console.error('Erro ao excluir ordem:', error);
-      alert('Erro ao excluir ordem de serviço');
+      alert(t('osList.erroExcluir'));
     }
   };
 
@@ -121,7 +122,7 @@ export default function ManutencaoList({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between p-4 bg-white rounded-t-xl border-b border-slate-200">
-        <h2 className="text-xl font-semibold text-slate-800">Lista de Ordens de Serviço</h2>
+        <h2 className="text-xl font-semibold text-slate-800">{t('osList.titulo')}</h2>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
@@ -138,23 +139,23 @@ export default function ManutencaoList({
                     />
                   </th>
                 )}
-                <th className="text-left p-4 font-semibold text-slate-700">Nº Ordem</th>
-                <th className="text-left p-4 font-semibold text-slate-700">Título</th>
-                <th className="text-left p-4 font-semibold text-slate-700">Prioridade</th>
-                <th className="text-left p-4 font-semibold text-slate-700">Status</th>
-                <th className="text-left p-4 font-semibold text-slate-700">Data Abertura</th>
-                <th className="text-left p-4 font-semibold text-slate-700">Responsável</th>
-                <th className="text-left p-4 font-semibold text-slate-700">Ações</th>
+                <th className="text-left p-4 font-semibold text-slate-700">{t('osList.nOrdem')}</th>
+                <th className="text-left p-4 font-semibold text-slate-700">{t('osList.tituloCol')}</th>
+                <th className="text-left p-4 font-semibold text-slate-700">{t('osList.prioridade')}</th>
+                <th className="text-left p-4 font-semibold text-slate-700">{t('osList.status')}</th>
+                <th className="text-left p-4 font-semibold text-slate-700">{t('osList.dataAbertura')}</th>
+                <th className="text-left p-4 font-semibold text-slate-700">{t('osList.responsavel')}</th>
+                <th className="text-left p-4 font-semibold text-slate-700">{t('osList.acoes')}</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr className="bg-white">
-                  <td colSpan={colSpanCount} className="text-center p-4 text-slate-500">A carregar ordens...</td>
+                  <td colSpan={colSpanCount} className="text-center p-4 text-slate-500">{t('osList.aCarregar')}</td>
                 </tr>
               ) : ordensServico.length === 0 ? (
                 <tr className="bg-white">
-                  <td colSpan={colSpanCount} className="text-center p-4 text-slate-500">Nenhuma ordem de serviço encontrada.</td>
+                  <td colSpan={colSpanCount} className="text-center p-4 text-slate-500">{t('osList.nenhumaOrdem')}</td>
                 </tr>
               ) : (
                 ordensServico.map((ordem, index) => {
@@ -185,57 +186,57 @@ export default function ManutencaoList({
                       </td>
                       <td className="p-4">
                         <Badge className={getPriorityColor(ordem.prioridade)}>
-                          {PRIORIDADE_CONFIG[ordem.prioridade]?.label || ordem.prioridade}
+                          {t(PRIORIDADE_CONFIG[ordem.prioridade]?.labelKey) || ordem.prioridade}
                         </Badge>
                       </td>
                       <td className="p-4">
                         <Badge className={getStatusColor(ordem.status)}>
-                          {getStatusLabel(ordem.status)}
+                          {t(STATUS_CONFIG[ordem.status]?.labelKey) || t('osList.desconhecido')}
                         </Badge>
                       </td>
                       <td className="p-4 text-slate-600">
                         {format(new Date(ordem.created_date), 'dd/MM/yyyy', { locale: pt })}
                       </td>
                       <td className="p-4 text-slate-600">
-                        {ordem.responsavel_manutencao || 'Não atribuído'}
+                        {ordem.responsavel_manutencao || t('osList.naoAtribuido')}
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => handleViewDetails(ordem)} title="Ver detalhes">
+                          <Button variant="ghost" size="icon" onClick={() => handleViewDetails(ordem)} title={t('osList.verDetalhes')}>
                             <Eye className="w-4 h-4" />
                           </Button>
                           {/* Action: Accept (atribuida -> em_execucao) */}
                           {ordem.status === 'atribuida' && (
-                            <Button variant="ghost" size="icon" onClick={() => onResponder && onResponder(ordem, 'aceitar')} title="Aceitar e iniciar execução" className="text-green-600 hover:text-green-700">
+                            <Button variant="ghost" size="icon" onClick={() => onResponder && onResponder(ordem, 'aceitar')} title={t('osList.aceitarIniciar')} className="text-green-600 hover:text-green-700">
                               <PlayCircle className="w-4 h-4" />
                             </Button>
                           )}
                           {/* Action: Conclude (em_execucao -> aguardando_verificacao) */}
                           {ordem.status === 'em_execucao' && (
-                            <Button variant="ghost" size="icon" onClick={() => onResponder && onResponder(ordem, 'concluir')} title="Concluir execução" className="text-blue-600 hover:text-blue-700">
+                            <Button variant="ghost" size="icon" onClick={() => onResponder && onResponder(ordem, 'concluir')} title={t('osList.concluirExecucao')} className="text-blue-600 hover:text-blue-700">
                               <CheckCircle className="w-4 h-4" />
                             </Button>
                           )}
                           {/* Action: Verify/Approve (aguardando_verificacao -> concluida) */}
                           {canManage && ordem.status === 'aguardando_verificacao' && (
-                            <Button variant="ghost" size="icon" onClick={() => onResponder && onResponder(ordem, 'verificar')} title="Verificar e aprovar" className="text-orange-600 hover:text-orange-700">
+                            <Button variant="ghost" size="icon" onClick={() => onResponder && onResponder(ordem, 'verificar')} title={t('osList.verificarAprovar')} className="text-orange-600 hover:text-orange-700">
                               <ClipboardCheck className="w-4 h-4" />
                             </Button>
                           )}
                           {canManage && (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => handleEdit(ordem)} title="Editar">
+                              <Button variant="ghost" size="icon" onClick={() => handleEdit(ordem)} title={t('osList.editar')}>
                                 <Edit className="w-4 h-4" />
                               </Button>
                               {ordem.status === 'pendente' && (
-                                <Button variant="ghost" size="icon" onClick={() => handleAtribuir(ordem)} title="Atribuir">
+                                <Button variant="ghost" size="icon" onClick={() => handleAtribuir(ordem)} title={t('osList.atribuir')}>
                                   <UserPlus className="w-4 h-4" />
                                 </Button>
                               )}
-                              <Button variant="ghost" size="icon" onClick={() => handleSendEmail(ordem)} title="Enviar email">
+                              <Button variant="ghost" size="icon" onClick={() => handleSendEmail(ordem)} title={t('osList.enviarEmail')}>
                                 <Mail className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleDelete(ordem)} className="text-red-600 hover:text-red-700" title="Excluir">
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete(ordem)} className="text-red-600 hover:text-red-700" title={t('osList.excluir')}>
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </>
@@ -264,8 +265,8 @@ export default function ManutencaoList({
         isOpen={emailModalOpen}
         onClose={() => setEmailModalOpen(false)}
         onSend={handleEmailSend}
-        defaultSubject={selectedOrdem ? `Ordem de Serviço - ${selectedOrdem.numero_ordem}` : ''}
-        title="Enviar Ordem de Serviço por Email"
+        defaultSubject={selectedOrdem ? `${t('osList.enviarOSEmail')} - ${selectedOrdem.numero_ordem}` : ''}
+        title={t('osList.enviarOSEmail')}
       />
     </div>
   );

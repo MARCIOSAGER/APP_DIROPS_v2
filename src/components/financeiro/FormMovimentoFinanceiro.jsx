@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { getAeroportosPermitidos } from '@/components/lib/userUtils';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 const CATEGORIAS_RECEITA = [
   'Tarifas de Pouso',
@@ -40,6 +41,7 @@ export default function FormMovimentoFinanceiro({
   aeroportos = [],
   currentUser = null
 }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     aeroporto_id: '',
     data: new Date().toISOString().split('T')[0],
@@ -98,11 +100,11 @@ export default function FormMovimentoFinanceiro({
   const validate = () => {
     const newErrors = {};
     
-    if (!formData.aeroporto_id) newErrors.aeroporto_id = 'Aeroporto é obrigatório';
-    if (!formData.data) newErrors.data = 'Data é obrigatória';
-    if (!formData.categoria) newErrors.categoria = 'Categoria é obrigatória';
-    if (!formData.descricao) newErrors.descricao = 'Descrição é obrigatória';
-    if (!formData.valor_kz || formData.valor_kz <= 0) newErrors.valor_kz = 'Valor deve ser maior que zero';
+    if (!formData.aeroporto_id) newErrors.aeroporto_id = t('formMov.erroAeroporto');
+    if (!formData.data) newErrors.data = t('formMov.erroData');
+    if (!formData.categoria) newErrors.categoria = t('formMov.erroCategoria');
+    if (!formData.descricao) newErrors.descricao = t('formMov.erroDescricao');
+    if (!formData.valor_kz || formData.valor_kz <= 0) newErrors.valor_kz = t('formMov.erroValor');
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -119,7 +121,7 @@ export default function FormMovimentoFinanceiro({
         onClose();
       } catch (error) {
         console.error('Erro ao salvar movimento:', error);
-        setErrors({ submit: 'Erro ao salvar o movimento. Tente novamente.' });
+        setErrors({ submit: t('formMov.erroSalvar') });
       } finally {
         setIsLoading(false);
       }
@@ -134,8 +136,8 @@ export default function FormMovimentoFinanceiro({
   }, [aeroportosAcesso]);
 
   const tipoOptions = [
-    { value: 'receita', label: 'Receita' },
-    { value: 'despesa', label: 'Despesa' }
+    { value: 'receita', label: t('formMov.receita') },
+    { value: 'despesa', label: t('formMov.despesa') }
   ];
 
   const categoriaOptions = useMemo(() => {
@@ -148,7 +150,7 @@ export default function FormMovimentoFinanceiro({
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {movimento ? 'Editar Movimento' : 'Novo Movimento do Fundo de Maneio'}
+            {movimento ? t('formMov.editarMovimento') : t('formMov.novoMovimento')}
           </DialogTitle>
         </DialogHeader>
 
@@ -156,7 +158,7 @@ export default function FormMovimentoFinanceiro({
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Você não tem acesso a nenhum aeroporto. Contacte o administrador para obter permissões.
+              {t('formMov.semAcesso')}
             </AlertDescription>
           </Alert>
         )}
@@ -164,15 +166,15 @@ export default function FormMovimentoFinanceiro({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="aeroporto_id">Aeroporto *</Label>
+              <Label htmlFor="aeroporto_id">{t('formMov.aeroporto')}</Label>
               <Combobox
                 id="aeroporto_id"
                 options={aeroportoOptions}
                 value={formData.aeroporto_id}
                 onValueChange={(value) => handleInputChange('aeroporto_id', value)}
-                placeholder={aeroportosAcesso.length === 0 ? "Nenhum aeroporto disponível" : "Procurar aeroporto..."}
-                searchPlaceholder="Procurar aeroporto..."
-                noResultsMessage="Nenhum aeroporto encontrado"
+                placeholder={aeroportosAcesso.length === 0 ? t('formMov.nenhumAeroporto') : t('formMov.procurarAeroporto')}
+                searchPlaceholder={t('formMov.procurarAeroporto')}
+                noResultsMessage={t('formMov.nenhumEncontrado')}
                 className={errors.aeroporto_id ? 'border-red-500' : ''}
                 disabled={aeroportosAcesso.length === 0 || (aeroportosAcesso.length === 1 && !movimento)}
               />
@@ -180,7 +182,7 @@ export default function FormMovimentoFinanceiro({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="data">Data *</Label>
+              <Label htmlFor="data">{t('formMov.data')}</Label>
               <Input
                 id="data"
                 type="date"
@@ -194,7 +196,7 @@ export default function FormMovimentoFinanceiro({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="tipo">Tipo *</Label>
+              <Label htmlFor="tipo">{t('formMov.tipo')}</Label>
               <Select
                 id="tipo"
                 options={tipoOptions}
@@ -204,13 +206,13 @@ export default function FormMovimentoFinanceiro({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="categoria">Categoria *</Label>
+              <Label htmlFor="categoria">{t('formMov.categoria')}</Label>
               <Select
                 id="categoria"
                 options={categoriaOptions}
                 value={formData.categoria}
                 onValueChange={(value) => handleInputChange('categoria', value)}
-                placeholder="Selecione uma categoria"
+                placeholder={t('formMov.selecioneCategoria')}
                 className={errors.categoria ? 'border-red-500' : ''}
               />
               {errors.categoria && <p className="text-red-500 text-sm">{errors.categoria}</p>}
@@ -218,7 +220,7 @@ export default function FormMovimentoFinanceiro({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="valor_kz">Valor (Kz) *</Label>
+            <Label htmlFor="valor_kz">{t('formMov.valorKz')}</Label>
             <Input
               id="valor_kz"
               type="number"
@@ -232,12 +234,12 @@ export default function FormMovimentoFinanceiro({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="descricao">Descrição *</Label>
+            <Label htmlFor="descricao">{t('formMov.descricao')}</Label>
             <Textarea
               id="descricao"
               value={formData.descricao}
               onChange={(e) => handleInputChange('descricao', e.target.value)}
-              placeholder="Descreva o movimento financeiro..."
+              placeholder={t('formMov.descricaoPlaceholder')}
               className={errors.descricao ? 'border-red-500' : ''}
               rows={3}
             />
@@ -254,14 +256,14 @@ export default function FormMovimentoFinanceiro({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
-            Cancelar
+            {t('formMov.cancelar')}
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={isLoading || isSubmitting || aeroportosAcesso.length === 0}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {isLoading || isSubmitting ? 'A guardar...' : (movimento ? 'Atualizar' : 'Criar Movimento')}
+            {isLoading || isSubmitting ? t('formMov.aGuardar') : (movimento ? t('formMov.atualizar') : t('formMov.criarMovimento'))}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,8 +1,10 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plane, Users, Package, CheckCircle, XCircle, MapPin } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function VoosKPIs({ voos, aeroportos }) {
+  const { t } = useI18n();
   // Calcular KPIs básicos
   const totalVoos = voos.length;
   const totalChegadas = voos.filter(v => v.tipo_movimento === 'ARR').length;
@@ -61,14 +63,14 @@ export default function VoosKPIs({ voos, aeroportos }) {
 
   const kpis = [
     {
-      title: 'Total de Voos',
+      title: t('voosKPIs.totalVoos'),
       value: totalVoos,
       icon: Plane,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50'
     },
     {
-      title: 'Chegadas',
+      title: t('voosKPIs.chegadas'),
       value: totalChegadas,
       icon: Plane,
       color: 'text-green-600',
@@ -76,7 +78,7 @@ export default function VoosKPIs({ voos, aeroportos }) {
       rotation: 'rotate-[-45deg]'
     },
     {
-      title: 'Partidas',
+      title: t('voosKPIs.partidas'),
       value: totalPartidas,
       icon: Plane,
       color: 'text-purple-600',
@@ -84,28 +86,28 @@ export default function VoosKPIs({ voos, aeroportos }) {
       rotation: 'rotate-45'
     },
     {
-      title: 'Voos Realizados',
+      title: t('voosKPIs.voosRealizados'),
       value: voosRealizados,
       icon: CheckCircle,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50'
     },
     {
-      title: 'Voos Cancelados',
+      title: t('voosKPIs.voosCancelados'),
       value: voosCancelados,
       icon: XCircle,
       color: 'text-red-600',
       bgColor: 'bg-red-50'
     },
     {
-      title: 'Total de Passageiros',
+      title: t('voosKPIs.totalPassageiros'),
       value: formatNumber(totalPassageiros),
       icon: Users,
       color: 'text-indigo-600',
       bgColor: 'bg-indigo-50'
     },
     {
-      title: 'Carga Total',
+      title: t('voosKPIs.cargaTotal'),
       value: `${formatNumber(totalCarga)} kg`,
       icon: Package,
       color: 'text-amber-600',
@@ -140,7 +142,7 @@ export default function VoosKPIs({ voos, aeroportos }) {
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <MapPin className="w-5 h-5 text-slate-600" />
-              <h3 className="text-lg font-semibold text-slate-900">Top 10 Aeroportos por Volume</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{t('voosKPIs.top10Aeroportos')}</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -163,7 +165,7 @@ export default function VoosKPIs({ voos, aeroportos }) {
                   
                   <div className="space-y-2 mt-3 pt-3 border-t border-slate-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-600">Movimentos:</span>
+                      <span className="text-xs text-slate-600">{t('voosKPIs.movimentos')}</span>
                       <span className="text-sm font-bold text-slate-900">{aero.movimentos}</span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
@@ -171,7 +173,7 @@ export default function VoosKPIs({ voos, aeroportos }) {
                       <span className="text-purple-600">DEP: {aero.dep}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-600">Passageiros:</span>
+                      <span className="text-xs text-slate-600">{t('voosKPIs.passageiros')}</span>
                       <span className="text-sm font-semibold text-indigo-600">
                         {formatNumber(aero.passageiros)}
                       </span>
@@ -181,7 +183,7 @@ export default function VoosKPIs({ voos, aeroportos }) {
                       <span className="text-purple-600">DEP: {formatNumber(aero.carga_dep)} kg</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-600">Carga Total:</span>
+                      <span className="text-xs text-slate-600">{t('voosKPIs.cargaTotalLabel')}</span>
                       <span className="text-sm font-semibold text-amber-600">
                         {formatNumber(aero.carga_arr + aero.carga_dep)} kg
                       </span>

@@ -8,31 +8,29 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Eye, ClipboardCheck, Search, FileX } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_CONFIG = {
-  aberta: { label: 'Aberta', color: 'bg-yellow-100 text-yellow-800' },
-  em_analise: { label: 'Em Análise', color: 'bg-blue-100 text-blue-800' },
-  aprovada: { label: 'Aprovada', color: 'bg-green-100 text-green-800' },
-  rejeitada: { label: 'Rejeitada', color: 'bg-red-100 text-red-800' },
+  aberta: { labelKey: 'ssList.statusAberta', color: 'bg-yellow-100 text-yellow-800' },
+  em_analise: { labelKey: 'ssList.statusEmAnalise', color: 'bg-blue-100 text-blue-800' },
+  aprovada: { labelKey: 'ssList.statusAprovada', color: 'bg-green-100 text-green-800' },
+  rejeitada: { labelKey: 'ssList.statusRejeitada', color: 'bg-red-100 text-red-800' },
 };
 
 const PRIORIDADE_CONFIG = {
-  baixa: { label: 'Baixa', color: 'bg-green-100 text-green-800' },
-  media: { label: 'Média', color: 'bg-yellow-100 text-yellow-800' },
-  alta: { label: 'Alta', color: 'bg-orange-100 text-orange-800' },
-  urgente: { label: 'Urgente', color: 'bg-red-100 text-red-800' },
+  baixa: { labelKey: 'manutencao.baixa', color: 'bg-green-100 text-green-800' },
+  media: { labelKey: 'manutencao.media', color: 'bg-yellow-100 text-yellow-800' },
+  alta: { labelKey: 'manutencao.alta', color: 'bg-orange-100 text-orange-800' },
+  urgente: { labelKey: 'manutencao.urgente', color: 'bg-red-100 text-red-800' },
 };
 
 const ORIGEM_CONFIG = {
-  manual: { label: 'Manual', color: 'bg-slate-100 text-slate-700' },
-  inspecao: { label: 'Inspeção', color: 'bg-purple-100 text-purple-700' },
+  manual: { labelKey: 'ssList.origemManual', color: 'bg-slate-100 text-slate-700' },
+  inspecao: { labelKey: 'ssList.origemInspecao', color: 'bg-purple-100 text-purple-700' },
 };
 
-const getStatusLabel = (status) => STATUS_CONFIG[status]?.label || status || 'Desconhecido';
 const getStatusColor = (status) => STATUS_CONFIG[status]?.color || 'bg-gray-200 text-gray-800';
-const getPrioridadeLabel = (prioridade) => PRIORIDADE_CONFIG[prioridade]?.label || prioridade || 'N/A';
 const getPrioridadeColor = (prioridade) => PRIORIDADE_CONFIG[prioridade]?.color || 'bg-gray-200 text-gray-800';
-const getOrigemLabel = (origem) => ORIGEM_CONFIG[origem]?.label || origem || 'Manual';
 const getOrigemColor = (origem) => ORIGEM_CONFIG[origem]?.color || 'bg-slate-100 text-slate-700';
 
 export default function SolicitacoesList({
@@ -43,20 +41,21 @@ export default function SolicitacoesList({
   onViewDetail,
   canManage,
 }) {
+  const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [aeroportoFilter, setAeroportoFilter] = useState('todos');
 
   const statusOptions = [
-    { value: 'todos', label: 'Todos os Status' },
-    { value: 'aberta', label: 'Aberta' },
-    { value: 'em_analise', label: 'Em Análise' },
-    { value: 'aprovada', label: 'Aprovada' },
-    { value: 'rejeitada', label: 'Rejeitada' },
+    { value: 'todos', label: t('ssList.todosStatus') },
+    { value: 'aberta', label: t('ssList.statusAberta') },
+    { value: 'em_analise', label: t('ssList.statusEmAnalise') },
+    { value: 'aprovada', label: t('ssList.statusAprovada') },
+    { value: 'rejeitada', label: t('ssList.statusRejeitada') },
   ];
 
   const aeroportoOptions = [
-    { value: 'todos', label: 'Todos os Aeroportos' },
+    { value: 'todos', label: t('ssList.todosAeroportos') },
     ...(aeroportos || []).map(a => ({
       value: a.id,
       label: a.nome || a.icao_code || a.id,
@@ -93,7 +92,7 @@ export default function SolicitacoesList({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
-            placeholder="Pesquisar por título ou solicitante..."
+            placeholder={t('ssList.pesquisarPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9"
@@ -122,14 +121,14 @@ export default function SolicitacoesList({
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
-                <TableHead className="font-semibold text-slate-700">N.o SS</TableHead>
-                <TableHead className="font-semibold text-slate-700">Titulo</TableHead>
-                <TableHead className="font-semibold text-slate-700">Origem</TableHead>
-                <TableHead className="font-semibold text-slate-700">Prioridade</TableHead>
-                <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                <TableHead className="font-semibold text-slate-700">Data</TableHead>
-                <TableHead className="font-semibold text-slate-700">Solicitante</TableHead>
-                <TableHead className="font-semibold text-slate-700">Acoes</TableHead>
+                <TableHead className="font-semibold text-slate-700">{t('ssList.nSS')}</TableHead>
+                <TableHead className="font-semibold text-slate-700">{t('ssList.tituloCol')}</TableHead>
+                <TableHead className="font-semibold text-slate-700">{t('ssList.origem')}</TableHead>
+                <TableHead className="font-semibold text-slate-700">{t('ssList.prioridade')}</TableHead>
+                <TableHead className="font-semibold text-slate-700">{t('ssList.status')}</TableHead>
+                <TableHead className="font-semibold text-slate-700">{t('ssList.data')}</TableHead>
+                <TableHead className="font-semibold text-slate-700">{t('ssList.solicitante')}</TableHead>
+                <TableHead className="font-semibold text-slate-700">{t('ssList.acoes')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -137,15 +136,15 @@ export default function SolicitacoesList({
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-slate-500">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    A carregar solicitações...
+                    {t('ssList.aCarregar')}
                   </TableCell>
                 </TableRow>
               ) : filteredSolicitacoes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                     <FileX className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                    <p className="text-lg font-medium">Nenhum resultado encontrado</p>
-                    <p className="text-sm mt-1">Tente ajustar os filtros ou adicionar novos registos.</p>
+                    <p className="text-lg font-medium">{t('ssList.nenhumResultado')}</p>
+                    <p className="text-sm mt-1">{t('ssList.ajustarFiltros')}</p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -164,17 +163,17 @@ export default function SolicitacoesList({
                       </TableCell>
                       <TableCell>
                         <Badge className={getOrigemColor(ss.origem)}>
-                          {getOrigemLabel(ss.origem)}
+                          {t(ORIGEM_CONFIG[ss.origem]?.labelKey) || ss.origem}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge className={getPrioridadeColor(ss.prioridade_sugerida)}>
-                          {getPrioridadeLabel(ss.prioridade_sugerida)}
+                          {t(PRIORIDADE_CONFIG[ss.prioridade_sugerida]?.labelKey) || ss.prioridade_sugerida}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(ss.status)}>
-                          {getStatusLabel(ss.status)}
+                          {t(STATUS_CONFIG[ss.status]?.labelKey) || ss.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-slate-600">
@@ -189,7 +188,7 @@ export default function SolicitacoesList({
                             variant="ghost"
                             size="sm"
                             onClick={() => onViewDetail && onViewDetail(ss)}
-                            title="Ver detalhes"
+                            title={t('ssList.verDetalhes')}
                           >
                             <Eye className="w-4 h-4 text-slate-600" />
                           </Button>
@@ -198,7 +197,7 @@ export default function SolicitacoesList({
                               variant="ghost"
                               size="sm"
                               onClick={() => onAnalisar && onAnalisar(ss)}
-                              title="Analisar"
+                              title={t('ssList.analisar')}
                             >
                               <ClipboardCheck className="w-4 h-4 text-blue-600" />
                             </Button>

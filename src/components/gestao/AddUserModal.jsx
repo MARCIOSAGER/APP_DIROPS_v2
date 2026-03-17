@@ -10,18 +10,20 @@ import { User as UserEntity } from '@/entities/User';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { emailTemplates } from '@/lib/emailTemplates';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
-const PERFIL_OPTIONS = [
-  { value: 'administrador', label: 'Administrador' },
-  { value: 'operacoes', label: 'Operações' },
-  { value: 'safety', label: 'Safety' },
-  { value: 'infraestrutura', label: 'Infraestrutura' },
-  { value: 'credenciamento', label: 'Credenciamento' },
-  { value: 'gestor_empresa', label: 'Gestor de Empresa' },
-  { value: 'visualizador', label: 'Visualizador' }
+const PERFIL_OPTIONS_KEYS = [
+  { value: 'administrador', key: 'gestao.perfil.administrador' },
+  { value: 'operacoes', key: 'gestao.perfil.operacoes' },
+  { value: 'safety', key: 'gestao.perfil.safety' },
+  { value: 'infraestrutura', key: 'gestao.perfil.infraestrutura' },
+  { value: 'credenciamento', key: 'gestao.perfil.credenciamento' },
+  { value: 'gestor_empresa', key: 'gestao.perfil.gestorEmpresa' },
+  { value: 'visualizador', key: 'gestao.perfil.visualizador' }
 ];
 
 export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, onSuccess }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -33,6 +35,8 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const { guardedSubmit } = useSubmitGuard();
+
+  const PERFIL_OPTIONS = PERFIL_OPTIONS_KEYS.map(p => ({ value: p.value, label: t(p.key) }));
 
   useEffect(() => {
     if (isOpen) {
@@ -87,27 +91,27 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
     setError(null);
 
     if (!formData.full_name?.trim() || !formData.email?.trim()) {
-      setError('Nome e email são obrigatórios.');
+      setError(t('gestao.addUser.erroNomeEmail'));
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      setError('Formato de email inválido.');
+      setError(t('gestao.addUser.erroEmailInvalido'));
       return;
     }
 
     if (formData.telefone?.trim() && !/^[+]?[\d\s()-]{7,20}$/.test(formData.telefone.trim())) {
-      setError('Formato de telefone inválido.');
+      setError(t('gestao.addUser.erroTelefoneInvalido'));
       return;
     }
 
     if (formData.perfis.length === 0) {
-      setError('Selecione pelo menos um perfil.');
+      setError(t('gestao.addUser.erroPerfil'));
       return;
     }
 
     if (formData.aeroportos_acesso.length === 0) {
-      setError('Selecione pelo menos um aeroporto.');
+      setError(t('gestao.addUser.erroAeroporto'));
       return;
     }
 
@@ -132,9 +136,9 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
       });
 
       if (fnError || fnData?.error) {
-        const errMsg = fnData?.error || fnError?.message || 'Erro ao criar utilizador';
+        const errMsg = fnData?.error || fnError?.message || t('gestao.addUser.erroCriar');
         if (errMsg.includes('already been registered') || errMsg.includes('already registered')) {
-          setError('Este email já está registado no sistema.');
+          setError(t('gestao.addUser.erroEmailRegistado'));
         } else {
           setError(errMsg);
         }
@@ -170,7 +174,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
 
         await sendEmailDirect({
           to: formData.email,
-          subject: 'Bem-vindo ao DIROPS — O seu acesso foi criado',
+          subject: t('gestao.addUser.emailSubject'),
           html: emailTemplates.user_invited
             ? emailTemplates.user_invited({ nome: formData.full_name, empresa: empresaNome, perfis: perfisLabel })
             : generateInviteEmail(formData.full_name, empresaNome, perfisLabel),
@@ -184,7 +188,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
       onClose();
     } catch (err) {
       console.error('[AddUser] Error:', err);
-      setError('Erro inesperado: ' + err.message);
+      setError(t('gestao.addUser.erroInesperado') + err.message);
     } finally {
       setSaving(false);
     }
@@ -200,7 +204,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
   const allAeroportosSelected = aeroportosFiltrados.length > 0 && currentAeroportos.length === aeroportosFiltrados.length;
 
   const empresaOptions = [
-    { value: '', label: 'Nenhuma empresa (Superadmin)' },
+    { value: '', label: t('gestao.addUser.nenhumaEmpresa') },
     ...empresas.map(e => ({ value: e.id, label: e.nome }))
   ];
 
@@ -210,10 +214,10 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-green-600" />
-            Adicionar Novo Utilizador
+            {t('gestao.addUser.title')}
           </DialogTitle>
           <DialogDescription>
-            Crie uma conta para o utilizador. Ele receberá um email para definir a sua senha.
+            {t('gestao.addUser.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -227,40 +231,40 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="add_full_name">Nome Completo *</Label>
+                <Label htmlFor="add_full_name">{t('gestao.addUser.fullName')}</Label>
                 <Input
                   id="add_full_name"
                   value={formData.full_name}
                   onChange={(e) => handleChange('full_name', e.target.value)}
-                  placeholder="Ex: João Silva"
+                  placeholder={t('gestao.addUser.fullNamePlaceholder')}
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="add_email">Email *</Label>
+                <Label htmlFor="add_email">{t('gestao.addUser.email')}</Label>
                 <Input
                   id="add_email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
-                  placeholder="joao@empresa.com"
+                  placeholder={t('gestao.addUser.emailPlaceholder')}
                   required
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="add_telefone">Telefone</Label>
+              <Label htmlFor="add_telefone">{t('gestao.addUser.telefone')}</Label>
               <Input
                 id="add_telefone"
                 value={formData.telefone}
                 onChange={(e) => handleChange('telefone', e.target.value)}
-                placeholder="+244 9XX XXX XXX"
+                placeholder={t('gestao.addUser.telefonePlaceholder')}
               />
             </div>
 
             <div>
-              <Label>Empresa Associada</Label>
+              <Label>{t('gestao.addUser.empresaAssociada')}</Label>
               <select
                 value={formData.empresa_id}
                 onChange={(e) => {
@@ -279,7 +283,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
             </div>
 
             <div>
-              <Label>Perfis de Acesso *</Label>
+              <Label>{t('gestao.addUser.perfisAcesso')}</Label>
               <div className="grid grid-cols-2 gap-2 mt-2 p-3 border rounded-lg bg-slate-50">
                 {PERFIL_OPTIONS.map(perfil => (
                   <div key={perfil.value} className="flex items-center space-x-2">
@@ -297,7 +301,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
             </div>
 
             <div>
-              <Label>Aeroportos de Acesso *</Label>
+              <Label>{t('gestao.addUser.aeroportosAcesso')}</Label>
               <div className="space-y-2 mt-2 max-h-48 overflow-y-auto border rounded-lg p-3">
                 <div className="flex items-center space-x-2 pb-2 border-b">
                   <Checkbox
@@ -306,7 +310,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
                     onCheckedChange={handleSelectAllAeroportos}
                   />
                   <Label htmlFor="add-select-all-aeroportos" className="text-sm font-medium cursor-pointer">
-                    Selecionar Todos
+                    {t('gestao.addUser.selecionarTodos')}
                   </Label>
                 </div>
                 <div className="grid grid-cols-1 gap-2 pt-2">
@@ -330,11 +334,11 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
               <div className="flex items-start gap-2">
                 <Mail className="w-4 h-4 text-blue-600 mt-0.5" />
                 <div className="text-sm text-blue-700">
-                  <p className="font-medium">O que acontece ao criar:</p>
+                  <p className="font-medium">{t('gestao.addUser.infoTitle')}</p>
                   <ul className="mt-1 space-y-0.5 text-xs">
-                    <li>1. Uma conta é criada com o email informado</li>
-                    <li>2. O utilizador recebe um email para definir a sua senha</li>
-                    <li>3. A conta fica imediatamente ativa com os perfis e aeroportos selecionados</li>
+                    <li>{t('gestao.addUser.infoStep1')}</li>
+                    <li>{t('gestao.addUser.infoStep2')}</li>
+                    <li>{t('gestao.addUser.infoStep3')}</li>
                   </ul>
                 </div>
               </div>
@@ -344,7 +348,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
           <DialogFooter className="border-t pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
               <X className="w-4 h-4 mr-1" />
-              Cancelar
+              {t('gestao.addUser.cancelar')}
             </Button>
             <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
               {saving ? (
@@ -352,7 +356,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
               ) : (
                 <UserPlus className="w-4 h-4 mr-1" />
               )}
-              {saving ? 'A criar...' : 'Criar Utilizador'}
+              {saving ? t('gestao.addUser.criando') : t('gestao.addUser.criarUtilizador')}
             </Button>
           </DialogFooter>
         </form>

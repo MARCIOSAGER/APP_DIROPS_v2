@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calculator, DollarSign, Clock, Users, Package } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 import { TarifaPouso } from '@/entities/TarifaPouso';
 import { TarifaPermanencia } from '@/entities/TarifaPermanencia';
 import { OutraTarifa } from '@/entities/OutraTarifa';
@@ -28,6 +29,7 @@ export default function TarifasCalculator({
   const [aeronave, setAeronave] = useState(null);
   const [aeroportoInfo, setAeroportoInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (vooData && aeronaveRegisto && aeroporto) {
@@ -297,7 +299,7 @@ export default function TarifasCalculator({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-orange-700">
             <Calculator className="h-5 w-5" />
-            A calcular tarifas...
+            {t('tarifas.calculando')}
           </CardTitle>
         </CardHeader>
       </Card>
@@ -309,7 +311,7 @@ export default function TarifasCalculator({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-green-700">
           <Calculator className="h-5 w-5" />
-          Cálculo de Tarifas Aeroportuárias
+          {t('tarifas.titulo')}
         </CardTitle>
         {aeronave && aeroportoInfo && (
           <div className="text-sm text-green-600">
@@ -322,7 +324,7 @@ export default function TarifasCalculator({
         <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-blue-600" />
-            <span className="font-medium">Tarifa de Pouso</span>
+            <span className="font-medium">{t('tarifas.tarifaPouso')}</span>
             {detalhesCalculo.pouso?.tipo && (
               <Badge variant="outline" className="text-xs">
                 {detalhesCalculo.pouso.tipo}
@@ -339,7 +341,7 @@ export default function TarifasCalculator({
           <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-purple-600" />
-              <span className="font-medium">Tarifa de Permanência</span>
+              <span className="font-medium">{t('tarifas.tarifaPermanencia')}</span>
               {detalhesCalculo.permanencia?.tempo && (
                 <Badge variant="outline" className="text-xs">
                   {detalhesCalculo.permanencia.tempo}
@@ -357,7 +359,7 @@ export default function TarifasCalculator({
           <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-green-600" />
-              <span className="font-medium">Tarifas de Passageiros</span>
+              <span className="font-medium">{t('tarifas.tarifasPassageiros')}</span>
             </div>
             <span className="font-bold text-green-700">
               {new Intl.NumberFormat('pt-AO').format(tarifas.passageiros)} Kz
@@ -370,7 +372,7 @@ export default function TarifasCalculator({
           <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
             <div className="flex items-center gap-2">
               <Package className="h-4 w-4 text-orange-600" />
-              <span className="font-medium">Tarifa de Carga</span>
+              <span className="font-medium">{t('tarifas.tarifaCarga')}</span>
               {detalhesCalculo.carga?.peso && (
                 <Badge variant="outline" className="text-xs">
                   {detalhesCalculo.carga.peso}
@@ -387,7 +389,7 @@ export default function TarifasCalculator({
 
         {/* Total */}
         <div className="flex items-center justify-between p-4 bg-slate-100 rounded-lg border-2 border-slate-200">
-          <span className="text-lg font-bold text-slate-800">Total das Tarifas</span>
+          <span className="text-lg font-bold text-slate-800">{t('tarifas.totalTarifas')}</span>
           <span className="text-xl font-bold text-slate-900">
             {new Intl.NumberFormat('pt-AO').format(tarifas.total)} Kz
           </span>

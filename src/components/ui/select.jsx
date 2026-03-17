@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check, Search, X } from 'lucide-react';
 import { cn } from '@/components/lib/utils';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { useI18n } from '@/components/lib/i18n';
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
@@ -28,6 +29,7 @@ export default function Select({
   const selectRef = useRef(null);
   const searchInputRef = useRef(null);
   const isMobile = useIsMobile();
+  const { t } = useI18n();
 
   const selectedOption = options.find(opt => opt.value === value);
   const displayText = selectedOption?.label || placeholder;
@@ -89,7 +91,7 @@ export default function Select({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Pesquisar..."
+              placeholder={t('ui.pesquisar')}
               className="w-full pl-8 pr-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               onClick={(e) => e.stopPropagation()}
             />
@@ -98,7 +100,7 @@ export default function Select({
       )}
       <div className={cn("overflow-auto", isMobile ? "max-h-64" : "max-h-52")}>
         {filteredOptions.length === 0 ? (
-          <div className="py-6 text-center text-sm text-slate-500">Nenhum resultado encontrado</div>
+          <div className="py-6 text-center text-sm text-slate-500">{t('ui.nenhum_resultado')}</div>
         ) : (
           filteredOptions.map((option) => (
             <div

@@ -2,6 +2,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 
 const ALERT_TYPES = {
   success: {
@@ -38,20 +39,24 @@ const ALERT_TYPES = {
   }
 };
 
-export default function AlertModal({ 
-  isOpen, 
-  onClose, 
-  type = 'info', 
-  title, 
-  message, 
-  confirmText = 'OK',
+export default function AlertModal({
+  isOpen,
+  onClose,
+  type = 'info',
+  title,
+  message,
+  confirmText,
   showCancel = false,
-  cancelText = 'Cancelar',
+  cancelText,
   onConfirm,
   children
 }) {
+  const { t } = useI18n();
   const config = ALERT_TYPES[type] || ALERT_TYPES.info;
   const IconComponent = config.icon;
+
+  const displayConfirmText = confirmText || t('shared.ok');
+  const displayCancelText = cancelText || t('shared.cancelar');
 
   const handlePrimaryAction = () => {
     // If an onConfirm function is provided, call it. Otherwise, just close the modal.
@@ -73,7 +78,7 @@ export default function AlertModal({
             {title}
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="text-center">
           <p className="text-gray-700 dark:text-slate-300 mb-6 whitespace-pre-line">{message}</p>
         </div>
@@ -82,15 +87,15 @@ export default function AlertModal({
           <DialogFooter className="flex gap-2 justify-center">
             {showCancel && (
               <Button variant="outline" onClick={onClose} className="min-w-20">
-                {cancelText}
+                {displayCancelText}
               </Button>
             )}
-            {confirmText && (
-              <Button 
+            {displayConfirmText && (
+              <Button
                 onClick={handlePrimaryAction}
                 className={`${config.buttonColor} text-white min-w-20`}
               >
-                {confirmText}
+                {displayConfirmText}
               </Button>
             )}
           </DialogFooter>

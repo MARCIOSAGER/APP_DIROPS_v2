@@ -3,11 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  User, 
-  Car, 
-  Calendar, 
-  MapPin, 
+import {
+  User,
+  Car,
+  Calendar,
+  MapPin,
   FileText,
   Shield,
   Building,
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_CONFIG = {
   pendente: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, label: 'Pendente' },
@@ -29,6 +30,7 @@ const STATUS_CONFIG = {
 };
 
 export default function CredenciamentoDetailModal({ isOpen, onClose, credenciamento, empresas, aeroportos }) {
+  const { t } = useI18n();
   if (!credenciamento) return null;
 
   const statusConfig = STATUS_CONFIG[credenciamento.status] || STATUS_CONFIG.pendente;
@@ -73,13 +75,13 @@ export default function CredenciamentoDetailModal({ isOpen, onClose, credenciame
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2 text-sm">
                   <Building className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">Empresa:</span>
+                  <span className="text-slate-600">{t('cred.detail.empresa')}:</span>
                   <span className="font-medium">{getEmpresaNome(credenciamento.empresa_solicitante_id)}</span>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">Aeroporto:</span>
+                  <span className="text-slate-600">{t('cred.detail.aeroporto')}:</span>
                   <span className="font-medium">{getAeroportoNome(credenciamento.aeroporto_id)}</span>
                 </div>
 
@@ -93,7 +95,7 @@ export default function CredenciamentoDetailModal({ isOpen, onClose, credenciame
 
                 <div className="flex items-center gap-2 text-sm">
                   <Shield className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">Tipo:</span>
+                  <span className="text-slate-600">{t('cred.detail.tipo')}:</span>
                   <div className="flex gap-1">
                     <Badge variant="outline" className="text-xs">
                       {credenciamento.tipo_credencial === 'pessoa' ? 'Pessoa' : 'Viatura'}
@@ -141,15 +143,15 @@ export default function CredenciamentoDetailModal({ isOpen, onClose, credenciame
               {credenciamento.tipo_credencial === 'pessoa' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <span className="text-slate-600 text-sm">Nome Completo:</span>
+                    <span className="text-slate-600 text-sm">{t('cred.detail.nome')}:</span>
                     <p className="font-medium">{credenciamento.nome_completo}</p>
                   </div>
                   <div>
-                    <span className="text-slate-600 text-sm">Função:</span>
+                    <span className="text-slate-600 text-sm">{t('cred.detail.cargo')}:</span>
                     <p className="font-medium">{credenciamento.funcao_empresa}</p>
                   </div>
                   <div>
-                    <span className="text-slate-600 text-sm">Documento:</span>
+                    <span className="text-slate-600 text-sm">{t('cred.detail.documento')}:</span>
                     <p className="font-medium">{credenciamento.numero_passaporte}</p>
                   </div>
                   <div>
@@ -327,7 +329,7 @@ export default function CredenciamentoDetailModal({ isOpen, onClose, credenciame
 
         <div className="flex justify-end">
           <DialogClose asChild>
-            <Button variant="outline">Fechar</Button>
+            <Button variant="outline">{t('cred.detail.fechar')}</Button>
           </DialogClose>
         </div>
       </DialogContent>

@@ -11,8 +11,10 @@ import { Loader2, UploadCloud, X, FileText } from 'lucide-react';
 import { SolicitacaoServico } from '@/entities/SolicitacaoServico';
 import { UploadFile } from '@/integrations/Core';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function FormSolicitacaoServico({ isOpen, onClose, aeroportos, currentUser, onSuccess }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
@@ -56,7 +58,7 @@ export default function FormSolicitacaoServico({ isOpen, onClose, aeroportos, cu
       }
     } catch (err) {
       console.error('Erro ao fazer upload:', err);
-      setError('Erro ao fazer upload de ficheiro.');
+      setError(t('ssForm.erroUpload'));
     } finally {
       setIsUploading(false);
     }
@@ -89,11 +91,11 @@ export default function FormSolicitacaoServico({ isOpen, onClose, aeroportos, cu
     setError('');
 
     if (!formData.titulo.trim()) {
-      setError('O título é obrigatório.');
+      setError(t('ssForm.erroTitulo'));
       return;
     }
     if (!formData.descricao.trim()) {
-      setError('A descrição é obrigatória.');
+      setError(t('ssForm.erroDescricao'));
       return;
     }
 
@@ -123,7 +125,7 @@ export default function FormSolicitacaoServico({ isOpen, onClose, aeroportos, cu
         onClose();
       } catch (err) {
         console.error('Erro ao criar solicitação:', err);
-        setError('Erro ao criar solicitação de serviço. Tente novamente.');
+        setError(t('ssForm.erroCriar'));
       } finally {
         setIsLoading(false);
       }
@@ -131,10 +133,10 @@ export default function FormSolicitacaoServico({ isOpen, onClose, aeroportos, cu
   };
 
   const prioridadeOptions = [
-    { value: 'baixa', label: 'Baixa' },
-    { value: 'media', label: 'Média' },
-    { value: 'alta', label: 'Alta' },
-    { value: 'urgente', label: 'Urgente' },
+    { value: 'baixa', label: t('manutencao.baixa') },
+    { value: 'media', label: t('manutencao.media') },
+    { value: 'alta', label: t('manutencao.alta') },
+    { value: 'urgente', label: t('manutencao.urgente') },
   ];
 
   const aeroportoOptions = (aeroportos || []).map(a => ({
@@ -148,7 +150,7 @@ export default function FormSolicitacaoServico({ isOpen, onClose, aeroportos, cu
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
-            Nova Solicitação de Serviço
+            {t('ssForm.titulo')}
           </DialogTitle>
         </DialogHeader>
 
@@ -160,64 +162,64 @@ export default function FormSolicitacaoServico({ isOpen, onClose, aeroportos, cu
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="titulo">Título *</Label>
+            <Label htmlFor="titulo">{t('ssForm.tituloLabel')}</Label>
             <Input
               id="titulo"
               value={formData.titulo}
               onChange={(e) => handleChange('titulo', e.target.value)}
-              placeholder="Descreva brevemente o serviço necessário"
+              placeholder={t('ssForm.tituloPlaceholder')}
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="descricao">Descrição *</Label>
+            <Label htmlFor="descricao">{t('ssForm.descricao')}</Label>
             <Textarea
               id="descricao"
               value={formData.descricao}
               onChange={(e) => handleChange('descricao', e.target.value)}
-              placeholder="Detalhe o problema ou necessidade de manutenção"
+              placeholder={t('ssForm.descricaoPlaceholder')}
               rows={4}
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="aeroporto_id">Aeroporto</Label>
+            <Label htmlFor="aeroporto_id">{t('ssForm.aeroporto')}</Label>
             <Select
               value={formData.aeroporto_id}
               onValueChange={(value) => handleChange('aeroporto_id', value)}
               options={aeroportoOptions}
-              placeholder="Selecione o aeroporto"
+              placeholder={t('ssForm.selecionarAeroporto')}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="localizacao">Localização</Label>
+            <Label htmlFor="localizacao">{t('ssForm.localizacao')}</Label>
             <Input
               id="localizacao"
               value={formData.localizacao}
               onChange={(e) => handleChange('localizacao', e.target.value)}
-              placeholder="Ex: Pista 09/27, Terminal 1 Gate 3"
+              placeholder={t('ssForm.localizacaoPlaceholder')}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="prioridade_sugerida">Prioridade Sugerida</Label>
+            <Label htmlFor="prioridade_sugerida">{t('ssForm.prioridadeSugerida')}</Label>
             <Select
               value={formData.prioridade_sugerida}
               onValueChange={(value) => handleChange('prioridade_sugerida', value)}
               options={prioridadeOptions}
-              placeholder="Selecione a prioridade"
+              placeholder={t('ssForm.selecionarPrioridade')}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Fotos / Anexos</Label>
+            <Label>{t('ssForm.fotosAnexos')}</Label>
             <div className="flex items-center gap-2">
               <label className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors text-sm text-slate-600">
                 <UploadCloud className="w-4 h-4" />
-                {isUploading ? 'A enviar...' : 'Selecionar ficheiros'}
+                {isUploading ? t('ssForm.aEnviar') : t('ssForm.selecionarFicheiros')}
                 <input
                   type="file"
                   multiple
@@ -253,7 +255,7 @@ export default function FormSolicitacaoServico({ isOpen, onClose, aeroportos, cu
           <DialogFooter className="pt-4">
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={isLoading}>
-                Cancelar
+                {t('ssForm.cancelar')}
               </Button>
             </DialogClose>
             <Button
@@ -264,10 +266,10 @@ export default function FormSolicitacaoServico({ isOpen, onClose, aeroportos, cu
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  A criar...
+                  {t('ssForm.aCriar')}
                 </>
               ) : (
-                'Criar Solicitação'
+                t('ssForm.criarSolicitacao')
               )}
             </Button>
           </DialogFooter>

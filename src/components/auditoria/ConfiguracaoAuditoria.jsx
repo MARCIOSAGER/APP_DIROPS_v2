@@ -26,6 +26,7 @@ import {
 import { TipoAuditoria } from '@/entities/TipoAuditoria';
 import ManageChecklistItemsModal from './ManageChecklistItemsModal';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 const CATEGORIA_ICONS = {
   seguranca_operacional: Shield,
@@ -44,6 +45,7 @@ const CATEGORIA_LABELS = {
 };
 
 export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
+  const { t } = useI18n();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTipo, setEditingTipo] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -91,7 +93,7 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
     if (!formData.nome || !formData.codigo || !formData.categoria) {
       setMessage({
         type: 'error',
-        text: 'Por favor, preencha todos os campos obrigatórios.'
+        text: t('configAuditoria.camposObrigatorios')
       });
       return;
     }
@@ -104,13 +106,13 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
         await TipoAuditoria.update(editingTipo.id, formData);
         setMessage({
           type: 'success',
-          text: 'Tipo de auditoria atualizado com sucesso!'
+          text: t('configAuditoria.tipoAtualizado')
         });
       } else {
         await TipoAuditoria.create(formData);
         setMessage({
           type: 'success',
-          text: 'Tipo de auditoria criado com sucesso!'
+          text: t('configAuditoria.tipoCriado')
         });
       }
 
@@ -123,7 +125,7 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
       console.error('Erro ao salvar tipo:', error);
       setMessage({
         type: 'error',
-        text: 'Erro ao salvar tipo de auditoria. Verifique se o código é único.'
+        text: t('configAuditoria.erroSalvar')
       });
     } finally {
       setIsLoading(false);
@@ -155,8 +157,8 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
   };
   
   // Prepare options for the custom Select component
-  const categoriaOptions = Object.entries(CATEGORIA_LABELS).map(([key, label]) => ({ value: key, label: label }));
-  const statusOptions = [{value: 'ativo', label: 'Ativo'}, {value: 'inativo', label: 'Inativo'}];
+  const categoriaOptions = Object.keys(CATEGORIA_LABELS).map(key => ({ value: key, label: t(`configAuditoria.${key === 'seguranca_operacional' ? 'segurancaOperacional' : key === 'seguranca_avsec' ? 'segurancaAvsec' : key === 'resposta_emergencia' ? 'respostaEmergencia' : key}`) }));
+  const statusOptions = [{value: 'ativo', label: t('configAuditoria.ativo')}, {value: 'inativo', label: t('configAuditoria.inativo')}];
 
   return (
     <div className="space-y-6">
@@ -165,14 +167,14 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
           <div className="flex justify-between items-center">
             <CardTitle className="flex items-center gap-2">
               <Settings className="w-5 h-5" />
-              Tipos de Auditoria
+              {t('configAuditoria.tiposAuditoria')}
             </CardTitle>
             <Button onClick={() => openForm()}>
               <Plus className="w-4 h-4 mr-2" />
-              Novo Tipo
+              {t('configAuditoria.novoTipo')}
             </Button>
           </div>
-          <p className="text-slate-600 mt-1">Gerencie os tipos de auditoria e seus itens de checklist.</p>
+          <p className="text-slate-600 mt-1">{t('configAuditoria.gerencieDesc')}</p>
         </CardHeader>
         <CardContent>
           {/* Formulário de Criação/Edição de Tipo */}
@@ -181,7 +183,7 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="w-5 h-5" />
-                  {editingTipo ? 'Editar Tipo de Auditoria' : 'Novo Tipo de Auditoria'}
+                  {editingTipo ? t('configAuditoria.editarTipo') : t('configAuditoria.novoTipoAuditoria')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -199,10 +201,10 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="nome">Nome *</Label>
+                      <Label htmlFor="nome">{t('configAuditoria.nome')}</Label>
                       <Input
                         id="nome"
-                        placeholder="Ex: Auditoria de Segurança Operacional"
+                        placeholder={t('configAuditoria.nomePlaceholder')}
                         value={formData.nome}
                         onChange={(e) => handleInputChange('nome', e.target.value)}
                         required
@@ -210,10 +212,10 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="codigo">Código *</Label>
+                      <Label htmlFor="codigo">{t('configAuditoria.codigo')}</Label>
                       <Input
                         id="codigo"
-                        placeholder="Ex: AVSEC, OPS, SGA"
+                        placeholder={t('configAuditoria.codigoPlaceholder')}
                         value={formData.codigo}
                         onChange={(e) => handleInputChange('codigo', e.target.value.toUpperCase())}
                         required
@@ -223,17 +225,17 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="categoria">Categoria *</Label>
+                      <Label htmlFor="categoria">{t('configAuditoria.categoria')}</Label>
                       <Select
                         options={categoriaOptions}
                         value={formData.categoria}
                         onValueChange={(value) => handleInputChange('categoria', value)}
-                        placeholder="Selecione a categoria"
+                        placeholder={t('configAuditoria.selecioneCategoria')}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
+                      <Label htmlFor="status">{t('configAuditoria.status')}</Label>
                       <Select
                         options={statusOptions}
                         value={formData.status}
@@ -243,10 +245,10 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="descricao">Descrição</Label>
+                    <Label htmlFor="descricao">{t('configAuditoria.descricao')}</Label>
                     <Textarea
                       id="descricao"
-                      placeholder="Descrição detalhada do tipo de auditoria..."
+                      placeholder={t('configAuditoria.descricaoPlaceholder')}
                       value={formData.descricao}
                       onChange={(e) => handleInputChange('descricao', e.target.value)}
                       rows={3}
@@ -255,12 +257,12 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
 
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
-                      Cancelar
+                      {t('configAuditoria.cancelar')}
                     </Button>
                     <Button type="submit" disabled={isLoading}>
                       {isLoading
-                        ? (editingTipo ? 'Atualizando...' : 'Criando...')
-                        : (editingTipo ? 'Atualizar' : 'Criar')
+                        ? (editingTipo ? t('configAuditoria.atualizando') : t('configAuditoria.criando'))
+                        : (editingTipo ? t('configAuditoria.atualizar') : t('configAuditoria.criar'))
                       }
                     </Button>
                   </div>
@@ -272,21 +274,21 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
           {/* Lista de Tipos */}
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle>Tipos de Auditoria Cadastrados</CardTitle>
+              <CardTitle>{t('configAuditoria.tiposCadastrados')}</CardTitle>
             </CardHeader>
             <CardContent>
               {tipos.length === 0 ? (
                 <div className="text-center py-8">
                   <Settings className="w-16 h-16 mx-auto text-slate-300 mb-4" />
                   <h3 className="text-lg font-semibold text-slate-700 mb-2">
-                    Nenhum tipo cadastrado
+                    {t('configAuditoria.nenhumTipo')}
                   </h3>
                   <p className="text-slate-500 mb-4">
-                    Crie o primeiro tipo de auditoria para começar.
+                    {t('configAuditoria.criePrimeiro')}
                   </p>
                   <Button onClick={() => openForm()}>
                     <Plus className="w-4 h-4 mr-2" />
-                    Criar Primeiro Tipo
+                    {t('configAuditoria.criarPrimeiro')}
                   </Button>
                 </div>
               ) : (
@@ -294,11 +296,11 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Código</TableHead>
-                        <TableHead>Categoria</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
+                        <TableHead>{t('configAuditoria.colNome')}</TableHead>
+                        <TableHead>{t('configAuditoria.colCodigo')}</TableHead>
+                        <TableHead>{t('configAuditoria.colCategoria')}</TableHead>
+                        <TableHead>{t('configAuditoria.colStatus')}</TableHead>
+                        <TableHead className="text-right">{t('configAuditoria.colAcoes')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -346,7 +348,7 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
                                   className="text-blue-600 border-blue-200 hover:bg-blue-50"
                                 >
                                   <List className="w-4 h-4 mr-1" />
-                                  Itens
+                                  {t('configAuditoria.itens')}
                                 </Button>
                                 <Button
                                   size="sm"
@@ -354,7 +356,7 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
                                   onClick={() => openForm(tipo)}
                                 >
                                   <Edit className="w-4 h-4 mr-1" />
-                                  Editar
+                                  {t('configAuditoria.editar')}
                                 </Button>
                                 <Button
                                   size="sm"
@@ -363,7 +365,7 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
                                   onClick={() => handleDelete(tipo)}
                                 >
                                   <Trash2 className="w-4 h-4 mr-1" />
-                                  Excluir
+                                  {t('configAuditoria.excluir')}
                                 </Button>
                               </div>
                             </TableCell>

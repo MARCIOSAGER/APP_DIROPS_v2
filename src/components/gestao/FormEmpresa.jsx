@@ -7,18 +7,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Building, Save, X } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
-
-const STATUS_OPTIONS = [
-  { value: 'ativa', label: 'Ativa' },
-  { value: 'suspensa', label: 'Suspensa' },
-  { value: 'inativa', label: 'Inativa' }
-];
+import { useI18n } from '@/components/lib/i18n';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[+]?[\d\s()-]{7,20}$/;
 const NIF_REGEX = /^[\dA-Za-z]{5,20}$/;
 
 export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     nome: '',
     nif: '',
@@ -33,6 +29,12 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
   });
   const [errors, setErrors] = useState({});
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
+
+  const STATUS_OPTIONS = [
+    { value: 'ativa', label: t('gestao.empresa.statusAtiva') },
+    { value: 'suspensa', label: t('gestao.empresa.statusSuspensa') },
+    { value: 'inativa', label: t('gestao.empresa.statusInativa') }
+  ];
 
   useEffect(() => {
     if (empresa && isOpen) {
@@ -55,16 +57,16 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.nome?.trim()) newErrors.nome = 'Nome é obrigatório';
-    if (!formData.nif?.trim()) newErrors.nif = 'NIF é obrigatório';
-    else if (!NIF_REGEX.test(formData.nif.trim())) newErrors.nif = 'NIF inválido (5-20 caracteres alfanuméricos)';
-    if (!formData.email_principal?.trim()) newErrors.email_principal = 'Email é obrigatório';
-    else if (!EMAIL_REGEX.test(formData.email_principal.trim())) newErrors.email_principal = 'Formato de email inválido';
-    if (formData.telefone?.trim() && !PHONE_REGEX.test(formData.telefone.trim())) newErrors.telefone = 'Formato de telefone inválido';
-    if (!formData.responsavel_nome?.trim()) newErrors.responsavel_nome = 'Nome do responsável é obrigatório';
-    if (!formData.responsavel_email?.trim()) newErrors.responsavel_email = 'Email do responsável é obrigatório';
-    else if (!EMAIL_REGEX.test(formData.responsavel_email.trim())) newErrors.responsavel_email = 'Formato de email inválido';
-    if (formData.responsavel_telefone?.trim() && !PHONE_REGEX.test(formData.responsavel_telefone.trim())) newErrors.responsavel_telefone = 'Formato de telefone inválido';
+    if (!formData.nome?.trim()) newErrors.nome = t('gestao.empresa.erroNome');
+    if (!formData.nif?.trim()) newErrors.nif = t('gestao.empresa.erroNif');
+    else if (!NIF_REGEX.test(formData.nif.trim())) newErrors.nif = t('gestao.empresa.erroNifInvalido');
+    if (!formData.email_principal?.trim()) newErrors.email_principal = t('gestao.empresa.erroEmail');
+    else if (!EMAIL_REGEX.test(formData.email_principal.trim())) newErrors.email_principal = t('gestao.empresa.erroEmailInvalido');
+    if (formData.telefone?.trim() && !PHONE_REGEX.test(formData.telefone.trim())) newErrors.telefone = t('gestao.empresa.erroTelefone');
+    if (!formData.responsavel_nome?.trim()) newErrors.responsavel_nome = t('gestao.empresa.erroResponsavelNome');
+    if (!formData.responsavel_email?.trim()) newErrors.responsavel_email = t('gestao.empresa.erroResponsavelEmail');
+    else if (!EMAIL_REGEX.test(formData.responsavel_email.trim())) newErrors.responsavel_email = t('gestao.empresa.erroEmailInvalido');
+    if (formData.responsavel_telefone?.trim() && !PHONE_REGEX.test(formData.responsavel_telefone.trim())) newErrors.responsavel_telefone = t('gestao.empresa.erroTelefone');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -91,17 +93,17 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building className="w-5 h-5 text-green-600" />
-            {empresa ? 'Editar Empresa' : 'Nova Empresa'}
+            {empresa ? t('gestao.empresa.editTitle') : t('gestao.empresa.newTitle')}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-4">
-            <h3 className="font-medium text-slate-700">Informações da Empresa</h3>
-            
+            <h3 className="font-medium text-slate-700">{t('gestao.empresa.infoSection')}</h3>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="nome">Nome da Empresa *</Label>
+                <Label htmlFor="nome">{t('gestao.empresa.nome')}</Label>
                 <Input
                   id="nome"
                   value={formData.nome}
@@ -111,7 +113,7 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
               </div>
 
               <div>
-                <Label htmlFor="nif">NIF *</Label>
+                <Label htmlFor="nif">{t('gestao.empresa.nif')}</Label>
                 <Input
                   id="nif"
                   value={formData.nif}
@@ -124,7 +126,7 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
             </div>
 
             <div>
-              <Label htmlFor="endereco">Endereço</Label>
+              <Label htmlFor="endereco">{t('gestao.empresa.endereco')}</Label>
               <Textarea
                 id="endereco"
                 value={formData.endereco}
@@ -135,7 +137,7 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="telefone">Telefone</Label>
+                <Label htmlFor="telefone">{t('gestao.empresa.telefone')}</Label>
                 <Input
                   id="telefone"
                   value={formData.telefone}
@@ -146,7 +148,7 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
               </div>
 
               <div>
-                <Label htmlFor="email_principal">Email Principal *</Label>
+                <Label htmlFor="email_principal">{t('gestao.empresa.emailPrincipal')}</Label>
                 <Input
                   id="email_principal"
                   type="email"
@@ -161,11 +163,11 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-medium text-slate-700">Responsável Principal</h3>
-            
+            <h3 className="font-medium text-slate-700">{t('gestao.empresa.responsavelSection')}</h3>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="responsavel_nome">Nome do Responsável *</Label>
+                <Label htmlFor="responsavel_nome">{t('gestao.empresa.responsavelNome')}</Label>
                 <Input
                   id="responsavel_nome"
                   value={formData.responsavel_nome}
@@ -175,7 +177,7 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
               </div>
 
               <div>
-                <Label htmlFor="responsavel_email">Email do Responsável *</Label>
+                <Label htmlFor="responsavel_email">{t('gestao.empresa.responsavelEmail')}</Label>
                 <Input
                   id="responsavel_email"
                   type="email"
@@ -190,7 +192,7 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="responsavel_telefone">Telefone do Responsável</Label>
+                <Label htmlFor="responsavel_telefone">{t('gestao.empresa.responsavelTelefone')}</Label>
                 <Input
                   id="responsavel_telefone"
                   value={formData.responsavel_telefone}
@@ -201,7 +203,7 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
               </div>
 
               <div>
-                <Label htmlFor="area_atividade">Área de Atividade</Label>
+                <Label htmlFor="area_atividade">{t('gestao.empresa.areaAtividade')}</Label>
                 <Input
                   id="area_atividade"
                   value={formData.area_atividade}
@@ -212,7 +214,7 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
           </div>
 
           <div>
-            <Label htmlFor="status">Status</Label>
+            <Label htmlFor="status">{t('gestao.empresa.status')}</Label>
             <Select
               id="status"
               options={STATUS_OPTIONS}
@@ -224,11 +226,11 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               <X className="w-4 h-4 mr-1" />
-              Cancelar
+              {t('gestao.empresa.cancelar')}
             </Button>
             <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Save className="w-4 h-4 mr-1" />
-              {isSubmitting ? 'A guardar...' : `${empresa ? 'Atualizar' : 'Criar'} Empresa`}
+              {isSubmitting ? t('gestao.empresa.guardando') : `${empresa ? t('gestao.empresa.atualizar') : t('gestao.empresa.criar')} ${t('gestao.empresa.empresa')}`}
             </Button>
           </DialogFooter>
         </form>

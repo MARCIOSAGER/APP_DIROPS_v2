@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function VooFR24ComparisonRow({ 
   title, 
@@ -12,6 +13,7 @@ export default function VooFR24ComparisonRow({
   onSelectionChange,
   isDuplicateFlight = false
 }) {
+  const { t } = useI18n();
   const [isExpanded, setIsExpanded] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [editedData, setEditedData] = useState({});
@@ -38,13 +40,13 @@ export default function VooFR24ComparisonRow({
 
   const getStatusBadge = () => {
     if (suggestion?.status === 'desconhecido') {
-      return <Badge className="bg-red-100 text-red-800">❌ Desconhecido</Badge>;
+      return <Badge className="bg-red-100 text-red-800">{t('comparison.desconhecido')}</Badge>;
     }
     if (suggestion?.status === 'novo') {
-      return <Badge className="bg-blue-100 text-blue-800">✨ Novo Registo</Badge>;
+      return <Badge className="bg-blue-100 text-blue-800">{t('comparison.novoRegisto')}</Badge>;
     }
     if (suggestion?.status === 'existente') {
-      return <Badge className="bg-green-100 text-green-800">✓ Existente</Badge>;
+      return <Badge className="bg-green-100 text-green-800">{t('comparison.existente')}</Badge>;
     }
     return null;
   };
@@ -116,7 +118,7 @@ export default function VooFR24ComparisonRow({
                 onChange={() => handleSourceChange('sistema')}
                 disabled={suggestion?.status === 'desconhecido' || suggestion?.status === 'novo'}
               />
-              <span className="text-sm font-medium">Usar Sistema</span>
+              <span className="text-sm font-medium">{t('comparison.usarSistema')}</span>
             </label>
 
             <label className="flex items-center gap-2 cursor-pointer p-2 border border-slate-300 rounded hover:bg-white">
@@ -127,7 +129,7 @@ export default function VooFR24ComparisonRow({
                 checked={selectedSource === 'api'}
                 onChange={() => handleSourceChange('api')}
               />
-              <span className="text-sm font-medium">Usar API</span>
+              <span className="text-sm font-medium">{t('comparison.usarAPI')}</span>
             </label>
 
             <label className="flex items-center gap-2 cursor-pointer p-2 border border-slate-300 rounded hover:bg-white">
@@ -141,7 +143,7 @@ export default function VooFR24ComparisonRow({
                   setEditMode(true);
                 }}
               />
-              <span className="text-sm font-medium">Editar Manualmente</span>
+              <span className="text-sm font-medium">{t('comparison.editarManualmente')}</span>
             </label>
           </div>
 
@@ -149,9 +151,9 @@ export default function VooFR24ComparisonRow({
           <div className="grid grid-cols-2 gap-4">
             {/* Sistema */}
             <div className="space-y-2">
-              <h4 className="font-semibold text-slate-700 text-sm">📊 Dados do Sistema</h4>
+              <h4 className="font-semibold text-slate-700 text-sm">{t('comparison.dadosSistema')}</h4>
               {Object.entries(displaySystemData).length === 0 ? (
-                <p className="text-xs text-slate-500 italic">Sem dados no sistema</p>
+                <p className="text-xs text-slate-500 italic">{t('comparison.semDadosSistema')}</p>
               ) : (
                 <div className="bg-white p-3 rounded border border-slate-200 space-y-1 max-h-64 overflow-y-auto">
                   {Object.entries(displaySystemData)
@@ -172,9 +174,9 @@ export default function VooFR24ComparisonRow({
 
             {/* API */}
             <div className="space-y-2">
-              <h4 className="font-semibold text-slate-700 text-sm">🌐 Dados da API</h4>
+              <h4 className="font-semibold text-slate-700 text-sm">{t('comparison.dadosAPI')}</h4>
               {Object.entries(displayApiData).length === 0 ? (
-                <p className="text-xs text-slate-500 italic">Sem dados da API</p>
+                <p className="text-xs text-slate-500 italic">{t('comparison.semDadosAPI')}</p>
               ) : (
                 <div className="bg-white p-3 rounded border border-slate-200 space-y-1 max-h-64 overflow-y-auto">
                   {Object.entries(displayApiData)
@@ -197,7 +199,7 @@ export default function VooFR24ComparisonRow({
           {/* Edição Manual */}
           {editMode && (
             <div className="bg-blue-50 border border-blue-200 rounded p-3 space-y-3">
-              <h4 className="font-semibold text-blue-900 text-sm">✏️ Editar Dados</h4>
+              <h4 className="font-semibold text-blue-900 text-sm">{t('comparison.editarDados')}</h4>
               {Object.entries({ ...systemData, ...apiData })
                 .filter(([k]) => !['id', 'created_date', 'updated_date', 'created_by_id'].includes(k))
                 .map(([key, value]) => {

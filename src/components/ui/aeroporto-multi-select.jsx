@@ -3,12 +3,16 @@ import { X, ChevronDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AEROPORTOS_ANGOLA } from '@/components/lib/aeroportosAngola';
+import { useI18n } from '@/components/lib/i18n';
 
-export default function AeroportoMultiSelect({ aeroportos = AEROPORTOS_ANGOLA, values = [], onValuesChange, placeholder = 'Selecionar aeroportos...', maxItems = 23 }) {
+export default function AeroportoMultiSelect({ aeroportos = AEROPORTOS_ANGOLA, values = [], onValuesChange, placeholder, maxItems = 23 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef(null);
   const searchInputRef = useRef(null);
+  const { t } = useI18n();
+
+  const displayPlaceholder = placeholder || t('ui.selecionar_aeroportos');
 
   // Fechar dropdown quando clicar fora
   useEffect(() => {
@@ -59,7 +63,7 @@ export default function AeroportoMultiSelect({ aeroportos = AEROPORTOS_ANGOLA, v
   };
 
   const selectedAeroportos = aeroportos.filter(a => values.includes(a.codigo_icao));
-  
+
   const allSelected = aeroportos.length > 0 && values.length === aeroportos.length;
 
   const handleSelectAll = (e) => {
@@ -87,7 +91,7 @@ export default function AeroportoMultiSelect({ aeroportos = AEROPORTOS_ANGOLA, v
               )}
             </>
           ) : (
-            <span className="text-slate-400">{placeholder}</span>
+            <span className="text-slate-400">{displayPlaceholder}</span>
           )}
         </div>
         <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -99,7 +103,7 @@ export default function AeroportoMultiSelect({ aeroportos = AEROPORTOS_ANGOLA, v
           <div className="p-3 border-b border-slate-200">
             <Input
               ref={searchInputRef}
-              placeholder="Pesquisar ICAO ou nome..."
+              placeholder={t('ui.pesquisar_icao_nome')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="text-sm"
@@ -119,7 +123,7 @@ export default function AeroportoMultiSelect({ aeroportos = AEROPORTOS_ANGOLA, v
                   onChange={() => {}}
                   className="w-4 h-4 rounded border-slate-300"
                 />
-                <div className="text-sm font-medium text-slate-900">Selecionar Todos</div>
+                <div className="text-sm font-medium text-slate-900">{t('ui.selecionar_todos')}</div>
               </div>
               {allSelected && <Check className="w-4 h-4 text-green-600" />}
             </div>
@@ -150,7 +154,7 @@ export default function AeroportoMultiSelect({ aeroportos = AEROPORTOS_ANGOLA, v
               ))
             ) : (
               <div className="text-center py-4 text-slate-500 text-sm">
-                Nenhum aeroporto encontrado
+                {t('ui.nenhum_aeroporto')}
               </div>
             )}
           </div>
@@ -165,7 +169,7 @@ export default function AeroportoMultiSelect({ aeroportos = AEROPORTOS_ANGOLA, v
                 onClick={handleClearAll}
               >
                 <X className="w-3 h-3 mr-1" />
-                Limpar Tudo ({selectedAeroportos.length})
+                {t('ui.limpar_tudo')} ({selectedAeroportos.length})
               </Button>
             </div>
           )}

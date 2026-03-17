@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { UserCheck, Mail, Calendar } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function AprovarCredenciamentoModal({ isOpen, onClose, credenciamento, onSuccess }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     observacoes: '',
     periodo_entrega: 'A partir de amanhã, das 08:00 às 15:00 horas, deverá comparecer ao Credenciamento do aeroporto para entrega dos documentos físicos e finalização do processo.'
@@ -44,7 +46,7 @@ export default function AprovarCredenciamentoModal({ isOpen, onClose, credenciam
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-green-600" />
-            Aprovar Credenciamento - {credenciamento.protocolo_numero}
+            {t('cred.aprovar.titulo')} - {credenciamento.protocolo_numero}
           </DialogTitle>
         </DialogHeader>
 
@@ -114,14 +116,14 @@ export default function AprovarCredenciamentoModal({ isOpen, onClose, credenciam
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
+              {t('cred.aprovar.cancelar')}
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isSubmitting}
               className="bg-green-600 hover:bg-green-700"
             >
-              {isSubmitting ? 'A processar...' : 'Aprovar e Enviar Email'}
+              {isSubmitting ? t('common.saving') : `${t('cred.aprovar.aprovar')} e Enviar Email`}
             </Button>
           </DialogFooter>
         </form>

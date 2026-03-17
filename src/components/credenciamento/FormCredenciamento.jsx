@@ -13,8 +13,10 @@ import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { UploadFile } from '@/integrations/Core';
 import { TipoDocumento } from '@/entities/TipoDocumento';
 import { hasUserProfile } from '@/components/lib/userUtils';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas, aeroportos, areasAcessoDisponiveis, credenciamentoInicial = null, currentUser }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     empresa_solicitante_id: '',
     tipo_credencial: '',
@@ -202,7 +204,7 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-blue-600" />
-            {credenciamentoInicial ? 'Editar' : 'Nova'} Solicitação de Credenciamento
+            {credenciamentoInicial ? t('cred.form.editarCredencial') : t('cred.form.novaCredencial')}
           </DialogTitle>
         </DialogHeader>
 
@@ -210,12 +212,12 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
           {/* Dados Básicos */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Empresa Solicitante *</Label>
+              <Label>{t('cred.form.empresa')}</Label>
               <Select
                 options={empresaOptions} // New prop
                 value={formData.empresa_solicitante_id}
                 onValueChange={(value) => handleChange('empresa_solicitante_id', value)}
-                placeholder="Selecionar empresa" // New prop
+                placeholder={t('cred.form.selecioneEmpresa')}
                 disabled={isGestorEmpresa}
               />
               {isGestorEmpresa && (
@@ -226,19 +228,19 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
             </div>
 
             <div className="space-y-2">
-              <Label>Aeroporto *</Label>
+              <Label>{t('cred.form.aeroporto')}</Label>
               <Select
-                options={aeroportoOptions} // New prop
+                options={aeroportoOptions}
                 value={formData.aeroporto_id}
                 onValueChange={(value) => handleChange('aeroporto_id', value)}
-                placeholder="Selecionar aeroporto" // New prop
+                placeholder={t('cred.form.selecioneAeroporto')}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Tipo de Credencial *</Label>
+              <Label>{t('cred.form.tipoCredencial')}</Label>
               <RadioGroup
                 value={formData.tipo_credencial}
                 onValueChange={(value) => handleChange('tipo_credencial', value)}
@@ -280,7 +282,7 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
               <h3 className="text-lg font-semibold border-b pb-2">Dados da Pessoa</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Nome Completo *</Label>
+                  <Label>{t('cred.form.nomeCompleto')}</Label>
                   <Input
                     value={formData.nome_completo}
                     onChange={(e) => handleChange('nome_completo', e.target.value)}
@@ -288,7 +290,7 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Função na Empresa *</Label>
+                  <Label>{t('cred.form.cargo')}</Label>
                   <Input
                     value={formData.funcao_empresa}
                     onChange={(e) => handleChange('funcao_empresa', e.target.value)}
@@ -296,7 +298,7 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Número do Passaporte/BI *</Label>
+                  <Label>{t('cred.form.documento')}</Label>
                   <Input
                     value={formData.numero_passaporte}
                     onChange={(e) => handleChange('numero_passaporte', e.target.value)}
@@ -312,7 +314,7 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Data de Nascimento *</Label>
+                  <Label>{t('cred.form.dataEmissao')}</Label>
                   <Input
                     type="date"
                     value={formData.data_nascimento}
@@ -498,10 +500,10 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">Cancelar</Button>
+              <Button type="button" variant="outline">{t('cred.form.cancelar')}</Button>
             </DialogClose>
             <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
-              {isSubmitting ? 'A guardar...' : `${credenciamentoInicial ? 'Atualizar' : 'Criar'} Solicitação`}
+              {isSubmitting ? t('cred.form.aGuardar') : (credenciamentoInicial ? t('cred.form.atualizar') : t('cred.form.criar'))}
             </Button>
           </DialogFooter>
         </form>

@@ -21,11 +21,12 @@ import { RespostaAuditoria } from '@/entities/RespostaAuditoria';
 import { ProcessoAuditoria } from '@/entities/ProcessoAuditoria';
 import { UploadFile } from '@/integrations/Core';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
-const SITUACAO_OPTIONS = [
-  { value: 'C', label: 'Conforme', icon: CheckCircle, color: 'text-green-600' },
-  { value: 'NC', label: 'Não Conforme', icon: XCircle, color: 'text-red-600' },
-  { value: 'N/A', label: 'Não Aplicável', icon: AlertCircle, color: 'text-gray-600' }
+const SITUACAO_OPTIONS_KEYS = [
+  { value: 'C', labelKey: 'formChecklist.conforme', icon: CheckCircle, color: 'text-green-600' },
+  { value: 'NC', labelKey: 'formChecklist.naoConforme', icon: XCircle, color: 'text-red-600' },
+  { value: 'N/A', labelKey: 'formChecklist.naoAplicavel', icon: AlertCircle, color: 'text-gray-600' }
 ];
 
 export default function FormChecklist({
@@ -35,6 +36,7 @@ export default function FormChecklist({
   onUpdate,
   currentUser
 }) {
+  const { t } = useI18n();
   const [itens, setItens] = useState([]);
   const [respostas, setRespostas] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -102,7 +104,7 @@ export default function FormChecklist({
       setCurrentStep(0);
     } catch (error) {
       console.error("Erro ao carregar dados do checklist:", error);
-      setMessage({ type: 'error', text: 'Não foi possível carregar os dados do checklist.' });
+      setMessage({ type: 'error', text: t('formChecklist.erroCarregar') });
     } finally {
       setIsLoading(false);
     }
@@ -151,7 +153,7 @@ export default function FormChecklist({
       console.error('Erro no upload:', error);
       setMessage({
         type: 'error',
-        text: 'Erro ao fazer upload dos arquivos. Tente novamente.'
+        text: t('formChecklist.erroUpload')
       });
     }
   };
@@ -264,7 +266,7 @@ export default function FormChecklist({
         if (processo.status === 'planejada') {
             await ProcessoAuditoria.update(processo.id, { status: 'em_andamento' });
         }
-        setMessage({ type: 'success', text: 'Progresso salvo com sucesso! Pode continuar depois.' });
+        setMessage({ type: 'success', text: t('formChecklist.progressoSalvo') });
         
         // Don't close the dialog, just reload data to get IDs for new answers
         await loadChecklistData();
@@ -273,7 +275,7 @@ export default function FormChecklist({
       console.error('Erro ao salvar:', error);
       setMessage({
         type: 'error',
-        text: 'Erro ao salvar as respostas. Tente novamente.'
+        text: t('formChecklist.erroSalvar')
       });
     } finally {
       setIsSaving(false);
@@ -297,7 +299,7 @@ export default function FormChecklist({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
-            Checklist de Auditoria - {processo?.tipoAuditoria?.nome || 'N/A'}
+            {t('formChecklist.titulo')} - {processo?.tipoAuditoria?.nome || 'N/A'}
           </DialogTitle>
         </DialogHeader>
 
@@ -313,7 +315,7 @@ export default function FormChecklist({
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-slate-600">Carregando checklist...</p>
+            <p className="text-slate-600">{t('formChecklist.carregando')}</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -321,9 +323,9 @@ export default function FormChecklist({
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Progresso da Auditoria</span>
+                  <span className="text-sm font-medium">{t('formChecklist.progressoAuditoria')}</span>
                   <span className="text-sm text-slate-600">
-                    {totalRespondidas} de {itens.length} itens
+                    {totalRespondidas} {t('formChecklist.de')} {itens.length} {t('formChecklist.itens')}
                   </span>
                 </div>
                 <div className="w-full bg-slate-200 rounded-full h-2">
@@ -333,7 +335,7 @@ export default function FormChecklist({
                   ></div>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  {progressoPercentual.toFixed(0)}% concluído
+                  {progressoPercentual.toFixed(0)}% {t('formChecklist.concluido')}
                 </p>
               </CardContent>
             </Card>
@@ -345,17 +347,17 @@ export default function FormChecklist({
                 onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
                 disabled={currentStep === 0}
               >
-                Anterior
+                {t('formChecklist.anterior')}
               </Button>
               <span className="text-sm text-slate-600">
-                Item {currentStep + 1} de {itens.length}
+                Item {currentStep + 1} {t('formChecklist.de')} {itens.length}
               </span>
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep(Math.min(itens.length - 1, currentStep + 1))}
                 disabled={currentStep === itens.length - 1}
               >
-                Próximo
+                {t('formChecklist.proximo')}
               </Button>
             </div>
 
@@ -373,16 +375,16 @@ export default function FormChecklist({
                   {/* Exemplo de Situação */}
                   {currentItem.exemplo_situacao && (
                     <div className="bg-blue-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-blue-900 mb-2">Orientações:</h4>
+                      <h4 className="font-medium text-blue-900 mb-2">{t('formChecklist.orientacoes')}</h4>
                       <p className="text-blue-800 text-sm">{currentItem.exemplo_situacao}</p>
                     </div>
                   )}
 
                   {/* Situação Encontrada */}
                   <div className="space-y-2">
-                    <Label>Situação Encontrada *</Label>
+                    <Label>{t('formChecklist.situacaoEncontrada')}</Label>
                     <div className="grid grid-cols-3 gap-3">
-                      {SITUACAO_OPTIONS.map((opcao) => {
+                      {SITUACAO_OPTIONS_KEYS.map((opcao) => {
                         const Icon = opcao.icon;
                         const isSelected = currentResposta.situacao_encontrada === opcao.value;
 
@@ -396,7 +398,7 @@ export default function FormChecklist({
                             onClick={() => handleRespostaChange(currentItem.id, 'situacao_encontrada', opcao.value)}
                           >
                             <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : opcao.color}`} />
-                            <span className="text-sm">{opcao.label}</span>
+                            <span className="text-sm">{t(opcao.labelKey)}</span>
                           </Button>
                         );
                       })}
@@ -405,9 +407,9 @@ export default function FormChecklist({
 
                   {/* Observação */}
                   <div className="space-y-2">
-                    <Label>Observação {currentResposta.situacao_encontrada === 'NC' ? '*' : ''}</Label>
+                    <Label>{t('formChecklist.observacao')} {currentResposta.situacao_encontrada === 'NC' ? '*' : ''}</Label>
                     <Textarea
-                      placeholder="Descreva a situação encontrada, evidências observadas ou justificativa..."
+                      placeholder={t('formChecklist.observacaoPlaceholder')}
                       value={currentResposta.observacao || ''}
                       onChange={(e) => handleRespostaChange(currentItem.id, 'observacao', e.target.value)}
                       rows={3}
@@ -416,13 +418,13 @@ export default function FormChecklist({
 
                   {/* Evidências */}
                   <div className="space-y-2">
-                    <Label>Evidências (Fotos/Documentos)</Label>
+                    <Label>{t('formChecklist.evidencias')}</Label>
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                       <div className="text-center">
                         <Camera className="mx-auto h-8 w-8 text-gray-400 mb-2" />
                         <label htmlFor={`file-upload-${currentItem.id}`} className="cursor-pointer">
                           <span className="text-sm font-medium text-gray-900">
-                            Clique para adicionar fotos ou documentos
+                            {t('formChecklist.cliqueAdicionar')}
                           </span>
                           <input
                             id={`file-upload-${currentItem.id}`}
@@ -476,11 +478,11 @@ export default function FormChecklist({
                   {currentResposta.situacao_encontrada === 'NC' && (
                     <div className="space-y-2">
                       <div className="p-3 border-l-4 border-red-500 bg-red-50 rounded">
-                        <p className="text-sm text-red-700 font-medium">⚠ Uma Solicitação de Serviço (SS) será criada automaticamente na Manutenção ao finalizar a auditoria.</p>
+                        <p className="text-sm text-red-700 font-medium">⚠ {t('formChecklist.avisoSS')}</p>
                       </div>
                       {!currentResposta.observacao?.trim() && (
                         <div className="p-2 bg-amber-50 border border-amber-300 rounded">
-                          <p className="text-sm text-amber-700 font-medium">⚠ Observação obrigatória para itens Não Conforme</p>
+                          <p className="text-sm text-amber-700 font-medium">⚠ {t('formChecklist.obsObrigatoria')}</p>
                         </div>
                       )}
                     </div>
@@ -492,7 +494,7 @@ export default function FormChecklist({
             {/* Ações */}
             <div className="flex justify-between">
               <Button variant="outline" onClick={onClose}>
-                Cancelar
+                {t('formChecklist.cancelar')}
               </Button>
               <div className="flex gap-2">
                 <Button
@@ -501,7 +503,7 @@ export default function FormChecklist({
                   disabled={isSaving}
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  {isSaving ? 'Salvando...' : 'Salvar Progresso'}
+                  {isSaving ? t('formChecklist.salvando') : t('formChecklist.salvarProgresso')}
                 </Button>
                 <div className="flex flex-col items-end gap-1">
                   <Button
@@ -510,7 +512,7 @@ export default function FormChecklist({
                     title={!podeFinializar ? `Responda pelo menos ${Math.floor(itens.length * 0.8)} itens para finalizar` : ''}
                   >
                     <Send className="w-4 h-4 mr-2" />
-                    Finalizar Auditoria
+                    {t('formChecklist.finalizarAuditoria')}
                   </Button>
                   {!podeFinializar && (
                     <p className="text-red-500 text-xs">

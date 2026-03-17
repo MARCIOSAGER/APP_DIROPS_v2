@@ -9,8 +9,10 @@ import {
   DollarSign
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function ManutencaoStats({ ordens, isLoading }) {
+  const { t } = useI18n();
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -39,42 +41,42 @@ export default function ManutencaoStats({ ordens, isLoading }) {
 
   const statsData = [
     {
-      title: "Total de OS",
+      title: t('manutencaoStats.totalOS'),
       value: stats.total,
       icon: Wrench,
       color: "text-blue-600",
       bgColor: "bg-blue-50"
     },
     {
-      title: "Pendentes",
+      title: t('manutencaoStats.pendentes'),
       value: stats.pendentes,
       icon: Clock,
       color: "text-yellow-600",
       bgColor: "bg-yellow-50"
     },
     {
-      title: "Em Andamento",
+      title: t('manutencaoStats.emAndamento'),
       value: stats.emAndamento,
       icon: TrendingUp,
       color: "text-purple-600",
       bgColor: "bg-purple-50"
     },
     {
-      title: "Concluídas",
+      title: t('manutencaoStats.concluidas'),
       value: stats.concluidas,
       icon: CheckCircle,
       color: "text-green-600",
       bgColor: "bg-green-50"
     },
     {
-      title: "Urgentes",
+      title: t('manutencaoStats.urgentes'),
       value: stats.urgentes,
       icon: AlertTriangle,
       color: "text-red-600",
       bgColor: "bg-red-50"
     },
     {
-      title: "Custos Est.",
+      title: t('manutencaoStats.custosEst'),
       value: new Intl.NumberFormat('pt-AO', { 
         style: 'currency', 
         currency: 'AOA',

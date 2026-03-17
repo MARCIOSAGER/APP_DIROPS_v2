@@ -10,8 +10,10 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { OrdemServico } from '@/entities/OrdemServico';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onAssigned }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     responsavel_email: '',
     prazo_estimado: '',
@@ -55,7 +57,7 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onA
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.responsavel_email) {
-      alert('Email do responsável é obrigatório');
+      alert(t('atribuirOS.emailObrigatorio'));
       return;
     }
 
@@ -80,7 +82,7 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onA
         onClose();
       } catch (error) {
         console.error('Erro ao atribuir OS:', error);
-        alert('Erro ao atribuir ordem de serviço');
+        alert(t('atribuirOS.erroAtribuir'));
       } finally {
         setIsSubmitting(false);
       }
@@ -100,7 +102,7 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onA
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wrench className="w-5 h-5 text-orange-600" />
-            Atribuir OS - {ordem.numero_ordem}
+            {t('atribuirOS.titulo')} - {ordem.numero_ordem}
           </DialogTitle>
         </DialogHeader>
 
@@ -108,10 +110,10 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onA
           <Alert>
             <AlertDescription>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <p><strong>Título:</strong> {ordem.titulo}</p>
-                <p><strong>Prioridade:</strong> {ordem.prioridade}</p>
-                <p><strong>Categoria:</strong> {ordem.categoria_manutencao}</p>
-                <p><strong>Data:</strong> {(ordem.data_abertura || ordem.created_date) ? format(new Date(ordem.data_abertura || ordem.created_date), 'dd/MM/yyyy', { locale: pt }) : 'N/A'}</p>
+                <p><strong>{t('atribuirOS.tituloLabel')}</strong> {ordem.titulo}</p>
+                <p><strong>{t('atribuirOS.prioridadeLabel')}</strong> {ordem.prioridade}</p>
+                <p><strong>{t('atribuirOS.categoriaLabel')}</strong> {ordem.categoria_manutencao}</p>
+                <p><strong>{t('atribuirOS.dataLabel')}</strong> {(ordem.data_abertura || ordem.created_date) ? format(new Date(ordem.data_abertura || ordem.created_date), 'dd/MM/yyyy', { locale: pt }) : 'N/A'}</p>
               </div>
             </AlertDescription>
           </Alert>
@@ -119,13 +121,13 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onA
           <div className="space-y-2">
             <Label htmlFor="responsavel_email" className="flex items-center gap-2">
               <User className="w-4 h-4" />
-              Email do Responsável *
+              {t('atribuirOS.emailResponsavel')}
             </Label>
             <div className="relative">
               <Input
                 id="responsavel_email"
                 type="email"
-                placeholder="responsavel@empresa.com"
+                placeholder={t('atribuirOS.emailPlaceholder')}
                 value={formData.responsavel_email}
                 onChange={(e) => {
                   setFormData({ ...formData, responsavel_email: e.target.value });
@@ -158,7 +160,7 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onA
             <div className="space-y-2">
               <Label htmlFor="prazo_estimado" className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                Prazo Estimado
+                {t('atribuirOS.prazoEstimado')}
               </Label>
               <Input
                 id="prazo_estimado"
@@ -170,12 +172,12 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onA
             <div className="space-y-2">
               <Label htmlFor="cc_emails" className="flex items-center gap-2">
                 <Mail className="w-4 h-4" />
-                CC (opcional)
+                {t('atribuirOS.ccOpcional')}
               </Label>
               <Input
                 id="cc_emails"
                 type="text"
-                placeholder="email1@empresa.com"
+                placeholder={t('atribuirOS.ccPlaceholder')}
                 value={formData.cc_emails}
                 onChange={(e) => setFormData({ ...formData, cc_emails: e.target.value })} />
 
@@ -183,10 +185,10 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onA
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="observacoes_atribuicao">Observações</Label>
+            <Label htmlFor="observacoes_atribuicao">{t('atribuirOS.observacoes')}</Label>
             <Textarea
               id="observacoes_atribuicao"
-              placeholder="Instruções específicas..."
+              placeholder={t('atribuirOS.observacoesPlaceholder')}
               value={formData.observacoes_atribuicao}
               onChange={(e) => setFormData({ ...formData, observacoes_atribuicao: e.target.value })}
               rows={3} />
@@ -195,10 +197,10 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onA
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
+              {t('atribuirOS.cancelar')}
             </Button>
             <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
-              {isSubmitting ? 'A Atribuir...' : 'Atribuir Ordem'}
+              {isSubmitting ? t('atribuirOS.atribuindo') : t('atribuirOS.atribuirOrdem')}
             </Button>
           </DialogFooter>
         </form>

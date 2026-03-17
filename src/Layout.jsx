@@ -480,7 +480,7 @@ function LayoutContent({ children, currentPageName }) {
                 className="flex-1 dark:border-slate-600 dark:text-slate-300"
                 onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
               >
-                <Globe className="h-3.5 w-3.5 mr-1.5" />
+                <span className="text-base mr-1">{language === 'pt' ? '🇦🇴' : '🇺🇸'}</span>
                 {language === 'pt' ? 'EN' : 'PT'}
               </Button>
               <Button
@@ -626,12 +626,12 @@ function LayoutContent({ children, currentPageName }) {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="rounded-full text-slate-500 hover:text-slate-800 border border-slate-200"
+                className="rounded-full text-slate-500 hover:text-slate-800 border border-slate-200 dark:border-slate-600 dark:hover:text-white"
                 aria-label={language === 'pt' ? 'Switch to English' : 'Mudar para Português'}
                 onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
-                title={language === 'pt' ? 'English' : 'Português'}
+                title={language === 'pt' ? 'Português (Angola)' : 'English'}
               >
-                <span className="text-xs font-bold">{language === 'pt' ? 'EN' : 'PT'}</span>
+                <span className="text-base leading-none">{language === 'pt' ? '🇦🇴' : '🇺🇸'}</span>
               </Button>
 
               {/* Dark mode toggle */}

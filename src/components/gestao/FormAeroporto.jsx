@@ -6,20 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Home, Save, X } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
-
-const CATEGORIA_OPTIONS = [
-  { value: 'categoria_1', label: 'Categoria 1' },
-  { value: 'categoria_2', label: 'Categoria 2' },
-  { value: 'categoria_3', label: 'Categoria 3' }
-];
-
-const STATUS_OPTIONS = [
-  { value: 'operacional', label: 'Operacional' },
-  { value: 'atencao', label: 'Atenção' },
-  { value: 'critico', label: 'Crítico' }
-];
+import { useI18n } from '@/components/lib/i18n';
 
 export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
+  const { t } = useI18n();
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     nome: '',
@@ -32,6 +22,18 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
     categoria: 'categoria_1',
     status: 'operacional'
   });
+
+  const CATEGORIA_OPTIONS = [
+    { value: 'categoria_1', label: t('gestao.aeroporto.cat1') },
+    { value: 'categoria_2', label: t('gestao.aeroporto.cat2') },
+    { value: 'categoria_3', label: t('gestao.aeroporto.cat3') }
+  ];
+
+  const STATUS_OPTIONS = [
+    { value: 'operacional', label: t('gestao.aeroporto.statusOperacional') },
+    { value: 'atencao', label: t('gestao.aeroporto.statusAtencao') },
+    { value: 'critico', label: t('gestao.aeroporto.statusCritico') }
+  ];
 
   useEffect(() => {
     if (aeroporto && isOpen) {
@@ -68,14 +70,14 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Home className="w-5 h-5 text-blue-600" />
-            {aeroporto ? 'Editar Aeroporto' : 'Novo Aeroporto'}
+            {aeroporto ? t('gestao.aeroporto.editTitle') : t('gestao.aeroporto.newTitle')}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="nome">Nome *</Label>
+              <Label htmlFor="nome">{t('gestao.aeroporto.nome')}</Label>
               <Input
                 id="nome"
                 value={formData.nome}
@@ -84,7 +86,7 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
               />
             </div>
             <div>
-              <Label htmlFor="codigo_icao">Código ICAO *</Label>
+              <Label htmlFor="codigo_icao">{t('gestao.aeroporto.codigoIcao')}</Label>
               <Input
                 id="codigo_icao"
                 value={formData.codigo_icao}
@@ -96,7 +98,7 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="codigo_iata">Código IATA</Label>
+              <Label htmlFor="codigo_iata">{t('gestao.aeroporto.codigoIata')}</Label>
               <Input
                 id="codigo_iata"
                 value={formData.codigo_iata}
@@ -104,7 +106,7 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
               />
             </div>
             <div>
-              <Label htmlFor="cidade">Cidade *</Label>
+              <Label htmlFor="cidade">{t('gestao.aeroporto.cidade')}</Label>
               <Input
                 id="cidade"
                 value={formData.cidade}
@@ -113,10 +115,10 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="provincia">Província</Label>
+              <Label htmlFor="provincia">{t('gestao.aeroporto.provincia')}</Label>
               <Input
                 id="provincia"
                 value={formData.provincia}
@@ -124,7 +126,7 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
               />
             </div>
             <div>
-              <Label htmlFor="pais">País *</Label>
+              <Label htmlFor="pais">{t('gestao.aeroporto.pais')}</Label>
               <Input
                 id="pais"
                 value={formData.pais}
@@ -136,7 +138,7 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="categoria">Categoria *</Label>
+              <Label htmlFor="categoria">{t('gestao.aeroporto.categoria')}</Label>
               <Select
                 id="categoria"
                 options={CATEGORIA_OPTIONS}
@@ -145,7 +147,7 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
               />
             </div>
             <div>
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t('gestao.aeroporto.status')}</Label>
               <Select
                 id="status"
                 options={STATUS_OPTIONS}
@@ -158,11 +160,11 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               <X className="w-4 h-4 mr-1" />
-              Cancelar
+              {t('gestao.aeroporto.cancelar')}
             </Button>
             <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Save className="w-4 h-4 mr-1" />
-              {isSubmitting ? 'A guardar...' : `${aeroporto ? 'Atualizar' : 'Criar'} Aeroporto`}
+              {isSubmitting ? t('gestao.aeroporto.guardando') : `${aeroporto ? t('gestao.aeroporto.atualizar') : t('gestao.aeroporto.criar')} ${t('gestao.aeroporto.aeroporto')}`}
             </Button>
           </DialogFooter>
         </form>

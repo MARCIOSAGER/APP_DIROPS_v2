@@ -8,8 +8,10 @@ import Combobox from '@/components/ui/combobox';
 import { ShieldAlert, Upload, X } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { UploadFile } from '@/integrations/Core';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeroportos, occurrenceInitial = null }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     tipo_ocorrencia: '',
     aeroporto: '',
@@ -72,7 +74,7 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
       }));
     } catch (error) {
       console.error('Erro no upload:', error);
-      alert('Erro ao fazer upload da imagem. Tente novamente.');
+      alert(t('safety.form.erroUpload'));
     } finally {
       setIsUploading(false);
     }
@@ -86,15 +88,15 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
   };
 
   const tipoOcorrenciaOptions = [
-  { value: "FOD", label: "FOD (Foreign Object Damage)" },
-  { value: "Incursao_de_Pista", label: "Incursão de pista" },
-  { value: "Intrusao", label: "Intrusão em Perímerto" },
-  { value: "Avistamento", label: "Avistamento" },
-  { value: "bird_strike", label: "Bird Strike" },
-  { value: "incidente", label: "Incidente" },
-  { value: "Acidente_Aeronautico", label: "Acidente Aeronáutico" },
-  { value: "desvio", label: "Desvio de Procedimento" },
-  { value: "outro", label: "Outro" }];
+  { value: "FOD", label: t('safety.form.tipoFOD') },
+  { value: "Incursao_de_Pista", label: t('safety.form.tipoIncursaoPista') },
+  { value: "Intrusao", label: t('safety.form.tipoIntrusao') },
+  { value: "Avistamento", label: t('safety.form.tipoAvistamento') },
+  { value: "bird_strike", label: t('safety.form.tipoBirdStrike') },
+  { value: "incidente", label: t('safety.form.tipoIncidente') },
+  { value: "Acidente_Aeronautico", label: t('safety.form.tipoAcidenteAeronautico') },
+  { value: "desvio", label: t('safety.form.tipoDesvio') },
+  { value: "outro", label: t('safety.form.tipoOutro') }];
 
 
   const aeroportoOptions = aeroportos.map((aeroporto) => ({
@@ -103,16 +105,16 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
   }));
 
   const gravidadeOptions = [
-  { value: "baixa", label: "Baixa" },
-  { value: "media", label: "Média" },
-  { value: "alta", label: "Alta" },
-  { value: "critica", label: "Crítica" }];
+  { value: "baixa", label: t('safety.form.gravidadeBaixa') },
+  { value: "media", label: t('safety.form.gravidadeMedia') },
+  { value: "alta", label: t('safety.form.gravidadeAlta') },
+  { value: "critica", label: t('safety.form.gravidadeCritica') }];
 
 
   const statusOptions = [
-  { value: "aberta", label: "Aberta" },
-  { value: "em_investigacao", label: "Em Investigação" },
-  { value: "fechada", label: "Fechada" }];
+  { value: "aberta", label: t('safety.form.statusAberta') },
+  { value: "em_investigacao", label: t('safety.form.statusEmInvestigacao') },
+  { value: "fechada", label: t('safety.form.statusFechada') }];
 
 
   return (
@@ -121,14 +123,14 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldAlert className="w-5 h-5 text-red-600" />
-            {occurrenceInitial ? 'Editar' : 'Nova'} Ocorrência de Segurança
+            {occurrenceInitial ? t('safety.form.editTitle') : t('safety.form.newTitle')} {t('safety.form.occurrenceTitle')}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="tipo_ocorrencia">Tipo de ESO *</Label>
+              <Label htmlFor="tipo_ocorrencia">{t('safety.form.tipoESO')}</Label>
               <select
                 id="tipo_ocorrencia"
                 value={formData.tipo_ocorrencia}
@@ -136,7 +138,7 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
                 className="w-full h-10 px-3 py-2 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 border-slate-200"
                 required>
 
-                <option value="" disabled>Selecionar tipo</option>
+                <option value="" disabled>{t('safety.form.selecionarTipo')}</option>
                 {tipoOcorrenciaOptions.map((option) =>
                 <option key={option.value} value={option.value}>{option.label}</option>
                 )}
@@ -144,21 +146,21 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="aeroporto">Aeroporto *</Label>
+              <Label htmlFor="aeroporto">{t('safety.form.aeroporto')}</Label>
               <Combobox
                 id="aeroporto"
-                options={[{ value: '', label: 'Selecionar aeroporto' }, ...aeroportoOptions]}
+                options={[{ value: '', label: t('safety.form.selecionarAeroporto') }, ...aeroportoOptions]}
                 value={formData.aeroporto}
                 onValueChange={(value) => handleChange('aeroporto', value)}
-                placeholder="Pesquisar aeroporto..."
-                searchPlaceholder="Digite o ICAO ou nome..."
+                placeholder={t('safety.form.pesquisarAeroporto')}
+                searchPlaceholder={t('safety.form.digitarIcaoNome')}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Data da Ocorrência *</Label>
+              <Label>{t('safety.form.dataOcorrencia')}</Label>
               <Input
                 type="date"
                 value={formData.data_ocorrencia}
@@ -168,7 +170,7 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
             </div>
 
             <div className="space-y-2">
-              <Label>Hora da Ocorrência</Label>
+              <Label>{t('safety.form.horaOcorrencia')}</Label>
               <Input
                 type="time"
                 value={formData.hora_ocorrencia}
@@ -178,46 +180,46 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
           </div>
 
           <div className="space-y-2">
-            <Label>Local Específico *</Label>
+            <Label>{t('safety.form.localEspecifico')}</Label>
             <Input
               value={formData.local_especifico}
               onChange={(e) => handleChange('local_especifico', e.target.value)}
-              placeholder="Ex: Pista 05, Taxiway A, Terminal..."
+              placeholder={t('safety.form.localPlaceholder')}
               required />
 
           </div>
 
           <div className="space-y-2">
-            <Label>Descrição da Ocorrência *</Label>
+            <Label>{t('safety.form.descricao')}</Label>
             <Textarea
               value={formData.descricao}
               onChange={(e) => handleChange('descricao', e.target.value)}
-              placeholder="Descrição detalhada da ocorrência..."
+              placeholder={t('safety.form.descricaoPlaceholder')}
               rows={4}
               required />
 
           </div>
 
           <div className="space-y-2">
-            <Label>Ações Tomadas</Label>
+            <Label>{t('safety.form.acoesTomadas')}</Label>
             <Textarea
               value={formData.acoes_tomadas}
               onChange={(e) => handleChange('acoes_tomadas', e.target.value)}
-              placeholder="Ações imediatas tomadas..."
+              placeholder={t('safety.form.acoesPlaceholder')}
               rows={3} />
 
           </div>
 
           {/* Campo de Evidências Fotográficas */}
           <div className="space-y-2">
-            <Label>Evidências Fotográficas</Label>
+            <Label>{t('safety.form.evidencias')}</Label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
               <div className="text-center">
                 <Upload className="mx-auto h-12 w-12 text-gray-400" />
                 <div className="mt-2">
                   <label htmlFor="photo-upload" className="cursor-pointer">
                     <span className="mt-2 block text-sm font-medium text-gray-900">
-                      {isUploading ? 'A carregar...' : 'Clique para adicionar fotos'}
+                      {isUploading ? t('safety.form.carregando') : t('safety.form.cliqueAdicionar')}
                     </span>
                     <input
                       id="photo-upload"
@@ -230,20 +232,20 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
 
                   </label>
                 </div>
-                <p className="text-xs text-gray-500">PNG, JPG, GIF até 10MB</p>
+                <p className="text-xs text-gray-500">PNG, JPG, GIF</p>
               </div>
             </div>
 
             {/* Mostrar fotos carregadas */}
             {formData.evidencias_fotograficas.length > 0 &&
             <div className="mt-4">
-                <Label className="text-sm font-medium">Fotos Adicionadas:</Label>
+                <Label className="text-sm font-medium">{t('safety.form.fotosAdicionadas')}</Label>
                 <div className="grid grid-cols-3 gap-4 mt-2">
                   {formData.evidencias_fotograficas.map((foto, index) =>
                 <div key={index} className="relative">
                       <img
                     src={foto}
-                    alt={`Evidência ${index + 1}`}
+                    alt={`${t('safety.form.evidencias')} ${index + 1}`}
                     className="w-full h-24 object-cover rounded-lg border border-gray-200" />
 
                       <button
@@ -262,7 +264,7 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="gravidade">Gravidade *</Label>
+              <Label htmlFor="gravidade">{t('safety.form.gravidade')}</Label>
               <select
                 id="gravidade"
                 value={formData.gravidade}
@@ -277,7 +279,7 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t('safety.form.status')}</Label>
               <select
                 id="status"
                 value={formData.status}
@@ -293,10 +295,10 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">Cancelar</Button>
+              <Button type="button" variant="outline">{t('safety.form.cancelar')}</Button>
             </DialogClose>
             <Button type="submit" className="bg-red-600 text-slate-50 px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-10 hover:bg-red-700" disabled={isUploading || isSubmitting}>
-              {isSubmitting ? 'A guardar...' : isUploading ? 'A carregar...' : occurrenceInitial ? 'Atualizar' : 'Registar'} Ocorrência
+              {isSubmitting ? t('safety.form.guardando') : isUploading ? t('safety.form.carregandoFoto') : occurrenceInitial ? t('safety.form.atualizar') : t('safety.form.registar')} {t('safety.form.ocorrencia')}
             </Button>
           </DialogFooter>
         </form>
