@@ -76,6 +76,8 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
   const [voosLigados, setVoosLigados] = useState([]);
   const [proformasMap, setProformasMap] = useState(new Map());
   const [hasSearched, setHasSearched] = useState(false);
+  const [companhiasComTarifas, setCompanhiasComTarifas] = useState(new Set());
+  const [isLoadingCompanhias, setIsLoadingCompanhias] = useState(true);
 
   const [filtro, setFiltro] = useState({
     companhia_id: '',
@@ -83,6 +85,22 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
     data_inicio: '',
     data_fim: '',
   });
+
+  // Load distinct companhia IDs that have tariff calculations
+  useEffect(() => {
+    const loadCompanhiasComTarifas = async () => {
+      try {
+        const allCalcs = await CalculoTarifa.list('-data_calculo', 1000);
+        const ids = new Set(allCalcs.map(c => c.companhia_id).filter(Boolean));
+        setCompanhiasComTarifas(ids);
+      } catch (error) {
+        console.error('Erro ao carregar companhias:', error);
+      } finally {
+        setIsLoadingCompanhias(false);
+      }
+    };
+    loadCompanhiasComTarifas();
+  }, []);
 
   const handleBuscar = async () => {
     if (!filtro.companhia_id) {
@@ -428,7 +446,9 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
     }
   };
 
-  const companhiaOptions = companhias.map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }));
+  const companhiaOptions = companhias
+    .filter(c => companhiasComTarifas.has(c.id))
+    .map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }));
   const aeroportoOptions = [
     { value: '', label: 'Todos os Aeroportos' },
     ...aeroportos.map(a => ({ value: a.id, label: `${a.nome} (${a.codigo_icao})` })),
