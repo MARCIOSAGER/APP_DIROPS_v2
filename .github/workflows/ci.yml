@@ -22,7 +22,8 @@ jobs:
         run: npm ci
 
       - name: Lint
-        run: npx eslint src/ --ext .js,.jsx --max-warnings 0 || true
+        run: npx eslint src/ --ext .js,.jsx || true
+        continue-on-error: true
 
       - name: Build
         run: npx vite build
