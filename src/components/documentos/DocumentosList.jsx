@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, FileText, Download, Edit, Eye, Archive, FolderInput, Lock, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, Trash2, FolderOpen, DownloadCloud, UserCog } from 'lucide-react';
+import { Search, FileText, Edit, Eye, Archive, FolderInput, Lock, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, Trash2, FolderOpen, DownloadCloud, UserCog } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';

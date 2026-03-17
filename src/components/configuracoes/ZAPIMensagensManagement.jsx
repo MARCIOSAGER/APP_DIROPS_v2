@@ -16,7 +16,6 @@ import {
   Trash2,
   X,
   Send,
-  Upload,
   Smile,
   Gift,
   Link as LinkIcon,

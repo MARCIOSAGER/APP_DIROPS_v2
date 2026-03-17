@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, FileText, Loader2, FolderPlus } from 'lucide-react';
+import { Upload, FileText, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';

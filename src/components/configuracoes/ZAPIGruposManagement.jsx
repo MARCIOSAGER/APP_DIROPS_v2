@@ -14,7 +14,6 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
   X,
-  Send,
   Settings,
   Crown,
   MessageSquare
