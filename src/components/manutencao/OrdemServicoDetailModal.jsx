@@ -3,18 +3,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Clock, 
-  User, 
-  Wrench, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Clock,
+  User,
+  Wrench,
+  AlertTriangle,
+  CheckCircle,
   XCircle,
   Calendar,
   MapPin,
   DollarSign,
   FileText,
-  Target
+  Target,
+  Image,
+  Link as LinkIcon,
+  ClipboardCheck
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -47,6 +50,51 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
     return aeroporto?.nome || aeroportoId;
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return null;
+    try {
+      return format(parseISO(dateStr), 'dd/MM/yyyy HH:mm', { locale: pt });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const fotosAntes = ordem.fotos_antes || [];
+  const fotosDepois = ordem.fotos_depois || [];
+
+  const renderPhotoGallery = (fotos, title, icon) => {
+    if (!fotos || fotos.length === 0) return null;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            {icon}
+            {title} ({fotos.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {fotos.map((foto, index) => (
+              <a
+                key={index}
+                href={foto.file_url || foto}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block overflow-hidden rounded-lg border border-slate-200 hover:border-blue-400 transition-colors"
+              >
+                <img
+                  src={foto.file_url || foto}
+                  alt={`${title} ${index + 1}`}
+                  className="w-full h-32 object-cover"
+                />
+              </a>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -69,6 +117,19 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* SS Vinculada */}
+          {ordem.solicitacao_id && (
+            <div className="flex items-center gap-2">
+              <Badge className="bg-indigo-100 text-indigo-800 border border-indigo-200">
+                <LinkIcon className="w-3 h-3 mr-1" />
+                SS Vinculada
+              </Badge>
+              <span className="text-sm text-slate-600">
+                Esta OS foi criada a partir de uma Solicitação de Serviço
+              </span>
+            </div>
+          )}
+
           {/* Informações Básicas */}
           <Card>
             <CardHeader>
@@ -94,7 +155,7 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
                   <Calendar className="w-4 h-4 text-slate-400" />
                   <span className="text-slate-600">Criado em:</span>
                   <span className="font-medium">
-                    {format(parseISO(ordem.created_date), 'dd/MM/yyyy HH:mm', { locale: pt })}
+                    {formatDate(ordem.created_date)}
                   </span>
                 </div>
 
@@ -131,6 +192,12 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
             </Card>
           )}
 
+          {/* Fotos Antes */}
+          {renderPhotoGallery(fotosAntes, 'Fotos Antes', <Image className="w-5 h-5 text-orange-500" />)}
+
+          {/* Fotos Depois */}
+          {renderPhotoGallery(fotosDepois, 'Fotos Depois', <Image className="w-5 h-5 text-green-500" />)}
+
           {/* Execução */}
           <Card>
             <CardHeader>
@@ -148,10 +215,24 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
                 </div>
               )}
 
+              {ordem.observacoes_atribuicao && (
+                <div>
+                  <h4 className="font-medium text-slate-700 mb-2">Observações da Atribuição:</h4>
+                  <p className="text-slate-600 whitespace-pre-wrap">{ordem.observacoes_atribuicao}</p>
+                </div>
+              )}
+
               {ordem.observacoes_manutencao && (
                 <div>
                   <h4 className="font-medium text-slate-700 mb-2">Observações da Manutenção:</h4>
-                  <p className="text-slate-600">{ordem.observacoes_manutencao}</p>
+                  <p className="text-slate-600 whitespace-pre-wrap">{ordem.observacoes_manutencao}</p>
+                </div>
+              )}
+
+              {ordem.observacoes_conclusao && (
+                <div>
+                  <h4 className="font-medium text-slate-700 mb-2">Observações da Conclusão:</h4>
+                  <p className="text-slate-600 whitespace-pre-wrap">{ordem.observacoes_conclusao}</p>
                 </div>
               )}
 
@@ -161,27 +242,39 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span>Criada em {format(parseISO(ordem.created_date), 'dd/MM/yyyy HH:mm', { locale: pt })}</span>
+                    <span>Criada em {formatDate(ordem.created_date)}</span>
                   </div>
 
                   {ordem.data_atribuicao && (
                     <div className="flex items-center gap-3 text-sm">
                       <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                      <span>Atribuída em {format(parseISO(ordem.data_atribuicao), 'dd/MM/yyyy HH:mm', { locale: pt })}</span>
+                      <span>Atribuída em {formatDate(ordem.data_atribuicao)}</span>
                     </div>
                   )}
 
                   {ordem.data_inicio_execucao && (
                     <div className="flex items-center gap-3 text-sm">
                       <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                      <span>Execução iniciada em {format(parseISO(ordem.data_inicio_execucao), 'dd/MM/yyyy HH:mm', { locale: pt })}</span>
+                      <span>Execução iniciada em {formatDate(ordem.data_inicio_execucao)}</span>
                     </div>
                   )}
 
                   {ordem.data_conclusao && (
                     <div className="flex items-center gap-3 text-sm">
                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span>Concluída em {format(parseISO(ordem.data_conclusao), 'dd/MM/yyyy HH:mm', { locale: pt })}</span>
+                      <span>Concluída em {formatDate(ordem.data_conclusao)}</span>
+                    </div>
+                  )}
+
+                  {ordem.data_verificacao && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="w-3 h-3 bg-teal-500 rounded-full"></div>
+                      <span>
+                        Verificada em {formatDate(ordem.data_verificacao)}
+                        {ordem.verificado_por && (
+                          <span className="text-slate-500"> por {ordem.verificado_por}</span>
+                        )}
+                      </span>
                     </div>
                   )}
                 </div>

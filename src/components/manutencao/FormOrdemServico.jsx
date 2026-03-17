@@ -8,8 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import Select from '@/components/ui/select'; // Changed to default import
 import { Switch } from '@/components/ui/switch';
 import { Wrench } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos, ordemInicial = null }) {
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     titulo: '',
     descricao_problema: '',
@@ -17,6 +19,9 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
     aeroporto_id: '',
     prioridade: 'media',
     categoria_manutencao: '',
+    tipo_execucao: 'interna',
+    fornecedor: '',
+    contato_fornecedor: '',
     responsavel_manutencao: '',
     prazo_estimado: '',
     custos_estimados: '',
@@ -33,6 +38,9 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
         aeroporto_id: ordemInicial.aeroporto_id || '',
         prioridade: ordemInicial.prioridade || 'media',
         categoria_manutencao: ordemInicial.categoria_manutencao || '',
+        tipo_execucao: ordemInicial.tipo_execucao || 'interna',
+        fornecedor: ordemInicial.fornecedor || '',
+        contato_fornecedor: ordemInicial.contato_fornecedor || '',
         responsavel_manutencao: ordemInicial.responsavel_manutencao || '',
         prazo_estimado: ordemInicial.prazo_estimado ? ordemInicial.prazo_estimado.split('T')[0] : '',
         custos_estimados: ordemInicial.custos_estimados || '',
@@ -47,6 +55,9 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
         aeroporto_id: '',
         prioridade: 'media',
         categoria_manutencao: '',
+        tipo_execucao: 'interna',
+        fornecedor: '',
+        contato_fornecedor: '',
         responsavel_manutencao: '',
         prazo_estimado: '',
         custos_estimados: '',
@@ -58,13 +69,14 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const cleanData = {
-      ...formData,
-      custos_estimados: formData.custos_estimados ? parseFloat(formData.custos_estimados) : null
-    };
+    guardedSubmit(async () => {
+      const cleanData = {
+        ...formData,
+        custos_estimados: formData.custos_estimados ? parseFloat(formData.custos_estimados) : null
+      };
 
-    await onSubmit(cleanData);
+      await onSubmit(cleanData);
+    });
   };
 
   const handleChange = (field, value) => {
@@ -98,7 +110,7 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Wrench className="w-5 h-5 text-orange-600" />
+            <Wrench className="w-5 h-5 text-blue-600" />
             {ordemInicial ? 'Editar' : 'Nova'} Ordem de Serviço
           </DialogTitle>
         </DialogHeader>
@@ -177,6 +189,41 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Tipo de Execução *</Label>
+              <Select
+                options={[
+                  { value: 'interna', label: 'Interna' },
+                  { value: 'terceirizado', label: 'Terceirizado' }
+                ]}
+                value={formData.tipo_execucao}
+                onValueChange={(value) => handleChange('tipo_execucao', value)}
+              />
+            </div>
+
+            {formData.tipo_execucao === 'terceirizado' && (
+              <>
+                <div className="space-y-2">
+                  <Label>Fornecedor</Label>
+                  <Input
+                    value={formData.fornecedor}
+                    onChange={(e) => handleChange('fornecedor', e.target.value)}
+                    placeholder="Nome do fornecedor..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Contacto do Fornecedor</Label>
+                  <Input
+                    value={formData.contato_fornecedor}
+                    onChange={(e) => handleChange('contato_fornecedor', e.target.value)}
+                    placeholder="Telefone ou email..."
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Responsável pela Manutenção</Label>
@@ -223,8 +270,8 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancelar</Button>
             </DialogClose>
-            <Button type="submit" className="bg-orange-600 hover:bg-orange-700">
-              {ordemInicial ? 'Atualizar' : 'Criar'} Ordem
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
+              {isSubmitting ? 'A guardar...' : `${ordemInicial ? 'Atualizar' : 'Criar'} Ordem`}
             </Button>
           </DialogFooter>
         </form>

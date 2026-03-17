@@ -25,6 +25,7 @@ import {
 
 import { TipoAuditoria } from '@/entities/TipoAuditoria';
 import ManageChecklistItemsModal from './ManageChecklistItemsModal';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const CATEGORIA_ICONS = {
   seguranca_operacional: Shield,
@@ -46,6 +47,7 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTipo, setEditingTipo] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isItemsModalOpen, setIsItemsModalOpen] = useState(false);
   const [selectedTipoForItems, setSelectedTipoForItems] = useState(null);
@@ -84,7 +86,6 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setMessage({ type: '', text: '' });
 
     if (!formData.nome || !formData.codigo || !formData.categoria) {
@@ -92,9 +93,11 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
         type: 'error',
         text: 'Por favor, preencha todos os campos obrigatórios.'
       });
-      setIsLoading(false);
       return;
     }
+
+    guardedSubmit(async () => {
+    setIsLoading(true);
 
     try {
       if (editingTipo) {
@@ -125,6 +128,7 @@ export default function ConfiguracaoAuditoria({ tipos, onUpdate }) {
     } finally {
       setIsLoading(false);
     }
+    });
   };
 
   const handleDelete = async (tipo) => {

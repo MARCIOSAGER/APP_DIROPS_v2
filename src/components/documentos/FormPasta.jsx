@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Folder, Lock, Shield, Eye, EyeOff } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 import Select from '@/components/ui/select';
 
 const CORES_PASTAS = [
@@ -35,6 +36,7 @@ export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = nu
   const [confirmaSenha, setConfirmaSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erroSenha, setErroSenha] = useState('');
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
     if (pastaInitial) {
@@ -72,7 +74,9 @@ export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = nu
       }
     }
 
-    onSubmit(formData);
+    guardedSubmit(async () => {
+      await onSubmit(formData);
+    });
   };
 
   const handleNivelAcessoToggle = (perfil) => {
@@ -254,8 +258,8 @@ export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = nu
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-blue-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow h-9 hover:bg-blue-700">
-              {pastaInitial ? 'Atualizar' : 'Criar'} Pasta
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow h-9 hover:bg-blue-700">
+              {isSubmitting ? 'A guardar...' : `${pastaInitial ? 'Atualizar' : 'Criar'} Pasta`}
             </Button>
           </DialogFooter>
         </form>

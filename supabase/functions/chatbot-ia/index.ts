@@ -1,17 +1,50 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  "https://app.marciosager.com",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
+
+const MAX_MESSAGE_LENGTH = 2000;
+const MAX_MESSAGES = 20;
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { messages, context } = await req.json();
+    const body = await req.json();
+    const messages = body.messages;
+    const context = typeof body.context === "string" ? body.context.slice(0, 500) : "";
+
+    // Validate messages input
+    if (!Array.isArray(messages) || messages.length > MAX_MESSAGES) {
+      return new Response(
+        JSON.stringify({ reply: "Número de mensagens inválido." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Sanitize messages - truncate and validate roles
+    const validRoles = new Set(["user", "assistant"]);
+    const sanitizedMessages = messages
+      .filter((m: any) => m && typeof m.content === "string" && validRoles.has(m.role))
+      .map((m: any) => ({
+        role: m.role,
+        content: m.content.slice(0, MAX_MESSAGE_LENGTH),
+      }));
 
     // Try OpenAI first, then Anthropic
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
@@ -26,6 +59,7 @@ serve(async (req) => {
       );
     }
 
+    const safeContext = context ? `Contexto adicional: ${context}` : "";
     const systemPrompt = `Voce e o assistente virtual do DIROPS-SGA (Sistema de Gestao Aeroportuaria).
 Ajude os utilizadores com questoes sobre:
 - Operacoes de voo (chegadas, partidas, movimentos)
@@ -36,7 +70,7 @@ Ajude os utilizadores com questoes sobre:
 - Reclamacoes
 - Configuracoes do sistema
 Responda sempre em portugues. Seja conciso e util.
-${context ? `Contexto adicional: ${context}` : ""}`;
+${safeContext}`;
 
     let reply = "";
 
@@ -51,7 +85,7 @@ ${context ? `Contexto adicional: ${context}` : ""}`;
           model: "gpt-4o-mini",
           messages: [
             { role: "system", content: systemPrompt },
-            ...(messages || []),
+            ...sanitizedMessages,
           ],
           max_tokens: 1000,
           temperature: 0.7,
@@ -65,11 +99,6 @@ ${context ? `Contexto adicional: ${context}` : ""}`;
       const data = await response.json();
       reply = data.choices?.[0]?.message?.content || "Sem resposta do modelo.";
     } else if (anthropicKey) {
-      const userMessages = (messages || []).map((m: any) => ({
-        role: m.role === "assistant" ? "assistant" : "user",
-        content: m.content,
-      }));
-
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -81,7 +110,7 @@ ${context ? `Contexto adicional: ${context}` : ""}`;
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1000,
           system: systemPrompt,
-          messages: userMessages.length > 0 ? userMessages : [{ role: "user", content: "Ola" }],
+          messages: sanitizedMessages.length > 0 ? sanitizedMessages : [{ role: "user", content: "Ola" }],
         }),
       });
 
@@ -100,7 +129,7 @@ ${context ? `Contexto adicional: ${context}` : ""}`;
   } catch (error) {
     console.error("Chatbot error:", error);
     return new Response(
-      JSON.stringify({ reply: `Erro no assistente: ${error.message}` }),
+      JSON.stringify({ reply: "Erro temporário no assistente. Tente novamente." }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

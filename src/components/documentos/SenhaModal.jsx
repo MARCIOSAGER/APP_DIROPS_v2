@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock, AlertTriangle } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function SenhaModal({ isOpen, onClose, onConfirm, titulo, tipo = 'pasta' }) {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -17,9 +19,11 @@ export default function SenhaModal({ isOpen, onClose, onConfirm, titulo, tipo = 
       return;
     }
 
-    onConfirm(senha);
-    setSenha('');
-    setErro('');
+    guardedSubmit(async () => {
+      await onConfirm(senha);
+      setSenha('');
+      setErro('');
+    });
   };
 
   const handleClose = () => {
@@ -74,9 +78,9 @@ export default function SenhaModal({ isOpen, onClose, onConfirm, titulo, tipo = 
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-red-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow h-9 hover:bg-red-700">
+            <Button type="submit" disabled={isSubmitting} className="bg-red-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow h-9 hover:bg-red-700">
               <Lock className="w-4 h-4 mr-2" />
-              Desbloquear
+              {isSubmitting ? 'A verificar...' : 'Desbloquear'}
             </Button>
           </DialogFooter>
         </form>

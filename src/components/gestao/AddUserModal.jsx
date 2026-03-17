@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { User as UserEntity } from '@/entities/User';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { emailTemplates } from '@/lib/emailTemplates';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const PERFIL_OPTIONS = [
   { value: 'administrador', label: 'Administrador' },
@@ -30,6 +31,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const { guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
     if (isOpen) {
@@ -83,8 +85,18 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
     e.preventDefault();
     setError(null);
 
-    if (!formData.email || !formData.full_name) {
+    if (!formData.full_name?.trim() || !formData.email?.trim()) {
       setError('Nome e email são obrigatórios.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      setError('Formato de email inválido.');
+      return;
+    }
+
+    if (formData.telefone?.trim() && !/^[+]?[\d\s()-]{7,20}$/.test(formData.telefone.trim())) {
+      setError('Formato de telefone inválido.');
       return;
     }
 
@@ -98,17 +110,20 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
       return;
     }
 
+    guardedSubmit(async () => {
     setSaving(true);
 
     try {
       // 1. Create auth user (confirmed) + profile via admin Edge Function
       const tempPassword = crypto.randomUUID().slice(0, 16) + 'A1!';
+      const cleanEmail = formData.email.trim().toLowerCase();
+      const cleanName = formData.full_name.trim();
       const { data: fnData, error: fnError } = await supabase.functions.invoke('admin-user', {
         body: {
           action: 'create',
-          email: formData.email,
+          email: cleanEmail,
           password: tempPassword,
-          full_name: formData.full_name,
+          full_name: cleanName,
           perfis: formData.perfis,
           empresa_id: formData.empresa_id || null,
           aeroportos_acesso: [...new Set(formData.aeroportos_acesso)],
@@ -172,6 +187,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
     } finally {
       setSaving(false);
     }
+    });
   };
 
   const currentPerfis = formData.perfis || [];
@@ -329,7 +345,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
               <X className="w-4 h-4 mr-1" />
               Cancelar
             </Button>
-            <Button type="submit" disabled={saving} className="bg-green-600 hover:bg-green-700 text-white">
+            <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
               {saving ? (
                 <Loader2 className="w-4 h-4 mr-1 animate-spin" />
               ) : (

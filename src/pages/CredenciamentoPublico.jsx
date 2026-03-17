@@ -16,6 +16,7 @@ import { submitCredenciamentoPublico } from '@/functions/submitCredenciamentoPub
 import { Aeroporto } from '@/entities/Aeroporto';
 import { Empresa } from '@/entities/Empresa';
 import SuccessModal from '../components/shared/SuccessModal';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function CredenciamentoPublico() {
   const [formData, setFormData] = useState({
@@ -37,6 +38,7 @@ export default function CredenciamentoPublico() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [successInfo, setSuccessInfo] = useState(null);
   const [error, setError] = useState('');
+  const { guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
     loadData();
@@ -93,16 +95,17 @@ export default function CredenciamentoPublico() {
       return;
     }
 
+    guardedSubmit(async () => {
     setIsLoading(true);
     setError('');
 
     try {
       const { data, error: submitError } = await submitCredenciamentoPublico(formData);
-      
+
       if (submitError || !data.success) {
         throw new Error(data?.error || submitError?.message || 'Erro ao enviar solicitação');
       }
-      
+
       setSuccessInfo({ protocolo: data.protocolo });
     } catch (error) {
       console.error('Erro ao submeter solicitação:', error);
@@ -110,6 +113,7 @@ export default function CredenciamentoPublico() {
     } finally {
       setIsLoading(false);
     }
+    });
   };
 
   if (isLoadingData) {

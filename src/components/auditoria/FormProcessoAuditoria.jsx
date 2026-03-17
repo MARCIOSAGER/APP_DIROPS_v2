@@ -12,6 +12,7 @@ import { Calendar, User, FileText, AlertCircle, List } from 'lucide-react';
 
 import { ProcessoAuditoria } from '@/entities/ProcessoAuditoria';
 import { ItemAuditoria } from '@/entities/ItemAuditoria';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function FormProcessoAuditoria({ 
   isOpen, 
@@ -23,6 +24,7 @@ export default function FormProcessoAuditoria({
   tipoAuditoriaInicial = null
 }) {
   const [isLoading, setIsLoading] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [message, setMessage] = useState({ type: '', text: '' });
   const [itensDisponiveis, setItensDisponiveis] = useState([]);
   const [itensSelecionados, setItensSelecionados] = useState(processoInicial?.itens_selecionados || []);
@@ -91,15 +93,12 @@ export default function FormProcessoAuditoria({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setMessage({ type: '', text: '' });
 
     if (!formData.tipo_auditoria_id || !formData.aeroporto_id || !formData.data_auditoria || !formData.auditor_responsavel) {
       setMessage({
         type: 'error',
         text: 'Por favor, preencha todos os campos obrigatórios.'
       });
-      setIsLoading(false);
       return;
     }
 
@@ -108,9 +107,12 @@ export default function FormProcessoAuditoria({
         type: 'error',
         text: 'Por favor, selecione pelo menos um item do checklist.'
       });
-      setIsLoading(false);
       return;
     }
+
+    guardedSubmit(async () => {
+    setIsLoading(true);
+    setMessage({ type: '', text: '' });
 
     try {
       const dataToSubmit = {
@@ -147,6 +149,7 @@ export default function FormProcessoAuditoria({
     } finally {
       setIsLoading(false);
     }
+    });
   };
 
   const handleInputChange = (field, value) => {

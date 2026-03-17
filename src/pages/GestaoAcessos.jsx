@@ -129,8 +129,13 @@ export default function GestaoAcessos() {
         return;
       }
 
+      // Server-side filter solicitacoes by empresa when CompanyView is active
+      const solicitacaoPromise = effectiveEmpresaId
+        ? SolicitacaoAcesso.filter({ empresa_solicitante_id: effectiveEmpresaId }, '-created_date')
+        : SolicitacaoAcesso.list('-created_date');
+
       const [solicitacoesData, usersData, aeroportosData, empresasData] = await Promise.all([
-        SolicitacaoAcesso.list('-created_date'),
+        solicitacaoPromise,
         UserEntity.list(),
         Aeroporto.list(),
         Empresa.list(),
@@ -144,16 +149,12 @@ export default function GestaoAcessos() {
       let validUsers = (usersData || []).filter(u => u && u.id && u.email);
       let filteredSolicitacoes = solicitacoesData || [];
 
-      // Filtrar por empresa quando CompanyView está ativo
+      // Filtrar utilizadores por empresa quando CompanyView está ativo
+      // (solicitacoes already filtered server-side above)
       if (effectiveEmpresaId) {
-        // 1. Filtrar solicitações pela empresa_solicitante_id
-        filteredSolicitacoes = filteredSolicitacoes.filter(s =>
-          s.empresa_solicitante_id === effectiveEmpresaId
-        );
-        // 2. IDs e emails de users que têm solicitação para esta empresa
         const solicitacaoUserIds = new Set(filteredSolicitacoes.map(s => s.user_id).filter(Boolean));
         const solicitacaoEmails = new Set(filteredSolicitacoes.map(s => s.email?.toLowerCase()).filter(Boolean));
-        // 3. Filtrar utilizadores: da empresa OU que têm solicitação pendente para esta empresa
+        // Filtrar utilizadores: da empresa OU que têm solicitação pendente para esta empresa
         validUsers = validUsers.filter(u =>
           u.empresa_id === effectiveEmpresaId ||
           solicitacaoUserIds.has(u.id) ||

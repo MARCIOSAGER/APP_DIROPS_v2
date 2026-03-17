@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DollarSign, Save } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function FormConfiguracaoSistema({ isOpen, onClose, onSubmit, configuracao }) {
   const [formData, setFormData] = useState({
     taxa_cambio_usd_aoa: 850
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
     if (configuracao) {
@@ -21,18 +23,20 @@ export default function FormConfiguracaoSistema({ isOpen, onClose, onSubmit, con
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.taxa_cambio_usd_aoa || formData.taxa_cambio_usd_aoa <= 0) {
       alert('Por favor, insira uma taxa de câmbio válida.');
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      await onSubmit(formData);
-    } finally {
-      setIsSubmitting(false);
-    }
+    guardedSubmit(async () => {
+      setIsSubmitting(true);
+      try {
+        await onSubmit(formData);
+      } finally {
+        setIsSubmitting(false);
+      }
+    });
   };
 
   return (

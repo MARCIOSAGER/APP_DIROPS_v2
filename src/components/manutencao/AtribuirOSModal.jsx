@@ -9,8 +9,9 @@ import { User, Mail, Calendar, Wrench } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { OrdemServico } from '@/entities/OrdemServico';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
-export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess }) {
+export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onAssigned }) {
   const [formData, setFormData] = useState({
     responsavel_email: '',
     prazo_estimado: '',
@@ -18,6 +19,7 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess }) {
     cc_emails: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [availableUsers, setAvailableUsers] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -53,28 +55,32 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess }) {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const updateData = {
-        responsavel_manutencao: formData.responsavel_email,
-        status: 'atribuida',
-        data_atribuicao: new Date().toISOString(),
-        observacoes_atribuicao: formData.observacoes_atribuicao
-      };
+    guardedSubmit(async () => {
+      setIsSubmitting(true);
+      try {
+        const updateData = {
+          responsavel_manutencao: formData.responsavel_email,
+          status: 'atribuida',
+          data_atribuicao: new Date().toISOString(),
+          observacoes_atribuicao: formData.observacoes_atribuicao
+        };
 
-      if (formData.prazo_estimado) {
-        updateData.prazo_estimado = formData.prazo_estimado;
+        if (formData.prazo_estimado) {
+          updateData.prazo_estimado = formData.prazo_estimado;
+        }
+
+        await OrdemServico.update(ordem.id, updateData);
+        const assignedUser = availableUsers.find(u => u.email === formData.responsavel_email);
+        if (onAssigned) onAssigned(ordem, formData.responsavel_email, assignedUser?.full_name || formData.responsavel_email);
+        onSuccess();
+        onClose();
+      } catch (error) {
+        console.error('Erro ao atribuir OS:', error);
+        alert('Erro ao atribuir ordem de serviço');
+      } finally {
+        setIsSubmitting(false);
       }
-
-      await OrdemServico.update(ordem.id, updateData);
-      onSuccess();
-      onClose();
-    } catch (error) {
-      console.error('Erro ao atribuir OS:', error);
-      alert('Erro ao atribuir ordem de serviço');
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   };
 
   const filteredUsers = availableUsers.filter((user) =>
@@ -187,7 +193,7 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess }) {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="bg-orange-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-10 hover:bg-orange-700">
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
               {isSubmitting ? 'A Atribuir...' : 'Atribuir Ordem'}
             </Button>
           </DialogFooter>

@@ -12,6 +12,7 @@ import Combobox from '@/components/ui/combobox';
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 import { User } from '@/entities/User';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const PAISES_ISO = [
   { code: 'AD', name: 'Andorra' }, { code: 'AE', name: 'Emirados Árabes Unidos' }, { code: 'AF', name: 'Afeganistão' },
@@ -85,6 +86,7 @@ const PAISES_OPTIONS = PAISES_ISO.map(p => ({ value: p.code, label: `${p.code} �
 
 // Exportar o formulário separadamente para uso em outros componentes
 export function FormCompanhia({ companhia, onSave, onCancel }) {
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState(companhia || {
     codigo_icao: '',
     codigo_iata: '',
@@ -96,7 +98,9 @@ export function FormCompanhia({ companhia, onSave, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    guardedSubmit(async () => {
+      await onSave(formData);
+    });
   };
 
   const tipoOptions = [
@@ -171,7 +175,7 @@ export function FormCompanhia({ companhia, onSave, onCancel }) {
       </div>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" className="bg-green-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-green-600/90 h-10">Salvar</Button>
+        <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? 'A guardar...' : 'Salvar'}</Button>
       </DialogFooter>
     </form>);
 

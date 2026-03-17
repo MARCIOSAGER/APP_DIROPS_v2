@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, FileDown, Filter, X } from 'lucide-react';
+import { Plus, RefreshCw, FileDown, Filter, X, ClipboardList, Wrench, BarChart3, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Select from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 import { OrdemServico } from '@/entities/OrdemServico';
+import { SolicitacaoServico } from '@/entities/SolicitacaoServico';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
-import { createPdfDoc, addHeader, addFooter, addTable, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
+import { createPdfDoc, addHeader, addFooter, addTable, fetchEmpresaLogo } from '@/lib/pdfTemplate';
 
 import ManutencaoStats from '../components/manutencao/ManutencaoStats';
 import ManutencaoList from '../components/manutencao/ManutencaoList';
@@ -19,232 +21,267 @@ import FormOrdemServico from '../components/manutencao/FormOrdemServico';
 import OrdemServicoDetailModal from '../components/manutencao/OrdemServicoDetailModal';
 import AtribuirOSModal from '../components/manutencao/AtribuirOSModal';
 import ResponderOSModal from '../components/manutencao/ResponderOSModal';
+import FormSolicitacaoServico from '../components/manutencao/FormSolicitacaoServico';
+import SolicitacoesList from '../components/manutencao/SolicitacoesList';
+import AnalisarSSModal from '../components/manutencao/AnalisarSSModal';
+import SolicitacaoDetailModal from '../components/manutencao/SolicitacaoDetailModal';
+import ConfigNotificacoesManutencao from '../components/manutencao/ConfigNotificacoesManutencao';
 import SuccessModal from '../components/shared/SuccessModal';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
-import { getAeroportosPermitidos, filtrarDadosPorAeroportoId } from '@/components/lib/userUtils';
+import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
+import { getAeroportosPermitidos, filtrarDadosPorAeroportoId, isSuperAdmin } from '@/components/lib/userUtils';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 
 export default function Manutencao() {
-  const [currentUser, setCurrentUser] = useState(null); // Added state for current user
+  const { effectiveEmpresaId } = useCompanyView();
+  const [currentUser, setCurrentUser] = useState(null);
   const [ordensDeServico, setOrdensDeServico] = useState([]);
+  const [solicitacoes, setSolicitacoes] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
-  const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('solicitacoes');
 
-  const [filtros, setFiltros] = useState({
-    busca: '',
-    status: 'todos',
-    prioridade: 'todos',
-    aeroporto: 'todos',
-    categoria: 'todos'
-  });
-
+  // OS state
+  const [filtrosOS, setFiltrosOS] = useState({ busca: '', status: 'todos', prioridade: 'todos', aeroporto: 'todos', categoria: 'todos' });
   const [selectedOrdens, setSelectedOrdens] = useState([]);
-
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isFormOSOpen, setIsFormOSOpen] = useState(false);
   const [editingOrdem, setEditingOrdem] = useState(null);
   const [detailOrdem, setDetailOrdem] = useState(null);
   const [atribuirOrdem, setAtribuirOrdem] = useState(null);
   const [responderOrdem, setResponderOrdem] = useState(null);
+  const [responderAcao, setResponderAcao] = useState('aceitar');
+
+  // SS state
+  const [isFormSSOpen, setIsFormSSOpen] = useState(false);
+  const [analisarSS, setAnalisarSS] = useState(null);
+  const [detailSS, setDetailSS] = useState(null);
+
+  const [allUsers, setAllUsers] = useState([]);
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
   const [logoBase64, setLogoBase64] = useState(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Permissões: administrador e infraestrutura podem gerir
+  const canManage = useMemo(() => {
+    if (!currentUser?.perfis) return false;
+    if (isSuperAdmin(currentUser)) return true;
+    return currentUser.perfis.some(p => ['administrador', 'infraestrutura'].includes(p));
+  }, [currentUser]);
+
+  useEffect(() => { loadData(); }, [effectiveEmpresaId]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
       const user = await User.me();
       setCurrentUser(user);
-
-      // Pre-fetch empresa logo for PDF generation
       fetchEmpresaLogo(user?.empresa_id).then(b64 => setLogoBase64(b64));
 
-      const [ordensData, aeroportosData] = await Promise.all([
-        OrdemServico.list('-data_abertura'),
-        Aeroporto.list()
+      // Server-side filter by empresa_id when applicable
+      const empId = effectiveEmpresaId || user.empresa_id;
+      const empFilters = empId ? { empresa_id: empId } : {};
+
+      const [ordensData, ssData, aeroportosData, usersData] = await Promise.all([
+        empId ? OrdemServico.filter(empFilters, '-data_abertura') : OrdemServico.list('-data_abertura'),
+        empId ? SolicitacaoServico.filter(empFilters, '-created_date') : SolicitacaoServico.list('-created_date'),
+        Aeroporto.list(),
+        User.list()
       ]);
+      setAllUsers(usersData);
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-
-      // Filtrar aeroportos pelos aeroportos de acesso do utilizador (empresa-based)
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola);
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, effectiveEmpresaId);
       setAeroportos(aeroportosFiltrados);
 
-      // Filtrar ordens de serviço pelos aeroportos de acesso do utilizador (empresa-based)
-      const ordensFiltradas = filtrarDadosPorAeroportoId(user, ordensData, 'aeroporto_id', aeroportosAngola);
+      const ordensFiltradas = filtrarDadosPorAeroportoId(user, ordensData, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId);
       setOrdensDeServico(ordensFiltradas);
-      setUsers([]);
+
+      const ssFiltradas = filtrarDadosPorAeroportoId(user, ssData, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId);
+      setSolicitacoes(ssFiltradas);
     } catch (error) {
       console.error('Erro ao carregar dados de manutenção:', error);
-
-      // Verificar se é um erro de autenticação
-      if (error.message && (error.message.includes('You must be logged in') || error.message.includes('not authenticated'))) {
-        console.log('Sessão expirada, redirecionando para login...');
-        try {
-          await User.login();
-          // After successful login attempt, retry loading data or redirect as needed
-          // For now, we'll just let the user try again manually or reload
-        } catch (loginError) {
-          console.error('Erro ao fazer login:', loginError);
-          window.location.href = createPageUrl('PaginaInicial'); // Redirect to initial page if login fails
-        }
-      } else if (error.response?.status === 403) {
-        console.log('Acesso negado, redirecionando...');
-        alert('Acesso negado. Você não tem permissão para visualizar esta página.');
-        window.location.href = createPageUrl('Home'); // Redirect to Home if 403 Forbidden
-      } else {
-        // Para outros erros, mostrar mensagem mas continuar
-        alert('Erro ao carregar dados. Tente recarregar a página.');
-      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFormSubmit = async (data) => {
+  // --- Email helpers ---
+  const getManagerEmails = async (notificationType) => {
+    try {
+      const empId = currentUser?.empresa_id;
+      // Check configured recipients first
+      if (notificationType) {
+        const configKey = `manutencao_notificacoes_${empId || 'global'}`;
+        const existing = await ConfiguracaoSistema.findOne({ chave: configKey });
+        if (existing?.valor?.[notificationType]?.length > 0) {
+          return existing.valor[notificationType];
+        }
+      }
+      // Fallback: all admins/infraestrutura of the empresa
+      const users = allUsers.length > 0 ? allUsers : await User.list();
+      return users
+        .filter(u => {
+          if (empId && u.empresa_id !== empId) return false;
+          if (u.status === 'inativo') return false;
+          return u.perfis?.some(p => ['administrador', 'infraestrutura'].includes(p));
+        })
+        .map(u => u.email)
+        .filter(Boolean);
+    } catch (e) {
+      console.error('Erro ao buscar emails de gestores:', e);
+      return [];
+    }
+  };
+
+  const buildEmailHtml = (title, fields) => `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1e40af; border-bottom: 2px solid #3b82f6; padding-bottom: 8px;">${title}</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+        ${fields.map(([label, value]) => `<tr><td style="padding: 8px 12px; font-weight: bold; color: #334155; border-bottom: 1px solid #e2e8f0; width: 35%;">${label}</td><td style="padding: 8px 12px; color: #475569; border-bottom: 1px solid #e2e8f0;">${value || '—'}</td></tr>`).join('')}
+      </table>
+      <p style="margin-top: 24px; color: #94a3b8; font-size: 12px;">Sistema DIROPS — Notificação automática</p>
+    </div>
+  `;
+
+  const notifyNewSS = async (ss) => {
+    try {
+      const emails = await getManagerEmails('nova_ss');
+      if (emails.length === 0) return;
+      const aeroportoNome = aeroportos.find(a => a.id === ss.aeroporto_id)?.nome || '';
+      const html = buildEmailHtml(`Nova Solicitação de Serviço: ${ss.numero_ss}`, [
+        ['Nº SS', ss.numero_ss],
+        ['Título', ss.titulo],
+        ['Descrição', ss.descricao],
+        ['Aeroporto', aeroportoNome],
+        ['Prioridade', ss.prioridade_sugerida],
+        ['Solicitante', ss.solicitante_nome],
+        ['Data', new Date().toLocaleDateString('pt-PT')],
+      ]);
+      for (const email of emails) {
+        await sendEmailDirect({ to: email, subject: `DIROPS: Nova SS ${ss.numero_ss} — ${ss.titulo}`, html });
+      }
+    } catch (e) {
+      console.error('Erro ao enviar email nova SS:', e);
+    }
+  };
+
+  const notifySSApproved = async (ss, os) => {
+    try {
+      const html = buildEmailHtml(`Solicitação Aprovada: ${ss.numero_ss}`, [
+        ['Nº SS', ss.numero_ss],
+        ['Título', ss.titulo],
+        ['Status', 'Aprovada ✅'],
+        ['OS Criada', os.numero_ordem],
+        ['Analisado por', currentUser?.full_name],
+        ['Data', new Date().toLocaleDateString('pt-PT')],
+      ]);
+      const subject = `DIROPS: SS ${ss.numero_ss} Aprovada — OS ${os.numero_ordem} criada`;
+      const recipients = new Set();
+      if (ss.solicitante_email) recipients.add(ss.solicitante_email);
+      const managerEmails = await getManagerEmails('ss_aprovada');
+      managerEmails.forEach(e => recipients.add(e));
+      for (const email of recipients) {
+        await sendEmailDirect({ to: email, subject, html });
+      }
+    } catch (e) {
+      console.error('Erro ao enviar email SS aprovada:', e);
+    }
+  };
+
+  const notifySSRejected = async (ss, motivo) => {
+    try {
+      const html = buildEmailHtml(`Solicitação Rejeitada: ${ss.numero_ss}`, [
+        ['Nº SS', ss.numero_ss],
+        ['Título', ss.titulo],
+        ['Status', 'Rejeitada ❌'],
+        ['Motivo', motivo],
+        ['Analisado por', currentUser?.full_name],
+        ['Data', new Date().toLocaleDateString('pt-PT')],
+      ]);
+      const subject = `DIROPS: SS ${ss.numero_ss} Rejeitada`;
+      const recipients = new Set();
+      if (ss.solicitante_email) recipients.add(ss.solicitante_email);
+      const managerEmails = await getManagerEmails('ss_rejeitada');
+      managerEmails.forEach(e => recipients.add(e));
+      for (const email of recipients) {
+        await sendEmailDirect({ to: email, subject, html });
+      }
+    } catch (e) {
+      console.error('Erro ao enviar email SS rejeitada:', e);
+    }
+  };
+
+  const notifyOSAssigned = async (os, assigneeEmail, assigneeName) => {
+    try {
+      const aeroportoNome = aeroportos.find(a => a.id === os.aeroporto_id)?.nome || '';
+      const html = buildEmailHtml(`Ordem de Serviço Atribuída: ${os.numero_ordem}`, [
+        ['Nº OS', os.numero_ordem],
+        ['Título', os.titulo],
+        ['Prioridade', os.prioridade],
+        ['Aeroporto', aeroportoNome],
+        ['Atribuído a', assigneeName],
+        ['Descrição', os.descricao_problema],
+        ['Data', new Date().toLocaleDateString('pt-PT')],
+      ]);
+      const subject = `DIROPS: OS ${os.numero_ordem} atribuída — ${os.titulo}`;
+      const recipients = new Set();
+      if (assigneeEmail) recipients.add(assigneeEmail);
+      const managerEmails = await getManagerEmails('os_atribuida');
+      managerEmails.forEach(e => recipients.add(e));
+      for (const email of recipients) {
+        await sendEmailDirect({ to: email, subject, html });
+      }
+    } catch (e) {
+      console.error('Erro ao enviar email OS atribuída:', e);
+    }
+  };
+
+  // --- OS handlers ---
+  const handleFormOSSubmit = async (data) => {
     try {
       if (editingOrdem) {
         await OrdemServico.update(editingOrdem.id, data);
       } else {
-        // Generate a new sequential number for the OS (per empresa)
         const currentYear = new Date().getFullYear();
         const empId = currentUser?.empresa_id;
         const latestOs = ordensDeServico
-            .filter(os => os.numero_ordem && os.numero_ordem.startsWith(`OS-${currentYear}`) &&
-              (!empId || os.empresa_id === empId))
-            .sort((a, b) => {
-                const numA = parseInt(a.numero_ordem.split('-')[2]);
-                const numB = parseInt(b.numero_ordem.split('-')[2]);
-                return numB - numA;
-            })[0];
-
-        let nextSequentialNumber = 1;
-        if (latestOs) {
-            nextSequentialNumber = parseInt(latestOs.numero_ordem.split('-')[2]) + 1;
-        }
-
-        const numeroOrdem = `OS-${currentYear}-${String(nextSequentialNumber).padStart(4, '0')}`;
+          .filter(os => os.numero_ordem?.startsWith(`OS-${currentYear}`) && (!empId || os.empresa_id === empId))
+          .sort((a, b) => parseInt(b.numero_ordem.split('-')[2]) - parseInt(a.numero_ordem.split('-')[2]))[0];
+        const nextNum = latestOs ? parseInt(latestOs.numero_ordem.split('-')[2]) + 1 : 1;
+        const numeroOrdem = `OS-${currentYear}-${String(nextNum).padStart(4, '0')}`;
         await OrdemServico.create({ ...data, numero_ordem: numeroOrdem, data_abertura: new Date().toISOString(), empresa_id: empId || null });
       }
-      setIsFormOpen(false);
+      setIsFormOSOpen(false);
       setEditingOrdem(null);
       loadData();
       setSuccessInfo({ isOpen: true, title: 'Sucesso!', message: 'Ordem de Serviço salva com sucesso.' });
     } catch (error) {
-      console.error("Erro ao salvar Ordem de Serviço:", error);
-      alert(`Erro ao salvar Ordem de Serviço: ${error.message || error.toString()}`);
+      console.error("Erro ao salvar OS:", error);
     }
-  };
-
-  const handleEdit = (ordem) => {
-    setEditingOrdem(ordem);
-    setIsFormOpen(true);
   };
 
   const handleSendEmail = async (recipient, subject, ordem) => {
     try {
+      const aeroportoNome = aeroportos.find(a => a.id === ordem.aeroporto_id)?.nome || '';
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <img src="/logo-dirops.png" alt="DIROPS Logo" style="height: 60px;">
-            <h1 style="color: #1e40af; margin-top: 20px;">DIROPS</h1>
-            <h2 style="color: #1e40af; margin: 10px 0 0 0;">Notificação de Ordem de Serviço: #${ordem.numero_ordem}</h2>
-          </div>
-
-          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #1e40af; margin-top: 0;">Detalhes da Ordem de Serviço:</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px; font-weight: bold; width: 150px;">Nº da Ordem:</td>
-                <td style="padding: 8px;">${ordem.numero_ordem}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px; font-weight: bold;">Título:</td>
-                <td style="padding: 8px;">${ordem.titulo}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px; font-weight: bold;">Prioridade:</td>
-                <td style="padding: 8px;">${ordem.prioridade}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px;">Status:</td>
-                <td style="padding: 8px;">${ordem.status}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px; font-weight: bold;">Categoria:</td>
-                <td style="padding: 8px;">${ordem.categoria_manutencao}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px; font-weight: bold;">Data Abertura:</td>
-                <td style="padding: 8px;">${new Date(ordem.data_abertura).toLocaleDateString('pt-AO')}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px; font-weight: bold;">Aeroporto:</td>
-                <td style="padding: 8px;">${aeroportos.find(a => a.id === ordem.aeroporto_id)?.nome || ordem.aeroporto_id}</td>
-              </tr>
-            </table>
-          </div>
-
-          <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #1e40af; margin-top: 20px; margin-bottom: 10px;">Descrição do Problema:</h3>
-            <p style="margin: 0;">${ordem.descricao_problema}</p>
-
-            ${ordem.acao_corretiva_sugerida ? `
-            <h3 style="color: #1e40af; margin-top: 20px; margin-bottom: 10px;">Ação Corretiva Sugerida:</h3>
-            <p style="margin: 0;">${ordem.acao_corretiva_sugerida}</p>
-            ` : ''}
-          </div>
-
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b;">
-            <p><strong>Sistema DIROPS</strong><br>
-            Direcção de Operações - Serviços de Gestão Aeroportuária</p>
-          </div>
+          <h2 style="color: #1e40af;">Notificação de Ordem de Serviço: #${ordem.numero_ordem}</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; font-weight: bold;">Título:</td><td style="padding: 8px;">${ordem.titulo}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Prioridade:</td><td style="padding: 8px;">${ordem.prioridade}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Status:</td><td style="padding: 8px;">${ordem.status}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Aeroporto:</td><td style="padding: 8px;">${aeroportoNome}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Descrição:</td><td style="padding: 8px;">${ordem.descricao_problema}</td></tr>
+          </table>
+          <p style="margin-top: 20px; color: #64748b;">Sistema DIROPS</p>
         </div>
       `;
-
-      await sendEmailDirect({
-        to: recipient,
-        subject: subject || `DIROPS: Ordem de Serviço ${ordem.numero_ordem}`,
-        body: emailBody
-      });
-
+      await sendEmailDirect({ to: recipient, subject: subject || `DIROPS: OS ${ordem.numero_ordem}`, body: emailBody });
       return true;
-
     } catch (error) {
-      console.error("Erro ao enviar email de manutenção:", error);
-      const errorMessage = error.response?.data?.detail || error.message || 'Ocorreu um erro desconhecido.';
-      alert(`Erro ao enviar email: ${errorMessage}`);
+      console.error("Erro ao enviar email:", error);
       return false;
     }
   };
-
-  const clearAllFilters = () => {
-    setFiltros({
-      busca: '',
-      status: 'todos',
-      prioridade: 'todos',
-      aeroporto: 'todos',
-      categoria: 'todos'
-    });
-  };
-
-  const hasActiveFilters = Object.values(filtros).some(v => v !== '' && v !== 'todos');
-
-  const filteredOrdens = useMemo(() => {
-    return ordensDeServico.filter(os => {
-      const searchMatch = filtros.busca === '' ||
-        os.numero_ordem?.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-        os.titulo?.toLowerCase().includes(filtros.busca.toLowerCase());
-      const statusMatch = filtros.status === 'todos' || os.status === filtros.status;
-      const prioridadeMatch = filtros.prioridade === 'todos' || os.prioridade === filtros.prioridade;
-      const aeroportoMatch = filtros.aeroporto === 'todos' || os.aeroporto_id === filtros.aeroporto;
-      const categoriaMatch = filtros.categoria === 'todos' || os.categoria_manutencao === filtros.categoria;
-
-      return searchMatch && statusMatch && prioridadeMatch && aeroportoMatch && categoriaMatch;
-    });
-  }, [ordensDeServico, filtros]);
 
   const handleExportPDF = async () => {
     setIsLoading(true);
@@ -252,91 +289,64 @@ export default function Manutencao() {
       const ordensParaExportar = selectedOrdens.length > 0
         ? ordensDeServico.filter(os => selectedOrdens.includes(os.id))
         : filteredOrdens;
-
-      if (ordensParaExportar.length === 0) {
-        alert('Nenhuma Ordem de Serviço encontrada para exportar.');
-        setIsLoading(false);
-        return;
-      }
-
+      if (ordensParaExportar.length === 0) { setIsLoading(false); return; }
       const doc = await createPdfDoc({ orientation: 'portrait' });
-
-      const headerOpts = {
-        title: 'Relatório de Ordens de Serviço',
-        logoBase64,
-        date: new Date().toLocaleDateString('pt-AO'),
-        meta: [`Total de Ordens: ${ordensParaExportar.length}`],
-      };
-
-      let y = addHeader(doc, headerOpts);
-
-      // Build table columns and rows
+      let y = addHeader(doc, { title: 'Relatório de Ordens de Serviço', logoBase64, date: new Date().toLocaleDateString('pt-AO'), meta: [`Total: ${ordensParaExportar.length}`] });
       const columns = [
-        { label: 'Protocolo', width: 30 },
-        { label: 'Título', width: 50 },
-        { label: 'Status', width: 28 },
-        { label: 'Prioridade', width: 25 },
-        { label: 'Data', width: 22 },
-        { label: 'Descrição', width: 25 },
+        { label: 'Nº', width: 30 }, { label: 'Título', width: 50 }, { label: 'Status', width: 28 },
+        { label: 'Prioridade', width: 25 }, { label: 'Data', width: 22 }, { label: 'Descrição', width: 25 }
       ];
-
-      const rows = ordensParaExportar.map(ordem => [
-        ordem.numero_ordem || 'N/A',
-        ordem.titulo || 'N/A',
-        ordem.status || 'N/A',
-        ordem.prioridade || 'N/A',
-        new Date(ordem.data_abertura || ordem.created_date).toLocaleDateString('pt-AO'),
-        ordem.descricao_problema
-          ? (ordem.descricao_problema.substring(0, 40) + (ordem.descricao_problema.length > 40 ? '...' : ''))
-          : '',
+      const rows = ordensParaExportar.map(o => [
+        o.numero_ordem || 'N/A', o.titulo || 'N/A', o.status || 'N/A', o.prioridade || 'N/A',
+        new Date(o.data_abertura || o.created_date).toLocaleDateString('pt-AO'),
+        o.descricao_problema ? o.descricao_problema.substring(0, 40) + (o.descricao_problema.length > 40 ? '...' : '') : ''
       ]);
-
-      y = addTable(doc, y, { columns, rows, headerOpts });
-
+      y = addTable(doc, y, { columns, rows, headerOpts: { logoBase64 } });
       addFooter(doc, { generatedBy: currentUser?.full_name || currentUser?.email });
-
       doc.save(`relatorio_manutencao_${new Date().toISOString().split('T')[0]}.pdf`);
-
-      setSuccessInfo({
-        isOpen: true,
-        title: 'Relatório Exportado!',
-        message: 'O seu relatório PDF foi gerado com sucesso.'
-      });
-
+      setSuccessInfo({ isOpen: true, title: 'Relatório Exportado!', message: 'PDF gerado com sucesso.' });
     } catch (error) {
       console.error("Erro ao exportar PDF:", error);
-      alert(`Ocorreu um erro ao gerar o relatório PDF: ${error.message || ''}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const canManage = true; // Everyone can manage now
+  // --- Filtered lists ---
+  const filteredOrdens = useMemo(() => {
+    return ordensDeServico.filter(os => {
+      const searchMatch = filtrosOS.busca === '' || os.numero_ordem?.toLowerCase().includes(filtrosOS.busca.toLowerCase()) || os.titulo?.toLowerCase().includes(filtrosOS.busca.toLowerCase());
+      return searchMatch && (filtrosOS.status === 'todos' || os.status === filtrosOS.status)
+        && (filtrosOS.prioridade === 'todos' || os.prioridade === filtrosOS.prioridade)
+        && (filtrosOS.aeroporto === 'todos' || os.aeroporto_id === filtrosOS.aeroporto)
+        && (filtrosOS.categoria === 'todos' || os.categoria_manutencao === filtrosOS.categoria);
+    });
+  }, [ordensDeServico, filtrosOS]);
 
-  const statusOptions = [
+  // --- SS Stats ---
+  const ssStats = useMemo(() => ({
+    total: solicitacoes.length,
+    abertas: solicitacoes.filter(s => s.status === 'aberta').length,
+    em_analise: solicitacoes.filter(s => s.status === 'em_analise').length,
+    aprovadas: solicitacoes.filter(s => s.status === 'aprovada').length,
+    rejeitadas: solicitacoes.filter(s => s.status === 'rejeitada').length,
+  }), [solicitacoes]);
+
+  const aeroportoOptions = useMemo(() => [
     { value: 'todos', label: 'Todos' },
-    { value: 'pendente', label: 'Pendente' },
-    { value: 'atribuida', label: 'Atribuída' },
-    { value: 'em_execucao', label: 'Em Execução' },
-    { value: 'aguardando_verificacao', label: 'Aguardando Verificação' },
-    { value: 'concluida', label: 'Concluída' },
-    { value: 'rejeitada', label: 'Rejeitada' }
+    ...aeroportos.map(a => ({ value: a.id, label: a.nome }))
+  ], [aeroportos]);
+
+  const statusOSOptions = [
+    { value: 'todos', label: 'Todos' }, { value: 'pendente', label: 'Pendente' }, { value: 'atribuida', label: 'Atribuída' },
+    { value: 'em_execucao', label: 'Em Execução' }, { value: 'aguardando_verificacao', label: 'Aguardando Verificação' },
+    { value: 'concluida', label: 'Concluída' }, { value: 'rejeitada', label: 'Rejeitada' }
   ];
 
   const prioridadeOptions = [
-    { value: 'todos', label: 'Todas' },
-    { value: 'baixa', label: 'Baixa' },
-    { value: 'media', label: 'Média' },
-    { value: 'alta', label: 'Alta' },
-    { value: 'urgente', label: 'Urgente' }
+    { value: 'todos', label: 'Todas' }, { value: 'baixa', label: 'Baixa' },
+    { value: 'media', label: 'Média' }, { value: 'alta', label: 'Alta' }, { value: 'urgente', label: 'Urgente' }
   ];
-
-  const aeroportoOptions = useMemo(() => {
-    return [
-      { value: 'todos', label: 'Todos' },
-      ...aeroportos.map(a => ({ value: a.id, label: a.nome })) // Changed a.codigo_icao to a.id based on the filtering logic that uses a.id
-    ];
-  }, [aeroportos]);
 
   return (
     <div className="p-6 bg-slate-50 min-h-screen">
@@ -348,94 +358,171 @@ export default function Manutencao() {
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
-            <Button onClick={() => setIsFormOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Ordem de Serviço
-            </Button>
           </div>
         </div>
 
-        <ManutencaoStats ordens={ordensDeServico} />
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className={`grid w-full ${canManage ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <TabsTrigger value="solicitacoes" className="flex items-center gap-2">
+              <ClipboardList className="w-4 h-4" />
+              Solicitações (SS)
+              {ssStats.abertas > 0 && <Badge variant="destructive" className="ml-1 text-xs">{ssStats.abertas}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="ordens" className="flex items-center gap-2">
+              <Wrench className="w-4 h-4" />
+              Ordens de Serviço (OS)
+            </TabsTrigger>
+            {canManage && (
+              <TabsTrigger value="configuracoes" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                Configurações
+              </TabsTrigger>
+            )}
+          </TabsList>
 
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Filter className="w-5 h-5 text-slate-500" />
-                Filtros e Exportação
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                {hasActiveFilters && (
-                  <Button variant="outline" size="sm" onClick={clearAllFilters} className="text-red-600 border-red-200 hover:bg-red-50">
-                    <X className="w-4 h-4 mr-1" />
-                    Limpar Filtros
-                  </Button>
-                )}
-                <Button variant="outline" onClick={handleExportPDF} disabled={isLoading}>
-                  <FileDown className="w-4 h-4 mr-2" />
-                  Exportar PDF ({selectedOrdens.length > 0 ? selectedOrdens.length : filteredOrdens.length})
+          {/* === ABA SOLICITAÇÕES === */}
+          <TabsContent value="solicitacoes" className="space-y-6">
+            {/* SS Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{ssStats.total}</p><p className="text-sm text-slate-500">Total SS</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-yellow-600">{ssStats.abertas}</p><p className="text-sm text-slate-500">Abertas</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-blue-600">{ssStats.em_analise}</p><p className="text-sm text-slate-500">Em Análise</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600">{ssStats.aprovadas}</p><p className="text-sm text-slate-500">Aprovadas</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-red-600">{ssStats.rejeitadas}</p><p className="text-sm text-slate-500">Rejeitadas</p></CardContent></Card>
+            </div>
+
+            <div className="flex justify-end">
+              <Button onClick={() => setIsFormSSOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Solicitação
+              </Button>
+            </div>
+
+            <SolicitacoesList
+              solicitacoes={solicitacoes}
+              aeroportos={aeroportos}
+              isLoading={isLoading}
+              canManage={canManage}
+              onAnalisar={setAnalisarSS}
+              onViewDetail={setDetailSS}
+            />
+          </TabsContent>
+
+          {/* === ABA ORDENS DE SERVIÇO === */}
+          <TabsContent value="ordens" className="space-y-6">
+            <ManutencaoStats ordens={ordensDeServico} />
+
+            <div className="flex justify-end">
+              {canManage && (
+                <Button onClick={() => setIsFormOSOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nova Ordem de Serviço
                 </Button>
-              </div>
+              )}
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              <div className="lg:col-span-2">
-                <Label>Pesquisar por Nº ou Título</Label>
-                <Input
-                  value={filtros.busca}
-                  onChange={e => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>Status</Label>
-                <Select
-                  options={statusOptions}
-                  value={filtros.status}
-                  onValueChange={v => setFiltros(prev => ({ ...prev, status: v }))}
-                />
-              </div>
-              <div>
-                <Label>Prioridade</Label>
-                <Select
-                  options={prioridadeOptions}
-                  value={filtros.prioridade}
-                  onValueChange={v => setFiltros(prev => ({ ...prev, prioridade: v }))}
-                />
-              </div>
-              <div>
-                <Label>Aeroporto</Label>
-                <Select
-                  options={aeroportoOptions}
-                  value={filtros.aeroporto}
-                  onValueChange={v => setFiltros(prev => ({ ...prev, aeroporto: v }))}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <ManutencaoList
-          ordensServico={filteredOrdens}
-          aeroportos={aeroportos}
-          isLoading={isLoading}
-          onReload={loadData}
-          canManage={canManage}
-          selectedOrdens={selectedOrdens}
-          setSelectedOrdens={setSelectedOrdens}
-          onOpenDetail={setDetailOrdem}
-          onAtribuir={setAtribuirOrdem}
-          onResponder={setResponderOrdem}
-          onEdit={handleEdit}
-          onSendEmail={handleSendEmail}
-        />
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Filter className="w-5 h-5 text-slate-500" />
+                    Filtros e Exportação
+                  </CardTitle>
+                  <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={isLoading}>
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Exportar PDF ({selectedOrdens.length > 0 ? selectedOrdens.length : filteredOrdens.length})
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  <div className="lg:col-span-2">
+                    <Label>Pesquisar por Nº ou Título</Label>
+                    <Input value={filtrosOS.busca} onChange={e => setFiltrosOS(prev => ({ ...prev, busca: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <Select options={statusOSOptions} value={filtrosOS.status} onValueChange={v => setFiltrosOS(prev => ({ ...prev, status: v }))} />
+                  </div>
+                  <div>
+                    <Label>Prioridade</Label>
+                    <Select options={prioridadeOptions} value={filtrosOS.prioridade} onValueChange={v => setFiltrosOS(prev => ({ ...prev, prioridade: v }))} />
+                  </div>
+                  <div>
+                    <Label>Aeroporto</Label>
+                    <Select options={aeroportoOptions} value={filtrosOS.aeroporto} onValueChange={v => setFiltrosOS(prev => ({ ...prev, aeroporto: v }))} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <ManutencaoList
+              ordensServico={filteredOrdens}
+              aeroportos={aeroportos}
+              isLoading={isLoading}
+              onReload={loadData}
+              canManage={canManage}
+              selectedOrdens={selectedOrdens}
+              setSelectedOrdens={setSelectedOrdens}
+              onOpenDetail={setDetailOrdem}
+              onAtribuir={setAtribuirOrdem}
+              onResponder={(ordem, acao) => { setResponderOrdem(ordem); setResponderAcao(acao || 'aceitar'); }}
+              onEdit={(ordem) => { setEditingOrdem(ordem); setIsFormOSOpen(true); }}
+              onSendEmail={handleSendEmail}
+            />
+          </TabsContent>
+
+          {/* === ABA CONFIGURAÇÕES === */}
+          {canManage && (
+            <TabsContent value="configuracoes" className="space-y-6">
+              <ConfigNotificacoesManutencao
+                currentUser={currentUser}
+                availableUsers={allUsers}
+              />
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
 
-      {isFormOpen && (
+      {/* === MODAIS === */}
+
+      {isFormSSOpen && (
+        <FormSolicitacaoServico
+          isOpen={isFormSSOpen}
+          onClose={() => setIsFormSSOpen(false)}
+          aeroportos={aeroportos}
+          currentUser={currentUser}
+          onSuccess={(ssData) => { loadData(); notifyNewSS(ssData); setSuccessInfo({ isOpen: true, title: 'Sucesso!', message: 'Solicitação de Serviço criada com sucesso. Gestores notificados por email.' }); }}
+        />
+      )}
+
+      {analisarSS && (
+        <AnalisarSSModal
+          isOpen={!!analisarSS}
+          onClose={() => setAnalisarSS(null)}
+          solicitacao={analisarSS}
+          aeroportos={aeroportos}
+          currentUser={currentUser}
+          onSuccess={() => { setAnalisarSS(null); loadData(); setSuccessInfo({ isOpen: true, title: 'Sucesso!', message: 'Solicitação analisada com sucesso.' }); }}
+          onApproved={(ss, os) => notifySSApproved(ss, os)}
+          onRejected={(ss, motivo) => notifySSRejected(ss, motivo)}
+        />
+      )}
+
+      {detailSS && (
+        <SolicitacaoDetailModal
+          isOpen={!!detailSS}
+          onClose={() => setDetailSS(null)}
+          solicitacao={detailSS}
+          aeroportos={aeroportos}
+        />
+      )}
+
+      {isFormOSOpen && (
         <FormOrdemServico
-          isOpen={isFormOpen}
-          onClose={() => { setIsFormOpen(false); setEditingOrdem(null); }}
-          onSubmit={handleFormSubmit}
+          isOpen={isFormOSOpen}
+          onClose={() => { setIsFormOSOpen(false); setEditingOrdem(null); }}
+          onSubmit={handleFormOSSubmit}
           aeroportos={aeroportos}
           ordemInicial={editingOrdem}
         />
@@ -447,7 +534,7 @@ export default function Manutencao() {
           onClose={() => setDetailOrdem(null)}
           ordem={detailOrdem}
           aeroportos={aeroportos}
-          users={users}
+          users={[]}
         />
       )}
 
@@ -457,21 +544,31 @@ export default function Manutencao() {
           onClose={() => setAtribuirOrdem(null)}
           ordem={atribuirOrdem}
           users={[]}
-          onSuccess={() => {
-            loadData();
-            setSuccessInfo({isOpen: true, title: "Sucesso", message: "Ordem de serviço atribuída com sucesso!"});
-          }}
+          onSuccess={() => { setAtribuirOrdem(null); loadData(); setSuccessInfo({ isOpen: true, title: 'Sucesso', message: 'Ordem de serviço atribuída com sucesso! Responsável notificado por email.' }); }}
+          onAssigned={(os, email, name) => notifyOSAssigned(os, email, name)}
         />
       )}
 
       {responderOrdem && (
         <ResponderOSModal
           isOpen={!!responderOrdem}
-          onClose={() => setResponderOrdem(null)}
+          onClose={() => { setResponderOrdem(null); setResponderAcao('aceitar'); }}
           ordem={responderOrdem}
-          onSuccess={() => {
+          acao={responderAcao}
+          currentUser={currentUser}
+          onSubmit={async (payload) => {
+            const { ordem_id, status, observacoes, ...extraFields } = payload;
+            const updateData = { status };
+            if (observacoes) updateData.observacoes_manutencao = observacoes;
+            Object.assign(updateData, extraFields);
+            // Remove non-DB fields
+            delete updateData.acao;
+            delete updateData.ordem_id;
+            await OrdemServico.update(ordem_id, updateData);
+            setResponderOrdem(null);
+            setResponderAcao('aceitar');
             loadData();
-            setSuccessInfo({isOpen: true, title: "Sucesso", message: "Resposta à ordem de serviço enviada com sucesso!"});
+            setSuccessInfo({ isOpen: true, title: 'Sucesso', message: 'Resposta à OS enviada com sucesso!' });
           }}
         />
       )}

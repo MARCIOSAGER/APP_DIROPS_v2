@@ -14,10 +14,12 @@ import { CalculoTarifa } from '@/entities/CalculoTarifa';
 import { Voo } from '@/entities/Voo';
 import { VooLigado } from '@/entities/VooLigado';
 import { Proforma } from '@/entities/Proforma';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfirm, companhias, aeroportos }) {
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [calculos, setCalculos] = useState([]);
   const [voos, setVoos] = useState([]);
   const [voosLigados, setVoosLigados] = useState([]);
@@ -210,6 +212,8 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (selectedCalcItems.length === 0) return;
+
+    guardedSubmit(async () => {
     setIsSubmitting(true);
 
     try {
@@ -240,6 +244,7 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
     } finally {
       setIsSubmitting(false);
     }
+    });
   };
 
   const companhiaOptions = companhias.map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }));

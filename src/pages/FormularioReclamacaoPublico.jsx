@@ -28,6 +28,7 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { Empresa } from '@/entities/Empresa';
 import { UploadFile, SendEmail } from '@/integrations/Core';
 import { getEmpresaLogoByAeroporto } from '@/components/lib/userUtils';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const generateProtocolo = () => `REC-${new Date().getFullYear()}${String(Date.now()).slice(-6)}`;
 
@@ -40,6 +41,7 @@ export default function FormularioReclamacaoPublico() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [protocolo, setProtocolo] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   
   const [formData, setFormData] = useState({
     titulo: '',
@@ -94,14 +96,15 @@ export default function FormularioReclamacaoPublico() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setMessage('');
 
     if (!acceptedTerms) {
       setMessage('Por favor, aceite as condições para continuar.');
-      setIsLoading(false);
       return;
     }
+
+    guardedSubmit(async () => {
+    setIsLoading(true);
 
     try {
       const protocolo_numero = generateProtocolo();
@@ -208,6 +211,7 @@ export default function FormularioReclamacaoPublico() {
     } finally {
       setIsLoading(false);
     }
+    });
   };
 
   if (isSubmitted) {

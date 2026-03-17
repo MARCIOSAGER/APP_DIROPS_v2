@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Building, Save, X, AlertCircle } from 'lucide-react';
 import { Alert, AlertTitle } from '@/components/ui/alert';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function FormNovaEmpresaPublico({ isOpen, onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -16,6 +17,7 @@ export default function FormNovaEmpresaPublico({ isOpen, onClose, onSave }) {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,6 +25,7 @@ export default function FormNovaEmpresaPublico({ isOpen, onClose, onSave }) {
       setError('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
+    guardedSubmit(async () => {
     setError('');
     setIsLoading(true);
     try {
@@ -32,6 +35,7 @@ export default function FormNovaEmpresaPublico({ isOpen, onClose, onSave }) {
     } finally {
       setIsLoading(false);
     }
+    });
   };
 
   const handleChange = (field, value) => {

@@ -68,12 +68,12 @@ export default function Credenciamento() {
     // Tentar carregar credenciamentos, mas não falhar se der erro
     if (user.empresa_id) {
       try {
-        credenciamentosData = await CredenciamentoEntity.list();
-        // Filtrar localmente se a API não suportar filtros
-        credenciamentosData = (credenciamentosData || []).filter(c => c.empresa_solicitante_id === user.empresa_id);
-        console.log('✅ Credenciamentos carregados:', credenciamentosData.length);
+        // Server-side filter by empresa_solicitante_id
+        credenciamentosData = await CredenciamentoEntity.filter({ empresa_solicitante_id: user.empresa_id }, '-data_solicitacao');
+        credenciamentosData = credenciamentosData || [];
+        console.log('Credenciamentos carregados:', credenciamentosData.length);
       } catch (credError) {
-        console.warn('❌ Erro ao carregar credenciamentos:', credError);
+        console.warn('Erro ao carregar credenciamentos:', credError);
         credenciamentosData = [];
       }
     }
@@ -108,11 +108,11 @@ export default function Credenciamento() {
     // Tentar carregar empresa do utilizador
     if (user.empresa_id) {
       try {
-        empresasData = await Empresa.list();
-        empresasData = empresasData.filter(e => e.id === user.empresa_id);
-        console.log('✅ Empresa do utilizador carregada:', empresasData.length);
+        const empresaData = await Empresa.get(user.empresa_id);
+        empresasData = empresaData ? [empresaData] : [];
+        console.log('Empresa do utilizador carregada:', empresasData.length);
       } catch (empresaError) {
-        console.warn('❌ Erro ao carregar empresa:', empresaError);
+        console.warn('Erro ao carregar empresa:', empresaError);
         // Criar empresa fictícia para não quebrar o sistema
         empresasData = [{
           id: user.empresa_id,

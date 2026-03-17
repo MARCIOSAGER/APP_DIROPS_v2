@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { User, Save, X } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const PERFIL_OPTIONS = [
   { value: 'administrador', label: 'Administrador' },
@@ -24,6 +25,7 @@ const STATUS_OPTIONS = [
 
 export default function EditUserModal({ isOpen, onClose, user, aeroportos, empresas, onSave }) {
   const [formData, setFormData] = useState({});
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
     if (user && isOpen) {
@@ -95,7 +97,7 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Ensure perfis is always defined as array, potentially empty if none selected
     // Garantir que a lista de aeroportos é única antes de salvar
     const dataToSave = {
@@ -103,8 +105,10 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
       perfis: Array.isArray(formData.perfis) ? formData.perfis : [],
       aeroportos_acesso: [...new Set(formData.aeroportos_acesso || [])]
     };
-    
-    await onSave(user.id, dataToSave);
+
+    guardedSubmit(async () => {
+      await onSave(user.id, dataToSave);
+    });
   };
 
   if (!user) return null;
@@ -270,9 +274,9 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
               <X className="w-4 h-4 mr-1" />
               Cancelar
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Save className="w-4 h-4 mr-1" />
-              Salvar Alterações
+              {isSubmitting ? 'A guardar...' : 'Salvar Alterações'}
             </Button>
           </DialogFooter>
         </form>

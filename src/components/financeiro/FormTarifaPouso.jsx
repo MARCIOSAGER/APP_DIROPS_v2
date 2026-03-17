@@ -4,8 +4,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const FormTarifaPouso = ({ isOpen, onClose, onSubmit, tarifa }) => {
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     faixa_min: '',
     faixa_max: '',
@@ -36,7 +38,9 @@ const FormTarifaPouso = ({ isOpen, onClose, onSubmit, tarifa }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await onSubmit(formData);
+    guardedSubmit(async () => {
+      await onSubmit(formData);
+    });
   };
 
   const categoriaOptions = [
@@ -134,7 +138,7 @@ const FormTarifaPouso = ({ isOpen, onClose, onSubmit, tarifa }) => {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">Salvar</Button>
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? 'A guardar...' : 'Salvar'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

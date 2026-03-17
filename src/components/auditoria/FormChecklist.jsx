@@ -21,6 +21,7 @@ import { ItemAuditoria } from '@/entities/ItemAuditoria';
 import { RespostaAuditoria } from '@/entities/RespostaAuditoria';
 import { ProcessoAuditoria } from '@/entities/ProcessoAuditoria';
 import { UploadFile } from '@/integrations/Core';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const SITUACAO_OPTIONS = [
   { value: 'C', label: 'Conforme', icon: CheckCircle, color: 'text-green-600' },
@@ -31,13 +32,15 @@ const SITUACAO_OPTIONS = [
 export default function FormChecklist({
   isOpen,
   onClose,
-  processo, 
-  onUpdate 
+  processo,
+  onUpdate,
+  currentUser
 }) {
   const [itens, setItens] = useState([]);
   const [respostas, setRespostas] = useState({});
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [currentStep, setCurrentStep] = useState(0);
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -91,10 +94,7 @@ export default function FormChecklist({
           respostasIniciais[item.id] = {
             situacao_encontrada: '',
             observacao: '',
-            evidencias: [],
-            acao_corretiva_recomendada: '',
-            prazo_correcao: '',
-            responsavel_correcao: ''
+            evidencias: []
           };
         }
       });
@@ -158,6 +158,7 @@ export default function FormChecklist({
   };
 
   const handleSave = async (finalizar = false) => {
+    guardedSubmit(async () => {
     setIsSaving(true);
     setMessage({ type: '', text: '' });
 
@@ -210,10 +211,36 @@ export default function FormChecklist({
           percentual_conformidade: percentual_conformidade
         });
 
-        setMessage({ type: 'success', text: 'Auditoria finalizada com sucesso!' });
+        // Criar Solicitações de Serviço (SS) para itens não conformes
+        const { SolicitacaoServico } = await import('@/entities/SolicitacaoServico');
+        const itensNC = Object.entries(respostas).filter(([_, r]) => r.situacao_encontrada === 'NC');
+
+        for (const [itemId] of itensNC) {
+          const item = itens.find(i => i.id === itemId);
+          if (item) {
+            const resp = respostas[itemId];
+            const numeroSS = `SS-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`;
+
+            await SolicitacaoServico.create({
+              numero_ss: numeroSS,
+              titulo: `Não conformidade (Auditoria): ${item.item}`,
+              descricao: `Item não conforme identificado durante auditoria.\n\nObservações: ${resp.observacao || 'Sem observações adicionais.'}`,
+              aeroporto_id: processo.aeroporto_id || null,
+              empresa_id: currentUser?.empresa_id || null,
+              origem: 'inspecao',
+              status: 'aberta',
+              prioridade_sugerida: itens_nao_conformes_calc > 5 ? 'alta' : 'media',
+              solicitante_id: currentUser?.id || null,
+              solicitante_nome: currentUser?.full_name || null,
+              solicitante_email: currentUser?.email || null,
+            });
+          }
+        }
+
+        setMessage({ type: 'success', text: `Auditoria finalizada com sucesso!${itensNC.length > 0 ? ` ${itensNC.length} SS criada(s) na Manutenção.` : ''}` });
 
         setTimeout(() => {
-          onUpdate(); // Call the onUpdate callback to refresh the main page
+          onUpdate();
           onClose();
         }, 2000);
       } else {
@@ -235,6 +262,7 @@ export default function FormChecklist({
     } finally {
       setIsSaving(false);
     }
+    });
   };
 
   const currentItem = itens[currentStep];
@@ -428,38 +456,11 @@ export default function FormChecklist({
                     )}
                   </div>
 
-                  {/* Ação Corretiva (se NC) */}
+                  {/* Aviso NC → SS */}
                   {currentResposta.situacao_encontrada === 'NC' && (
-                    <>
-                      <div className="space-y-2">
-                        <Label>Ação Corretiva Recomendada</Label>
-                        <Textarea
-                          placeholder="Descreva a ação corretiva recomendada..."
-                          value={currentResposta.acao_corretiva_recomendada || ''}
-                          onChange={(e) => handleRespostaChange(currentItem.id, 'acao_corretiva_recomendada', e.target.value)}
-                          rows={2}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Responsável pela Correção</Label>
-                          <Input
-                            placeholder="Nome do responsável"
-                            value={currentResposta.responsavel_correcao || ''}
-                            onChange={(e) => handleRespostaChange(currentItem.id, 'responsavel_correcao', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Prazo para Correção</Label>
-                          <Input
-                            type="date"
-                            value={currentResposta.prazo_correcao || ''}
-                            onChange={(e) => handleRespostaChange(currentItem.id, 'prazo_correcao', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </>
+                    <div className="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                      <p className="text-sm text-red-700 font-medium">⚠ Uma Solicitação de Serviço (SS) será criada automaticamente na Manutenção ao finalizar a auditoria.</p>
+                    </div>
                   )}
                 </CardContent>
               </Card>

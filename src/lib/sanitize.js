@@ -10,6 +10,9 @@ export function sanitizeHtml(dirty) {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'span', 'div', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'h1', 'h2', 'h3', 'h4', 'img', 'hr'],
     ALLOWED_ATTR: ['href', 'target', 'rel', 'style', 'class', 'src', 'alt', 'width', 'height', 'colspan', 'rowspan'],
     ALLOW_DATA_ATTR: false,
+    FORBID_CONTENTS: ['script', 'style'],
+    // Block style-based URL exfiltration
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
   });
 }
 

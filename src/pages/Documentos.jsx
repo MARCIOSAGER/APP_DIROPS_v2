@@ -8,7 +8,7 @@ import { Documento } from '@/entities/Documento';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
 import { downloadAsCSV } from '../components/lib/export';
-import { getAeroportosPermitidos, filtrarDadosPorAcesso } from '@/components/lib/userUtils';
+import { getAeroportosPermitidos, filtrarDadosPorAcesso, isSuperAdmin } from '@/components/lib/userUtils';
 
 import DocumentosList from '../components/documentos/DocumentosList';
 import FormDocumento from '../components/documentos/FormDocumento';
@@ -68,8 +68,14 @@ export default function Documentos() {
       const user = await User.me();
       setCurrentUser(user);
 
+      // Server-side filter by empresa_id when user belongs to one
+      const empId = user.empresa_id;
+      const documentoPromise = empId
+        ? Documento.filter({ empresa_id: empId }, '-data_publicacao')
+        : Documento.list('-data_publicacao');
+
       const [documentosData, aeroportosData, pastasData] = await Promise.all([
-        Documento.list('-data_publicacao'),
+        documentoPromise,
         Aeroporto.list(),
         Pasta.list()
       ]);

@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Select from '@/components/ui/select';
 import { Percent, DollarSign } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function FormImposto({ isOpen, onClose, onSubmit, imposto, aeroportos }) {
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     tipo: '',
     valor: '',
@@ -44,7 +46,9 @@ export default function FormImposto({ isOpen, onClose, onSubmit, imposto, aeropo
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    guardedSubmit(async () => {
+      await onSubmit(formData);
+    });
   };
 
   const aeroportoOptions = aeroportos.map(aeroporto => ({
@@ -158,8 +162,8 @@ export default function FormImposto({ isOpen, onClose, onSubmit, imposto, aeropo
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-              {imposto ? 'Atualizar' : 'Criar'} Imposto
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
+              {isSubmitting ? 'A guardar...' : `${imposto ? 'Atualizar' : 'Criar'} Imposto`}
             </Button>
           </DialogFooter>
         </form>

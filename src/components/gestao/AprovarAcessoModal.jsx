@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const PERFIL_OPTIONS = [
   { value: 'administrador', label: 'Administrador' },
@@ -20,6 +21,7 @@ export default function AprovarAcessoModal({ isOpen, onClose, solicitacao, aerop
   const [aeroportosAprovados, setAeroportosAprovados] = useState([]);
   const [observacoes, setObservacoes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [empresaId, setEmpresaId] = useState('');
 
   useEffect(() => {
@@ -72,7 +74,8 @@ export default function AprovarAcessoModal({ isOpen, onClose, solicitacao, aerop
 
   const handleSubmit = async () => {
     if (!solicitacao) return;
-    
+
+    guardedSubmit(async () => {
     setIsSubmitting(true);
     try {
       // Garantir que os aeroportos aprovados são únicos e válidos
@@ -94,6 +97,7 @@ export default function AprovarAcessoModal({ isOpen, onClose, solicitacao, aerop
     } finally {
       setIsSubmitting(false);
     }
+    });
   };
 
   if (!solicitacao) return null;

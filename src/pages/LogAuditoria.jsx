@@ -124,7 +124,7 @@ export default function LogAuditoriaPage() {
   const loadAuditLogs = async () => {
     try {
       // Carregar apenas os logs mais recentes para evitar sobrecarga
-      const logsData = await LogAuditoria.list('-created_date', 100);
+      const logsData = await LogAuditoria.list('-created_date', 200);
       setLogs(logsData || []);
       setFilteredLogs(logsData || []);
     } catch (error) {

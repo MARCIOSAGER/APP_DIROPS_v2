@@ -19,6 +19,7 @@ import SuccessModal from '@/components/shared/SuccessModal';
 import PlaceholderManagement from '@/components/configuracoes/PlaceholderManagement';
 import ZAPIAtendimentoChat from '@/components/configuracoes/ZAPIAtendimentoChat';
 import ZAPIGruposRegistrados from '@/components/configuracoes/ZAPIGruposRegistrados';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const EVENTOS_DISPONIVEIS = [
   { value: 'voo_ligado_criado', label: '✈️ Voo Ligado Criado' },
@@ -234,7 +235,8 @@ export default function GestaoNotificacoes() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRegra, setEditingRegra] = useState(null);
   const [activeTab, setActiveTab] = useState('geral');
-  
+  const { guardedSubmit } = useSubmitGuard();
+
   const [formData, setFormData] = useState({
     nome: '',
     evento_gatilho: '',
@@ -442,6 +444,7 @@ export default function GestaoNotificacoes() {
       return;
     }
 
+    guardedSubmit(async () => {
     try {
       const dataToSave = {
         ...formData,
@@ -472,6 +475,7 @@ export default function GestaoNotificacoes() {
         message: 'Não foi possível salvar a regra.'
       });
     }
+    });
   };
 
   const handleToggleAtivo = async (regra) => {

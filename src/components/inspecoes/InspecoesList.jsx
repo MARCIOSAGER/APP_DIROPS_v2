@@ -49,6 +49,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [inspecaoToDelete, setInspecaoToDelete] = useState(null);
+  const [errorInfo, setErrorInfo] = useState({ isOpen: false, title: '', message: '' });
   const [empresas, setEmpresas] = useState([]);
 
   useEffect(() => {
@@ -134,13 +135,15 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
     if (!inspecaoToDelete) return;
 
     try {
-      await Inspecao.delete(inspecaoToDelete.id);
+      await Inspecao.update(inspecaoToDelete.id, { status: 'cancelada' });
       setIsDeleteModalOpen(false);
       setInspecaoToDelete(null);
       onReload();
     } catch (error) {
       console.error('Erro ao excluir inspeção:', error);
-      alert('Erro ao excluir a inspeção. Tente novamente.');
+      setIsDeleteModalOpen(false);
+      setInspecaoToDelete(null);
+      setErrorInfo({ isOpen: true, title: 'Erro ao Excluir', message: 'Não foi possível excluir a inspeção. Verifique se possui permissão para esta ação.' });
     }
   };
 
@@ -781,6 +784,14 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
         }
         confirmText="Excluir"
         cancelText="Cancelar"
+      />
+
+      <AlertModal
+        isOpen={errorInfo.isOpen}
+        onClose={() => setErrorInfo({ isOpen: false, title: '', message: '' })}
+        type="error"
+        title={errorInfo.title}
+        message={errorInfo.message}
       />
     </div>
   );

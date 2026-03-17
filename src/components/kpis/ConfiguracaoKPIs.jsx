@@ -7,9 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { TipoKPI } from '@/entities/TipoKPI';
 import AlertModal from '@/components/shared/AlertModal';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 // Componente para o formulário (poderia ser movido para seu próprio ficheiro se complexo)
 const FormTipoKPI = ({ tipoInicial, onSuccess, onCancel }) => {
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [tipo, setTipo] = useState(tipoInicial || {
     nome: '',
     codigo: '', // 'codigo' is still part of the state as it's needed for update/creation
@@ -33,13 +35,14 @@ const FormTipoKPI = ({ tipoInicial, onSuccess, onCancel }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    guardedSubmit(async () => {
     try {
       const dataToSubmit = { ...tipo };
       // Gera o código automaticamente apenas na criação se ainda não existir
       if (!dataToSubmit.id) { // This means it's a new KPI
         dataToSubmit.codigo = generateCode(dataToSubmit.nome);
       }
-      
+
       if (dataToSubmit.id) {
         await TipoKPI.update(dataToSubmit.id, dataToSubmit);
       } else {
@@ -49,6 +52,7 @@ const FormTipoKPI = ({ tipoInicial, onSuccess, onCancel }) => {
     } catch (error) {
       console.error("Erro ao salvar tipo de KPI:", error);
     }
+    });
   };
 
   return (
@@ -142,8 +146,8 @@ const FormTipoKPI = ({ tipoInicial, onSuccess, onCancel }) => {
         </div>
       <div className="flex justify-end gap-2 pt-4 border-t">
         <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-          {tipo.id ? 'Atualizar' : 'Criar'}
+        <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
+          {isSubmitting ? 'A guardar...' : (tipo.id ? 'Atualizar' : 'Criar')}
         </Button>
       </div>
     </form>

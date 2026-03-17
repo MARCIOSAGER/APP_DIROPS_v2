@@ -102,9 +102,15 @@ export default function KPIsOperacionais() {
       const user = await User.me();
       setCurrentUser(user);
 
+      // Server-side filter by empresa_id when applicable
+      const empId = user.empresa_id;
+      const medicaoPromise = empId
+        ? MedicaoKPI.filter({ empresa_id: empId }, '-data_medicao')
+        : MedicaoKPI.list('-data_medicao');
+
       const [tiposData, medicoesData, aeroportosData, companhiasData] = await Promise.all([
       TipoKPI.list(),
-      MedicaoKPI.list('-data_medicao'),
+      medicaoPromise,
       Aeroporto.list(),
       CompanhiaAerea.list()]
       );

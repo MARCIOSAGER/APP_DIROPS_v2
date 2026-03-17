@@ -94,8 +94,13 @@ export default function ProformaPage() {
       const user = ensureUserProfilesExist(await User.me());
       setCurrentUser(user);
 
+      // Server-side empresa filter
+      const empresaIdFiltro = effectiveEmpresaId || user.empresa_id;
+      const proformaFilters = {};
+      if (empresaIdFiltro) proformaFilters.empresa_id = empresaIdFiltro;
+
       const [proformasData, companhiasData, aeroportosData] = await Promise.all([
-        Proforma.list(),
+        Proforma.filter(proformaFilters, '-data_emissao'),
         CompanhiaAerea.list(),
         Aeroporto.list(),
       ]);
@@ -103,13 +108,7 @@ export default function ProformaPage() {
       // Filtrar aeroportos por empresa/permissões do utilizador
       const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData);
 
-      // Filtrar proformas por empresa (usa CompanyView para superadmin)
-      const empresaIdFiltro = effectiveEmpresaId || user.empresa_id;
-      const proformasFiltradas = empresaIdFiltro
-        ? proformasData.filter(p => p.empresa_id === empresaIdFiltro)
-        : proformasData;
-
-      setProformas(proformasFiltradas);
+      setProformas(proformasData);
       setCompanhias(companhiasData);
       setAeroportos(aeroportosFiltrados);
     } catch (error) {

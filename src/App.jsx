@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react'
+import * as Sentry from '@sentry/react'
 import './App.css'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -30,6 +31,7 @@ class ErrorBoundary extends React.Component {
   }
   componentDidCatch(error, errorInfo) {
     console.error('[ErrorBoundary]', error, errorInfo);
+    Sentry.captureException(error, { extra: errorInfo });
   }
   render() {
     if (this.state.hasError) {

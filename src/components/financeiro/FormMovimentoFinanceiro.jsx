@@ -9,6 +9,7 @@ import Select from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { getAeroportosPermitidos } from '@/components/lib/userUtils';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const CATEGORIAS_RECEITA = [
   'Tarifas de Pouso',
@@ -50,6 +51,7 @@ export default function FormMovimentoFinanceiro({
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   // Filtrar aeroportos baseado no acesso do utilizador (empresa-based)
   const aeroportosAcesso = useMemo(() => {
@@ -110,16 +112,18 @@ export default function FormMovimentoFinanceiro({
     e.preventDefault();
     if (!validate()) return;
 
-    setIsLoading(true);
-    try {
-      await onSubmit(formData);
-      onClose();
-    } catch (error) {
-      console.error('Erro ao salvar movimento:', error);
-      setErrors({ submit: 'Erro ao salvar o movimento. Tente novamente.' });
-    } finally {
-      setIsLoading(false);
-    }
+    guardedSubmit(async () => {
+      setIsLoading(true);
+      try {
+        await onSubmit(formData);
+        onClose();
+      } catch (error) {
+        console.error('Erro ao salvar movimento:', error);
+        setErrors({ submit: 'Erro ao salvar o movimento. Tente novamente.' });
+      } finally {
+        setIsLoading(false);
+      }
+    });
   };
 
   const aeroportoOptions = useMemo(() => {
@@ -252,12 +256,12 @@ export default function FormMovimentoFinanceiro({
           <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
             Cancelar
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={isLoading || aeroportosAcesso.length === 0}
-            className="bg-green-600 hover:bg-green-700"
+          <Button
+            onClick={handleSubmit}
+            disabled={isLoading || isSubmitting || aeroportosAcesso.length === 0}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {isLoading ? 'A guardar...' : (movimento ? 'Atualizar' : 'Criar Movimento')}
+            {isLoading || isSubmitting ? 'A guardar...' : (movimento ? 'Atualizar' : 'Criar Movimento')}
           </Button>
         </DialogFooter>
       </DialogContent>

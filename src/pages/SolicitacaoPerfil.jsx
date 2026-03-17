@@ -17,6 +17,7 @@ import { Empresa } from '@/entities/Empresa';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { createPageUrl } from '@/utils';
 import { sendNotificationEmail } from '@/functions/sendNotificationEmail';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function SolicitacaoPerfil() {
   const [user, setUser] = useState(null);
@@ -24,6 +25,7 @@ export default function SolicitacaoPerfil() {
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [searchAeroporto, setSearchAeroporto] = useState('');
@@ -94,6 +96,8 @@ export default function SolicitacaoPerfil() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    guardedSubmit(async () => {
     setIsSubmitting(true);
 
     try {
@@ -170,6 +174,7 @@ export default function SolicitacaoPerfil() {
     } finally {
       setIsSubmitting(false);
     }
+    });
   };
 
   const perfilOptions = [

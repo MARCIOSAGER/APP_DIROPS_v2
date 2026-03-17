@@ -17,8 +17,10 @@ import AlertModal from '@/components/shared/AlertModal';
 import UploadCsvModal from '@/components/shared/UploadCsvModal';
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import { normalizeAircraftRegistration, formatAircraftRegistration } from '@/components/lib/utils';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, isSubmitting }) => {
+  const { guardedSubmit } = useSubmitGuard();
   // Inicializar com dados do registo (se estiver editando)
   const [formData, setFormData] = useState(registo || {
     registo: '',
@@ -64,21 +66,23 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
       return;
     }
 
-    // NOVO: Garantir que todos os campos numéricos sejam números válidos
-    const dataToSave = {
-      ...formData,
-      registo: registoNormalizado,
-      registo_normalizado: registoNormalizado,
-      // Converter strings vazias ou valores inválidos para 0
-      mtow_kg: mtowValue,
-      total_assentos: parseFloat(formData.total_assentos) || 0,
-      num_first: parseFloat(formData.num_first) || 0,
-      num_business: parseFloat(formData.num_business) || 0,
-      num_premium: parseFloat(formData.num_premium) || 0,
-      num_economy: parseFloat(formData.num_economy) || 0
-    };
+    guardedSubmit(async () => {
+      // NOVO: Garantir que todos os campos numéricos sejam números válidos
+      const dataToSave = {
+        ...formData,
+        registo: registoNormalizado,
+        registo_normalizado: registoNormalizado,
+        // Converter strings vazias ou valores inválidos para 0
+        mtow_kg: mtowValue,
+        total_assentos: parseFloat(formData.total_assentos) || 0,
+        num_first: parseFloat(formData.num_first) || 0,
+        num_business: parseFloat(formData.num_business) || 0,
+        num_premium: parseFloat(formData.num_premium) || 0,
+        num_economy: parseFloat(formData.num_economy) || 0
+      };
 
-    onSave(dataToSave);
+      await onSave(dataToSave);
+    });
   };
 
   const modeloOptions = useMemo(() => modelos.map((m) => ({
@@ -183,7 +187,7 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
       </div>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancelar</Button>
-        <Button type="submit" disabled={isSubmitting} className="bg-green-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-green-600/90 h-10">
+        <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
           {isSubmitting ? 'Salvando...' : 'Salvar'}
         </Button>
       </DialogFooter>

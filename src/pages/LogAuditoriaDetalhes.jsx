@@ -94,9 +94,8 @@ export default function LogAuditoriaDetalhesPage() {
 
   const loadLog = async (id) => {
     try {
-      const logsData = await LogAuditoria.list();
-      const foundLog = logsData.find(l => l.id === id);
-      
+      const foundLog = await LogAuditoria.get(id);
+
       if (!foundLog) {
         setError({
           type: 'notfound',

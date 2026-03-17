@@ -25,6 +25,7 @@ import { ItemAuditoria } from '@/entities/ItemAuditoria';
 import { SendEmail } from '@/integrations/Core';
 
 import { exportPacPdf } from '@/functions/exportPacPdf';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function FormPAC({
   isOpen,
@@ -43,6 +44,7 @@ export default function FormPAC({
   });
   const [itensPac, setItensPac] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [generalMessage, setGeneralMessage] = useState({ type: '', text: '' });
 
   const [isExporting, setIsExporting] = useState(false);
@@ -166,6 +168,7 @@ export default function FormPAC({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    guardedSubmit(async () => {
     setIsLoading(true);
     setGeneralMessage({ type: '', text: '' });
 
@@ -238,6 +241,7 @@ export default function FormPAC({
     } finally {
       setIsLoading(false);
     }
+    });
   };
 
   const handleExportPDF = async () => {

@@ -9,6 +9,7 @@ import Select from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Upload, X, Shield, FileText } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { UploadFile } from '@/integrations/Core';
 import { TipoDocumento } from '@/entities/TipoDocumento';
 import { hasUserProfile } from '@/components/lib/userUtils';
@@ -37,6 +38,7 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
 
   const [tiposDocumento, setTiposDocumento] = useState([]);
   const [isUploading, setIsUploading] = useState({});
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
     if (isOpen) {
@@ -94,7 +96,9 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await onSubmit(formData);
+    guardedSubmit(async () => {
+      await onSubmit(formData);
+    });
   };
 
   const handleChange = (field, value) => {
@@ -496,8 +500,8 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancelar</Button>
             </DialogClose>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-              {credenciamentoInicial ? 'Atualizar' : 'Criar'} Solicitação
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
+              {isSubmitting ? 'A guardar...' : `${credenciamentoInicial ? 'Atualizar' : 'Criar'} Solicitação`}
             </Button>
           </DialogFooter>
         </form>

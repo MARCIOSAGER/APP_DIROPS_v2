@@ -10,12 +10,14 @@ import { TipoInspecao } from '@/entities/TipoInspecao';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User'; // Added User import
 import { getAeroportosPermitidos, filtrarDadosPorAeroportoId } from '@/components/lib/userUtils';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 
 import InspecoesList from '../components/inspecoes/InspecoesList';
 import FormInspecao from '../components/inspecoes/FormInspecao';
 import TiposInspecaoConfig from '../components/inspecoes/TiposInspecaoConfig';
 
 export default function Inspecoes() {
+  const { effectiveEmpresaId } = useCompanyView();
   const [currentUser, setCurrentUser] = useState(null); // Added currentUser state
   const [inspecoes, setInspecoes] = useState([]);
   const [tiposInspecao, setTiposInspecao] = useState([]);
@@ -27,7 +29,7 @@ export default function Inspecoes() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [effectiveEmpresaId]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -35,19 +37,26 @@ export default function Inspecoes() {
       const user = await User.me(); // Fetch current user
       setCurrentUser(user); // Set current user
 
+      // Server-side filter by empresa_id when applicable
+      const empId = effectiveEmpresaId || user.empresa_id;
+      const inspecaoPromise = empId
+        ? Inspecao.filter({ empresa_id: empId }, '-data_inspecao')
+        : Inspecao.list('-data_inspecao');
+
       const [inspecoesData, tiposData, aeroportosData] = await Promise.all([
-        Inspecao.list('-data_inspecao'),
+        inspecaoPromise,
         TipoInspecao.list(),
         Aeroporto.list()
       ]);
       
       // Filtrar aeroportos pela empresa e acesso do utilizador
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData);
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData, effectiveEmpresaId);
       setAeroportos(aeroportosFiltrados);
       setTiposInspecao(tiposData);
 
-      // Filtrar inspeções pelos aeroportos permitidos do utilizador
-      const inspecoesFiltradas = filtrarDadosPorAeroportoId(user, inspecoesData, 'aeroporto_id', aeroportosData);
+      // Filtrar inspeções canceladas e pelos aeroportos permitidos do utilizador
+      const inspecoesAtivas = inspecoesData.filter(i => i.status !== 'cancelada');
+      const inspecoesFiltradas = filtrarDadosPorAeroportoId(user, inspecoesAtivas, 'aeroporto_id', aeroportosData, effectiveEmpresaId);
       setInspecoes(inspecoesFiltradas);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -219,6 +228,7 @@ export default function Inspecoes() {
             onClose={handleFormClose}
             tipoInspecao={selectedTipo}
             aeroportos={aeroportos}
+            currentUser={currentUser}
           />
         )}
       </div>

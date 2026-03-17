@@ -10,6 +10,7 @@ import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import AlertModal from '@/components/shared/AlertModal';
 import { ModeloAeronave } from '@/entities/ModeloAeronave';
 import { User } from '@/entities/User'; // Added User import
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function ModelosAeronaveConfig({ modelos, onReload }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -98,9 +99,11 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    guardedSubmit(async () => {
     setIsSubmitting(true);
     try {
       // Validar duplicidade de código IATA
@@ -169,6 +172,7 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
     } finally {
       setIsSubmitting(false);
     }
+    });
   };
 
   const handleDelete = async (modelo) => {
@@ -390,7 +394,7 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>Cancelar</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-green-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-green-600/90 h-10">{isSubmitting ? 'Salvando...' : 'Salvar'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? 'Salvando...' : 'Salvar'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

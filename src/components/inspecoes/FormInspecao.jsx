@@ -16,19 +16,20 @@ import { ItemChecklist } from '@/entities/ItemChecklist';
 import { RespostaInspecao } from '@/entities/RespostaInspecao';
 import { UploadFile } from '@/integrations/Core';
 import FormGRF from '../grf/FormGRF';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
-export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos }) {
+export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos, currentUser }) {
   const [step, setStep] = useState(1); // 1: Dados Gerais, 2: Checklist, 3: Concluído
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   // Step 1 State
   const [dadosGerais, setDadosGerais] = useState({
-    aeroporto_id: '',
+    aeroporto_id: aeroportos?.length === 1 ? aeroportos[0].id : '',
     data_inspecao: new Date().toISOString().split('T')[0],
     hora_inicio: '',
-    inspetor_responsavel: '',
-    condicoes_climaticas: '',
+    inspetor_responsavel: currentUser?.full_name || '',
   });
 
   // Step 2 State
@@ -41,28 +42,16 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
   const [showGRFForm, setShowGRFForm] = useState(false);
   const [grfRegistado, setGrfRegistado] = useState(false);
 
-  // Determinar se condições climáticas são obrigatórias
-  const requiresWeatherConditions = useMemo(() => {
-    // Tipos que requerem condições climáticas (relacionados com pista e operações externas)
-    const weatherRequiredTypes = ['PISTA_DIARIA', 'PISTA_SEMANAL', 'INFRAESTRUTURA_EXTERNA', 'OPERACOES_PISTA'];
-    return weatherRequiredTypes.some(type =>
-      tipoInspecao?.codigo === type ||
-      tipoInspecao?.nome?.toLowerCase().includes('pista') ||
-      tipoInspecao?.nome?.toLowerCase().includes('externa')
-    );
-  }, [tipoInspecao]);
-
   useEffect(() => {
     if (isOpen) {
       // Reset state when modal opens
       setStep(1);
       setError('');
       setDadosGerais({
-        aeroporto_id: '',
+        aeroporto_id: aeroportos?.length === 1 ? aeroportos[0].id : '',
         data_inspecao: new Date().toISOString().split('T')[0],
         hora_inicio: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
-        inspetor_responsavel: '',
-        condicoes_climaticas: '',
+        inspetor_responsavel: currentUser?.full_name || '',
       });
       setCurrentInspecao(null);
       setChecklistItems([]);
@@ -83,12 +72,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       return;
     }
 
-    // Validar condições climáticas apenas se obrigatórias
-    if (requiresWeatherConditions && !dadosGerais.condicoes_climaticas) {
-      setError('Para este tipo de inspeção, as condições climáticas são obrigatórias.');
-      return;
-    }
-
+    guardedSubmit(async () => {
     setError('');
     setIsLoading(true);
 
@@ -97,6 +81,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       const novaInspecao = await Inspecao.create({
         ...dadosGerais,
         tipo_inspecao_id: tipoInspecao.id,
+        empresa_id: currentUser?.empresa_id || null,
         status: 'em_andamento',
       });
       setCurrentInspecao(novaInspecao);
@@ -127,6 +112,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
     } finally {
       setIsLoading(false);
     }
+    });
   };
 
   const handleRespostaChange = (itemId, field, value) => {
@@ -182,6 +168,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       return;
     }
 
+    guardedSubmit(async () => {
     setIsLoading(true);
     setError('');
     try {
@@ -212,33 +199,31 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
         requer_acao_imediata,
       });
 
-      // 4. NOVO: Criar ordens de serviço para itens não conformes
-      const { OrdemServico } = await import('@/entities/OrdemServico');
+      // 4. Criar Solicitações de Serviço (SS) para itens não conformes
+      const { SolicitacaoServico } = await import('@/entities/SolicitacaoServico');
       const itensNaoConformes = Object.entries(respostas).filter(([_, resposta]) =>
         resposta.resultado === 'nao_conforme'
       );
 
       for (const [itemId, resposta] of itensNaoConformes) {
         const item = checklistItems.find(i => i.id === itemId);
-        if (item && resposta.acao_corretiva) {
-          const numeroOrdem = `OS-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`;
+        if (item) {
+          const numeroSS = `SS-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`;
 
-          await OrdemServico.create({
-            numero_ordem: numeroOrdem,
+          await SolicitacaoServico.create({
+            numero_ss: numeroSS,
+            titulo: `Não conformidade: ${item.item}`,
+            descricao: `Item não conforme identificado durante inspeção ${tipoInspecao?.nome}.\n\nObservações: ${resposta.observacoes || 'Sem observações adicionais.'}`,
+            aeroporto_id: currentInspecao.aeroporto_id,
+            empresa_id: currentUser?.empresa_id || null,
+            origem: 'inspecao',
             inspecao_id: currentInspecao.id,
             item_checklist_id: itemId,
-            aeroporto_id: currentInspecao.aeroporto_id,
-            titulo: `Não conformidade: ${item.item}`,
-            descricao_problema: `Item não conforme identificado durante inspeção ${tipoInspecao?.nome}.\n\nObservações: ${resposta.observacoes || 'Sem observações adicionais.'}`,
-            acao_corretiva_sugerida: resposta.acao_corretiva,
-            prioridade: itens_nao_conformes > 5 ? 'alta' : 'media', // Prioridade baseada na quantidade
-            categoria_manutencao: item.categoria?.toLowerCase().includes('pista') ? 'pavimento' :
-                                 item.categoria?.toLowerCase().includes('sinal') ? 'sinalizacao' :
-                                 item.categoria?.toLowerCase().includes('ilum') ? 'iluminacao' : 'infraestrutura',
-            responsavel_manutencao: resposta.responsavel_correcao || null,
-            prazo_estimado: resposta.prazo_correcao || null,
-            data_abertura: new Date().toISOString(),
-            aprovacao_necessaria: itens_nao_conformes > 3 // Requer aprovação se há muitos problemas
+            status: 'aberta',
+            prioridade_sugerida: itens_nao_conformes > 5 ? 'alta' : 'media',
+            solicitante_id: currentUser?.id || null,
+            solicitante_nome: currentUser?.full_name || null,
+            solicitante_email: currentUser?.email || null,
           });
         }
       }
@@ -251,6 +236,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
     } finally {
       setIsLoading(false);
     }
+    });
   };
 
   const renderStep1 = () => {
@@ -289,34 +275,14 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
               onChange={(e) => handleDadosGeraisChange('hora_inicio', e.target.value)}
             />
           </div>
-          {requiresWeatherConditions ? (
-            <div className="space-y-2">
-              <Label>Condições Climáticas *</Label>
-              <Input
-                value={dadosGerais.condicoes_climaticas}
-                onChange={(e) => handleDadosGeraisChange('condicoes_climaticas', e.target.value)}
-                placeholder="Ex: Céu limpo, vento calmo"
-                required
-              />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label>Condições Climáticas (Opcional)</Label>
-              <Input
-                value={dadosGerais.condicoes_climaticas}
-                onChange={(e) => handleDadosGeraisChange('condicoes_climaticas', e.target.value)}
-                placeholder="Ex: Céu limpo, vento calmo"
-              />
-            </div>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Inspetor Responsável *</Label>
-          <Input
-            value={dadosGerais.inspetor_responsavel}
-            onChange={(e) => handleDadosGeraisChange('inspetor_responsavel', e.target.value)}
-            placeholder="Nome do inspetor"
-          />
+          <div className="space-y-2">
+            <Label>Inspetor Responsável</Label>
+            <Input
+              value={dadosGerais.inspetor_responsavel}
+              disabled
+              className="bg-slate-100"
+            />
+          </div>
         </div>
       </div>
     );
@@ -394,22 +360,8 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
             </div>
 
             {respostas[item.id]?.resultado === 'nao_conforme' && (
-              <div className="p-4 border-l-4 border-red-500 bg-red-50 space-y-4 rounded">
-                <h4 className="font-semibold text-red-800">Plano de Ação Corretiva</h4>
-                <div className="space-y-2">
-                  <Label>Ação Corretiva Recomendada</Label>
-                  <Textarea value={respostas[item.id]?.acao_corretiva} onChange={(e) => handleRespostaChange(item.id, 'acao_corretiva', e.target.value)} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Prazo para Correção</Label>
-                    <Input type="date" value={respostas[item.id]?.prazo_correcao} onChange={(e) => handleRespostaChange(item.id, 'prazo_correcao', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Responsável pela Correção</Label>
-                    <Input value={respostas[item.id]?.responsavel_correcao} onChange={(e) => handleRespostaChange(item.id, 'responsavel_correcao', e.target.value)} />
-                  </div>
-                </div>
+              <div className="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                <p className="text-sm text-red-700 font-medium">⚠ Uma Solicitação de Serviço (SS) será criada automaticamente na Manutenção ao concluir a inspeção.</p>
               </div>
             )}
 
@@ -487,21 +439,21 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
         <DialogFooter>
           {step === 1 && (
             <>
-              <DialogClose asChild><Button type="button" variant="outline" disabled={isLoading}>Cancelar</Button></DialogClose>
-              <Button onClick={handleNextStep} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white">
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Preencher Checklist'}
+              <DialogClose asChild><Button type="button" variant="outline" disabled={isLoading || isSubmitting}>Cancelar</Button></DialogClose>
+              <Button onClick={handleNextStep} disabled={isLoading || isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
+                {isLoading || isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Preencher Checklist'}
               </Button>
             </>
           )}
           {step === 2 && (
             <>
-              <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isLoading}>Voltar</Button>
+              <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isLoading || isSubmitting}>Voltar</Button>
               <Button
                 onClick={handleFinalSubmit}
-                disabled={isLoading || (isInspecaoPistaDiaria && !grfRegistado)}
+                disabled={isLoading || isSubmitting || (isInspecaoPistaDiaria && !grfRegistado)}
                 className={`bg-blue-600 hover:bg-blue-700 text-white ${isInspecaoPistaDiaria && !grfRegistado ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Concluir Inspeção'}
+                {isLoading || isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Concluir Inspeção'}
               </Button>
               {isInspecaoPistaDiaria && !grfRegistado && (
                 <p className="text-xs text-red-600 ml-2">

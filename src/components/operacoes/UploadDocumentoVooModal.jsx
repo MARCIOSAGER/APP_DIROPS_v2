@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Camera, Upload, X, FileText } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const TIPOS_DOCUMENTO = {
   'general_declaration': 'General Declaration',
@@ -28,6 +29,7 @@ export default function UploadDocumentoVooModal({
   const [stream, setStream] = useState(null);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -97,6 +99,7 @@ export default function UploadDocumentoVooModal({
       return;
     }
 
+    guardedSubmit(async () => {
     setIsSubmitting(true);
     try {
       await onConfirm(selectedFile, tipoDocumento);
@@ -106,6 +109,7 @@ export default function UploadDocumentoVooModal({
     } finally {
       setIsSubmitting(false);
     }
+    });
   };
 
   const handleClose = () => {

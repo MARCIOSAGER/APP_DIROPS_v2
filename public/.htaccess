@@ -1,3 +1,47 @@
+# === GZIP COMPRESSION ===
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE text/javascript
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/json
+  AddOutputFilterByType DEFLATE application/xml
+  AddOutputFilterByType DEFLATE image/svg+xml
+  AddOutputFilterByType DEFLATE font/woff2
+  AddOutputFilterByType DEFLATE font/woff
+</IfModule>
+
+# === CACHE HEADERS ===
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # Hashed assets (JS, CSS) - cache 1 year (immutable via content hash in filename)
+  <FilesMatch "\.(js|css)$">
+    ExpiresDefault "access plus 1 year"
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Images - cache 30 days
+  <FilesMatch "\.(png|jpg|jpeg|gif|webp|svg|ico)$">
+    ExpiresDefault "access plus 30 days"
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+
+  # Fonts - cache 1 year
+  <FilesMatch "\.(woff|woff2|ttf|eot)$">
+    ExpiresDefault "access plus 1 year"
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # HTML - no cache (always fetch latest for SPA)
+  <FilesMatch "\.html$">
+    ExpiresDefault "access plus 0 seconds"
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+  </FilesMatch>
+</IfModule>
+
+# === SECURITY HEADERS ===
 <IfModule mod_headers.c>
   Header set X-Frame-Options "SAMEORIGIN"
   Header set X-Content-Type-Options "nosniff"
@@ -6,6 +50,7 @@
   Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://glernwcsuwcyzwsnelad.supabase.co wss://glernwcsuwcyzwsnelad.supabase.co https://api.openai.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
 </IfModule>
 
+# === SPA ROUTING ===
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /

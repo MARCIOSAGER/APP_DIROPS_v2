@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,20 +39,21 @@ export default function VoosTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const isVooLigado = (voo) => {
-    if (voo.voo_ligado_id) {
-      return true;
+  // O(1) lookup maps instead of O(n²) nested loops
+  const vooIdsSet = useMemo(() => new Set(voos.map(v => v.id)), [voos]);
+  const linkedVooIds = useMemo(() => {
+    const set = new Set();
+    for (const vl of voosLigados) {
+      if (vooIdsSet.has(vl.id_voo_arr) && vooIdsSet.has(vl.id_voo_dep)) {
+        set.add(vl.id_voo_arr);
+        set.add(vl.id_voo_dep);
+      }
     }
+    return set;
+  }, [voosLigados, vooIdsSet]);
 
-    return voosLigados.some((vl) => {
-      const isLinkedToThisVoo = vl.id_voo_arr === voo.id || vl.id_voo_dep === voo.id;
-      if (!isLinkedToThisVoo) return false;
-
-      const vooArrExiste = voos.some(v => v.id === vl.id_voo_arr);
-      const vooDepExiste = voos.some(v => v.id === vl.id_voo_dep);
-
-      return vooArrExiste && vooDepExiste;
-    });
+  const isVooLigado = (voo) => {
+    return !!voo.voo_ligado_id || linkedVooIds.has(voo.id);
   };
 
   const handleCancelarVoo = (voo) => {

@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Home, X } from 'lucide-react';
 import Select from '@/components/ui/select';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function MoverDocumentoModal({ isOpen, onClose, onMove, documento, pastas }) {
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [novaPastaId, setNovaPastaId] = useState(documento?.pasta_id || null);
 
   const isBulk = documento?._isBulk;
@@ -12,11 +14,13 @@ export default function MoverDocumentoModal({ isOpen, onClose, onMove, documento
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (isBulk) {
-      onMove(novaPastaId, bulkIds);
-    } else {
-      onMove(novaPastaId);
-    }
+    guardedSubmit(async () => {
+      if (isBulk) {
+        await onMove(novaPastaId, bulkIds);
+      } else {
+        await onMove(novaPastaId);
+      }
+    });
   };
 
   const pastasOptions = [
@@ -58,8 +62,8 @@ export default function MoverDocumentoModal({ isOpen, onClose, onMove, documento
 
           {/* Botão */}
           <div className="flex justify-end pt-2">
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-8">
-              {isBulk ? 'Mover Documentos' : 'Mover Documento'}
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white px-8">
+              {isSubmitting ? 'A mover...' : (isBulk ? 'Mover Documentos' : 'Mover Documento')}
             </Button>
           </div>
         </form>

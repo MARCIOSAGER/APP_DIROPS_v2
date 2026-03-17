@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { createPageUrl } from '@/utils';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function AlterarSenha() {
   const [novaSenha, setNovaSenha] = useState('');
@@ -19,6 +20,7 @@ export default function AlterarSenha() {
   const [success, setSuccess] = useState(false);
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const { guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
     // Listen for PASSWORD_RECOVERY event from reset link
@@ -79,6 +81,7 @@ export default function AlterarSenha() {
       return;
     }
 
+    guardedSubmit(async () => {
     setIsLoading(true);
 
     try {
@@ -107,6 +110,7 @@ export default function AlterarSenha() {
       }
       setIsLoading(false);
     }
+    });
   };
 
   const passwordRequirements = [

@@ -31,6 +31,7 @@ import { ItemAuditoria } from '@/entities/ItemAuditoria';
 import { UploadFile } from '@/integrations/Core';
 import * as XLSX from 'xlsx';
 import AlertModal from '../shared/AlertModal';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditoria, onUpdate }) {
   const [items, setItems] = useState([]);
@@ -56,6 +57,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
   const [excelData, setExcelData] = useState([]);
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   // Estados para confirmação de exclusão
   const [deleteItemInfo, setDeleteItemInfo] = useState({ isOpen: false, item: null });
@@ -121,6 +123,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
     e.preventDefault();
     setUploadMessage({ type: '', text: '' });
 
+    guardedSubmit(async () => {
     try {
       const dataToSave = {
         ...formData,
@@ -135,11 +138,11 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
         await ItemAuditoria.create(dataToSave);
         setUploadMessage({ type: 'success', text: 'Item criado com sucesso!' });
       }
-      
+
       setIsFormOpen(false);
       loadItems();
       if (onUpdate) onUpdate();
-      
+
       setTimeout(() => {
         setUploadMessage({ type: '', text: '' });
       }, 3000);
@@ -147,6 +150,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
       console.error('Erro ao salvar item:', error);
       setUploadMessage({ type: 'error', text: 'Erro ao salvar item. Tente novamente.' });
     }
+    });
   };
 
   const handleDeleteClick = (item) => {
@@ -413,8 +417,8 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
           <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
             Cancelar
           </Button>
-          <Button type="submit">
-            {editingItem ? 'Salvar Item' : 'Criar Item'}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'A guardar...' : (editingItem ? 'Salvar Item' : 'Criar Item')}
           </Button>
         </div>
       </form>

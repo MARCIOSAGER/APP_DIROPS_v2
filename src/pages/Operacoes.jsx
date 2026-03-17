@@ -201,6 +201,12 @@ export default function Operacoes() {
         return;
       }
 
+      // Server-side filters: empresa_id + deleted_at
+      const empId = effectiveEmpresaIdRef.current || user.empresa_id;
+      const vooFilters = { deleted_at: { $is: null } };
+      if (empId) vooFilters.empresa_id = empId;
+      const vlFilters = empId ? { empresa_id: empId } : {};
+
       const [
         voosResult,
         voosLigadosResult,
@@ -211,12 +217,12 @@ export default function Operacoes() {
         impostosResult,
         configResult
       ] = await Promise.allSettled([
-        Voo.list('-data_operacao', 1000),
-        VooLigado.list('-created_date', 1000),
-        CalculoTarifa.list('-data_calculo', 1000),
-        TarifaPouso.list().catch(() => []),
-        TarifaPermanencia.list().catch(() => []),
-        OutraTarifa.list().catch(() => []),
+        Voo.filter(vooFilters, '-data_operacao', 1000),
+        VooLigado.filter(vlFilters, '-created_date', 1000),
+        CalculoTarifa.filter(empId ? { empresa_id: empId } : {}, '-data_calculo', 1000),
+        TarifaPouso.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
+        TarifaPermanencia.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
+        OutraTarifa.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
         Imposto.list().catch(() => []),
         ConfiguracaoSistema.list().catch(() => [])
       ]);
@@ -232,18 +238,9 @@ export default function Operacoes() {
 
       const configuracaoSistemaData = configData.length > 0 ? configData[0] : { taxa_cambio_usd_aoa: 850 };
 
-      // Filtrar voos por empresa_id direto (coluna no voo)
-      const empId = effectiveEmpresaIdRef.current || user.empresa_id;
-      const voosSemDeleted = voosData.filter(v => !v.deleted_at);
-      const voosFiltrados = empId
-        ? voosSemDeleted.filter(v => v.empresa_id === empId)
-        : voosSemDeleted;
-      setVoos(voosFiltrados);
-      // Filtrar voos ligados por empresa_id
-      const voosLigadosFiltrados = empId
-        ? voosLigadosData.filter(vl => vl.empresa_id === empId)
-        : voosLigadosData;
-      setVoosLigados(voosLigadosFiltrados);
+      // Data already filtered server-side — no client-side filtering needed
+      setVoos(voosData);
+      setVoosLigados(voosLigadosData);
       setCalculosTarifa(calculosTarifaData);
       setTarifasPouso(filterTarifasByEmpresa(tarifasPousoData, empId));
       setTarifasPermanencia(filterTarifasByEmpresa(tarifasPermanenciaData, empId));

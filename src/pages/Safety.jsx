@@ -49,8 +49,14 @@ export default function Safety() {
       const currentUser = await User.me();
       setUser(currentUser);
 
+      // Server-side filter by empresa_id when applicable
+      const empId = currentUser.empresa_id;
+      const ocorrenciaPromise = empId
+        ? OcorrenciaSafety.filter({ empresa_id: empId }, '-data_ocorrencia')
+        : OcorrenciaSafety.list('-data_ocorrencia');
+
       const [ocorrenciasData, aeroportosData] = await Promise.all([
-        OcorrenciaSafety.list('-data_ocorrencia'),
+        ocorrenciaPromise,
         Aeroporto.list()
       ]);
 

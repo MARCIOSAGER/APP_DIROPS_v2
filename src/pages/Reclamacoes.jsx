@@ -108,8 +108,14 @@ export default function Reclamacoes() {
       const currentUser = await User.me();
       setUser(currentUser);
 
+      // Server-side filter by empresa_id when applicable
+      const empId = currentUser.empresa_id;
+      const reclamacaoPromise = empId
+        ? Reclamacao.filter({ empresa_id: empId }, '-data_recebimento')
+        : Reclamacao.list('-data_recebimento');
+
       const [reclamacoesData, aeroportosData, empresasData] = await Promise.all([
-        Reclamacao.list('-data_recebimento'),
+        reclamacaoPromise,
         Aeroporto.list(),
         Empresa.list()
       ]);

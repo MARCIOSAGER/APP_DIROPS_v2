@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, DollarSign } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, companhia, aeroporto, voos, voosLigados }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [vooInfo, setVooInfo] = useState({ numero_voo: 'N/A', data_operacao: 'N/A' });
   const [formData, setFormData] = useState({
     data_emissao: new Date().toISOString().split('T')[0],
@@ -42,6 +44,7 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    guardedSubmit(async () => {
     setIsSubmitting(true);
 
     try {
@@ -71,6 +74,7 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
     } finally {
       setIsSubmitting(false);
     }
+    });
   };
 
   if (!calculo) return null;

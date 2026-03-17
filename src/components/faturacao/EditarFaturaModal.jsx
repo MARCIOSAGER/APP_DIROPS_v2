@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Select from '@/components/ui/select';
 import { Loader2, Edit } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const STATUS_OPTIONS = [
   { value: 'emitida', label: 'Emitida' },
@@ -17,6 +18,7 @@ const STATUS_OPTIONS = [
 
 export default function EditarFaturaModal({ isOpen, onClose, onSave, fatura }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     data_emissao: '',
     data_vencimento: '',
@@ -41,19 +43,21 @@ export default function EditarFaturaModal({ isOpen, onClose, onSave, fatura }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    guardedSubmit(async () => {
+      setIsSubmitting(true);
 
-    try {
-      await onSave({
-        ...fatura,
-        ...formData,
-        numero_fatura: fatura.numero_fatura
-      });
-    } catch (error) {
-      console.error('Erro ao atualizar proforma:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+      try {
+        await onSave({
+          ...fatura,
+          ...formData,
+          numero_fatura: fatura.numero_fatura
+        });
+      } catch (error) {
+        console.error('Erro ao atualizar proforma:', error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    });
   };
 
   if (!fatura) return null;

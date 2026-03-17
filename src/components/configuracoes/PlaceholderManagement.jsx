@@ -8,11 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Save, X, Tag } from 'lucide-react';
 import { Placeholder } from '@/entities/Placeholder';
 import Select from '@/components/ui/select';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function PlaceholderManagement({ onError, onSuccess }) {
   const [placeholders, setPlaceholders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [editingPlaceholder, setEditingPlaceholder] = useState(null);
   
   const [formData, setFormData] = useState({
@@ -80,6 +82,7 @@ export default function PlaceholderManagement({ onError, onSuccess }) {
       return;
     }
 
+    guardedSubmit(async () => {
     try {
       if (editingPlaceholder) {
         await Placeholder.update(editingPlaceholder.id, formData);
@@ -95,6 +98,7 @@ export default function PlaceholderManagement({ onError, onSuccess }) {
       console.error('Erro ao salvar placeholder:', error);
       onError?.('Não foi possível salvar o placeholder.');
     }
+    });
   };
 
   const handleDelete = async (placeholder) => {
@@ -314,9 +318,9 @@ export default function PlaceholderManagement({ onError, onSuccess }) {
                   <X className="w-4 h-4 mr-2" />
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Save className="w-4 h-4 mr-2" />
-                  {editingPlaceholder ? 'Atualizar' : 'Criar'} Placeholder
+                  {isSubmitting ? 'A guardar...' : `${editingPlaceholder ? 'Atualizar' : 'Criar'} Placeholder`}
                 </Button>
               </div>
             </form>

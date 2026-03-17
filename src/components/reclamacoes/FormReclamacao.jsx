@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Select from '@/components/ui/select'; // Corrected import: changed from named export to default export
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileText, AlertCircle } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { Reclamacao } from '@/entities/Reclamacao';
 import { HistoricoReclamacao } from '@/entities/HistoricoReclamacao';
 import { UploadFile } from '@/integrations/Core';
@@ -27,6 +28,7 @@ export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos
     anexos: reclamacao?.anexos || [],
   });
   const [isLoading, setIsLoading] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
@@ -55,6 +57,7 @@ export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    guardedSubmit(async () => {
     setIsLoading(true);
     setMessage('');
 
@@ -89,6 +92,7 @@ export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos
     } finally {
       setIsLoading(false);
     }
+    });
   };
 
   const aeroportoOptions = aeroportosDisponiveis.map(a => ({

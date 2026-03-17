@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Home, Save, X } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const CATEGORIA_OPTIONS = [
   { value: 'categoria_1', label: 'Categoria 1' },
@@ -19,6 +20,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     nome: '',
     codigo_icao: '',
@@ -51,7 +53,9 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await onSave(formData);
+    guardedSubmit(async () => {
+      await onSave(formData);
+    });
   };
 
   const handleChange = (field, value) => {
@@ -156,9 +160,9 @@ export default function FormAeroporto({ isOpen, onClose, aeroporto, onSave }) {
               <X className="w-4 h-4 mr-1" />
               Cancelar
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Save className="w-4 h-4 mr-1" />
-              {aeroporto ? 'Atualizar' : 'Criar'} Aeroporto
+              {isSubmitting ? 'A guardar...' : `${aeroporto ? 'Atualizar' : 'Criar'} Aeroporto`}
             </Button>
           </DialogFooter>
         </form>

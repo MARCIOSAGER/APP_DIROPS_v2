@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 
 import { TipoInspecao } from '@/entities/TipoInspecao';
 import ManageChecklistItemsModal from './ManageChecklistItemsModal';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function TiposInspecaoConfig({ tiposInspecao, onUpdate }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -24,6 +25,7 @@ export default function TiposInspecaoConfig({ tiposInspecao, onUpdate }) {
   });
   const [isChecklistModalOpen, setIsChecklistModalOpen] = useState(false);
   const [selectedTipoForChecklist, setSelectedTipoForChecklist] = useState(null);
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   const handleOpenForm = (tipo = null) => {
     if (tipo) {
@@ -49,13 +51,15 @@ export default function TiposInspecaoConfig({ tiposInspecao, onUpdate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingTipo) {
-      await TipoInspecao.update(editingTipo.id, formData);
-    } else {
-      await TipoInspecao.create(formData);
-    }
-    setIsFormOpen(false);
-    onUpdate();
+    guardedSubmit(async () => {
+      if (editingTipo) {
+        await TipoInspecao.update(editingTipo.id, formData);
+      } else {
+        await TipoInspecao.create(formData);
+      }
+      setIsFormOpen(false);
+      onUpdate();
+    });
   };
 
   const handleChange = (field, value) => {
@@ -163,7 +167,7 @@ export default function TiposInspecaoConfig({ tiposInspecao, onUpdate }) {
             </div>
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
-              <Button type="submit">{editingTipo ? 'Atualizar' : 'Criar'}</Button>
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'A guardar...' : (editingTipo ? 'Atualizar' : 'Criar')}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

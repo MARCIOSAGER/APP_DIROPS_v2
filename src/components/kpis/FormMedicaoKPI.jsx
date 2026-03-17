@@ -8,11 +8,24 @@ import Select from '@/components/ui/select';
 import Combobox from '@/components/ui/combobox';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PlusCircle, Save, XCircle, AlertTriangle } from 'lucide-react';
-import moment from 'moment';
+// Helper: parse "HH:mm" to minutes since midnight
+function parseTimeToMinutes(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
+
+// Helper: diff in minutes, handling overnight
+function diffMinutes(inicioStr, fimStr) {
+  let ini = parseTimeToMinutes(inicioStr);
+  let fim = parseTimeToMinutes(fimStr);
+  if (fim < ini) fim += 24 * 60; // overnight
+  return fim - ini;
+}
 
 import { CampoKPI } from '@/entities/CampoKPI';
 import { ValorCampoKPI } from '@/entities/ValorCampoKPI';
 import AlertModal from '@/components/shared/AlertModal';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, medicaoInicial, aeroportos, companhias }) {
   const [campos, setCampos] = useState([]);
@@ -32,6 +45,7 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'warning', title: '', message: '', onConfirm: null });
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
     if (isOpen && tipoKPI) {
@@ -137,10 +151,7 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
         const fimValue = valoresCampos[fimField.id]?.valor_texto;
 
         if (inicioValue && fimValue) {
-          const inicio = moment(inicioValue, 'HH:mm');
-          const fim = moment(fimValue, 'HH:mm');
-          if (fim.isBefore(inicio)) fim.add(1, 'day');
-          const duracao = fim.diff(inicio, 'minutes');
+          const duracao = diffMinutes(inicioValue, fimValue);
 
           setValoresCampos((prev) => ({
             ...prev,
@@ -166,14 +177,12 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
 
     // NOVO: Validar que hora fim não é anterior à hora início
     if (medicaoData.hora_inicio && medicaoData.hora_fim) {
-      const inicio = moment(medicaoData.hora_inicio, 'HH:mm');
-      const fim = moment(medicaoData.hora_fim, 'HH:mm');
+      const ini = parseTimeToMinutes(medicaoData.hora_inicio);
+      const fim = parseTimeToMinutes(medicaoData.hora_fim);
 
       // Se a hora de fim for menor, assumimos que passou da meia-noite
-      // MAS se a diferença for muito pequena (< 2 horas), é provável que seja um erro
-      if (fim.isBefore(inicio)) {
-        const fimAjustado = fim.clone().add(1, 'day');
-        const duracaoHoras = fimAjustado.diff(inicio, 'hours');
+      if (fim < ini) {
+        const duracaoHoras = (fim + 24 * 60 - ini) / 60;
 
         // Se a duração for maior que 12 horas, é provável que seja um erro
         if (duracaoHoras > 12) {
@@ -217,27 +226,29 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
     e.preventDefault();
     if (!validateForm()) return;
 
-    // NOVO: Verificar se horário de início é igual ao horário de fim antes de submeter
-    if (medicaoData.hora_inicio && medicaoData.hora_fim) {
-      if (medicaoData.hora_inicio === medicaoData.hora_fim) {
-        setAlertInfo({
-          isOpen: true,
-          type: 'warning',
-          title: 'Confirmar Medição',
-          message: 'O horário de início é igual ao horário de fim. Isto significa que o cálculo de minutos será ZERO (0). Tem certeza que deseja continuar?',
-          showCancel: true,
-          confirmText: 'Sim, Continuar',
-          onConfirm: () => {
-            setAlertInfo((prev) => ({ ...prev, isOpen: false }));
-            proceedWithSubmit();
-          }
-        });
-        return; // Aguarda confirmação
+    guardedSubmit(async () => {
+      // NOVO: Verificar se horário de início é igual ao horário de fim antes de submeter
+      if (medicaoData.hora_inicio && medicaoData.hora_fim) {
+        if (medicaoData.hora_inicio === medicaoData.hora_fim) {
+          setAlertInfo({
+            isOpen: true,
+            type: 'warning',
+            title: 'Confirmar Medição',
+            message: 'O horário de início é igual ao horário de fim. Isto significa que o cálculo de minutos será ZERO (0). Tem certeza que deseja continuar?',
+            showCancel: true,
+            confirmText: 'Sim, Continuar',
+            onConfirm: () => {
+              setAlertInfo((prev) => ({ ...prev, isOpen: false }));
+              proceedWithSubmit();
+            }
+          });
+          return; // Aguarda confirmação
+        }
       }
-    }
 
-    // Se não houver alerta, submete direto
-    proceedWithSubmit();
+      // Se não houver alerta, submete direto
+      await proceedWithSubmit();
+    });
   };
 
   const proceedWithSubmit = async () => {
@@ -247,14 +258,7 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
     let dentroDaMeta = null;
 
     if (medicaoData.hora_inicio && medicaoData.hora_fim) {
-      const inicio = moment(medicaoData.hora_inicio, 'HH:mm');
-      const fim = moment(medicaoData.hora_fim, 'HH:mm');
-
-      if (fim.isBefore(inicio)) {
-        fim.add(1, 'day'); // Considera medições que passam da meia-noite
-      }
-
-      resultadoPrincipal = fim.diff(inicio, 'minutes');
+      resultadoPrincipal = diffMinutes(medicaoData.hora_inicio, medicaoData.hora_fim);
 
       if (tipoKPI.meta_objetivo !== null && tipoKPI.meta_objetivo !== undefined) {
         dentroDaMeta = resultadoPrincipal <= tipoKPI.meta_objetivo;
@@ -572,9 +576,9 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
                   Cancelar
                 </Button>
               </DialogClose>
-              <Button type="submit" className="bg-green-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-green-600 /90 h-10">
+              <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Save className="w-4 h-4 mr-2" />
-                {medicaoInicial ? 'Atualizar' : 'Registar'} Medição
+                {isSubmitting ? 'A guardar...' : `${medicaoInicial ? 'Atualizar' : 'Registar'} Medição`}
               </Button>
             </DialogFooter>
           </form>

@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Combobox from '@/components/ui/combobox';
 import { ShieldAlert, Upload, X } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { UploadFile } from '@/integrations/Core';
 
 export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeroportos, occurrenceInitial = null }) {
@@ -23,6 +24,7 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
   });
 
   const [isUploading, setIsUploading] = useState(false);
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
     if (occurrenceInitial) {
@@ -48,7 +50,9 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await onSubmit(formData);
+    guardedSubmit(async () => {
+      await onSubmit(formData);
+    });
   };
 
   const handleChange = (field, value) => {
@@ -291,8 +295,8 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancelar</Button>
             </DialogClose>
-            <Button type="submit" className="bg-red-600 text-slate-50 px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-10 hover:bg-red-700" disabled={isUploading}>
-              {isUploading ? 'A carregar...' : occurrenceInitial ? 'Atualizar' : 'Registar'} Ocorrência
+            <Button type="submit" className="bg-red-600 text-slate-50 px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-10 hover:bg-red-700" disabled={isUploading || isSubmitting}>
+              {isSubmitting ? 'A guardar...' : isUploading ? 'A carregar...' : occurrenceInitial ? 'Atualizar' : 'Registar'} Ocorrência
             </Button>
           </DialogFooter>
         </form>

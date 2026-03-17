@@ -25,7 +25,6 @@ function applyFilters(query, filters) {
     } else if (Array.isArray(value)) {
       query = query.in(key, value);
     } else if (typeof value === 'object' && value !== null) {
-      // Operator-based filters: { $eq: x, $gte: y, $lte: z, ... }
       Object.entries(value).forEach(([op, opValue]) => {
         switch (op) {
           case '$eq':
@@ -60,6 +59,9 @@ function applyFilters(query, filters) {
           case '$is':
             query = query.is(key, opValue);
             break;
+          case '$not':
+            query = query.not(key, 'is', opValue);
+            break;
           default:
             console.warn(`[createEntity] Unknown filter operator: ${op}`);
         }
@@ -71,9 +73,20 @@ function applyFilters(query, filters) {
   return query;
 }
 
+function applyOrder(query, orderBy) {
+  if (orderBy) {
+    const desc = orderBy.startsWith('-');
+    const column = desc ? orderBy.slice(1) : orderBy;
+    query = query.order(column, { ascending: !desc });
+  } else {
+    query = query.order('created_date', { ascending: false });
+  }
+  return query;
+}
+
 let _cachedEmail = null;
 let _cachedEmailTime = 0;
-const EMAIL_CACHE_TTL = 60000; // 1 minute
+const EMAIL_CACHE_TTL = 60000;
 
 async function getCurrentUserEmail() {
   if (_cachedEmail && Date.now() - _cachedEmailTime < EMAIL_CACHE_TTL) {
@@ -91,16 +104,11 @@ async function getCurrentUserEmail() {
 
 export function createEntity(tableName) {
   return {
+    // === Original methods (backward compatible) ===
+
     async list(orderBy, limit) {
       let query = supabase.from(tableName).select('*');
-
-      if (orderBy) {
-        const desc = orderBy.startsWith('-');
-        const column = desc ? orderBy.slice(1) : orderBy;
-        query = query.order(column, { ascending: !desc });
-      } else {
-        query = query.order('created_date', { ascending: false });
-      }
+      query = applyOrder(query, orderBy);
 
       if (limit) {
         query = query.limit(limit);
@@ -114,14 +122,8 @@ export function createEntity(tableName) {
 
     async filter(filters, orderBy, limit, skip) {
       let query = supabase.from(tableName).select('*');
-
       query = applyFilters(query, filters);
-
-      if (orderBy) {
-        const desc = orderBy.startsWith('-');
-        const column = desc ? orderBy.slice(1) : orderBy;
-        query = query.order(column, { ascending: !desc });
-      }
+      query = applyOrder(query, orderBy);
 
       if (limit) {
         const from = skip || 0;
@@ -181,6 +183,56 @@ export function createEntity(tableName) {
         .delete()
         .eq('id', id);
       if (error) throw error;
+    },
+
+    // === New professional methods ===
+
+    /**
+     * Paginated query with server-side count.
+     * Returns { data: [], total: number, page, pageSize }
+     */
+    async paginate({ filters = {}, orderBy, page = 1, pageSize = 50, select = '*' } = {}) {
+      let query = supabase.from(tableName).select(select, { count: 'exact' });
+      query = applyFilters(query, filters);
+      query = applyOrder(query, orderBy);
+
+      const from = (page - 1) * pageSize;
+      query = query.range(from, from + pageSize - 1);
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+
+      return {
+        data: data || [],
+        total: count || 0,
+        page,
+        pageSize,
+        totalPages: Math.ceil((count || 0) / pageSize),
+      };
+    },
+
+    /**
+     * Count records with optional filters (no data transfer).
+     */
+    async count(filters = {}) {
+      let query = supabase.from(tableName).select('id', { count: 'exact', head: true });
+      query = applyFilters(query, filters);
+      const { count, error } = await query;
+      if (error) throw error;
+      return count || 0;
+    },
+
+    /**
+     * Find first matching record.
+     */
+    async findOne(filters, orderBy) {
+      let query = supabase.from(tableName).select('*');
+      query = applyFilters(query, filters);
+      query = applyOrder(query, orderBy);
+      query = query.limit(1).maybeSingle();
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
     },
   };
 }

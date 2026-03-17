@@ -15,6 +15,7 @@ import SortableTableHeader from '../../shared/SortableTableHeader';
 import { User } from '@/entities/User';
 import { Empresa } from '@/entities/Empresa';
 import { isSuperAdmin } from '@/components/lib/userUtils';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const PAISES_ISO = [
   { code: 'AD', name: 'Andorra' }, { code: 'AE', name: 'Emirados Árabes Unidos' }, { code: 'AF', name: 'Afeganistão' },
@@ -101,6 +102,7 @@ const CATEGORIA_CONFIG = {
 
 // Exportar o formulário separadamente para uso em outros componentes
 export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState(aeroporto ? {
     id: aeroporto.id,
     codigo_icao: aeroporto.codigo_icao || '',
@@ -144,26 +146,28 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
       return;
     }
 
-    // Normalizar dados antes de salvar
-    const dataToSave = {
-      id: formData.id,
-      codigo_icao: formData.codigo_icao.toUpperCase(),
-      codigo_iata: formData.codigo_iata?.toUpperCase() || '',
-      nome: formData.nome,
-      cidade: formData.cidade,
-      provincia: formData.provincia,
-      pais: formData.pais.toUpperCase(),
-      tipo_operacao: formData.tipo_operacao,
-      latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-      longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-      soleiras: formData.soleiras,
-      categoria: formData.categoria,
-      status: formData.status,
-      isSGA: formData.isSGA,
-      empresa_id: formData.empresa_id || null
-    };
+    guardedSubmit(async () => {
+      // Normalizar dados antes de salvar
+      const dataToSave = {
+        id: formData.id,
+        codigo_icao: formData.codigo_icao.toUpperCase(),
+        codigo_iata: formData.codigo_iata?.toUpperCase() || '',
+        nome: formData.nome,
+        cidade: formData.cidade,
+        provincia: formData.provincia,
+        pais: formData.pais.toUpperCase(),
+        tipo_operacao: formData.tipo_operacao,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+        soleiras: formData.soleiras,
+        categoria: formData.categoria,
+        status: formData.status,
+        isSGA: formData.isSGA,
+        empresa_id: formData.empresa_id || null
+      };
 
-    onSave(dataToSave);
+      await onSave(dataToSave);
+    });
   };
 
   const empresaOptions = [
@@ -323,8 +327,8 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" className="bg-green-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-10 hover:bg-green-600/90 ">
-          Salvar
+        <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
+          {isSubmitting ? 'A guardar...' : 'Salvar'}
         </Button>
       </div>
     </form>);

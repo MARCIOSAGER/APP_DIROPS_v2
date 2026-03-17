@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Mail, Loader2 } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function SendEmailModal({
   isOpen,
@@ -32,6 +33,7 @@ export default function SendEmailModal({
   }, [isOpen, defaultRecipient, defaultSubject, defaultBody]);
 
   const [errors, setErrors] = useState({});
+  const { guardedSubmit } = useSubmitGuard();
 
   const validateForm = () => {
     const newErrors = {};
@@ -57,11 +59,13 @@ export default function SendEmailModal({
       return;
     }
 
-    // Passar os dados corretos para o callback
-    onSend({
-      to: emailData.to.trim(),
-      subject: emailData.subject.trim(),
-      message: emailData.message.trim()
+    guardedSubmit(async () => {
+      // Passar os dados corretos para o callback
+      await onSend({
+        to: emailData.to.trim(),
+        subject: emailData.subject.trim(),
+        message: emailData.message.trim()
+      });
     });
   };
 

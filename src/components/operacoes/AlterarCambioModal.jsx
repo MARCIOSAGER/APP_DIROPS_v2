@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DollarSign, Loader2, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm, voos }) {
   const [novaTaxaCambio, setNovaTaxaCambio] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
     if (isOpen && calculo) {
@@ -30,6 +32,7 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
       return;
     }
 
+    guardedSubmit(async () => {
     setIsSubmitting(true);
     try {
       await onConfirm(calculo, taxaCambio);
@@ -40,6 +43,7 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
     } finally {
       setIsSubmitting(false);
     }
+    });
   };
 
   const novoTotalAoa = calculo.total_tarifa_usd * parseFloat(novaTaxaCambio || calculo.taxa_cambio_usd_aoa);

@@ -25,8 +25,7 @@ import {
         ArrowUpDown,
         Edit,
         Trash2,
-        Download,
-        Eye } from
+        } from
       'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -43,10 +42,10 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
 import { PlanoAcaoCorretiva } from '@/entities/PlanoAcaoCorretiva';
 import { ItemPAC } from '@/entities/ItemPAC'; // New import for ItemPAC
-import { CalculoTarifa } from '@/entities/CalculoTarifa';
 import { Voo } from '@/entities/Voo';
 
 import { ensureUserProfilesExist, hasUserProfile, getAeroportosPermitidos, filtrarDadosPorAcesso, isSuperAdmin, getEmpresaLogoByUser } from '../components/lib/userUtils';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 import { Empresa } from '@/entities/Empresa';
 
 import FormProcessoAuditoria from '../components/auditoria/FormProcessoAuditoria';
@@ -94,6 +93,7 @@ const CATEGORIAS_CONFIG = {
 };
 
 export default function Auditoria() {
+  const { effectiveEmpresaId } = useCompanyView();
   const [currentUser, setCurrentUser] = useState(null);
   const [tiposAuditoria, setTiposAuditoria] = useState([]);
   const [itensAuditoria, setItensAuditoria] = useState([]);
@@ -141,12 +141,6 @@ export default function Auditoria() {
   const [sortFieldPAC, setSortFieldPAC] = useState('data_criacao');
   const [deletePACInfo, setDeletePACInfo] = useState({ isOpen: false, pac: null });
 
-  // CalculoTarifa export states
-  const [calculoTarifaFilters, setCalculoTarifaFilters] = useState({
-    aeroporto: 'todos'
-  });
-  const [calculoTarifaPreview, setCalculoTarifaPreview] = useState([]);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   const showSuccess = useCallback((title, description) => {
     setAlertInfo({ isOpen: true, type: 'success', title, message: description });
@@ -161,8 +155,8 @@ export default function Auditoria() {
     if (!currentUser || !Array.isArray(aeroportos)) {
       return [];
     }
-    return getAeroportosPermitidos(currentUser, aeroportos);
-  }, [aeroportos, currentUser]);
+    return getAeroportosPermitidos(currentUser, aeroportos, effectiveEmpresaId);
+  }, [aeroportos, currentUser, effectiveEmpresaId]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -173,9 +167,15 @@ export default function Auditoria() {
       const isAdmin = user?.role === 'admin' || hasUserProfile(user, 'administrador');
       setGestaoPermission(isAdmin);
 
+      // Server-side filter by empresa_id when applicable
+      const empId = effectiveEmpresaId || user.empresa_id;
+      const processoPromise = empId
+        ? ProcessoAuditoria.filter({ empresa_id: empId }, '-data_auditoria')
+        : ProcessoAuditoria.list('-data_auditoria');
+
       const [tiposData, processosData, aeroportosData, usersData, pacsData, itensData, itensPacData, empresasData] = await Promise.all([
       TipoAuditoria.list(),
-      ProcessoAuditoria.list('-data_auditoria'),
+      processoPromise,
       Aeroporto.filter({ pais: 'AO' }),
       User.list(),
       PlanoAcaoCorretiva.list('-data_criacao'),
@@ -184,8 +184,8 @@ export default function Auditoria() {
       Empresa.list()]
       );
 
-      const processosFiltrados = filtrarDadosPorAcesso(user, processosData || [], 'aeroporto_id', aeroportosData || []);
-      const pacsFiltrados = filtrarDadosPorAcesso(user, pacsData || [], 'aeroporto_id', aeroportosData || []);
+      const processosFiltrados = filtrarDadosPorAcesso(user, processosData || [], 'aeroporto_id', aeroportosData || [], effectiveEmpresaId);
+      const pacsFiltrados = filtrarDadosPorAcesso(user, pacsData || [], 'aeroporto_id', aeroportosData || [], effectiveEmpresaId);
 
       setProcessosAuditoria(processosFiltrados);
       setTiposAuditoria(tiposData || []);
@@ -676,74 +676,6 @@ export default function Auditoria() {
 
   const hasActiveFilters = filtros.aeroporto !== 'todos' || filtros.status !== 'todos' || filtros.dataInicio || filtros.dataFim || filtros.responsavel;
 
-  const handleCarregarPreview = useCallback(async () => {
-    setIsLoadingPreview(true);
-    try {
-      const query = {};
-      if (calculoTarifaFilters.aeroporto !== 'todos') {
-        query.aeroporto_id = calculoTarifaFilters.aeroporto;
-      }
-
-      const calculos = await CalculoTarifa.filter(query).catch(() => []);
-      const voos = await Voo.list().catch(() => []);
-
-      const voosMap = new Map(voos.map(v => [v.id, v]));
-
-      const dados = calculos.map(ct => ({
-        voo: voosMap.get(ct.voo_id)?.numero_voo || ct.voo_id,
-        aeroporto: ct.aeroporto_id,
-        data: ct.data_calculo?.split('T')[0],
-        tipo: ct.tipo_tarifa,
-        mtow: ct.mtow_kg,
-        totalUSD: ct.total_tarifa_usd?.toFixed(2),
-        totalAOA: ct.total_tarifa?.toFixed(2)
-      }));
-
-      setCalculoTarifaPreview(dados);
-      showSuccess('Pré-visualização Carregada', `${dados.length} registos encontrados.`);
-    } catch (error) {
-      console.error('Erro ao carregar preview:', error);
-      showError('Erro ao Carregar Pré-visualização', 'Não foi possível carregar os dados.');
-    } finally {
-      setIsLoadingPreview(false);
-    }
-  }, [calculoTarifaFilters, showSuccess, showError]);
-
-  const handleExportCalculoTarifa = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        new URL('/api/apps/6870dc26cbf5444a4fbe6aa9/functions/exportarCalculoTarifaXLSX', window.location.origin),
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            aeroporto: calculoTarifaFilters.aeroporto === 'todos' ? null : calculoTarifaFilters.aeroporto
-          })
-        }
-      );
-
-      if (!response.ok) throw new Error('Erro ao exportar');
-
-      const blob = await response.arrayBuffer();
-      const url = window.URL.createObjectURL(new Blob([blob]));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `calculo_tarifa_${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
-
-      showSuccess('Exportação Concluída', 'Arquivo XLSX exportado com sucesso!');
-    } catch (error) {
-      console.error('Erro ao exportar:', error);
-      showError('Erro ao Exportar', 'Não foi possível exportar os dados do CalculoTarifa.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [calculoTarifaFilters, showSuccess, showError]);
-
   const statusOptions = [
   { value: "todos", label: "Todos" },
   { value: "planejada", label: "Planejada" },
@@ -888,7 +820,7 @@ export default function Auditoria() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex justify-between items-center mb-6 border-b">
-            <TabsList className="grid w-full grid-cols-3 bg-transparent border-b-0 p-0 m-0">
+            <TabsList className="grid w-full grid-cols-2 bg-transparent border-b-0 p-0 m-0">
               <TabsTrigger value="processos" className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:shadow-none -mb-px">
                 <ClipboardCheck className="w-4 h-4" />
                 <span className="hidden sm:inline">Processos de Auditoria</span>
@@ -896,10 +828,6 @@ export default function Auditoria() {
               <TabsTrigger value="pacs" className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:shadow-none -mb-px">
                 <CheckCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Planos de Ação Corretiva (PACs)</span>
-              </TabsTrigger>
-              <TabsTrigger value="calculo-tarifa" className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:shadow-none -mb-px">
-                <FileText className="w-4 h-4" />
-                <span className="hidden sm:inline">Exportar Tarifas</span>
               </TabsTrigger>
             </TabsList>
             <Button onClick={loadData} variant="outline" className="ml-4 shrink-0">
@@ -1389,105 +1317,6 @@ export default function Auditoria() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="calculo-tarifa" className="mt-6 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Download className="w-5 h-5 text-slate-500" />
-                  Exportar Cálculo de Tarifas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                    <div className="space-y-1">
-                      <Label htmlFor="calc-aeroporto">Aeroporto</Label>
-                      <Combobox
-                        id="calc-aeroporto"
-                        options={aeroportoOptions}
-                        value={calculoTarifaFilters.aeroporto}
-                        onValueChange={(value) => setCalculoTarifaFilters((f) => ({ ...f, aeroporto: value || 'todos' }))}
-                        placeholder="Todos os Aeroportos"
-                        noResultsMessage="Nenhum aeroporto encontrado."
-                        searchPlaceholder="Procurar aeroporto..."
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      onClick={handleCarregarPreview}
-                      disabled={isLoadingPreview}
-                      variant="outline"
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      {isLoadingPreview ? 'A carregar...' : 'Pré-visualizar'}
-                    </Button>
-                    <Button
-                      onClick={handleExportCalculoTarifa}
-                      disabled={isLoading}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      {isLoading ? 'A exportar...' : 'Exportar XLSX'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setCalculoTarifaFilters({ aeroporto: 'todos' });
-                        setCalculoTarifaPreview([]);
-                      }}
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Limpar Filtros
-                    </Button>
-                  </div>
-
-                  {calculoTarifaPreview.length > 0 && (
-                    <div className="border rounded-lg overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-slate-100 border-b">
-                          <tr>
-                            <th className="px-4 py-3 text-left font-semibold text-slate-700">Voo</th>
-                            <th className="px-4 py-3 text-left font-semibold text-slate-700">Aeroporto</th>
-                            <th className="px-4 py-3 text-left font-semibold text-slate-700">Data</th>
-                            <th className="px-4 py-3 text-left font-semibold text-slate-700">Tipo</th>
-                            <th className="px-4 py-3 text-left font-semibold text-slate-700">MTOW</th>
-                            <th className="px-4 py-3 text-right font-semibold text-slate-700">Total USD</th>
-                            <th className="px-4 py-3 text-right font-semibold text-slate-700">Total AOA</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {calculoTarifaPreview.slice(0, 20).map((row, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50">
-                              <td className="px-4 py-3 text-slate-800">{row.voo}</td>
-                              <td className="px-4 py-3 text-slate-800">{row.aeroporto}</td>
-                              <td className="px-4 py-3 text-slate-800">{row.data}</td>
-                              <td className="px-4 py-3 text-slate-600 text-xs">{row.tipo}</td>
-                              <td className="px-4 py-3 text-slate-800">{row.mtow}</td>
-                              <td className="px-4 py-3 text-right text-slate-800">${row.totalUSD}</td>
-                              <td className="px-4 py-3 text-right text-slate-800">{row.totalAOA} Kz</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {calculoTarifaPreview.length > 20 && (
-                        <div className="px-4 py-3 bg-slate-50 text-sm text-slate-600 border-t">
-                          Mostrando 20 de {calculoTarifaPreview.length} registos
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-800">
-                      <strong>Nota:</strong> Use os filtros acima para refinar os dados a exportar. Deixe os campos vazios para incluir todos os dados disponíveis.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
 
         {showFormProcesso &&
@@ -1527,7 +1356,8 @@ export default function Auditoria() {
             setSelectedProcesso(null);
           }}
           processo={selectedProcesso}
-          onUpdate={handleChecklistComplete} />
+          onUpdate={handleChecklistComplete}
+          currentUser={currentUser} />
 
         }
 

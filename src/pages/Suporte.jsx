@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Send, CheckCircle, Ticket, X } from "lucide-react";
 import Select from "@/components/ui/select";
 import { enviarTicketSuporte } from "@/functions/enviarTicketSuporte";
+import useSubmitGuard from "@/hooks/useSubmitGuard";
 
 const categorias = [
   { value: "", label: "Selecione (opcional)" },
@@ -24,11 +25,13 @@ export default function Suporte() {
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState(null);
   const [erro, setErro] = useState(null);
+  const { guardedSubmit } = useSubmitGuard();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (assunto.length < 5 || mensagem.length < 10) return;
 
+    guardedSubmit(async () => {
     setEnviando(true);
     setErro(null);
     try {
@@ -39,6 +42,7 @@ export default function Suporte() {
     } finally {
       setEnviando(false);
     }
+    });
   };
 
   const handleNovo = () => {

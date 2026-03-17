@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { Empresa } from '@/entities/Empresa';
 import { Send, Search, X } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading }) {
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     nome_completo: userData?.full_name || '',
     telefone: userData?.telefone || '',
@@ -81,7 +83,7 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validação final antes de enviar
     if (!formData.nome_completo || !formData.telefone || !formData.perfil_solicitado || !formData.justificativa) {
       alert('Por favor, preencha todos os campos obrigatórios.');
@@ -98,7 +100,9 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
       return;
     }
 
-    onSubmit(formData);
+    guardedSubmit(async () => {
+      await onSubmit(formData);
+    });
   };
 
   const perfilOptions = [
@@ -284,7 +288,7 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
       <Button
         type="submit"
         className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-        disabled={isLoading || isLoadingData} // Disable if data is still loading
+        disabled={isLoading || isLoadingData || isSubmitting} // Disable if data is still loading
       >
         {isLoading ? (
           <>

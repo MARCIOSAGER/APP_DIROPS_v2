@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, UserPlus, Mail, Trash2 } from 'lucide-react';
+import { Eye, Edit, UserPlus, Mail, Trash2, PlayCircle, CheckCircle, ClipboardCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
@@ -200,24 +200,42 @@ export default function ManutencaoList({
                         {ordem.responsavel_manutencao || 'Não atribuído'}
                       </td>
                       <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleViewDetails(ordem)}>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => handleViewDetails(ordem)} title="Ver detalhes">
                             <Eye className="w-4 h-4" />
                           </Button>
+                          {/* Action: Accept (atribuida -> em_execucao) */}
+                          {ordem.status === 'atribuida' && (
+                            <Button variant="ghost" size="icon" onClick={() => onResponder && onResponder(ordem, 'aceitar')} title="Aceitar e iniciar execução" className="text-green-600 hover:text-green-700">
+                              <PlayCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {/* Action: Conclude (em_execucao -> aguardando_verificacao) */}
+                          {ordem.status === 'em_execucao' && (
+                            <Button variant="ghost" size="icon" onClick={() => onResponder && onResponder(ordem, 'concluir')} title="Concluir execução" className="text-blue-600 hover:text-blue-700">
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {/* Action: Verify/Approve (aguardando_verificacao -> concluida) */}
+                          {canManage && ordem.status === 'aguardando_verificacao' && (
+                            <Button variant="ghost" size="icon" onClick={() => onResponder && onResponder(ordem, 'verificar')} title="Verificar e aprovar" className="text-orange-600 hover:text-orange-700">
+                              <ClipboardCheck className="w-4 h-4" />
+                            </Button>
+                          )}
                           {canManage && (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => handleEdit(ordem)}>
+                              <Button variant="ghost" size="icon" onClick={() => handleEdit(ordem)} title="Editar">
                                 <Edit className="w-4 h-4" />
                               </Button>
                               {ordem.status === 'pendente' && (
-                                <Button variant="ghost" size="icon" onClick={() => handleAtribuir(ordem)}>
+                                <Button variant="ghost" size="icon" onClick={() => handleAtribuir(ordem)} title="Atribuir">
                                   <UserPlus className="w-4 h-4" />
                                 </Button>
                               )}
-                              <Button variant="ghost" size="icon" onClick={() => handleSendEmail(ordem)}>
+                              <Button variant="ghost" size="icon" onClick={() => handleSendEmail(ordem)} title="Enviar email">
                                 <Mail className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleDelete(ordem)} className="text-red-600 hover:text-red-700">
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete(ordem)} className="text-red-600 hover:text-red-700" title="Excluir">
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </>

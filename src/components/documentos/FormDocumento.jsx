@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { FileText, Upload, Sparkles, Loader2, Download, Shield, Lock, Eye, EyeOff } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { sanitizeFilename } from '@/lib/sanitize';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { analisarDocumento } from '@/functions/analisarDocumento';
 
 const CATEGORIA_OPTIONS = [
@@ -57,6 +58,7 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
   });
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [confirmaSenha, setConfirmaSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erroSenha, setErroSenha] = useState('');
@@ -98,7 +100,9 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
       }
     }
 
-    await onSubmit(formData);
+    guardedSubmit(async () => {
+      await onSubmit(formData);
+    });
   };
 
   const handleChange = (field, value) => {
@@ -485,10 +489,10 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
           <DialogFooter className="gap-3">
             <Button
               type="submit"
-              disabled={isUploading || isAnalyzing} className="bg-blue-600 text-slate-50 px-8 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow h-9 hover:bg-blue-700">
+              disabled={isUploading || isAnalyzing || isSubmitting} className="bg-blue-600 text-slate-50 px-8 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow h-9 hover:bg-blue-700">
 
 
-              {documentoInitial ? 'Actualizar Documento' : 'Criar Documento'}
+              {isSubmitting ? 'A guardar...' : documentoInitial ? 'Actualizar Documento' : 'Criar Documento'}
             </Button>
           </DialogFooter>
         </form>

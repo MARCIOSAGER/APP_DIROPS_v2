@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { UserCheck, Mail, Calendar } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function AprovarCredenciamentoModal({ isOpen, onClose, credenciamento, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ export default function AprovarCredenciamentoModal({ isOpen, onClose, credenciam
     periodo_entrega: 'A partir de amanhã, das 08:00 às 15:00 horas, deverá comparecer ao Credenciamento do aeroporto para entrega dos documentos físicos e finalização do processo.'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,6 +22,7 @@ export default function AprovarCredenciamentoModal({ isOpen, onClose, credenciam
       return;
     }
 
+    guardedSubmit(async () => {
     setIsSubmitting(true);
     try {
       await onSuccess(credenciamento.id, formData);
@@ -30,6 +33,7 @@ export default function AprovarCredenciamentoModal({ isOpen, onClose, credenciam
     } finally {
       setIsSubmitting(false);
     }
+    });
   };
 
   if (!credenciamento) return null;

@@ -9,13 +9,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, Save, X, Loader2, Download, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import AlertModal from '@/components/shared/AlertModal';
+import ConfirmModal from '@/components/shared/ConfirmModal';
 
 import { ItemChecklist } from '@/entities/ItemChecklist';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspecao, onUpdate }) {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     categoria: '',
@@ -27,6 +31,8 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
     status: 'ativo'
   });
   const fileInputRef = useRef(null);
+  const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
+  const [confirmInfo, setConfirmInfo] = useState({ isOpen: false, itemId: null });
 
   useEffect(() => {
     if (isOpen && tipoInspecao) {
@@ -49,6 +55,8 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.categoria || !formData.item) return;
+    guardedSubmit(async () => {
     setIsSubmitting(true);
     try {
       const itemData = {
@@ -61,14 +69,16 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
       } else {
         await ItemChecklist.create(itemData);
       }
-      
-      loadItems(); // Recarrega e reseta o form
+
+      loadItems();
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Erro ao salvar item:', error);
+      setAlertInfo({ isOpen: true, type: 'error', title: 'Erro', message: 'Não foi possível salvar o item. Tente novamente.' });
     } finally {
       setIsSubmitting(false);
     }
+    });
   };
 
   const handleEdit = (item) => {
@@ -77,15 +87,18 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
   };
 
   const handleDelete = async (itemId) => {
-    if (confirm('Tem certeza que deseja eliminar este item? Esta ação não pode ser desfeita.')) {
-      try {
-        await ItemChecklist.update(itemId, { status: 'inativo' });
-        loadItems();
-        if (onUpdate) onUpdate();
-      } catch (error) {
-        console.error('Erro ao eliminar item:', error);
-      }
+    setConfirmInfo({ isOpen: true, itemId });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await ItemChecklist.update(confirmInfo.itemId, { status: 'inativo' });
+      loadItems();
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Erro ao eliminar item:', error);
     }
+    setConfirmInfo({ isOpen: false, itemId: null });
   };
 
   const resetForm = (nextOrder) => {
@@ -107,24 +120,23 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
 
   const handleDownloadTemplate = () => {
     const data = [
-      ['numero', 'item', 'referencia_norma', 'exemplo_situacao', 'categoria'],
-      [1, 'Exemplo de item de auditoria', 'NTA 22A.903.c)', 'Exemplo de situação', 'resposta_emergencia']
+      ['ordem', 'item', 'criterio', 'categoria'],
+      [1, 'Verificar estado do pavimento', 'Sem fissuras ou deformações visíveis', 'Pista'],
+      [2, 'Verificar sinalização horizontal', 'Marcas visíveis e em conformidade', 'Sinalização']
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Modelo');
 
-    // Ajustar largura das colunas
     ws['!cols'] = [
       { wch: 10 },
+      { wch: 45 },
       { wch: 40 },
-      { wch: 20 },
-      { wch: 30 },
       { wch: 20 }
     ];
 
-    XLSX.writeFile(wb, 'modelo_checklist_itens.xlsx');
+    XLSX.writeFile(wb, 'modelo_checklist_inspecao.xlsx');
   };
 
   const handleUploadFile = async (event) => {
@@ -139,7 +151,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
       if (jsonData.length < 2) {
-        alert('O ficheiro está vazio ou inválido.');
+        setAlertInfo({ isOpen: true, type: 'warning', title: 'Ficheiro Vazio', message: 'O ficheiro está vazio ou inválido.' });
         return;
       }
 
@@ -147,14 +159,14 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
 
       for (let i = 1; i < jsonData.length; i++) {
         const row = jsonData[i];
-        if (!row[1]) continue; // Skip se não tem item
+        if (!row[1]) continue;
 
         const itemData = {
           tipo_inspecao_id: tipoInspecao.id,
           ordem: parseInt(row[0]) || (i + items.length),
           item: row[1] || '',
           criterio: row[2] || '',
-          categoria: row[4] || '',
+          categoria: row[3] || '',
           obrigatorio: true,
           permite_fotos: true,
           status: 'ativo'
@@ -164,7 +176,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
       }
 
       if (itemsToCreate.length === 0) {
-        alert('Nenhum item válido encontrado no ficheiro.');
+        setAlertInfo({ isOpen: true, type: 'warning', title: 'Sem Itens', message: 'Nenhum item válido encontrado no ficheiro.' });
         return;
       }
 
@@ -172,12 +184,12 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
         await ItemChecklist.create(itemData);
       }
 
-      alert(`${itemsToCreate.length} itens importados com sucesso!`);
+      setAlertInfo({ isOpen: true, type: 'success', title: 'Importação Concluída', message: `${itemsToCreate.length} itens importados com sucesso!` });
       loadItems();
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Erro ao importar ficheiro:', error);
-      alert('Erro ao importar ficheiro. Verifique o formato do ficheiro.');
+      setAlertInfo({ isOpen: true, type: 'error', title: 'Erro na Importação', message: 'Erro ao importar ficheiro. Verifique o formato do ficheiro.' });
     } finally {
       setIsSubmitting(false);
       if (fileInputRef.current) {
@@ -187,6 +199,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-6xl max-h-[90vh] flex flex-col">
         <DialogHeader>
@@ -197,12 +210,12 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1 overflow-hidden">
           {/* Formulário */}
-          <div className="flex flex-col space-y-4">
-            <h3 className="text-lg font-semibold border-b pb-2">
+          <div className="flex flex-col overflow-y-auto pr-4">
+            <h3 className="text-lg font-semibold border-b pb-2 mb-4">
               {editingItem ? 'Editar Item' : 'Novo Item do Checklist'}
             </h3>
-            
-            <form id="item-form" onSubmit={handleSubmit} className="space-y-4 overflow-y-auto pr-4">
+
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="categoria">Categoria</Label>
@@ -234,20 +247,20 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
                   <Label htmlFor="permite_fotos">Permite Anexar Fotos</Label>
                 </div>
               </div>
-            </form>
-            
-            <div className="pt-4 border-t flex gap-2">
-              <Button type="submit" form="item-form" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {editingItem ? 'Salvar Alterações' : 'Adicionar Item'}
-              </Button>
-              {editingItem && (
-                <Button variant="outline" onClick={() => resetForm(items.length + 1)}>
-                  <X className="mr-2 h-4 w-4" />
-                  Cancelar Edição
+
+              <div className="pt-4 border-t flex gap-2">
+                <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  {editingItem ? 'Salvar Alterações' : 'Adicionar Item'}
                 </Button>
-              )}
-            </div>
+                {editingItem && (
+                  <Button type="button" variant="outline" onClick={() => resetForm(items.length + 1)}>
+                    <X className="mr-2 h-4 w-4" />
+                    Cancelar Edição
+                  </Button>
+                )}
+              </div>
+            </form>
           </div>
 
           {/* Tabela de Itens */}
@@ -317,7 +330,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
             </div>
           </div>
         </div>
-        
+
         <DialogFooter className="pt-4">
           <DialogClose asChild>
             <Button variant="outline">Fechar</Button>
@@ -325,5 +338,22 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertModal
+      isOpen={alertInfo.isOpen}
+      onClose={() => setAlertInfo(prev => ({ ...prev, isOpen: false }))}
+      type={alertInfo.type}
+      title={alertInfo.title}
+      message={alertInfo.message}
+    />
+
+    <ConfirmModal
+      isOpen={confirmInfo.isOpen}
+      onClose={() => setConfirmInfo({ isOpen: false, itemId: null })}
+      onConfirm={confirmDelete}
+      title="Eliminar Item"
+      message="Tem certeza que deseja eliminar este item? Esta ação não pode ser desfeita."
+    />
+    </>
   );
 }

@@ -6,12 +6,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Building, Save, X } from 'lucide-react';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const STATUS_OPTIONS = [
   { value: 'ativa', label: 'Ativa' },
   { value: 'suspensa', label: 'Suspensa' },
   { value: 'inativa', label: 'Inativa' }
 ];
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[+]?[\d\s()-]{7,20}$/;
+const NIF_REGEX = /^[\dA-Za-z]{5,20}$/;
 
 export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
   const [formData, setFormData] = useState({
@@ -26,6 +31,8 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
     area_atividade: '',
     status: 'ativa'
   });
+  const [errors, setErrors] = useState({});
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
     if (empresa && isOpen) {
@@ -46,9 +53,32 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
     }
   }, [empresa, isOpen]);
 
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.nome?.trim()) newErrors.nome = 'Nome é obrigatório';
+    if (!formData.nif?.trim()) newErrors.nif = 'NIF é obrigatório';
+    else if (!NIF_REGEX.test(formData.nif.trim())) newErrors.nif = 'NIF inválido (5-20 caracteres alfanuméricos)';
+    if (!formData.email_principal?.trim()) newErrors.email_principal = 'Email é obrigatório';
+    else if (!EMAIL_REGEX.test(formData.email_principal.trim())) newErrors.email_principal = 'Formato de email inválido';
+    if (formData.telefone?.trim() && !PHONE_REGEX.test(formData.telefone.trim())) newErrors.telefone = 'Formato de telefone inválido';
+    if (!formData.responsavel_nome?.trim()) newErrors.responsavel_nome = 'Nome do responsável é obrigatório';
+    if (!formData.responsavel_email?.trim()) newErrors.responsavel_email = 'Email do responsável é obrigatório';
+    else if (!EMAIL_REGEX.test(formData.responsavel_email.trim())) newErrors.responsavel_email = 'Formato de email inválido';
+    if (formData.responsavel_telefone?.trim() && !PHONE_REGEX.test(formData.responsavel_telefone.trim())) newErrors.responsavel_telefone = 'Formato de telefone inválido';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await onSave(formData);
+    if (!validate()) return;
+    guardedSubmit(async () => {
+      // Trim all string fields before saving
+      const cleanData = Object.fromEntries(
+        Object.entries(formData).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v])
+      );
+      await onSave(cleanData);
+    });
   };
 
   const handleChange = (field, value) => {
@@ -86,8 +116,10 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
                   id="nif"
                   value={formData.nif}
                   onChange={(e) => handleChange('nif', e.target.value)}
+                  className={errors.nif ? 'border-red-500' : ''}
                   required
                 />
+                {errors.nif && <p className="text-red-500 text-xs mt-1">{errors.nif}</p>}
               </div>
             </div>
 
@@ -108,7 +140,9 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
                   id="telefone"
                   value={formData.telefone}
                   onChange={(e) => handleChange('telefone', e.target.value)}
+                  className={errors.telefone ? 'border-red-500' : ''}
                 />
+                {errors.telefone && <p className="text-red-500 text-xs mt-1">{errors.telefone}</p>}
               </div>
 
               <div>
@@ -118,8 +152,10 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
                   type="email"
                   value={formData.email_principal}
                   onChange={(e) => handleChange('email_principal', e.target.value)}
+                  className={errors.email_principal ? 'border-red-500' : ''}
                   required
                 />
+                {errors.email_principal && <p className="text-red-500 text-xs mt-1">{errors.email_principal}</p>}
               </div>
             </div>
           </div>
@@ -145,8 +181,10 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
                   type="email"
                   value={formData.responsavel_email}
                   onChange={(e) => handleChange('responsavel_email', e.target.value)}
+                  className={errors.responsavel_email ? 'border-red-500' : ''}
                   required
                 />
+                {errors.responsavel_email && <p className="text-red-500 text-xs mt-1">{errors.responsavel_email}</p>}
               </div>
             </div>
 
@@ -157,7 +195,9 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
                   id="responsavel_telefone"
                   value={formData.responsavel_telefone}
                   onChange={(e) => handleChange('responsavel_telefone', e.target.value)}
+                  className={errors.responsavel_telefone ? 'border-red-500' : ''}
                 />
+                {errors.responsavel_telefone && <p className="text-red-500 text-xs mt-1">{errors.responsavel_telefone}</p>}
               </div>
 
               <div>
@@ -186,9 +226,9 @@ export default function FormEmpresa({ isOpen, onClose, empresa, onSave }) {
               <X className="w-4 h-4 mr-1" />
               Cancelar
             </Button>
-            <Button type="submit" className="bg-green-600 hover:bg-green-700">
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Save className="w-4 h-4 mr-1" />
-              {empresa ? 'Atualizar' : 'Criar'} Empresa
+              {isSubmitting ? 'A guardar...' : `${empresa ? 'Atualizar' : 'Criar'} Empresa`}
             </Button>
           </DialogFooter>
         </form>

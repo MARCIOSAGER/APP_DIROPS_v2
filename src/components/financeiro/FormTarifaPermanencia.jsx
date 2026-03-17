@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const FormTarifaPermanencia = ({ isOpen, onClose, onSubmit, tarifa }) => {
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     faixa_min: 0,
     faixa_max: 999999,
@@ -39,11 +41,13 @@ const FormTarifaPermanencia = ({ isOpen, onClose, onSubmit, tarifa }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const dataToSubmit = {
-      ...formData,
-      tarifa_usd_por_tonelada_hora: parseFloat(formData.tarifa_usd_por_tonelada_hora)
-    };
-    await onSubmit(dataToSubmit);
+    guardedSubmit(async () => {
+      const dataToSubmit = {
+        ...formData,
+        tarifa_usd_por_tonelada_hora: parseFloat(formData.tarifa_usd_por_tonelada_hora)
+      };
+      await onSubmit(dataToSubmit);
+    });
   };
 
   const categoriaOptions = [
@@ -123,7 +127,7 @@ const FormTarifaPermanencia = ({ isOpen, onClose, onSubmit, tarifa }) => {
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">Salvar</Button>
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? 'A guardar...' : 'Salvar'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

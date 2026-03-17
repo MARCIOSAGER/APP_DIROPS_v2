@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import Select from '@/components/ui/select'; // Corrected import
 import { Home, Save, X, AlertCircle } from 'lucide-react';
 import { Alert, AlertTitle } from '@/components/ui/alert';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const CATEGORIA_OPTIONS = [
   { value: 'categoria_1', label: 'Categoria 1' },
@@ -27,6 +28,7 @@ export default function FormNovoAeroportoPublico({ isOpen, onClose, onSave }) {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { guardedSubmit } = useSubmitGuard();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,6 +36,7 @@ export default function FormNovoAeroportoPublico({ isOpen, onClose, onSave }) {
       setError('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
+    guardedSubmit(async () => {
     setError('');
     setIsLoading(true);
     try {
@@ -48,6 +51,7 @@ export default function FormNovoAeroportoPublico({ isOpen, onClose, onSave }) {
     } finally {
       setIsLoading(false);
     }
+    });
   };
 
   const handleChange = (field, value) => {

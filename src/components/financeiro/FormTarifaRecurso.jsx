@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 const FormTarifaRecurso = ({ isOpen, onClose, onSubmit, tarifa }) => {
+  const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     tipo: 'pca',
     valor_usd: '',
@@ -39,7 +41,9 @@ const FormTarifaRecurso = ({ isOpen, onClose, onSubmit, tarifa }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await onSubmit(formData);
+    guardedSubmit(async () => {
+      await onSubmit(formData);
+    });
   };
 
   const tipoOptions = [
@@ -163,7 +167,7 @@ const FormTarifaRecurso = ({ isOpen, onClose, onSubmit, tarifa }) => {
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">Salvar</Button>
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? 'A guardar...' : 'Salvar'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
