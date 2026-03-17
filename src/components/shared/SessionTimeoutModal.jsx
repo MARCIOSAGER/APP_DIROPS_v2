@@ -133,18 +133,18 @@ export default function SessionTimeoutModal() {
         </DialogHeader>
 
         <div className="text-center py-4 space-y-4">
-          <p className="text-slate-600">
+          <p className="text-slate-600 dark:text-slate-400">
             A sua sessão irá expirar automaticamente por inatividade.
           </p>
 
-          <div className="bg-orange-50 border border-orange-200 rounded-xl py-6">
+          <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-xl py-6">
             <p className="text-4xl font-bold text-orange-600 font-mono">
               {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
             </p>
             <p className="text-sm text-orange-500 mt-1">tempo restante</p>
           </div>
 
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Clique em "Manter Sessão" para continuar ou será desligado automaticamente.
           </p>
         </div>

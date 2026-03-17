@@ -2012,12 +2012,12 @@ export default function Operacoes() {
   }), [todosAeroportos, aeronaves, tarifasPouso, tarifasPermanencia, outrasTarifas, impostos, configuracaoSistema]);
 
   return (
-    <div className="p-2 sm:p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-2 sm:p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         <div className="flex flex-col gap-3 sm:gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900">{language === 'en' ? 'Aerial Operations' : 'Operações Aéreas'}</h1>
-            <p className="text-sm sm:text-base text-slate-600 mt-1">{language === 'en' ? 'Flight management, aircraft and airlines.' : 'Gestão de voos, aeronaves e companhias.'}</p>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">{language === 'en' ? 'Aerial Operations' : 'Operações Aéreas'}</h1>
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">{language === 'en' ? 'Flight management, aircraft and airlines.' : 'Gestão de voos, aeronaves e companhias.'}</p>
           </div>
         </div>
 
@@ -2044,7 +2044,7 @@ export default function Operacoes() {
             <Card className="shadow-sm border-0">
               <CardHeader className="flex flex-col gap-3 sm:gap-4 p-4 sm:p-6">
                 <div>
-                  <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800">
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-200">
                     {language === 'en' ? 'Flight Management' : 'Gestão de Voos'}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm text-slate-500 mt-1">{language === 'en' ? 'Register and manage flight movements.' : 'Registe e gira os movimentos aéreos.'}</CardDescription>
@@ -2214,7 +2214,7 @@ export default function Operacoes() {
 
                 {isFiltering && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 shadow-lg text-center">
+                    <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg text-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                       <p className="text-slate-700 font-medium">A carregar voos do período selecionado...</p>
                     </div>
@@ -2279,7 +2279,7 @@ export default function Operacoes() {
 
                 {isFilteringLigados && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 shadow-lg text-center">
+                    <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg text-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                       <p className="text-slate-700 font-medium">A carregar voos ligados do período selecionado...</p>
                     </div>

@@ -128,11 +128,16 @@ export default function AnalisarSSModal({ isOpen, onClose, solicitacao, aeroport
   const generateNumeroOrdem = async () => {
     const year = new Date().getFullYear();
     try {
-      const existingOS = await OrdemServico.list({
-        empresa_id: currentUser?.empresa_id
-      });
-      const count = existingOS.length + 1;
-      return `OS-${year}-${String(count).padStart(4, '0')}`;
+      const empId = currentUser?.empresa_id;
+      const existingOS = empId
+        ? await OrdemServico.filter({ empresa_id: empId })
+        : await OrdemServico.list();
+      const thisYearOS = existingOS.filter(os => os.numero_ordem?.startsWith(`OS-${year}`));
+      const maxNum = thisYearOS.reduce((max, os) => {
+        const num = parseInt(os.numero_ordem?.split('-')[2]) || 0;
+        return num > max ? num : max;
+      }, 0);
+      return `OS-${year}-${String(maxNum + 1).padStart(4, '0')}`;
     } catch {
       return `OS-${year}-0001`;
     }

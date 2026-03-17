@@ -349,10 +349,10 @@ export default function Manutencao() {
   ];
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
+    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-slate-900">Gestão de Manutenção</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Gestão de Manutenção</h1>
           <div className="flex gap-2">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
@@ -384,11 +384,11 @@ export default function Manutencao() {
           <TabsContent value="solicitacoes" className="space-y-6">
             {/* SS Stats */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{ssStats.total}</p><p className="text-sm text-slate-500">Total SS</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-yellow-600">{ssStats.abertas}</p><p className="text-sm text-slate-500">Abertas</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-blue-600">{ssStats.em_analise}</p><p className="text-sm text-slate-500">Em Análise</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600">{ssStats.aprovadas}</p><p className="text-sm text-slate-500">Aprovadas</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-red-600">{ssStats.rejeitadas}</p><p className="text-sm text-slate-500">Rejeitadas</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{ssStats.total}</p><p className="text-sm text-slate-500 dark:text-slate-400">Total SS</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-yellow-600">{ssStats.abertas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Abertas</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-blue-600">{ssStats.em_analise}</p><p className="text-sm text-slate-500 dark:text-slate-400">Em Análise</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600">{ssStats.aprovadas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Aprovadas</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-red-600">{ssStats.rejeitadas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Rejeitadas</p></CardContent></Card>
             </div>
 
             <div className="flex justify-end">
@@ -534,7 +534,6 @@ export default function Manutencao() {
           onClose={() => setDetailOrdem(null)}
           ordem={detailOrdem}
           aeroportos={aeroportos}
-          users={[]}
         />
       )}
 
@@ -543,7 +542,6 @@ export default function Manutencao() {
           isOpen={!!atribuirOrdem}
           onClose={() => setAtribuirOrdem(null)}
           ordem={atribuirOrdem}
-          users={[]}
           onSuccess={() => { setAtribuirOrdem(null); loadData(); setSuccessInfo({ isOpen: true, title: 'Sucesso', message: 'Ordem de serviço atribuída com sucesso! Responsável notificado por email.' }); }}
           onAssigned={(os, email, name) => notifyOSAssigned(os, email, name)}
         />

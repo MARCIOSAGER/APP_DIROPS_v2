@@ -69,11 +69,16 @@ export default function FormSolicitacaoServico({ isOpen, onClose, aeroportos, cu
   const generateNumeroSS = async () => {
     const year = new Date().getFullYear();
     try {
-      const existing = await SolicitacaoServico.filter({
-        empresa_id: { $eq: currentUser.empresa_id }
-      });
-      const count = existing.length + 1;
-      return `SS-${year}-${String(count).padStart(4, '0')}`;
+      const empId = currentUser?.empresa_id;
+      const existing = empId
+        ? await SolicitacaoServico.filter({ empresa_id: empId })
+        : await SolicitacaoServico.list();
+      const thisYearSS = existing.filter(ss => ss.numero_ss?.startsWith(`SS-${year}`));
+      const maxNum = thisYearSS.reduce((max, ss) => {
+        const num = parseInt(ss.numero_ss?.split('-')[2]) || 0;
+        return num > max ? num : max;
+      }, 0);
+      return `SS-${year}-${String(maxNum + 1).padStart(4, '0')}`;
     } catch {
       return `SS-${year}-0001`;
     }

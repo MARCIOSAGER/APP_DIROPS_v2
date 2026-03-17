@@ -77,12 +77,12 @@ export default function Inspecoes() {
   };
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
+    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Inspeções Operacionais</h1>
-            <p className="text-slate-600 mt-1">Gestão de inspeções e verificações de conformidade</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100">Inspeções Operacionais</h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">Gestão de inspeções e verificações de conformidade</p>
           </div>
         </div>
 
@@ -92,8 +92,8 @@ export default function Inspecoes() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Total de Inspeções</p>
-                  <p className="text-3xl font-bold text-slate-900">{inspecoes.length}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total de Inspeções</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{inspecoes.length}</p>
                 </div>
                 <ClipboardCheck className="h-8 w-8 text-blue-600" />
               </div>
@@ -104,7 +104,7 @@ export default function Inspecoes() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Concluídas</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Concluídas</p>
                   <p className="text-3xl font-bold text-green-600">
                     {inspecoes.filter(i => i.status === 'concluida').length}
                   </p>
@@ -118,7 +118,7 @@ export default function Inspecoes() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Em Andamento</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Em Andamento</p>
                   <p className="text-3xl font-bold text-orange-600">
                     {inspecoes.filter(i => i.status === 'em_andamento').length}
                   </p>
@@ -132,7 +132,7 @@ export default function Inspecoes() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Taxa de Conformidade</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Taxa de Conformidade</p>
                   <p className="text-3xl font-bold text-blue-600">
                     {inspecoes.length > 0 ? 
                       `${Math.round((inspecoes.filter(i => i.status === 'aprovada').length / inspecoes.length) * 100)}%`
@@ -182,7 +182,7 @@ export default function Inspecoes() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-slate-600 text-sm mb-3">{tipo.descricao}</p>
+                    <p className="text-slate-600 dark:text-slate-400 text-sm mb-3">{tipo.descricao}</p>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-slate-500 capitalize">
                         Frequência: {(tipo.frequencia || '').replace('_', ' ')}

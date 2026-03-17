@@ -330,14 +330,14 @@ export default function Safety() {
   ];
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
               Safety & Segurança
             </h1>
-            <p className="text-slate-600 mt-1">Registo e gestão de ocorrências de segurança operacional</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">Registo e gestão de ocorrências de segurança operacional</p>
           </div>
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <Button variant="outline" onClick={loadData} className="border-slate-300 text-slate-700 hover:bg-slate-100">
@@ -369,17 +369,17 @@ export default function Safety() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Total de Ocorrências</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Total de Ocorrências</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-900">{totalOcorrencias}</div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{totalOcorrencias}</div>
               <p className="text-xs text-slate-500 mt-1">Ocorrências filtradas</p>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Ocorrências Abertas</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Ocorrências Abertas</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">{ocorrenciasAbertas}</div>
@@ -389,7 +389,7 @@ export default function Safety() {
 
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Críticas</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Críticas</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{ocorrenciasCriticas}</div>
@@ -399,7 +399,7 @@ export default function Safety() {
 
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Este Mês</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Este Mês</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">{ocorrenciasEsteMes}</div>
@@ -409,7 +409,7 @@ export default function Safety() {
 
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Taxa de Resolução</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Taxa de Resolução</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{taxaResolucao}%</div>
@@ -429,7 +429,7 @@ export default function Safety() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="aeroporto" className="text-sm font-medium text-slate-700">Aeroporto</Label>
+                <Label htmlFor="aeroporto" className="text-sm font-medium text-slate-700 dark:text-slate-300">Aeroporto</Label>
                 <Select
                   id="aeroporto"
                   options={aeroportoOptions}
@@ -440,7 +440,7 @@ export default function Safety() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gravidade" className="text-sm font-medium text-slate-700">Gravidade</Label>
+                <Label htmlFor="gravidade" className="text-sm font-medium text-slate-700 dark:text-slate-300">Gravidade</Label>
                 <Select
                   id="gravidade"
                   options={gravidadeOptions}
@@ -451,7 +451,7 @@ export default function Safety() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status" className="text-sm font-medium text-slate-700">Status</Label>
+                <Label htmlFor="status" className="text-sm font-medium text-slate-700 dark:text-slate-300">Status</Label>
                 <Select
                   id="status"
                   options={statusOptions}
@@ -462,7 +462,7 @@ export default function Safety() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="data-inicio" className="text-sm font-medium text-slate-700">Data Início</Label>
+                <Label htmlFor="data-inicio" className="text-sm font-medium text-slate-700 dark:text-slate-300">Data Início</Label>
                 <Input
                   id="data-inicio"
                   type="date"
@@ -472,7 +472,7 @@ export default function Safety() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="data-fim" className="text-sm font-medium text-slate-700">Data Fim</Label>
+                <Label htmlFor="data-fim" className="text-sm font-medium text-slate-700 dark:text-slate-300">Data Fim</Label>
                 <Input
                   id="data-fim"
                   type="date"

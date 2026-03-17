@@ -10,6 +10,7 @@ import {
   DollarSign,
   ShieldAlert,
   TrendingUp,
+  TrendingDown,
   Calendar,
   MapPin,
   Users,
@@ -20,10 +21,16 @@ import {
   AlertCircle,
   ShieldCheck,
   ClipboardCheck,
-  Package } from
+  Package,
+  Plus,
+  Wrench,
+  Search,
+  Activity } from
 "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDistanceToNow } from 'date-fns';
+import { pt } from 'date-fns/locale';
 
 // Lazy load dos componentes de gráficos para melhor performance
 const MovimentosChart = React.lazy(() => import("../components/dashboard/MovimentosChart"));
@@ -35,6 +42,7 @@ import { Voo } from "@/entities/Voo";
 import { VooLigado } from "@/entities/VooLigado";
 import { CalculoTarifa } from "@/entities/CalculoTarifa";
 import { OcorrenciaSafety } from "@/entities/OcorrenciaSafety";
+import { OrdemServico } from "@/entities/OrdemServico";
 import { Aeroporto } from "@/entities/Aeroporto";
 import { Inspecao } from "@/entities/Inspecao";
 import { User } from '@/entities/User';
@@ -55,7 +63,9 @@ export default function DashboardInterno() {
   const [inspecoes, setInspecoes] = useState([]);
   const [voosLigados, setVoosLigados] = useState([]);
   const [calculosTarifa, setCalculosTarifa] = useState([]);
+  const [ordensServico, setOrdensServico] = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
+  const [previousPeriodStats, setPreviousPeriodStats] = useState(null);
   const [selectedAeroporto, setSelectedAeroporto] = useState("todos");
   const [selectedPeriodo, setSelectedPeriodo] = useState("30");
   const [isLoading, setIsLoading] = useState(true);
@@ -93,17 +103,20 @@ export default function DashboardInterno() {
       setAeroportos(aeroportosFiltrados);
 
       setLoadingStatus('Carregando dados para gráficos...');
-      const [voosDataResult, ocorrenciasDataResult, inspecoesDataResult, calculosTarifaResult] = await Promise.allSettled([
+      const [voosDataResult, ocorrenciasDataResult, inspecoesDataResult, calculosTarifaResult, ordensServicoResult] = await Promise.allSettled([
       Voo.list('-data_operacao', 500),
       OcorrenciaSafety.list('-data_ocorrencia', 50),
       Inspecao.list('-data_inspecao', 50),
-      CalculoTarifa.list('-data_calculo', 1000)]
+      CalculoTarifa.list('-data_calculo', 1000),
+      OrdemServico.list('-created_date', 10)]
       );
 
       let voosData = voosDataResult.status === 'fulfilled' ? voosDataResult.value : [];
       let ocorrenciasData = ocorrenciasDataResult.status === 'fulfilled' ? ocorrenciasDataResult.value : [];
       let inspecoesData = inspecoesDataResult.status === 'fulfilled' ? inspecoesDataResult.value : [];
       let calculosTarifaData = calculosTarifaResult.status === 'fulfilled' ? calculosTarifaResult.value : [];
+      let ordensServicoData = ordensServicoResult.status === 'fulfilled' ? ordensServicoResult.value : [];
+      setOrdensServico(ordensServicoData);
 
       // Filtrar voos por aeroportos da empresa (mais fiável que voo.empresa_id que pode não estar preenchido)
       const empresaId = effectiveEmpresaId || userWithProfiles.empresa_id;
@@ -145,13 +158,21 @@ export default function DashboardInterno() {
 
     setIsLoadingStats(true);
     try {
-      const params = { aeroporto: selectedAeroporto, periodo: selectedPeriodo, empresaId: effectiveEmpresaId || currentUser.empresa_id };
-      const response = await getDashboardStats(params);
+      const empresaId = effectiveEmpresaId || currentUser.empresa_id;
+      const params = { aeroporto: selectedAeroporto, periodo: selectedPeriodo, empresaId };
+      // Fetch current and previous period in parallel for trend comparison
+      const previousPeriodo = String(parseInt(selectedPeriodo) * 2);
+      const [response, prevResponse] = await Promise.all([
+        getDashboardStats(params),
+        getDashboardStats({ aeroporto: selectedAeroporto, periodo: previousPeriodo, empresaId }),
+      ]);
       setDashboardStats(response.data);
+      setPreviousPeriodStats(prevResponse.data);
     } catch (error) {
       console.error('❌ Erro ao carregar estatísticas:', error);
       setError(error.message || 'Erro ao carregar estatísticas do dashboard.');
       setDashboardStats(null);
+      setPreviousPeriodStats(null);
     } finally {
       setIsLoadingStats(false);
     }
@@ -247,10 +268,88 @@ export default function DashboardInterno() {
   { value: '30', label: '30 dias' },
   { value: '90', label: '90 dias' }];
 
+  // Trend calculation: current period vs remainder of double-period (i.e. previous equivalent period)
+  const calcTrend = useCallback((currentVal, doubleVal) => {
+    if (!doubleVal && doubleVal !== 0) return null;
+    const previousVal = doubleVal - currentVal;
+    if (previousVal === 0 && currentVal === 0) return null;
+    if (previousVal === 0) return { direction: 'up', pct: 100 };
+    const pct = ((currentVal - previousVal) / Math.abs(previousVal)) * 100;
+    return { direction: pct >= 0 ? 'up' : 'down', pct: Math.abs(pct).toFixed(0) };
+  }, []);
+
+  const trends = useMemo(() => {
+    if (!dashboardStats || !previousPeriodStats) return {};
+    return {
+      voos: calcTrend(dashboardStats.totalVoos, previousPeriodStats.totalVoos),
+      pontualidade: calcTrend(dashboardStats.taxaPontualidade, previousPeriodStats.taxaPontualidade),
+      passageiros: calcTrend(dashboardStats.passageirosPeriodo, previousPeriodStats.passageirosPeriodo),
+    };
+  }, [dashboardStats, previousPeriodStats, calcTrend]);
+
+  // Recent activity: combine recent voos, inspecoes, and ordens de servico
+  const recentActivity = useMemo(() => {
+    const items = [];
+    // Recent flights
+    filteredVoos.slice(0, 5).forEach(v => {
+      items.push({
+        id: `voo-${v.id}`,
+        type: 'voo',
+        icon: Plane,
+        iconColor: 'text-blue-600',
+        iconBg: 'bg-blue-50 dark:bg-blue-950',
+        description: `Voo ${v.numero_voo || ''} ${v.tipo_movimento || ''} - ${v.aeroporto_operacao || ''}`,
+        date: v.created_date || v.data_operacao,
+        link: createPageUrl('Operacoes'),
+      });
+    });
+    // Recent inspections
+    filteredInspecoes.slice(0, 5).forEach(i => {
+      items.push({
+        id: `insp-${i.id}`,
+        type: 'inspecao',
+        icon: ClipboardCheck,
+        iconColor: 'text-yellow-600',
+        iconBg: 'bg-yellow-50 dark:bg-yellow-950',
+        description: `Inspeção ${i.tipo || ''} - ${i.status || 'Pendente'}`,
+        date: i.created_date || i.data_inspecao,
+        link: createPageUrl('Inspecoes'),
+      });
+    });
+    // Recent maintenance orders
+    ordensServico.slice(0, 5).forEach(os => {
+      items.push({
+        id: `os-${os.id}`,
+        type: 'os',
+        icon: Wrench,
+        iconColor: 'text-purple-600',
+        iconBg: 'bg-purple-50 dark:bg-purple-950',
+        description: `OS${os.numero ? ` #${os.numero}` : ''} - ${os.titulo || os.descricao?.substring(0, 40) || 'Ordem de Serviço'}`,
+        date: os.created_date,
+        link: createPageUrl('Manutencao'),
+      });
+    });
+    return items
+      .filter(item => item.date)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+  }, [filteredVoos, filteredInspecoes, ordensServico]);
+
+  // Trend indicator component
+  const TrendIndicator = ({ trend }) => {
+    if (!trend) return null;
+    const isUp = trend.direction === 'up';
+    return (
+      <span className={`inline-flex items-center gap-0.5 text-[9px] font-medium ${isUp ? 'text-green-600' : 'text-red-600'}`}>
+        {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+        {trend.pct}%
+      </span>
+    );
+  };
 
   if (error) {
     return (
-      <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+      <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
         <div className="max-w-7xl mx-auto">
           <Alert variant="destructive" className="mb-6">
             <AlertTriangle className="h-4 w-4" />
@@ -273,14 +372,42 @@ export default function DashboardInterno() {
   }
 
   return (
-    <div className="p-2 sm:p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-2 sm:p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900">Dashboard Operacional</h1>
-            <p className="text-sm sm:text-base text-slate-600 mt-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Dashboard Operacional</h1>
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
               Sistema DIROPS • {new Date().toLocaleDateString('pt-AO')}
             </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => window.location.href = createPageUrl('Operacoes')}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Novo Voo
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-600 dark:text-yellow-400 dark:hover:bg-yellow-950"
+              onClick={() => window.location.href = createPageUrl('Inspecoes')}
+            >
+              <Search className="h-3.5 w-3.5 mr-1.5" />
+              Nova Inspeção
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-purple-500 text-purple-700 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-400 dark:hover:bg-purple-950"
+              onClick={() => window.location.href = createPageUrl('Manutencao')}
+            >
+              <Wrench className="h-3.5 w-3.5 mr-1.5" />
+              Nova OS
+            </Button>
           </div>
         </div>
 
@@ -339,8 +466,11 @@ export default function DashboardInterno() {
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 mb-1">{dashboardStats?.totalVoos || 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 mb-1.5 line-clamp-2">Total de Voos</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats?.totalVoos || 0}</span>
+                        <TrendIndicator trend={trends.voos} />
+                      </div>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Total de Voos</p>
                       {dashboardStats?.voosUnicosLigados > 0 &&
                   <p className="text-[9px] text-slate-400">
                           {dashboardStats.voosUnicosLigados} ligados, {dashboardStats.voosSemLink} sem link
@@ -356,8 +486,8 @@ export default function DashboardInterno() {
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 mb-1">{dashboardStats?.chegadasHoje || 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 mb-1.5 line-clamp-2">Chegadas Hoje</p>
+                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.chegadasHoje || 0}</div>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Chegadas Hoje</p>
                     </CardContent>
                   </Card>
 
@@ -368,8 +498,8 @@ export default function DashboardInterno() {
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 mb-1">{dashboardStats?.partidasHoje || 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 mb-1.5 line-clamp-2">Partidas Hoje</p>
+                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.partidasHoje || 0}</div>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Partidas Hoje</p>
                     </CardContent>
                   </Card>
 
@@ -380,8 +510,11 @@ export default function DashboardInterno() {
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 mb-1">{(dashboardStats?.taxaPontualidade || 0).toFixed(1)}%</div>
-                      <p className="text-[10px] font-medium text-slate-600 mb-1.5 line-clamp-2">Pontualidade</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{(dashboardStats?.taxaPontualidade || 0).toFixed(1)}%</span>
+                        <TrendIndicator trend={trends.pontualidade} />
+                      </div>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Pontualidade</p>
                     </CardContent>
                   </Card>
 
@@ -392,8 +525,8 @@ export default function DashboardInterno() {
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 mb-1">{dashboardStats?.ocorrenciasAbertas || 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 mb-1.5 line-clamp-2">Ocorrências Abertas</p>
+                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.ocorrenciasAbertas || 0}</div>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Ocorrências Abertas</p>
                     </CardContent>
                   </Card>
 
@@ -404,8 +537,8 @@ export default function DashboardInterno() {
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 mb-1">{dashboardStats?.inspecoesPendentes || 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 mb-1.5 line-clamp-2">Inspeções Pendentes</p>
+                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.inspecoesPendentes || 0}</div>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Inspeções Pendentes</p>
                     </CardContent>
                   </Card>
 
@@ -416,18 +549,21 @@ export default function DashboardInterno() {
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 mb-1">
-                        {(dashboardStats?.passageirosPeriodo || 0) > 0 ?
-                    `${(dashboardStats.passageirosPeriodo / 1000).toFixed(1)}K` :
-                    '0'}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                          {(dashboardStats?.passageirosPeriodo || 0) > 0 ?
+                      `${(dashboardStats.passageirosPeriodo / 1000).toFixed(1)}K` :
+                      '0'}
+                        </span>
+                        <TrendIndicator trend={trends.passageiros} />
                       </div>
-                      <p className="text-[10px] font-medium text-slate-600 mb-1.5 line-clamp-2">Passageiros (Período)</p>
+                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">Passageiros (Período)</p>
                     </CardContent>
                   </Card>
                 </div>
 
                 {dashboardStats && (dashboardStats.voosLigados || 0) > 0 &&
-            <Card className="border-slate-200">
+            <Card className="border-slate-200 dark:border-slate-700">
                     <CardHeader className="pb-4">
                       <div className="flex items-center gap-2">
                         <LinkIcon className="w-5 h-5 text-green-600" />
@@ -436,12 +572,12 @@ export default function DashboardInterno() {
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                        <Card className="border-slate-200">
+                        <Card className="border-slate-200 dark:border-slate-700">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <p className="text-xs font-medium text-slate-600 mb-1">Total de Voos Ligados</p>
-                                <p className="text-xl font-bold text-slate-900">{dashboardStats.voosLigados || 0}</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Total de Voos Ligados</p>
+                                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats.voosLigados || 0}</p>
                               </div>
                               <div className="bg-blue-50 text-blue-600 p-2 rounded-lg">
                                 <LinkIcon className="w-5 h-5" />
@@ -450,12 +586,12 @@ export default function DashboardInterno() {
                           </CardContent>
                         </Card>
 
-                        <Card className="border-slate-200">
+                        <Card className="border-slate-200 dark:border-slate-700">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <p className="text-xs font-medium text-slate-600 mb-1">Tempo Médio Permanência</p>
-                                <p className="text-xl font-bold text-slate-900">{(dashboardStats.tempoMedioPermanencia || 0).toFixed(2)}h</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Tempo Médio Permanência</p>
+                                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{(dashboardStats.tempoMedioPermanencia || 0).toFixed(2)}h</p>
                               </div>
                               <div className="bg-orange-50 text-orange-600 p-2 rounded-lg">
                                 <Timer className="w-5 h-5" />
@@ -464,12 +600,12 @@ export default function DashboardInterno() {
                           </CardContent>
                         </Card>
 
-                        <Card className="border-slate-200">
+                        <Card className="border-slate-200 dark:border-slate-700">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-slate-600 mb-1">Total de Tarifas</p>
-                                <p className="text-slate-900 text-lg font-bold">{formatCurrency(dashboardStats.totalTarifas || 0)}</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Total de Tarifas</p>
+                                <p className="text-slate-900 dark:text-slate-100 text-lg font-bold">{formatCurrency(dashboardStats.totalTarifas || 0)}</p>
                               </div>
                               <div className="flex-shrink-0 bg-green-50 text-green-600 p-2 rounded-lg">
                                 <DollarSign className="w-5 h-5" />
@@ -478,12 +614,12 @@ export default function DashboardInterno() {
                           </CardContent>
                         </Card>
 
-                        <Card className="border-slate-200">
+                        <Card className="border-slate-200 dark:border-slate-700">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <p className="text-xs font-medium text-slate-600 mb-1">Voos Sem Cálculo</p>
-                                <p className="text-xl font-bold text-slate-900">{dashboardStats.voosSemCalculo || 0}</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Voos Sem Cálculo</p>
+                                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats.voosSemCalculo || 0}</p>
                               </div>
                               <div className="bg-red-50 text-red-600 p-2 rounded-lg">
                                 <AlertCircle className="w-5 h-5" />
@@ -492,12 +628,12 @@ export default function DashboardInterno() {
                           </CardContent>
                         </Card>
 
-                        <Card className="border-slate-200">
+                        <Card className="border-slate-200 dark:border-slate-700">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <p className="text-xs font-medium text-slate-600 mb-1">Voos Isentos</p>
-                                <p className="text-xl font-bold text-slate-900">{dashboardStats.voosIsentos || 0}</p>
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Voos Isentos</p>
+                                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats.voosIsentos || 0}</p>
                               </div>
                               <div className="bg-yellow-50 text-yellow-600 p-2 rounded-lg">
                                 <ShieldCheck className="w-5 h-5" />
@@ -511,7 +647,7 @@ export default function DashboardInterno() {
             }
 
                 {dashboardStats && dashboardStats.top10Aeroportos && dashboardStats.top10Aeroportos.length > 0 &&
-            <Card className="border-slate-200">
+            <Card className="border-slate-200 dark:border-slate-700">
                     <CardHeader className="pb-4">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-5 h-5 text-blue-600" />
@@ -534,7 +670,7 @@ export default function DashboardInterno() {
                               </div>
 
                               <div className="space-y-1.5">
-                                <div className="bg-slate-50 rounded p-1.5">
+                                <div className="bg-slate-50 dark:bg-slate-800 rounded p-1.5">
                                   <p className="text-[10px] text-slate-600 mb-0.5">Movimentos:</p>
                                   <p className="text-base font-bold text-slate-900">{aeroporto.totalMovimentos || 0}</p>
                                   <div className="flex justify-between text-[10px] mt-0.5">
@@ -610,6 +746,48 @@ export default function DashboardInterno() {
                 <SafetyAlerts ocorrencias={filteredOcorrencias} isLoading={isLoading} />
               </div>
             </React.Suspense>
+
+            {/* Actividade Recente */}
+            {recentActivity.length > 0 && (
+              <Card className="border-slate-200 dark:border-slate-700">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                    <CardTitle className="text-lg">Actividade Recente</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {recentActivity.map((item) => {
+                      const IconComponent = item.icon;
+                      let timeAgo = '';
+                      try {
+                        timeAgo = formatDistanceToNow(new Date(item.date), { addSuffix: true, locale: pt });
+                      } catch {
+                        timeAgo = '';
+                      }
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-3 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg px-2 -mx-2 transition-colors"
+                          onClick={() => window.location.href = item.link}
+                        >
+                          <div className={`p-1.5 rounded-lg flex-shrink-0 ${item.iconBg}`}>
+                            <IconComponent className={`h-4 w-4 ${item.iconColor}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{item.description}</p>
+                          </div>
+                          <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap flex-shrink-0">
+                            {timeAgo}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </>
         }
       </div>

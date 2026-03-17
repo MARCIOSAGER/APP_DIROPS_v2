@@ -193,7 +193,7 @@ export default function SolicitacoesList({
                           >
                             <Eye className="w-4 h-4 text-slate-600" />
                           </Button>
-                          {canManage && ss.status === 'aberta' && (
+                          {canManage && (ss.status === 'aberta' || ss.status === 'em_analise') && (
                             <Button
                               variant="ghost"
                               size="sm"

@@ -38,9 +38,13 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onA
   const loadUsers = async () => {
     try {
       const { User } = await import('@/entities/User');
-      const users = await User.list();
+      const empId = ordem?.empresa_id;
+      const users = empId
+        ? await User.filter({ empresa_id: empId })
+        : await User.list();
       const filteredUsers = users.filter((u) =>
-      u.email && ['infraestrutura', 'chefe', 'administrador'].includes(u.perfil)
+        u.email && u.status !== 'inativo' &&
+        u.perfis?.some(p => ['infraestrutura', 'chefe', 'administrador'].includes(p))
       );
       setAvailableUsers(filteredUsers);
     } catch (error) {
@@ -107,7 +111,7 @@ export default function AtribuirOSModal({ isOpen, onClose, ordem, onSuccess, onA
                 <p><strong>Título:</strong> {ordem.titulo}</p>
                 <p><strong>Prioridade:</strong> {ordem.prioridade}</p>
                 <p><strong>Categoria:</strong> {ordem.categoria_manutencao}</p>
-                <p><strong>Data:</strong> {format(new Date(ordem.created_date), 'dd/MM/yyyy', { locale: pt })}</p>
+                <p><strong>Data:</strong> {(ordem.data_abertura || ordem.created_date) ? format(new Date(ordem.data_abertura || ordem.created_date), 'dd/MM/yyyy', { locale: pt }) : 'N/A'}</p>
               </div>
             </AlertDescription>
           </Alert>
