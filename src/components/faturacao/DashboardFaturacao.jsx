@@ -90,9 +90,27 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
   useEffect(() => {
     const loadCompanhiasComTarifas = async () => {
       try {
-        const allCalcs = await CalculoTarifa.list('-data_calculo', 1000);
-        const ids = new Set(allCalcs.map(c => c.companhia_id).filter(Boolean));
-        setCompanhiasComTarifas(ids);
+        const [allCalcs, allVoos] = await Promise.all([
+          CalculoTarifa.list('-data_calculo', 1000),
+          Voo.list('-data_operacao', 1000),
+        ]);
+        // Get companhia UUIDs from calculos
+        const calcCompIds = new Set(allCalcs.map(c => c.companhia_id).filter(Boolean));
+        // Get voo_ids that have calculos
+        const vooIdsComCalc = new Set(allCalcs.map(c => c.voo_id).filter(Boolean));
+        // Get ICAO codes from voos that have calculos
+        const icaoCodes = new Set();
+        allVoos.filter(v => !v.deleted && vooIdsComCalc.has(v.id)).forEach(v => {
+          if (v.companhia_aerea) icaoCodes.add(v.companhia_aerea);
+        });
+        // Match companhias by UUID or ICAO code
+        const matchedIds = new Set();
+        companhias.forEach(c => {
+          if (calcCompIds.has(c.id) || icaoCodes.has(c.codigo_icao)) {
+            matchedIds.add(c.id);
+          }
+        });
+        setCompanhiasComTarifas(matchedIds);
       } catch (error) {
         console.error('Erro ao carregar companhias:', error);
       } finally {
@@ -100,7 +118,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       }
     };
     loadCompanhiasComTarifas();
-  }, []);
+  }, [companhias]);
 
   const handleBuscar = async () => {
     if (!filtro.companhia_id) {
