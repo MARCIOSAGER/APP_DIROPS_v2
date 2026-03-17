@@ -108,6 +108,7 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
   const perfilOptions = [
     { value: '', label: 'Selecione um perfil...' },
     { value: 'operacoes', label: 'Operações' },
+    { value: 'safety', label: 'Safety' },
     { value: 'infraestrutura', label: 'Infraestrutura' },
     { value: 'credenciamento', label: 'Credenciamento' },
     { value: 'gestor_empresa', label: 'Gestor de Empresa' },

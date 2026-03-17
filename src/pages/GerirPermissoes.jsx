@@ -249,6 +249,11 @@ const PERFIL_INFO = {
     cor: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     descricao: 'Acesso exclusivo ao portal de credenciamento da empresa'
   },
+  safety: {
+    label: 'Safety',
+    cor: 'bg-red-100 text-red-800 border-red-200',
+    descricao: 'Acesso a Safety, inspeções, reclamações, GRF e KPIs operacionais'
+  },
   visualizador: {
     label: 'Visualizador',
     cor: 'bg-slate-100 text-slate-800 border-slate-200',

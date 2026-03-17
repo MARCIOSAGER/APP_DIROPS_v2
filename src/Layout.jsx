@@ -36,7 +36,8 @@ const PERFIL_PERMISSIONS_DEFAULT = {
   gestor_empresa: ['Credenciamento', 'GuiaUtilizador', 'Suporte'],
   operacoes: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte'],
   infraestrutura: ['Home', 'Reclamacoes', 'Inspecoes', 'Manutencao', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
-  credenciamento: ['Home', 'Credenciamento', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte']
+  credenciamento: ['Home', 'Credenciamento', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
+  safety: ['Home', 'Safety', 'Inspecoes', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte']
 };
 
 const navigationItems = [

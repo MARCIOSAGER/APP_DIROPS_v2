@@ -254,7 +254,8 @@ export default function ConfigurarPerfil() {
     const labels = {
       'administrador': 'Administrador',
       'operacoes': 'Operações',
-      'infraestrutura': 'Infraestrutura', 
+      'safety': 'Safety',
+      'infraestrutura': 'Infraestrutura',
       'credenciamento': 'Credenciamento',
       'gestor_empresa': 'Gestor de Empresa',
       'visualizador': 'Visualizador'

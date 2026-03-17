@@ -177,6 +177,7 @@ export default function SolicitacaoPerfil() {
 
   const perfilOptions = [
     { value: 'operacoes', label: 'Operações' },
+    { value: 'safety', label: 'Safety' },
     { value: 'infraestrutura', label: 'Infraestrutura' },
     { value: 'credenciamento', label: 'Credenciamento' },
     { value: 'gestor_empresa', label: 'Gestor de Empresa' }

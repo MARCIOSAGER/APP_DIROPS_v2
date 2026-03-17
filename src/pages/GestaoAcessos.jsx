@@ -71,6 +71,7 @@ const STATUS_CONFIG = {
 const PERFIL_LABELS = {
   administrador: 'Administrador',
   operacoes: 'Operações',
+  safety: 'Safety',
   infraestrutura: 'Infraestrutura',
   credenciamento: 'Credenciamento',
   gestor_empresa: 'Gestor de Empresa',
