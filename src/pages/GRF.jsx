@@ -58,11 +58,12 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
       const currentUser = await User.me();
       setUser(currentUser);
 
+      const empId = currentUser.empresa_id;
       const [registosData, aeroportosData] = await Promise.all([
         RegistoGRF.list('-mes', 100), // Added limit of 100
-        Aeroporto.list()
+        empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list()
       ]);
-      
+
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
 
       // FILTRO CRÍTICO: Filtrar registos GRF por aeroportos do utilizador (empresa-based)

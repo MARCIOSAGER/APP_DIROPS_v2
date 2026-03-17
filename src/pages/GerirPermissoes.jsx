@@ -205,6 +205,20 @@ const PAGINAS_DISPONIVEIS = [
     descricao: 'Integração com dados do Flightradar24',
     category: 'Operações',
     icon: '🛫'
+  },
+  {
+    key: 'GestaoAPIKeys',
+    label: 'Gestão de API Keys',
+    descricao: 'Gestão de chaves de acesso à API externa',
+    category: 'Gestão',
+    icon: '🔑'
+  },
+  {
+    key: 'Lixeira',
+    label: 'Lixeira',
+    descricao: 'Recuperação de registos eliminados',
+    category: 'Gestão',
+    icon: '🗑️'
   }
 ];
 

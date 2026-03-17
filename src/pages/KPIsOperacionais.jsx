@@ -111,14 +111,14 @@ export default function KPIsOperacionais() {
       const [tiposData, medicoesData, aeroportosData, companhiasData] = await Promise.all([
       TipoKPI.list(),
       medicaoPromise,
-      Aeroporto.list(),
+      empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
       CompanhiaAerea.list()]
       );
 
       const aeroportosAngola = aeroportosData.filter((a) => a.pais === 'AO');
 
       // Filtrar aeroportos pelos aeroportos de acesso do utilizador (empresa-based)
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola);
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, user.empresa_id);
       setAeroportos(aeroportosFiltrados);
       setTiposKPI(tiposData);
       setCompanhias(companhiasData);

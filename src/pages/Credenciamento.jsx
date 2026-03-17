@@ -80,7 +80,7 @@ export default function Credenciamento() {
 
     // Tentar carregar aeroportos com fallback
     try {
-      aeroportosData = await Aeroporto.list();
+      aeroportosData = await (user.empresa_id ? Aeroporto.filter({ empresa_id: user.empresa_id }) : Aeroporto.list());
       aeroportosData = aeroportosData.filter(a => a.pais === 'AO');
       console.log('✅ Aeroportos carregados:', aeroportosData.length);
     } catch (aerError) {
@@ -133,13 +133,13 @@ export default function Credenciamento() {
     console.log('✅ Carregamento seguro concluído para gestor de empresa');
   };
 
-  const loadDataForInternalUser = async () => {
+  const loadDataForInternalUser = async (user) => {
     console.log('Carregando dados para utilizador interno');
-    
+
     const [credenciamentosData, empresasData, aeroportosData, areasAcessoData] = await Promise.all([
       CredenciamentoEntity.list('-data_solicitacao'),
       Empresa.list(),
-      Aeroporto.list(),
+      user?.empresa_id ? Aeroporto.filter({ empresa_id: user.empresa_id }) : Aeroporto.list(),
       AreaAcesso.list()
     ]);
 
@@ -167,7 +167,7 @@ export default function Credenciamento() {
         if (hasUserProfile(user, 'gestor_empresa')) {
           await loadDataForCompanyManagerSafe(user);
         } else {
-          await loadDataForInternalUser();
+          await loadDataForInternalUser(user);
         }
 
       } catch (error) {

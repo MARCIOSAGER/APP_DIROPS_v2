@@ -46,9 +46,9 @@ export default function Inspecoes() {
       const [inspecoesData, tiposData, aeroportosData] = await Promise.all([
         inspecaoPromise,
         TipoInspecao.list(),
-        Aeroporto.list()
+        (empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list())
       ]);
-      
+
       // Filtrar aeroportos pela empresa e acesso do utilizador
       const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData, effectiveEmpresaId);
       setAeroportos(aeroportosFiltrados);

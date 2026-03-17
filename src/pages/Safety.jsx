@@ -57,7 +57,7 @@ export default function Safety() {
 
       const [ocorrenciasData, aeroportosData] = await Promise.all([
         ocorrenciaPromise,
-        Aeroporto.list()
+        empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list()
       ]);
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
@@ -65,8 +65,9 @@ export default function Safety() {
       // FILTRO CRÍTICO: Filtrar ocorrências por aeroportos do utilizador (empresa-based)
       const filteredOcorrencias = filtrarDadosPorAcesso(currentUser, ocorrenciasData, 'aeroporto', aeroportosAngola);
 
+      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosAngola, currentUser.empresa_id);
       setOcorrencias(filteredOcorrencias);
-      setAeroportos(aeroportosAngola); // Still set for the dropdown options
+      setAeroportos(aeroportosFiltrados);
       
       console.log('Dados carregados em Safety:', {
         ocorrencias: filteredOcorrencias.length,
@@ -310,7 +311,7 @@ export default function Safety() {
   const taxaResolucao = totalOcorrencias > 0 ? ((ocorrenciasFechadas / totalOcorrencias) * 100).toFixed(1) : 0;
 
   const aeroportoOptions = useMemo(() => {
-    const permitidos = getAeroportosPermitidos(user, aeroportos);
+    const permitidos = getAeroportosPermitidos(user, aeroportos, user?.empresa_id);
     return [
       { value: 'todos', label: 'Todos os Aeroportos' },
       ...permitidos.map(a => ({ value: a.codigo_icao, label: a.nome }))

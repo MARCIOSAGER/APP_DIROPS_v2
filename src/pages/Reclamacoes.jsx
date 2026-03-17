@@ -116,7 +116,7 @@ export default function Reclamacoes() {
 
       const [reclamacoesData, aeroportosData, empresasData] = await Promise.all([
         reclamacaoPromise,
-        Aeroporto.list(),
+        empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
         Empresa.list()
       ]);
 
@@ -125,8 +125,9 @@ export default function Reclamacoes() {
       // FILTRO CRÍTICO: Filtrar reclamações por aeroportos do utilizador (empresa-based)
       const reclamacoesFiltradas = filtrarDadosPorAcesso(currentUser, reclamacoesData, 'aeroporto_id', aeroportosAngola);
 
+      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosAngola, currentUser.empresa_id);
       setReclamacoes(reclamacoesFiltradas);
-      setAeroportos(aeroportosAngola);
+      setAeroportos(aeroportosFiltrados);
       setEmpresas(empresasData || []);
 
     } catch (error) {
@@ -537,7 +538,7 @@ export default function Reclamacoes() {
   ), [filtros]);
 
   const aeroportoOptions = useMemo(() => {
-    const permitidos = getAeroportosPermitidos(user, aeroportos);
+    const permitidos = getAeroportosPermitidos(user, aeroportos, user?.empresa_id);
     return [
         { value: 'todos', label: 'Todos os Aeroportos' },
         ...permitidos.map(a => ({ value: a.codigo_icao, label: a.nome }))

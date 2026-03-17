@@ -102,11 +102,11 @@ export default function ProformaPage() {
       const [proformasData, companhiasData, aeroportosData] = await Promise.all([
         Proforma.filter(proformaFilters, '-data_emissao'),
         CompanhiaAerea.list(),
-        Aeroporto.list(),
+        empresaIdFiltro ? Aeroporto.filter({ empresa_id: empresaIdFiltro }) : Aeroporto.list(),
       ]);
 
       // Filtrar aeroportos por empresa/permissões do utilizador
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData);
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData, effectiveEmpresaId);
 
       setProformas(proformasData);
       setCompanhias(companhiasData);

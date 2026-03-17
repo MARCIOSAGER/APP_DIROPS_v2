@@ -76,14 +76,14 @@ export default function Documentos() {
 
       const [documentosData, aeroportosData, pastasData] = await Promise.all([
         documentoPromise,
-        Aeroporto.list(),
+        empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
         Pasta.list()
       ]);
-      
+
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
 
       // Filtrar aeroportos pelos aeroportos de acesso do utilizador (empresa-based)
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola);
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, user.empresa_id);
       setAeroportos(aeroportosFiltrados);
 
       // Filtrar documentos pelos aeroportos de acesso do utilizador

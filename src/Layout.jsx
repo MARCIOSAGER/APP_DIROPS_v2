@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, UserPlus, ChevronDown, Globe, BarChart3, Mail, ArrowLeft, BookMarked, Sparkles, Building2, Layers
+  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, ChevronDown, BarChart3, ArrowLeft, BookMarked, Sparkles, Building2, Layers, Trash2, Key
 } from "lucide-react";
 import BottomTabs from '@/components/shared/BottomTabs';
 import { useI18n } from '@/components/lib/i18n';
@@ -32,7 +32,7 @@ import { I18nProvider } from '@/components/lib/i18n';
 
       // Mapeamento padrão de permissões (fallback se não houver regras na BD)
 const PERFIL_PERMISSIONS_DEFAULT = {
-  administrador: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte'],
+  administrador: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte'],
   gestor_empresa: ['Credenciamento', 'GuiaUtilizador', 'Suporte'],
   operacoes: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte'],
   infraestrutura: ['Home', 'Reclamacoes', 'Inspecoes', 'Manutencao', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
@@ -62,6 +62,8 @@ const navigationItems = [
   { title: "GRF – Condições da Pista", url: createPageUrl("GRF"), icon: Activity, color: "text-sky-600", pageKey: "GRF" },
   { title: "Documentos", url: createPageUrl("Documentos"), icon: FileText, color: "text-cyan-600", pageKey: "Documentos" },
   { title: "Histórico de Acesso", url: createPageUrl("HistoricoAcessoDocumentos"), icon: FileSearch, color: "text-slate-600", pageKey: "HistoricoAcessoDocumentos" },
+  { title: "Lixeira", url: createPageUrl("Lixeira"), icon: Trash2, color: "text-slate-500", pageKey: "Lixeira" },
+  { title: "API Keys", url: createPageUrl("GestaoAPIKeys"), icon: Key, color: "text-amber-600", pageKey: "GestaoAPIKeys" },
   { title: "Log de Auditoria", url: createPageUrl("LogAuditoria"), icon: Shield, color: "text-slate-500", pageKey: "LogAuditoria" },
   { title: "Guia do Utilizador", url: createPageUrl("GuiaUtilizador"), icon: BookMarked, color: "text-blue-500", pageKey: "GuiaUtilizador" },
   { title: "Suporte", url: createPageUrl("Suporte"), icon: MessageSquare, color: "text-purple-500", pageKey: "Suporte" },
@@ -70,13 +72,15 @@ const navigationItems = [
 const DEFAULT_LOGO = '/logo-dirops.png';
 
 // Simple in-memory cache for Layout queries (avoids re-fetching on every navigation)
-const _layoutCache = { empresas: null, empresasTime: 0, regras: null, regrasTime: 0 };
+const _layoutCache = { empresas: null, empresasTime: 0, regras: null, regrasTime: 0, permissions: null };
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+function isCacheValid(key) {
+  return _layoutCache[key] && Date.now() - _layoutCache[key + 'Time'] < CACHE_TTL;
+}
+
 async function getCachedEmpresas() {
-  if (_layoutCache.empresas && Date.now() - _layoutCache.empresasTime < CACHE_TTL) {
-    return _layoutCache.empresas;
-  }
+  if (isCacheValid('empresas')) return _layoutCache.empresas;
   const data = await Empresa.list();
   _layoutCache.empresas = data;
   _layoutCache.empresasTime = Date.now();
@@ -84,13 +88,36 @@ async function getCachedEmpresas() {
 }
 
 async function getCachedRegras() {
-  if (_layoutCache.regras && Date.now() - _layoutCache.regrasTime < CACHE_TTL) {
-    return _layoutCache.regras;
-  }
+  if (isCacheValid('regras')) return _layoutCache.regras;
   const data = await RegraPermissao.list();
   _layoutCache.regras = data;
   _layoutCache.regrasTime = Date.now();
   return data;
+}
+
+// Build permissions map from regras (used for sync init from cache)
+function buildPermissions(regrasData) {
+  if (!regrasData || regrasData.length === 0) return PERFIL_PERMISSIONS_DEFAULT;
+  const p = {};
+  regrasData.forEach(regra => {
+    p[regra.perfil] = (regra.paginas_permitidas || []).map(
+      page => page === 'Faturacao' ? 'Proforma' : page
+    );
+  });
+  if (p.administrador && !p.administrador.includes('GerirPermissoes')) {
+    p.administrador.push('GerirPermissoes');
+  } else if (!p.administrador) {
+    p.administrador = PERFIL_PERMISSIONS_DEFAULT.administrador;
+  }
+  _layoutCache.permissions = p;
+  return p;
+}
+
+// Get cached permissions synchronously (for instant init)
+function getCachedPermissions() {
+  if (_layoutCache.permissions) return _layoutCache.permissions;
+  if (isCacheValid('regras')) return buildPermissions(_layoutCache.regras);
+  return null;
 }
 
 const unprotectedPages = [
@@ -141,7 +168,7 @@ const getFirstAccessiblePage = (user, permissions) => {
 };
 
 // Root pages – no back button shown on these
-const rootPages = ['Home', 'Operacoes', 'Safety', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'LogAuditoria'];
+const rootPages = ['Home', 'Operacoes', 'Safety', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria'];
 
 function LayoutContent({ children, currentPageName }) {
   const location = useLocation();
@@ -152,8 +179,9 @@ function LayoutContent({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [user, setUser] = React.useState(null);
   const [isLoadingUser, setIsLoadingUser] = React.useState(true);
-        const [permissions, setPermissions] = React.useState(PERFIL_PERMISSIONS_DEFAULT);
-        const [isLoadingPermissions, setIsLoadingPermissions] = React.useState(true);
+        const _cachedPerms = getCachedPermissions();
+        const [permissions, setPermissions] = React.useState(_cachedPerms || PERFIL_PERMISSIONS_DEFAULT);
+        const [isLoadingPermissions, setIsLoadingPermissions] = React.useState(!_cachedPerms);
         const [hasRedirected, setHasRedirected] = React.useState(false);
         const [globalLoading, setGlobalLoading] = React.useState(false);
         const [showTour, setShowTour] = React.useState(false);
@@ -193,30 +221,8 @@ function LayoutContent({ children, currentPageName }) {
     const loadPermissions = async () => {
       try {
         const regras = await getCachedRegras();
-
-        if (regras && regras.length > 0) {
-          const permissoesCarregadas = {};
-          regras.forEach(regra => {
-            permissoesCarregadas[regra.perfil] = regra.paginas_permitidas || [];
-            if (permissoesCarregadas[regra.perfil].includes('Faturacao')) {
-                permissoesCarregadas[regra.perfil] = permissoesCarregadas[regra.perfil].map(
-                    page => (page === 'Faturacao' ? 'Proforma' : page)
-                );
-            }
-          });
-
-          if (permissoesCarregadas.administrador && !permissoesCarregadas.administrador.includes('GerirPermissoes')) {
-            permissoesCarregadas.administrador.push('GerirPermissoes');
-          } else if (!permissoesCarregadas.administrador) {
-            permissoesCarregadas.administrador = PERFIL_PERMISSIONS_DEFAULT.administrador;
-          }
-
-          setPermissions(permissoesCarregadas);
-          console.log('Permissões dinâmicas carregadas:', permissoesCarregadas);
-        } else {
-          console.log('Usando permissões padrão (nenhuma regra encontrada na BD)');
-          setPermissions(PERFIL_PERMISSIONS_DEFAULT);
-        }
+        const built = buildPermissions(regras);
+        setPermissions(built);
       } catch (error) {
         console.error('Erro ao carregar permissões, usando padrão:', error);
         setPermissions(PERFIL_PERMISSIONS_DEFAULT);

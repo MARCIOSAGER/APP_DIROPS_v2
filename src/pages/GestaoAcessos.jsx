@@ -137,7 +137,7 @@ export default function GestaoAcessos() {
       const [solicitacoesData, usersData, aeroportosData, empresasData] = await Promise.all([
         solicitacaoPromise,
         UserEntity.list(),
-        Aeroporto.list(),
+        (effectiveEmpresaId || user.empresa_id) ? Aeroporto.filter({ empresa_id: effectiveEmpresaId || user.empresa_id }) : Aeroporto.list(),
         Empresa.list(),
       ]);
 

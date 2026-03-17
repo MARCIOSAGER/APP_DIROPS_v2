@@ -81,7 +81,8 @@ export default function DashboardInterno() {
       setLoadingStatus('Carregando aeroportos...');
       let aeroportosData = [];
       try {
-        aeroportosData = await Aeroporto.list();
+        const empresaIdFiltro = effectiveEmpresaId || userWithProfiles.empresa_id;
+        aeroportosData = await (empresaIdFiltro ? Aeroporto.filter({ empresa_id: empresaIdFiltro }) : Aeroporto.list());
         console.log('✅ Aeroportos carregados:', aeroportosData.length);
       } catch (err) {
         console.error('❌ Erro ao carregar aeroportos:', err);

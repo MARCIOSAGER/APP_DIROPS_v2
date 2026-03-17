@@ -287,7 +287,8 @@ export default function Operacoes() {
         promises.push(CompanhiaAerea.list().then(data => ({ type: 'companhias', data })));
       }
       if (dataTypes.includes('aeroportos')) {
-        promises.push(Aeroporto.list().then(data => ({ type: 'aeroportos', data })));
+        const empresaIdFiltroAero = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+        promises.push((empresaIdFiltroAero ? Aeroporto.filter({ empresa_id: empresaIdFiltroAero }) : Aeroporto.list()).then(data => ({ type: 'aeroportos', data })));
       }
       if (dataTypes.includes('aeronaves')) {
         promises.push(RegistoAeronave.list().then(data => ({ type: 'aeronaves', data })));
@@ -323,7 +324,7 @@ export default function Operacoes() {
             case 'aeroportos':
               setTodosAeroportos(data);
               const allAngolanAeroportos = data.filter(a => a.pais === 'AO');
-              setAeroportos(getAeroportosPermitidos(currentUser, allAngolanAeroportos));
+              setAeroportos(getAeroportosPermitidos(currentUser, allAngolanAeroportos, effectiveEmpresaIdRef.current));
               break;
             case 'aeronaves':
               setAeronaves(data);
@@ -352,7 +353,7 @@ export default function Operacoes() {
       setTodosAeroportos(aeroportosCache);
       const allAngolan = aeroportosCache.filter(a => a.pais === 'AO');
       if (currentUser) {
-        setAeroportos(getAeroportosPermitidos(currentUser, allAngolan));
+        setAeroportos(getAeroportosPermitidos(currentUser, allAngolan, effectiveEmpresaIdRef.current));
       }
     }
   }, [aeroportosCache, currentUser]);
@@ -563,7 +564,8 @@ export default function Operacoes() {
 
         // Usar dados de config já em state (são estáticos/raramente mudam)
         // Só buscar do banco se o state estiver vazio
-        aeroportosAtualizados = todosAeroportos.length > 0 ? todosAeroportos : await Aeroporto.list();
+        const empresaIdFiltroFallback = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+        aeroportosAtualizados = todosAeroportos.length > 0 ? todosAeroportos : await (empresaIdFiltroFallback ? Aeroporto.filter({ empresa_id: empresaIdFiltroFallback }) : Aeroporto.list());
         aeronavesAtualizadas = aeronaves.length > 0 ? aeronaves : await RegistoAeronave.list();
         tarifasPousoAtualizadas = tarifasPouso.length > 0 ? tarifasPouso : filterTarifasByEmpresa(await TarifaPouso.list(), effectiveEmpresaId);
         tarifasPermanenciaAtualizadas = tarifasPermanencia.length > 0 ? tarifasPermanencia : filterTarifasByEmpresa(await TarifaPermanencia.list(), effectiveEmpresaId);
@@ -1237,7 +1239,7 @@ export default function Operacoes() {
           outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas,
           calculosTarifaFrescos
         ] = await Promise.all([
-          Voo.list('-data_operacao', 1000), Aeroporto.list(), RegistoAeronave.list(),
+          Voo.list('-data_operacao', 1000), (effectiveEmpresaIdRef.current || currentUser?.empresa_id) ? Aeroporto.filter({ empresa_id: effectiveEmpresaIdRef.current || currentUser?.empresa_id }) : Aeroporto.list(), RegistoAeronave.list(),
           TarifaPouso.list(), TarifaPermanencia.list(), OutraTarifa.list(),
           Imposto.list(), ConfiguracaoSistema.list(),
           CalculoTarifa.list('-data_calculo', 1000)

@@ -104,7 +104,7 @@ export default function ConfiguracaoTarifas() {
         tiposServicoGeralData,
         clientesData
       ] = await Promise.all([
-        Aeroporto.list(),
+        (effectiveEmpresaId || user.empresa_id) ? Aeroporto.filter({ empresa_id: effectiveEmpresaId || user.empresa_id }) : Aeroporto.list(),
         TarifaPouso.list(),
         TarifaPermanencia.list(),
         OutraTarifa.list(),
@@ -122,7 +122,7 @@ export default function ConfiguracaoTarifas() {
       ]);
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-      const userAccessibleAeroportos = getAeroportosPermitidos(user, aeroportosAngola);
+      const userAccessibleAeroportos = getAeroportosPermitidos(user, aeroportosAngola, effectiveEmpresaId);
       setAeroportos(userAccessibleAeroportos);
 
       setTarifasPouso(filterTarifasByEmpresa(tarifasPousoData, effectiveEmpresaId));

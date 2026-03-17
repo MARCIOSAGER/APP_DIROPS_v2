@@ -83,7 +83,7 @@ export default function Manutencao() {
       const [ordensData, ssData, aeroportosData, usersData] = await Promise.all([
         empId ? OrdemServico.filter(empFilters, '-data_abertura') : OrdemServico.list('-data_abertura'),
         empId ? SolicitacaoServico.filter(empFilters, '-created_date') : SolicitacaoServico.list('-created_date'),
-        Aeroporto.list(),
+        (empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list()),
         User.list()
       ]);
       setAllUsers(usersData);

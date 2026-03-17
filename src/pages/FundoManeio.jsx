@@ -85,14 +85,14 @@ export default function FundoManeio() {
 
       const [movimentosData, aeroportosData, empresasData] = await Promise.all([
         MovimentoFinanceiro.list('-data'),
-        Aeroporto.list(),
+        user.empresa_id ? Aeroporto.filter({ empresa_id: user.empresa_id }) : Aeroporto.list(),
         Empresa.list()
       ]);
 
       setEmpresas(empresasData || []);
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-      const userAccessibleAeroportos = getAeroportosPermitidos(user, aeroportosAngola);
+      const userAccessibleAeroportos = getAeroportosPermitidos(user, aeroportosAngola, user.empresa_id);
       const userAccessibleAirportIds = userAccessibleAeroportos.map(a => a.id);
       setAeroportos(userAccessibleAeroportos);
 

@@ -22,13 +22,10 @@ import {
   FileUp,
   Upload,
   ArrowLeft,
-  List,
-  AlertCircle,
-  CheckCircle
+  List
 } from 'lucide-react';
 
 import { ItemAuditoria } from '@/entities/ItemAuditoria';
-import { UploadFile } from '@/integrations/Core';
 import * as XLSX from 'xlsx';
 import AlertModal from '../shared/AlertModal';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
