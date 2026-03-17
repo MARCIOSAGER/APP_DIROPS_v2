@@ -23,8 +23,10 @@ import AlertModal from '../components/shared/AlertModal';
 import SenhaModal from '../components/documentos/SenhaModal';
 import { validarSenhaItem } from '@/functions/validarSenhaItem';
 import { Pasta } from '@/entities/Pasta';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function Documentos() {
+  const { t } = useI18n();
   const [currentUser, setCurrentUser] = useState(null);
   const [documentos, setDocumentos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -516,15 +518,15 @@ export default function Documentos() {
   };
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
+    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <FileText className="w-8 h-8 text-blue-600" />
-              Biblioteca de Documentos
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+              <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              {t('page.documentos.title')}
             </h1>
-            <p className="text-slate-600 mt-1">Gestão de manuais, procedimentos e documentação técnica</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.documentos.subtitle')}</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
@@ -555,9 +557,9 @@ export default function Documentos() {
 
         {/* Alerta de Filtro Ativo */}
         {vooLigadoFilter && (
-          <Alert className="border-blue-200 bg-blue-50">
+          <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
             <AlertDescription className="flex items-center justify-between">
-              <span className="text-blue-900">
+              <span className="text-blue-900 dark:text-blue-100">
                 📄 Exibindo documentos do voo ligado específico
               </span>
               <Button
@@ -584,20 +586,20 @@ export default function Documentos() {
         />
 
         {/* Filtros Globais */}
-        <Card className="border-0 shadow-sm bg-gradient-to-r from-blue-50 to-indigo-50">
+        <Card className="border-0 shadow-sm bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
           <CardContent className="pt-6">
             <div className="flex flex-wrap gap-4 items-center">
-              <div className="flex items-center gap-2 text-blue-900">
+              <div className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
                 <FileText className="w-5 h-5" />
                 <span className="font-semibold">Filtros Globais:</span>
               </div>
               
               <div className="flex-1 min-w-[200px] space-y-1">
-                <label className="text-xs font-medium text-slate-700">Aeroporto</label>
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Aeroporto</label>
                 <select
                   value={aeroportoFilter}
                   onChange={(e) => setAeroportoFilter(e.target.value)}
-                  className="w-full h-9 px-3 rounded-md border border-slate-300 bg-white text-sm focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="todos">Todos os Aeroportos</option>
                   <option value="null">📋 Documentos Gerais</option>
@@ -610,11 +612,11 @@ export default function Documentos() {
               </div>
 
               <div className="flex-1 min-w-[200px] space-y-1">
-                <label className="text-xs font-medium text-slate-700">Localização</label>
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Localização</label>
                 <select
                   value={pastaFilter}
                   onChange={(e) => setPastaFilter(e.target.value)}
-                  className="w-full h-9 px-3 rounded-md border border-slate-300 bg-white text-sm focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-9 px-3 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="todos">Todas as Localizações</option>
                   <option value="null">📂 Sem Pasta</option>
@@ -626,8 +628,8 @@ export default function Documentos() {
                 </select>
               </div>
               
-              <div className="text-sm font-medium text-blue-900 px-4 py-2 bg-white rounded-lg shadow-sm border border-blue-200">
-                <strong className="text-blue-600">{documentosVisiveis.length}</strong> documento(s) encontrado(s)
+              <div className="text-sm font-medium text-blue-900 dark:text-blue-100 px-4 py-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-blue-200 dark:border-blue-800">
+                <strong className="text-blue-600 dark:text-blue-400">{documentosVisiveis.length}</strong> documento(s) encontrado(s)
               </div>
             </div>
           </CardContent>
@@ -648,7 +650,7 @@ export default function Documentos() {
                 <ChevronRight className="w-4 h-4 text-slate-400" />
                 <button
                   onClick={() => handleVoltarPasta(index)}
-                  className="text-slate-600 hover:text-slate-900"
+                  className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
                 >
                   {pasta.nome}
                 </button>
@@ -678,7 +680,7 @@ export default function Documentos() {
         {/* Pastas */}
         {pastasVisiveis.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               Pastas
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -712,33 +714,33 @@ export default function Documentos() {
         <div className="hidden grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Total de Documentos</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Total de Documentos</CardTitle>
               <BookOpen className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-900">{stats.total}</div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</div>
             </CardContent>
           </Card>
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Documentos Ativos</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Documentos Ativos</CardTitle>
               <FileText className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.ativos}</div>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.ativos}</div>
             </CardContent>
           </Card>
           <Card className="border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Por Categoria</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Por Categoria</CardTitle>
               <BarChart2 className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
               <div className="text-xs space-y-1">
                 {Object.entries(stats.porCategoria).map(([cat, count]) => (
                   <div key={cat} className="flex justify-between">
-                    <span className="capitalize text-slate-500">{cat.replace('_', ' ')}:</span>
-                    <span className="font-medium text-slate-700">{count}</span>
+                    <span className="capitalize text-slate-500 dark:text-slate-400">{cat.replace('_', ' ')}:</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">{count}</span>
                   </div>
                 ))}
               </div>

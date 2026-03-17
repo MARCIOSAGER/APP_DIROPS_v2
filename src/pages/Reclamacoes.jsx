@@ -30,6 +30,7 @@ import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { base44 } from '@/api/base44Client';
 import { getAeroportosPermitidos, filtrarDadosPorAcesso, isSuperAdmin, getEmpresaLogoByUser } from '@/components/lib/userUtils';
 import { Empresa } from '@/entities/Empresa';
+import { useI18n } from '@/components/lib/i18n';
 
 import ReclamacoesStats from '../components/reclamacoes/ReclamacoesStats';
 import ReclamacoesList from '../components/reclamacoes/ReclamacoesList';
@@ -75,6 +76,7 @@ const PRIORIDADE_OPTIONS = [
 ];
 
 export default function Reclamacoes() {
+  const { t } = useI18n();
   const [reclamacoes, setReclamacoes] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -546,15 +548,15 @@ export default function Reclamacoes() {
   }, [aeroportos, user]);
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-screen-xl mx-auto space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <MessageSquareWarning className="w-6 md:w-8 h-6 md:h-8 text-blue-600" />
-              Gestão de Reclamações
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+              <MessageSquareWarning className="w-6 md:w-8 h-6 md:h-8 text-blue-600 dark:text-blue-400" />
+              {t('page.reclamacoes.title')}
             </h1>
-            <p className="text-slate-600 mt-1">Registo, tratamento e acompanhamento de reclamações.</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.reclamacoes.subtitle')}</p>
           </div>
         </div>
 
@@ -611,7 +613,7 @@ export default function Reclamacoes() {
                       }
                     }}
                     disabled={selectedReclamacoes.length === 0 || isLoading}
-                    className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                    className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
                     Classificar IA {selectedReclamacoes.length > 0 && `(${selectedReclamacoes.length})`}
@@ -657,7 +659,7 @@ export default function Reclamacoes() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <Filter className="w-5 h-5 text-slate-500" />
+                      <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                       Filtros de Pesquisa
                     </CardTitle>
                     {hasActiveFilters && (
@@ -665,7 +667,7 @@ export default function Reclamacoes() {
                         variant="outline"
                         size="sm"
                         onClick={clearAllFilters}
-                        className="text-red-600 border-red-200 hover:bg-red-50"
+                        className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
                       >
                         <X className="w-4 h-4 mr-1" />
                         Limpar Filtros
@@ -678,7 +680,7 @@ export default function Reclamacoes() {
                     <div className="lg:col-span-3">
                       <Label htmlFor="busca">Pesquisar</Label>
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
                         <Input
                           id="busca"
                           placeholder="Pesquisar por protocolo, título, descrição ou reclamante..."
@@ -757,7 +759,7 @@ export default function Reclamacoes() {
                   <CardTitle className="flex items-center justify-between">
                     <span>Reclamações ({filteredReclamacoes.length})</span>
                     {selectedReclamacoes.length > 0 && (
-                      <Badge className="bg-blue-100 text-blue-800">
+                      <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                         {selectedReclamacoes.length} selecionada(s)
                       </Badge>
                     )}

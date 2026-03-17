@@ -30,7 +30,7 @@ export default function ConfirmModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertCircle className={`w-5 h-5 ${variant === 'destructive' ? 'text-red-600' : 'text-blue-600'}`} />
+            <AlertCircle className={`w-5 h-5 ${variant === 'destructive' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`} />
             {title}
           </DialogTitle>
           <DialogDescription className="text-base pt-2">

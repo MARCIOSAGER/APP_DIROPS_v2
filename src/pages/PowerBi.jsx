@@ -39,12 +39,12 @@ export default function PowerBi() {
   const activeReport = reports.find(r => r.id === activeTab);
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 lg:p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-full mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900">Análise Power BI</h1>
-            <p className="text-sm sm:text-base text-slate-600 mt-1">Visualização de dados e relatórios interativos</p>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Análise Power BI</h1>
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">Visualização de dados e relatórios interativos</p>
           </div>
           <Button 
             onClick={() => handleOpenFullScreen(activeReport.url)}
@@ -55,9 +55,9 @@ export default function PowerBi() {
           </Button>
         </div>
 
-        <Alert className="border-blue-200 bg-blue-50">
-          <Info className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-sm text-blue-800">
+        <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
+          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-sm text-blue-800 dark:text-blue-200">
             <strong>Dica:</strong> Para exportar o relatório em PDF, clique no botão "Abrir em Ecrã Completo" e utilize as opções de exportação nativas do Power BI disponíveis no menu do relatório (ícone "..." no canto superior direito).
           </AlertDescription>
         </Alert>
@@ -81,11 +81,11 @@ export default function PowerBi() {
               <TabsContent key={report.id} value={report.id}>
                 <Card className="border-0 shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
-                      <Icon className="w-6 h-6 text-blue-600" />
+                    <CardTitle className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                      <Icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                       {report.title}
                     </CardTitle>
-                    <p className="text-sm text-slate-600">{report.description}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">{report.description}</p>
                   </CardHeader>
                   <CardContent>
                     <div className="relative w-full bg-white rounded-lg overflow-hidden" style={{ paddingBottom: '56.25%', height: 0 }}>

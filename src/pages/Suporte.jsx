@@ -8,6 +8,7 @@ import { MessageSquare, Send, CheckCircle, Ticket, X } from "lucide-react";
 import Select from "@/components/ui/select";
 import { enviarTicketSuporte } from "@/functions/enviarTicketSuporte";
 import useSubmitGuard from "@/hooks/useSubmitGuard";
+import { useI18n } from '@/components/lib/i18n';
 
 const categorias = [
   { value: "", label: "Selecione (opcional)" },
@@ -19,6 +20,7 @@ const categorias = [
 ];
 
 export default function Suporte() {
+  const { t } = useI18n();
   const [assunto, setAssunto] = useState("");
   const [categoria, setCategoria] = useState("");
   const [mensagem, setMensagem] = useState("");
@@ -56,27 +58,26 @@ export default function Suporte() {
     <div className="max-w-3xl mx-auto p-4 md:p-6">
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-blue-600" />
-            Suporte
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <MessageSquare className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            {t('page.suporte.title')}
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Envie dúvidas, sugestões ou{" "}
-            <span className="text-blue-600">reporte problemas</span>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+            {t('page.suporte.subtitle')}
           </p>
         </div>
       </div>
 
       {sucesso ? (
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950">
           <CardContent className="p-8 text-center">
             <CheckCircle className="w-14 h-14 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-green-800 mb-2">Ticket enviado com sucesso!</h2>
+            <h2 className="text-xl font-bold text-green-800 dark:text-green-200 mb-2">Ticket enviado com sucesso!</h2>
             <div className="flex items-center justify-center gap-2 mb-4">
               <Ticket className="w-5 h-5 text-green-700" />
               <Badge className="bg-green-700 text-white text-base px-4 py-1">{sucesso}</Badge>
             </div>
-            <p className="text-green-700 text-sm mb-6">
+            <p className="text-green-700 dark:text-green-300 text-sm mb-6">
               Guarde este número para acompanhar o seu pedido.<br />
               Receberá uma confirmação por email.
             </p>
@@ -88,12 +89,12 @@ export default function Suporte() {
       ) : (
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-base font-semibold text-slate-700">Novo Ticket de Suporte</CardTitle>
+            <CardTitle className="text-base font-semibold text-slate-700 dark:text-slate-300">Novo Ticket de Suporte</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Assunto <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -109,7 +110,7 @@ export default function Suporte() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Categoria</label>
                 <Select
                   options={categorias}
                   value={categoria}
@@ -119,7 +120,7 @@ export default function Suporte() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Mensagem <span className="text-red-500">*</span>
                 </label>
                 <Textarea
@@ -135,7 +136,7 @@ export default function Suporte() {
               </div>
 
               {erro && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{erro}</p>
+                <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded px-3 py-2">{erro}</p>
               )}
 
               <div className="flex justify-end">

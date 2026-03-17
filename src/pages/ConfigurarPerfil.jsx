@@ -265,23 +265,23 @@ export default function ConfigurarPerfil() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
-          <p className="mt-2 text-slate-600">A carregar...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 dark:text-blue-400" />
+          <p className="mt-2 text-slate-600 dark:text-slate-400">A carregar...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
           <Button
             onClick={() => navigate(-1)}
             variant="ghost"
-            className="gap-2 text-slate-600 hover:text-slate-900"
+            className="gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
           >
             <ArrowLeft className="w-4 h-4" />
             Voltar
@@ -289,20 +289,20 @@ export default function ConfigurarPerfil() {
         </div>
 
         <div className="text-center mb-8">
-          <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UserCog className="w-8 h-8 text-blue-600" />
+          <div className="bg-blue-100 dark:bg-blue-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserCog className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900">Configurações da Conta</h1>
-          <p className="text-slate-600 mt-2">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Configurações da Conta</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
             Consulte e atualize as suas informações pessoais.
           </p>
         </div>
 
         {/* Mensagens de Sucesso e Erro */}
         {successMessage && (
-          <Alert className="mb-6 border-green-300 bg-green-50">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <AlertDescription className="text-green-900 ml-2">
+          <Alert className="mb-6 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950">
+            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <AlertDescription className="text-green-900 dark:text-green-100 ml-2">
               {successMessage}
             </AlertDescription>
           </Alert>
@@ -318,7 +318,7 @@ export default function ConfigurarPerfil() {
         <Card className="shadow-lg border-0 mb-6">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-xl flex items-center gap-2">
-              <User className="w-5 h-5 text-slate-600" />
+              <User className="w-5 h-5 text-slate-600 dark:text-slate-400" />
               Informações Pessoais
             </CardTitle>
             {!isEditing && (
@@ -337,7 +337,7 @@ export default function ConfigurarPerfil() {
             {isEditing ? (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="full_name" className="text-sm font-medium text-slate-700">
+                  <Label htmlFor="full_name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                     Nome Completo *
                   </Label>
                   <Input
@@ -350,7 +350,7 @@ export default function ConfigurarPerfil() {
                 </div>
 
                 <div>
-                  <Label htmlFor="telefone" className="text-sm font-medium text-slate-700">
+                  <Label htmlFor="telefone" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                     Telefone
                   </Label>
                   <Input
@@ -374,7 +374,7 @@ export default function ConfigurarPerfil() {
                     placeholder="+244923456789"
                     className="mt-1"
                   />
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Digite apenas o número com código do país (ex: +244923456789)
                   </p>
                 </div>
@@ -410,27 +410,27 @@ export default function ConfigurarPerfil() {
               </div>
             ) : (
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                  <User className="w-5 h-5 text-slate-500" />
+                <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <User className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                   <div>
-                    <p className="text-sm text-slate-500">Nome Completo</p>
-                    <p className="font-medium text-slate-900">{user.full_name || 'Não informado'}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Nome Completo</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{user.full_name || 'Não informado'}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                  <Phone className="w-5 h-5 text-slate-500" />
+                <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <Phone className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                   <div>
-                    <p className="text-sm text-slate-500">Telefone</p>
-                    <p className="font-medium text-slate-900">{user.telefone || 'Não informado'}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Telefone</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{user.telefone || 'Não informado'}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg md:col-span-2">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg md:col-span-2">
                   <MessageSquare className="w-5 h-5 text-green-600" />
                   <div className="flex-1">
-                    <p className="text-sm text-slate-500">WhatsApp (Notificações)</p>
-                    <p className="font-medium text-slate-900">{user.whatsapp_number || 'Não configurado'}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">WhatsApp (Notificações)</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{user.whatsapp_number || 'Não configurado'}</p>
                     {user.whatsapp_opt_in_status && (
                       <p className="text-xs mt-1">
                         {user.whatsapp_opt_in_status === 'confirmado' && (
@@ -484,18 +484,18 @@ export default function ConfigurarPerfil() {
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                <Mail className="w-5 h-5 text-slate-500" />
+              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                <Mail className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 <div>
-                  <p className="text-sm text-slate-500">Email</p>
-                  <p className="font-medium text-slate-900">{user.email}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Email</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-100">{user.email}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                <Shield className="w-5 h-5 text-slate-500" />
+              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                <Shield className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 <div>
-                  <p className="text-sm text-slate-500">Perfis de Acesso</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Perfis de Acesso</p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {user.perfis && user.perfis.length > 0 ? (
                       user.perfis.map((perfil, index) => (
@@ -504,23 +504,23 @@ export default function ConfigurarPerfil() {
                         </span>
                       ))
                     ) : (
-                      <span className="text-sm text-slate-600">Nenhum perfil atribuído</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">Nenhum perfil atribuído</span>
                     )}
                   </div>
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg md:col-span-2">
+              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg md:col-span-2">
                 <CheckCircle className="w-5 h-5 text-green-500" />
                 <div>
-                  <p className="text-sm text-slate-500">Status</p>
-                  <p className="font-medium text-green-700 capitalize">{user.status || 'Ativo'}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Status</p>
+                  <p className="font-medium text-green-700 dark:text-green-400 capitalize">{user.status || 'Ativo'}</p>
                 </div>
               </div>
             </div>
 
             {aeroportosPermitidos.length > 0 && (
-              <div className="mt-4 p-3 bg-slate-50 rounded-lg">
+              <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                 <p className="text-sm text-slate-500 mb-2">Aeroportos com Acesso</p>
                 <div className="flex flex-wrap gap-2">
                   {aeroportosPermitidos.map(aeroporto => (
@@ -535,7 +535,7 @@ export default function ConfigurarPerfil() {
         </Card>
 
         <div className="text-center mt-6">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Para alterações no perfil de acesso, aeroportos ou outros dados geridos pelos administradores, por favor contacte a equipa de gestão do sistema.
           </p>
         </div>
@@ -560,11 +560,11 @@ export default function ConfigurarPerfil() {
 
             {mfaEnabled ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-800">2FA Ativo</p>
-                    <p className="text-sm text-green-700">A sua conta está protegida com autenticação de dois fatores.</p>
+                    <p className="font-medium text-green-800 dark:text-green-200">2FA Ativo</p>
+                    <p className="text-sm text-green-700 dark:text-green-300">A sua conta está protegida com autenticação de dois fatores.</p>
                   </div>
                 </div>
                 <Button
@@ -579,14 +579,14 @@ export default function ConfigurarPerfil() {
               </div>
             ) : mfaSetupData ? (
               <div className="space-y-4">
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   Abra o seu aplicativo autenticador (Google Authenticator, Authy, etc.) e digitalize o código QR abaixo:
                 </p>
-                <div className="flex justify-center p-4 bg-white border rounded-lg">
+                <div className="flex justify-center p-4 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg">
                   <img src={mfaSetupData.totp.qr_code} alt="QR Code 2FA" className="w-48 h-48" />
                 </div>
-                <p className="text-xs text-slate-500 text-center break-all">
-                  Chave manual: <code className="bg-slate-100 px-1 rounded">{mfaSetupData.totp.secret}</code>
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center break-all">
+                  Chave manual: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{mfaSetupData.totp.secret}</code>
                 </p>
                 <div>
                   <Label className="text-sm">Código de verificação</Label>
@@ -631,19 +631,19 @@ export default function ConfigurarPerfil() {
         </Card>
 
         {/* Delete Account */}
-        <Card className="shadow-lg border border-red-200 mt-8">
+        <Card className="shadow-lg border border-red-200 dark:border-red-800 mt-8">
           <CardHeader>
-            <CardTitle className="text-xl flex items-center gap-2 text-red-700">
+            <CardTitle className="text-xl flex items-center gap-2 text-red-700 dark:text-red-400">
               <Trash2 className="w-5 h-5" />
               Eliminar Conta
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-start gap-3 p-4 bg-red-50 rounded-lg mb-4 border border-red-100">
+            <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950 rounded-lg mb-4 border border-red-100 dark:border-red-800">
               <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-red-800">Esta ação é permanente e irreversível</p>
-                <p className="text-sm text-red-700 mt-1">
+                <p className="text-sm font-medium text-red-800 dark:text-red-200">Esta ação é permanente e irreversível</p>
+                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
                   Ao eliminar a sua conta, todos os seus dados pessoais serão removidos do sistema e o seu acesso será revogado imediatamente.
                 </p>
               </div>

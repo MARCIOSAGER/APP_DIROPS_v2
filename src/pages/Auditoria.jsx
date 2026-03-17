@@ -47,6 +47,7 @@ import { Voo } from '@/entities/Voo';
 import { ensureUserProfilesExist, hasUserProfile, getAeroportosPermitidos, filtrarDadosPorAcesso, isSuperAdmin, getEmpresaLogoByUser } from '../components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { Empresa } from '@/entities/Empresa';
+import { useI18n } from '@/components/lib/i18n';
 
 import FormProcessoAuditoria from '../components/auditoria/FormProcessoAuditoria';
 import ConfiguracaoAuditoria from '../components/auditoria/ConfiguracaoAuditoria';
@@ -93,6 +94,7 @@ const CATEGORIAS_CONFIG = {
 };
 
 export default function Auditoria() {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [currentUser, setCurrentUser] = useState(null);
   const [tiposAuditoria, setTiposAuditoria] = useState([]);
@@ -702,15 +704,15 @@ export default function Auditoria() {
 
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <Shield className="w-6 md:w-8 h-6 md:h-8 text-indigo-600" />
-              Auditoria Interna
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+              <Shield className="w-6 md:w-8 h-6 md:h-8 text-indigo-600 dark:text-indigo-400" />
+              {t('page.auditoria.title')}
             </h1>
-            <p className="text-slate-600 mt-1">Sistema de gestão de auditorias baseado em USAP e USOAP</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.auditoria.subtitle')}</p>
           </div>
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             {gestaoPermission &&
@@ -748,10 +750,10 @@ export default function Auditoria() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Total Auditorias</p>
-                  <p className="text-2xl font-bold text-slate-900">{estatisticas.total}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Auditorias</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{estatisticas.total}</p>
                 </div>
-                <FileText className="h-8 w-8 text-blue-600" />
+                <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
             </CardContent>
           </Card>
@@ -760,10 +762,10 @@ export default function Auditoria() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Concluídas</p>
-                  <p className="text-2xl font-bold text-green-600">{estatisticas.concluidas}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Concluídas</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{estatisticas.concluidas}</p>
                 </div>
-                <Shield className="h-8 w-8 text-green-600" />
+                <Shield className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
             </CardContent>
           </Card>
@@ -772,7 +774,7 @@ export default function Auditoria() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Em Andamento</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Em Andamento</p>
                   <p className="text-2xl font-bold text-orange-600">{estatisticas.emAndamento}</p>
                 </div>
                 <Settings className="h-8 w-8 text-orange-600" />
@@ -784,10 +786,10 @@ export default function Auditoria() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Conformidade Média</p>
-                  <p className="text-2xl font-bold text-blue-600">{estatisticas.conformidadeMedia.toFixed(1)}%</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Conformidade Média</p>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{estatisticas.conformidadeMedia.toFixed(1)}%</p>
                 </div>
-                <BarChart3 className="h-8 w-8 text-blue-600" />
+                <BarChart3 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
             </CardContent>
           </Card>
@@ -819,7 +821,7 @@ export default function Auditoria() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="flex justify-between items-center mb-6 border-b">
+          <div className="flex justify-between items-center mb-6 border-b dark:border-slate-700">
             <TabsList className="grid w-full grid-cols-2 bg-transparent border-b-0 p-0 m-0">
               <TabsTrigger value="processos" className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:shadow-none -mb-px">
                 <ClipboardCheck className="w-4 h-4" />
@@ -841,11 +843,11 @@ export default function Auditoria() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-xl flex items-center gap-2">
-                    <Filter className="w-5 h-5 text-slate-500" />
+                    <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     Filtros de Pesquisa
                   </CardTitle>
                   {hasActiveFilters &&
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-red-500 hover:bg-red-50 hover:text-red-600">
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600">
                       <X className="w-4 h-4 mr-1" />
                       Limpar Filtros
                     </Button>
@@ -948,15 +950,15 @@ export default function Auditoria() {
                 {isLoading ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-slate-600">Carregando auditorias...</p>
+                    <p className="text-slate-600 dark:text-slate-400">Carregando auditorias...</p>
                   </div>
                 ) : filteredProcessos.length === 0 ? (
                   <div className="text-center py-8">
-                    <FileText className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                    <FileText className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
                       Nenhuma auditoria encontrada
                     </h3>
-                    <p className="text-slate-500">
+                    <p className="text-slate-500 dark:text-slate-400">
                       Não há processos de auditoria que correspondam aos filtros selecionados.
                     </p>
                   </div>
@@ -968,10 +970,10 @@ export default function Auditoria() {
                       const categoriaConfig = tipo ? CATEGORIAS_CONFIG[tipo.categoria] : null;
                       
                       const statusConfig = {
-                        planejada: { label: 'Planejada', color: 'bg-gray-100 text-gray-800' },
-                        em_andamento: { label: 'Em Andamento', color: 'bg-blue-100 text-blue-800' },
-                        concluida: { label: 'Concluída', color: 'bg-green-100 text-green-800' },
-                        aprovada: { label: 'Aprovada', color: 'bg-emerald-100 text-emerald-800' }
+                        planejada: { label: 'Planejada', color: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200' },
+                        em_andamento: { label: 'Em Andamento', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' },
+                        concluida: { label: 'Concluída', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' },
+                        aprovada: { label: 'Aprovada', color: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200' }
                       };
                       
                       const config = statusConfig[processo.status] || statusConfig.planejada;
@@ -986,8 +988,8 @@ export default function Auditoria() {
                               <div 
                                 className="flex-1 cursor-pointer"
                                 onClick={() => handleViewAuditoria(processo)}>
-                                <h3 className="font-semibold text-lg text-slate-900">{processo.numero_auditoria}</h3>
-                                <p className="text-slate-600">{tipo?.nome || 'Tipo não encontrado'}</p>
+                                <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">{processo.numero_auditoria}</h3>
+                                <p className="text-slate-600 dark:text-slate-400">{tipo?.nome || 'Tipo não encontrado'}</p>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Badge className={config.color}>{config.label}</Badge>
@@ -1001,7 +1003,7 @@ export default function Auditoria() {
                                         openForm(processo);
                                       }}
                                       className="h-8 w-8">
-                                      <Edit className="w-4 h-4 text-blue-600" />
+                                      <Edit className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                     </Button>
                                     <Button
                                       size="icon"
@@ -1011,7 +1013,7 @@ export default function Auditoria() {
                                         setDeleteProcessoInfo({ isOpen: true, processo });
                                       }}
                                       className="h-8 w-8">
-                                      <Trash2 className="w-4 h-4 text-red-600" />
+                                      <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                                     </Button>
                                   </div>
                                 )}
@@ -1020,25 +1022,25 @@ export default function Auditoria() {
                             
                             <div className={viewMode === 'grid' ? 'space-y-3 mb-4' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4'}>
                               <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-slate-400" />
+                                <MapPin className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500">Aeroporto</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">Aeroporto</p>
                                   <p className="font-medium text-sm">{aeroporto?.nome || processo.aeroporto_id}</p>
                                 </div>
                               </div>
                               
                               <div className="flex items-center gap-2">
-                                <UserIcon className="w-4 h-4 text-slate-400" />
+                                <UserIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500">Auditor</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">Auditor</p>
                                   <p className="font-medium text-sm">{processo.auditor_responsavel}</p>
                                 </div>
                               </div>
                               
                               <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-slate-400" />
+                                <Calendar className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500">Data</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">Data</p>
                                   <p className="font-medium text-sm">
                                     {processo.data_auditoria ? format(new Date(processo.data_auditoria), 'dd/MM/yyyy', { locale: pt }) : 'N/A'}
                                   </p>
@@ -1046,18 +1048,18 @@ export default function Auditoria() {
                               </div>
                               
                               <div className="flex items-center gap-2">
-                                <BarChart3 className="w-4 h-4 text-slate-400" />
+                                <BarChart3 className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500">Conformidade</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">Conformidade</p>
                                   <p className="font-medium text-sm">{(processo.percentual_conformidade || 0).toFixed(1)}%</p>
                                 </div>
                               </div>
                             </div>
                             
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
                               <span>{processo.total_itens || 0} itens</span>
-                              <span className="text-green-600">{processo.itens_conformes || 0} conformes</span>
-                              <span className="text-red-600">{processo.itens_nao_conformes || 0} NC</span>
+                              <span className="text-green-600 dark:text-green-400">{processo.itens_conformes || 0} conformes</span>
+                              <span className="text-red-600 dark:text-red-400">{processo.itens_nao_conformes || 0} NC</span>
                             </div>
                           </CardContent>
                         </Card>
@@ -1075,11 +1077,11 @@ export default function Auditoria() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-xl flex items-center gap-2">
-                    <Filter className="w-5 h-5 text-slate-500" />
+                    <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     Filtros de Pesquisa
                   </CardTitle>
                   {hasActiveFilters &&
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-red-500 hover:bg-red-50 hover:text-red-600">
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600">
                       <X className="w-4 h-4 mr-1" />
                       Limpar Filtros
                     </Button>
@@ -1183,15 +1185,15 @@ export default function Auditoria() {
                 {isLoading ?
                 <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-slate-600">Carregando PACs...</p>
+                    <p className="text-slate-600 dark:text-slate-400">Carregando PACs...</p>
                   </div> :
                 filteredPacs.length === 0 ?
                 <div className="text-center py-8">
-                    <FileText className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                    <FileText className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
                       Nenhum PAC encontrado
                     </h3>
-                    <p className="text-slate-500">
+                    <p className="text-slate-500 dark:text-slate-400">
                       Não há Planos de Ação Corretiva que correspondam aos filtros selecionados.
                     </p>
                   </div> :
@@ -1203,12 +1205,12 @@ export default function Auditoria() {
                     const tipo = processo ? tiposAuditoria.find((t) => t.id === processo.tipo_auditoria_id) : null;
 
                     const statusConfig = {
-                      elaboracao: { label: 'Em Elaboração', color: 'bg-gray-100 text-gray-800' },
-                      submetido: { label: 'Submetido', color: 'bg-blue-100 text-blue-800' },
-                      aprovado: { label: 'Aprovado', color: 'bg-green-100 text-green-800' },
-                      em_execucao: { label: 'Em Execução', color: 'bg-orange-100 text-orange-800' },
-                      concluido: { label: 'Concluído', color: 'bg-emerald-100 text-emerald-800' },
-                      vencido: { label: 'Vencido', color: 'bg-red-100 text-red-800' }
+                      elaboracao: { label: 'Em Elaboração', color: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200' },
+                      submetido: { label: 'Submetido', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' },
+                      aprovado: { label: 'Aprovado', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' },
+                      em_execucao: { label: 'Em Execução', color: 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200' },
+                      concluido: { label: 'Concluído', color: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200' },
+                      vencido: { label: 'Vencido', color: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' }
                     };
 
                     const config = statusConfig[pac.status] || statusConfig.elaboracao;
@@ -1223,8 +1225,8 @@ export default function Auditoria() {
                               <div 
                                 className="flex-1 cursor-pointer"
                                 onClick={() => handleEditPAC(pac)}>
-                                <h3 className="font-semibold text-lg text-slate-900">{pac.numero_pac}</h3>
-                                <p className="text-slate-600 capitalize">
+                                <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">{pac.numero_pac}</h3>
+                                <p className="text-slate-600 dark:text-slate-400 capitalize">
                                   {pac.tipo === 'formal_anac' ? 'Formal ANAC' : 'Interno'}
                                 </p>
                               </div>
@@ -1242,7 +1244,7 @@ export default function Auditoria() {
                                         handleEditPAC(pac);
                                       }}
                                       className="h-8 w-8">
-                                      <Edit className="w-4 h-4 text-blue-600" />
+                                      <Edit className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                     </Button>
                                     <Button
                                       size="icon"
@@ -1252,7 +1254,7 @@ export default function Auditoria() {
                                         setDeletePACInfo({ isOpen: true, pac });
                                       }}
                                       className="h-8 w-8">
-                                      <Trash2 className="w-4 h-4 text-red-600" />
+                                      <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                                     </Button>
                                   </div>
                                 )}
@@ -1261,25 +1263,25 @@ export default function Auditoria() {
 
                             <div className={viewModePAC === 'grid' ? 'space-y-3 mb-4' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4'}>
                               <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-slate-400" />
+                                <MapPin className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500">Aeroporto</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">Aeroporto</p>
                                   <p className="font-medium text-sm">{aeroporto?.nome || pac.aeroporto_id}</p>
                                 </div>
                               </div>
 
                               <div className="flex items-center gap-2">
-                                <UserIcon className="w-4 h-4 text-slate-400" />
+                                <UserIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500">Responsável</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">Responsável</p>
                                   <p className="font-medium text-sm">{pac.responsavel_elaboracao}</p>
                                 </div>
                               </div>
 
                               <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-slate-400" />
+                                <Calendar className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500">Prazo</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">Prazo</p>
                                   <p className="font-medium text-sm">
                                     {pac.prazo_conclusao ? format(new Date(pac.prazo_conclusao), 'dd/MM/yyyy', { locale: pt }) : 'N/A'}
                                   </p>
@@ -1287,9 +1289,9 @@ export default function Auditoria() {
                               </div>
 
                               <div className="flex items-center gap-2">
-                                <BarChart3 className="w-4 h-4 text-slate-400" />
+                                <BarChart3 className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 <div>
-                                  <p className="text-sm text-slate-500">Progresso</p>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400">Progresso</p>
                                   <p className="font-medium text-sm">{(pac.percentual_conclusao || 0).toFixed(0)}%</p>
                                 </div>
                               </div>
@@ -1297,12 +1299,12 @@ export default function Auditoria() {
 
                             {tipo && processo &&
                           <div className="mb-4">
-                                <p className="text-sm text-slate-500 mb-1">Auditoria Relacionada</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Auditoria Relacionada</p>
                                 <p className="font-medium text-sm">{tipo.nome} ({processo.numero_auditoria})</p>
                               </div>
                           }
 
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
                               <span>{pac.total_nao_conformidades || 0} NC</span>
                               <span>{pac.nao_conformidades_concluidas || 0} concluídas</span>
                               <span className="text-xs">Criado em {format(new Date(pac.data_criacao), 'dd/MM/yyyy', { locale: pt })}</span>

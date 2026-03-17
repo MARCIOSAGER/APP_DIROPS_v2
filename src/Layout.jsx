@@ -40,35 +40,37 @@ const PERFIL_PERMISSIONS_DEFAULT = {
   safety: ['Home', 'Safety', 'Inspecoes', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte']
 };
 
-const navigationItems = [
-  { title: "Dashboard", url: createPageUrl("Home"), icon: Home, color: "text-blue-600", pageKey: "Home" },
-  { title: "Operações", url: createPageUrl("Operacoes"), icon: Plane, color: "text-green-600", pageKey: "Operacoes" },
-  { title: "Fundo de Maneio", url: createPageUrl("FundoManeio"), icon: DollarSign, color: "text-emerald-600", pageKey: "FundoManeio" },
-  { title: "Configuração de Tarifas", url: createPageUrl("ConfiguracaoTarifas"), icon: Settings2, color: "text-blue-600", pageKey: "ConfiguracaoTarifas" },
-  { title: "Proformas", url: createPageUrl("Proforma"), icon: FileText, color: "text-blue-600", pageKey: "Proforma" },
-  { title: "Serviços Aeroportuários", url: createPageUrl("ServicosAeroportuarios"), icon: Layers, color: "text-cyan-600", pageKey: "ServicosAeroportuarios" },
-  { title: "Safety", url: createPageUrl("Safety"), icon: Shield, color: "text-red-600", pageKey: "Safety" },
-  { title: "Inspeções", url: createPageUrl("Inspecoes"), icon: ClipboardCheck, color: "text-purple-600", pageKey: "Inspecoes" },
-  { title: "KPIs Operacionais", url: createPageUrl("KPIsOperacionais"), icon: BarChart3, color: "text-teal-600", pageKey: "KPIsOperacionais" },
-  { title: "Power BI", url: createPageUrl("PowerBi"), icon: BarChart3, color: "text-purple-600", pageKey: "PowerBi" },
-  { title: "Manutenção", url: createPageUrl("Manutencao"), icon: Wrench, color: "text-orange-600", pageKey: "Manutencao" },
-  { title: "Auditoria Interna", url: createPageUrl("Auditoria"), icon: FileSearch, color: "text-indigo-600", pageKey: "Auditoria" },
-  { title: "Reclamações", url: createPageUrl("Reclamacoes"), icon: MessageSquare, color: "text-pink-600", pageKey: "Reclamacoes" },
-  { title: "Gestão de Credenciamentos", url: "https://credenciamentosga.marciosager.com/", icon: UserCheck, color: "text-teal-600", pageKey: "Credenciamento", external: true },
-  { title: "Gestão de Empresas", url: createPageUrl("GestaoEmpresas"), icon: Building2, color: "text-blue-800", pageKey: "GestaoEmpresas" },
-  { title: "Gestão de Acessos", url: createPageUrl("GestaoAcessos"), icon: Users, color: "text-yellow-600", pageKey: "GestaoAcessos" },
-  { title: "Gestão de Permissões", url: createPageUrl("GerirPermissoes"), icon: Shield, color: "text-red-600", pageKey: "GerirPermissoes" },
-  { title: "Gestão de Notificações", url: createPageUrl("GestaoNotificacoes"), icon: Bell, color: "text-indigo-600", pageKey: "GestaoNotificacoes" },
-  { title: "Configurações Gerais", url: createPageUrl("ConfiguracoesGerais"), icon: Settings, color: "text-slate-600", pageKey: "ConfiguracoesGerais" },
-  { title: "GRF – Condições da Pista", url: createPageUrl("GRF"), icon: Activity, color: "text-sky-600", pageKey: "GRF" },
-  { title: "Documentos", url: createPageUrl("Documentos"), icon: FileText, color: "text-cyan-600", pageKey: "Documentos" },
-  { title: "Histórico de Acesso", url: createPageUrl("HistoricoAcessoDocumentos"), icon: FileSearch, color: "text-slate-600", pageKey: "HistoricoAcessoDocumentos" },
-  { title: "Lixeira", url: createPageUrl("Lixeira"), icon: Trash2, color: "text-slate-500", pageKey: "Lixeira" },
-  { title: "API Keys", url: createPageUrl("GestaoAPIKeys"), icon: Key, color: "text-amber-600", pageKey: "GestaoAPIKeys" },
-  { title: "Log de Auditoria", url: createPageUrl("LogAuditoria"), icon: Shield, color: "text-slate-500", pageKey: "LogAuditoria" },
-  { title: "Guia do Utilizador", url: createPageUrl("GuiaUtilizador"), icon: BookMarked, color: "text-blue-500", pageKey: "GuiaUtilizador" },
-  { title: "Suporte", url: createPageUrl("Suporte"), icon: MessageSquare, color: "text-purple-500", pageKey: "Suporte" },
-];
+function getNavigationItems(t) {
+  return [
+    { title: t('nav.dashboard'), url: createPageUrl("Home"), icon: Home, color: "text-blue-600", pageKey: "Home" },
+    { title: t('nav.operacoes'), url: createPageUrl("Operacoes"), icon: Plane, color: "text-green-600", pageKey: "Operacoes" },
+    { title: t('nav.fundo_maneio'), url: createPageUrl("FundoManeio"), icon: DollarSign, color: "text-emerald-600", pageKey: "FundoManeio" },
+    { title: t('nav.config_tarifas'), url: createPageUrl("ConfiguracaoTarifas"), icon: Settings2, color: "text-blue-600", pageKey: "ConfiguracaoTarifas" },
+    { title: t('nav.proformas'), url: createPageUrl("Proforma"), icon: FileText, color: "text-blue-600", pageKey: "Proforma" },
+    { title: t('nav.servicos_aeroportuarios'), url: createPageUrl("ServicosAeroportuarios"), icon: Layers, color: "text-cyan-600", pageKey: "ServicosAeroportuarios" },
+    { title: t('nav.safety'), url: createPageUrl("Safety"), icon: Shield, color: "text-red-600", pageKey: "Safety" },
+    { title: t('nav.inspecoes'), url: createPageUrl("Inspecoes"), icon: ClipboardCheck, color: "text-purple-600", pageKey: "Inspecoes" },
+    { title: t('nav.kpis'), url: createPageUrl("KPIsOperacionais"), icon: BarChart3, color: "text-teal-600", pageKey: "KPIsOperacionais" },
+    { title: t('nav.powerbi'), url: createPageUrl("PowerBi"), icon: BarChart3, color: "text-purple-600", pageKey: "PowerBi" },
+    { title: t('nav.manutencao'), url: createPageUrl("Manutencao"), icon: Wrench, color: "text-orange-600", pageKey: "Manutencao" },
+    { title: t('nav.auditoria'), url: createPageUrl("Auditoria"), icon: FileSearch, color: "text-indigo-600", pageKey: "Auditoria" },
+    { title: t('nav.reclamacoes'), url: createPageUrl("Reclamacoes"), icon: MessageSquare, color: "text-pink-600", pageKey: "Reclamacoes" },
+    { title: t('nav.credenciamento'), url: "https://credenciamentosga.marciosager.com/", icon: UserCheck, color: "text-teal-600", pageKey: "Credenciamento", external: true },
+    { title: t('nav.gestao_empresas'), url: createPageUrl("GestaoEmpresas"), icon: Building2, color: "text-blue-800", pageKey: "GestaoEmpresas" },
+    { title: t('nav.gestao_acessos'), url: createPageUrl("GestaoAcessos"), icon: Users, color: "text-yellow-600", pageKey: "GestaoAcessos" },
+    { title: t('nav.gerir_permissoes'), url: createPageUrl("GerirPermissoes"), icon: Shield, color: "text-red-600", pageKey: "GerirPermissoes" },
+    { title: t('nav.gestao_notificacoes'), url: createPageUrl("GestaoNotificacoes"), icon: Bell, color: "text-indigo-600", pageKey: "GestaoNotificacoes" },
+    { title: t('nav.config_gerais'), url: createPageUrl("ConfiguracoesGerais"), icon: Settings, color: "text-slate-600", pageKey: "ConfiguracoesGerais" },
+    { title: t('nav.grf'), url: createPageUrl("GRF"), icon: Activity, color: "text-sky-600", pageKey: "GRF" },
+    { title: t('nav.documentos'), url: createPageUrl("Documentos"), icon: FileText, color: "text-cyan-600", pageKey: "Documentos" },
+    { title: t('nav.historico_acesso'), url: createPageUrl("HistoricoAcessoDocumentos"), icon: FileSearch, color: "text-slate-600", pageKey: "HistoricoAcessoDocumentos" },
+    { title: t('nav.lixeira'), url: createPageUrl("Lixeira"), icon: Trash2, color: "text-slate-500", pageKey: "Lixeira" },
+    { title: t('nav.api_keys'), url: createPageUrl("GestaoAPIKeys"), icon: Key, color: "text-amber-600", pageKey: "GestaoAPIKeys" },
+    { title: t('nav.log_auditoria'), url: createPageUrl("LogAuditoria"), icon: Shield, color: "text-slate-500", pageKey: "LogAuditoria" },
+    { title: t('nav.guia_utilizador'), url: createPageUrl("GuiaUtilizador"), icon: BookMarked, color: "text-blue-500", pageKey: "GuiaUtilizador" },
+    { title: t('nav.suporte'), url: createPageUrl("Suporte"), icon: MessageSquare, color: "text-purple-500", pageKey: "Suporte" },
+  ];
+}
 
 const DEFAULT_LOGO = '/logo-dirops.png';
 
@@ -142,7 +144,7 @@ const hasAccessToPage = (user, pageKey, permissions) => {
   return hasPageAccess(user, pageKey, permissions);
 };
 
-const getFirstAccessiblePage = (user, permissions) => {
+const getFirstAccessiblePage = (user, permissions, t) => {
   if (!user) return createPageUrl('ValidacaoAcesso');
 
   user = ensureUserProfilesExist(user);
@@ -151,13 +153,15 @@ const getFirstAccessiblePage = (user, permissions) => {
     return createPageUrl('ValidacaoAcesso');
   }
 
+  const navItems = getNavigationItems(t);
+
   if (hasUserProfile(user, 'gestor_empresa')) {
     // Ensure that if 'Credenciamento' is the target, we get its actual URL, which might be external
-    const credenciamentoItem = navigationItems.find(item => item.pageKey === 'Credenciamento');
+    const credenciamentoItem = navItems.find(item => item.pageKey === 'Credenciamento');
     return credenciamentoItem ? credenciamentoItem.url : createPageUrl('Credenciamento');
   }
 
-  const accessiblePages = navigationItems.filter(item => hasAccessToPage(user, item.pageKey, permissions));
+  const accessiblePages = navItems.filter(item => hasAccessToPage(user, item.pageKey, permissions));
 
   if (accessiblePages.length > 0) {
     return accessiblePages[0].url;
@@ -268,7 +272,7 @@ function LayoutContent({ children, currentPageName }) {
 
       // Check if the user has access to the current page
       if (!hasAccessToPage(user, currentPageName, permissions)) {
-        const firstAccessiblePage = getFirstAccessiblePage(user, permissions);
+        const firstAccessiblePage = getFirstAccessiblePage(user, permissions, t);
         const currentPath = location.pathname;
 
         // If the first accessible page is different from the current path AND it's not the generic 'ValidacaoAcesso' page,
@@ -308,14 +312,16 @@ function LayoutContent({ children, currentPageName }) {
     }
   };
 
+  const navigationItems = React.useMemo(() => getNavigationItems(t), [t, language]);
+
   const filteredNavigationItems = React.useMemo(() => {
     if (!user || !user.perfis || !Array.isArray(user.perfis)) return [];
     if (isLoadingPermissions) return [];
     return navigationItems.filter(item => hasAccessToPage(user, item.pageKey, permissions));
-  }, [user, permissions, isLoadingPermissions]);
+  }, [user, permissions, isLoadingPermissions, navigationItems]);
 
   if (isLoadingUser || isLoadingPermissions) {
-    return <div className="flex items-center justify-center h-screen bg-slate-50"><p className="text-lg">A carregar...</p></div>;
+    return <div className="flex items-center justify-center h-screen bg-slate-50"><p className="text-lg">{t('layout.loading')}</p></div>;
   }
 
   if (unprotectedPages.includes(currentPageName)) {
@@ -334,10 +340,10 @@ function LayoutContent({ children, currentPageName }) {
         <main>
           <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-slate-900 mb-4">Acesso Restrito</h1>
-              <p className="text-slate-600 mb-4">É necessário fazer login para aceder a esta página.</p>
+              <h1 className="text-2xl font-bold text-slate-900 mb-4">{t('layout.restrictedAccess')}</h1>
+              <p className="text-slate-600 mb-4">{t('layout.loginRequired')}</p>
               <Button type="button" onClick={() => UserEntity.loginWithRedirect(window.location.href)}>
-                Fazer Login
+                {t('layout.login')}
               </Button>
             </div>
           </div>
@@ -355,7 +361,7 @@ function LayoutContent({ children, currentPageName }) {
         <div className="flex items-center justify-center h-screen bg-slate-50">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-lg text-slate-700">A redirecionar...</p>
+            <p className="text-lg text-slate-700">{t('layout.redirecting')}</p>
           </div>
         </div>
       );
@@ -439,22 +445,22 @@ function LayoutContent({ children, currentPageName }) {
           <nav className="p-4 space-y-2 flex-grow overflow-y-auto">
             {filteredNavigationItems.map((item) => (
               item.external ? (
-                <a 
-                  key={item.title} 
-                  href={item.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  onClick={() => setSidebarOpen(false)} 
+                <a
+                  key={item.pageKey}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900`}
                 >
                   <item.icon className={`w-5 h-5 ${item.color}`} />
                   <span>{item.title}</span>
                 </a>
               ) : (
-                <Link 
-                  key={item.title} 
-                  to={item.url} 
-                  onClick={() => setSidebarOpen(false)} 
+                <Link
+                  key={item.pageKey}
+                  to={item.url}
+                  onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${location.pathname === item.url ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
                 >
                   <item.icon className={`w-5 h-5 ${location.pathname !== item.url ? item.color : ''}`} />
@@ -506,11 +512,11 @@ function LayoutContent({ children, currentPageName }) {
               onClick={handleLogout}
             >
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Sair</span>
+              <span>{t('layout.logout')}</span>
             </Button>
 
             <div className="text-center text-xs text-slate-400 pt-2">
-              Versão 2.1.0
+              {t('layout.version')} 2.1.0
             </div>
           </div>
         </div>
@@ -526,11 +532,11 @@ function LayoutContent({ children, currentPageName }) {
           <nav className="flex-grow p-4 space-y-1 overflow-y-auto">
             {filteredNavigationItems.map((item) => (
               item.external ? (
-                <a 
-                  key={item.title} 
-                  href={item.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <a
+                  key={item.pageKey}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200`}
                 >
                   <item.icon className={`w-5 h-5 ${item.color}`} />
@@ -538,7 +544,7 @@ function LayoutContent({ children, currentPageName }) {
                 </a>
               ) : (
                 <Link
-                  key={item.title}
+                  key={item.pageKey}
                   to={item.url}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${location.pathname === item.url ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
                 >
@@ -550,7 +556,7 @@ function LayoutContent({ children, currentPageName }) {
           </nav>
           <div className="p-4 border-t border-slate-200 dark:border-slate-700">
             <div className="text-center text-xs text-slate-400 dark:text-slate-500">
-              Versão 2.1.0
+              {t('layout.version')} 2.1.0
             </div>
           </div>
         </div>
@@ -583,12 +589,12 @@ function LayoutContent({ children, currentPageName }) {
                           </span>
                         </>
                       ) : (
-                        <span>Visualizar como...</span>
+                        <span>{t('label.view_as')}</span>
                       )}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Selecionar Empresa</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t('label.select_empresa')}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {empresasList.map((empresa) => (
                       <DropdownMenuItem
@@ -607,7 +613,7 @@ function LayoutContent({ children, currentPageName }) {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={clearViewingAsEmpresa} className="text-red-600">
                           <X className="h-4 w-4 mr-2" />
-                          <span>Limpar seleção</span>
+                          <span>{t('label.clear_selection')}</span>
                         </DropdownMenuItem>
                       </>
                     )}
@@ -651,18 +657,18 @@ function LayoutContent({ children, currentPageName }) {
                   <Link to={createPageUrl("GuiaUtilizador")}>
                     <DropdownMenuItem>
                       <BookMarked className="mr-2 h-4 w-4 text-blue-500" />
-                      <span>Guia do Utilizador</span>
+                      <span>{t('menu.guia_utilizador')}</span>
                     </DropdownMenuItem>
                   </Link>
                   <Link to={createPageUrl("Suporte")}>
                     <DropdownMenuItem>
                       <MessageSquare className="mr-2 h-4 w-4 text-purple-500" />
-                      <span>Suporte</span>
+                      <span>{t('menu.suporte')}</span>
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuItem onClick={() => setShowTour(true)}>
                     <Sparkles className="mr-2 h-4 w-4 text-orange-500" />
-                    <span>Tour Guiado</span>
+                    <span>{t('menu.tour_guiado')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

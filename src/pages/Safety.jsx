@@ -19,8 +19,10 @@ import SendEmailModal from '../components/shared/SendEmailModal';
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
 import { getAeroportosPermitidos, filtrarDadosPorAcesso } from '@/components/lib/userUtils';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function Safety() {
+  const { t } = useI18n();
   const [ocorrencias, setOcorrencias] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -335,25 +337,25 @@ export default function Safety() {
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
-              Safety & Segurança
+              {t('page.safety.title')}
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">Registo e gestão de ocorrências de segurança operacional</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.safety.subtitle')}</p>
           </div>
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-            <Button variant="outline" onClick={loadData} className="border-slate-300 text-slate-700 hover:bg-slate-100">
+            <Button variant="outline" onClick={loadData} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <RefreshCw className="w-4 h-4 mr-2" />
-              Atualizar
+              {t('btn.refresh')}
             </Button>
-            <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 text-slate-700 hover:bg-slate-100">
+            <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileDown className="w-4 h-4 mr-2" />
               CSV
             </Button>
-            <Button variant="outline" onClick={handleExportPDF} className="border-slate-300 text-slate-700 hover:bg-slate-100">
+            <Button variant="outline" onClick={handleExportPDF} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileText className="w-4 h-4 mr-2" />
               PDF
             </Button>
             {selectedOcorrencias.length > 0 && (
-              <Button variant="outline" onClick={() => setIsEmailModalOpen(true)} className="border-blue-300 text-blue-600 hover:bg-blue-50">
+              <Button variant="outline" onClick={() => setIsEmailModalOpen(true)} className="border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950">
                 <Mail className="w-4 h-4 mr-2" />
                 Email ({selectedOcorrencias.length})
               </Button>
@@ -373,7 +375,7 @@ export default function Safety() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{totalOcorrencias}</div>
-              <p className="text-xs text-slate-500 mt-1">Ocorrências filtradas</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ocorrências filtradas</p>
             </CardContent>
           </Card>
 
@@ -383,7 +385,7 @@ export default function Safety() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">{ocorrenciasAbertas}</div>
-              <p className="text-xs text-slate-500 mt-1">Requerem atenção</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Requerem atenção</p>
             </CardContent>
           </Card>
 
@@ -393,7 +395,7 @@ export default function Safety() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{ocorrenciasCriticas}</div>
-              <p className="text-xs text-slate-500 mt-1">Nível crítico</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Nível crítico</p>
             </CardContent>
           </Card>
 
@@ -403,7 +405,7 @@ export default function Safety() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">{ocorrenciasEsteMes}</div>
-              <p className="text-xs text-slate-500 mt-1">Novas ocorrências</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Novas ocorrências</p>
             </CardContent>
           </Card>
 
@@ -413,7 +415,7 @@ export default function Safety() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{taxaResolucao}%</div>
-              <p className="text-xs text-slate-500 mt-1">Ocorrências resolvidas</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ocorrências resolvidas</p>
             </CardContent>
           </Card>
         </div>
@@ -422,7 +424,7 @@ export default function Safety() {
         <Card className="border-0 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-slate-500" />
+              <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
               Filtros de Pesquisa
             </CardTitle>
           </CardHeader>

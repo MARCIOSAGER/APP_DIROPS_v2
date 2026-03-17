@@ -176,40 +176,40 @@ export default function TourGuiado({ onClose }) {
       {/* Tooltip */}
       <div
         ref={tooltipRef}
-        className="fixed z-[9999] w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 p-5"
+        className="fixed z-[9999] w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-5"
         style={{ top: tooltipPos.top, left: tooltipPos.left }}
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="bg-blue-100 rounded-full p-1.5">
-              <Sparkles className="w-4 h-4 text-blue-600" />
+            <div className="bg-blue-100 dark:bg-blue-900 rounded-full p-1.5">
+              <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
-            <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">
+            <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">
               Passo {step + 1} de {TOUR_STEPS.length}
             </span>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-slate-100 rounded-full h-1.5 mb-4">
+        <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mb-4">
           <div
             className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
             style={{ width: `${((step + 1) / TOUR_STEPS.length) * 100}%` }}
           />
         </div>
 
-        <h3 className="font-bold text-slate-900 text-base mb-2">{current.title}</h3>
-        <p className="text-slate-600 text-sm leading-relaxed mb-5">{current.description}</p>
+        <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-2">{current.title}</h3>
+        <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-5">{current.description}</p>
 
         {/* Navigation */}
         <div className="flex items-center justify-between">
           <button
             onClick={onClose}
-            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
           >
             Saltar tour
           </button>
@@ -234,7 +234,7 @@ export default function TourGuiado({ onClose }) {
               key={i}
               onClick={() => setStep(i)}
               className={`rounded-full transition-all duration-200 ${
-                i === step ? "bg-blue-600 w-4 h-1.5" : "bg-slate-200 w-1.5 h-1.5"
+                i === step ? "bg-blue-600 w-4 h-1.5" : "bg-slate-200 dark:bg-slate-700 w-1.5 h-1.5"
               }`}
             />
           ))}

@@ -62,9 +62,9 @@ export default function ResponsavelSelector({
             <SelectItem key={usuario.id} value={usuario.email}>
               <div className="flex items-center gap-2">
                 <span>{usuario.full_name}</span>
-                <span className="text-xs text-slate-500">({usuario.email})</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">({usuario.email})</span>
                 {['administrador', 'chefe'].includes(usuario.perfil) && (
-                  <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded">
+                  <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1 rounded">
                     {usuario.perfil}
                   </span>
                 )}

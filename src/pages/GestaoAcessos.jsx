@@ -37,6 +37,7 @@ import { downloadAsCSV } from '../components/lib/export';
 import { hasUserProfile } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { base44 } from '@/api/base44Client';
+import { useI18n } from '@/components/lib/i18n';
 
 import AprovarAcessoModal from '../components/gestao/AprovarAcessoModal';
 import EditUserModal from '../components/gestao/EditUserModal';
@@ -79,6 +80,7 @@ const PERFIL_LABELS = {
 };
 
 export default function GestaoAcessos() {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [currentUser, setCurrentUser] = useState(null);
   const [solicitacoes, setSolicitacoes] = useState([]);
@@ -747,7 +749,7 @@ export default function GestaoAcessos() {
   
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mr-3"></div>
         <span className="text-lg text-slate-700">A carregar dados de gestão...</span>
       </div>
@@ -755,15 +757,15 @@ export default function GestaoAcessos() {
   }
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <Users className="w-6 md:w-8 h-6 md:h-8 text-blue-600" />
-              Gestão de Acessos
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100 flex items-center gap-3">
+              <Users className="w-6 md:w-8 h-6 md:h-8 text-blue-600 dark:text-blue-400" />
+              {t('page.gestao_acessos.title')}
             </h1>
-            <p className="text-slate-600 mt-1">Gerir solicitações de acesso e utilizadores do sistema</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.gestao_acessos.subtitle')}</p>
           </div>
         </div>
 
@@ -773,14 +775,14 @@ export default function GestaoAcessos() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Total de Utilizadores</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-1">{stats.totalUsers}</p>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total de Utilizadores</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1">{stats.totalUsers}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     {stats.activeUsers} ativos · {stats.inactiveUsers} inativos
                   </p>
                 </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <Users className="h-6 w-6 text-blue-600" />
+                <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                  <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </CardContent>
@@ -790,14 +792,14 @@ export default function GestaoAcessos() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Utilizadores Ativos</p>
-                  <p className="text-3xl font-bold text-green-600 mt-1">{stats.activeUsers}</p>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Utilizadores Ativos</p>
+                  <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{stats.activeUsers}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     {stats.totalUsers > 0 ? Math.round((stats.activeUsers / stats.totalUsers) * 100) : 0}% do total
                   </p>
                 </div>
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <UserCheck className="h-6 w-6 text-green-600" />
+                <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                  <UserCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
               </div>
             </CardContent>
@@ -807,14 +809,14 @@ export default function GestaoAcessos() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Solicitações Pendentes</p>
-                  <p className="text-3xl font-bold text-yellow-600 mt-1">{stats.solicitacoesPendentes}</p>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Solicitações Pendentes</p>
+                  <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{stats.solicitacoesPendentes}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     {stats.novasSolicitacoesMes} novas este mês
                   </p>
                 </div>
-                <div className="p-3 bg-yellow-50 rounded-lg">
-                  <Mail className="h-6 w-6 text-yellow-600" />
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
+                  <Mail className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
                 </div>
               </div>
             </CardContent>
@@ -824,18 +826,18 @@ export default function GestaoAcessos() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Taxa de Aprovação</p>
-                  <p className="text-3xl font-bold text-indigo-600 mt-1">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Taxa de Aprovação</p>
+                  <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
                     {(stats.solicitacoesAprovadas + stats.solicitacoesRejeitadas) > 0 
                       ? Math.round((stats.solicitacoesAprovadas / (stats.solicitacoesAprovadas + stats.solicitacoesRejeitadas)) * 100)
                       : 0}%
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     {stats.solicitacoesAprovadas} aprovadas · {stats.solicitacoesRejeitadas} rejeitadas
                   </p>
                 </div>
-                <div className="p-3 bg-indigo-50 rounded-lg">
-                  <CheckCircle className="h-6 w-6 text-indigo-600" />
+                <div className="p-3 bg-indigo-50 dark:bg-indigo-950 rounded-lg">
+                  <CheckCircle className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
               </div>
             </CardContent>
@@ -848,7 +850,7 @@ export default function GestaoAcessos() {
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Shield className="w-4 h-4 text-slate-600" />
+                <Shield className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                 Distribuição por Perfil
               </CardTitle>
             </CardHeader>
@@ -857,22 +859,22 @@ export default function GestaoAcessos() {
                 {stats.totalUsers > 0 && Object.entries(stats.perfilDistribution).length > 0 ? (
                   Object.entries(stats.perfilDistribution).sort(([, countA], [, countB]) => countB - countA).map(([perfil, count]) => (
                     <div key={perfil} className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600 capitalize">
+                      <span className="text-sm text-slate-600 dark:text-slate-400 capitalize">
                         {PERFIL_LABELS[perfil] || perfil}
                       </span>
                       <div className="flex items-center gap-2">
-                        <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="w-24 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-blue-500 rounded-full"
                             style={{ width: `${(count / stats.totalUsers) * 100}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium text-slate-900 w-8 text-right">{count}</span>
+                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100 w-8 text-right">{count}</span>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-slate-500 text-center py-4">Nenhum dado disponível</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhum dado disponível</p>
                 )}
               </div>
             </CardContent>
@@ -882,7 +884,7 @@ export default function GestaoAcessos() {
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Globe className="w-4 h-4 text-slate-600" />
+                <Globe className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                 Distribuição por Aeroporto
               </CardTitle>
             </CardHeader>
@@ -893,20 +895,20 @@ export default function GestaoAcessos() {
                     .sort((a, b) => b[1] - a[1])
                     .map(([aeroporto, count]) => (
                       <div key={aeroporto} className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">{aeroporto}</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-400">{aeroporto}</span>
                         <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-20 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-green-500 rounded-full"
                               style={{ width: `${(count / stats.totalUsers) * 100}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium text-slate-900 w-8 text-right">{count}</span>
+                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100 w-8 text-right">{count}</span>
                         </div>
                       </div>
                     ))
                 ) : (
-                  <p className="text-sm text-slate-500 text-center py-4">Nenhum dado disponível</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhum dado disponível</p>
                 )}
               </div>
             </CardContent>
@@ -916,7 +918,7 @@ export default function GestaoAcessos() {
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Activity className="w-4 h-4 text-slate-600" />
+                <Activity className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                 Top Empresas
               </CardTitle>
             </CardHeader>
@@ -928,22 +930,22 @@ export default function GestaoAcessos() {
                     .slice(0, 5)
                     .map(([empresa, count]) => (
                       <div key={empresa} className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600 truncate max-w-[150px]" title={empresa}>
+                        <span className="text-sm text-slate-600 dark:text-slate-400 truncate max-w-[150px]" title={empresa}>
                           {empresa}
                         </span>
                         <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-20 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-purple-500 rounded-full"
                               style={{ width: `${(count / stats.totalUsers) * 100}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium text-slate-900 w-8 text-right">{count}</span>
+                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100 w-8 text-right">{count}</span>
                         </div>
                       </div>
                     ))
                 ) : (
-                  <p className="text-sm text-slate-500 text-center py-4">Nenhum dado disponível</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhum dado disponível</p>
                 )}
               </div>
             </CardContent>
@@ -984,17 +986,17 @@ export default function GestaoAcessos() {
                       {isLoading ? (
                         Array(3).fill(0).map((_, i) => (
                           <TableRow key={i}>
-                            <TableCell><div className="h-4 bg-slate-200 rounded animate-pulse"></div></TableCell>
-                            <TableCell><div className="h-4 bg-slate-200 rounded animate-pulse"></div></TableCell>
-                            <TableCell><div className="h-4 bg-slate-200 rounded animate-pulse"></div></TableCell>
-                            <TableCell><div className="h-4 bg-slate-200 rounded animate-pulse"></div></TableCell>
-                            <TableCell><div className="h-8 bg-slate-200 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-8 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
                           </TableRow>
                         ))
                       ) : solicitacoesPendentes.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
-                            <Mail className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                            <Mail className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
                             <p className="text-lg font-medium">Nenhum resultado encontrado</p>
                             <p className="text-sm mt-1">Não há solicitações pendentes de aprovação.</p>
                           </TableCell>
@@ -1005,14 +1007,14 @@ export default function GestaoAcessos() {
                             <TableCell>
                               <div>
                                 <div className="font-medium">{solicitacao.nome_completo}</div>
-                                <div className="text-sm text-slate-500">{solicitacao.email}</div>
+                                <div className="text-sm text-slate-500 dark:text-slate-400">{solicitacao.email}</div>
                               </div>
                             </TableCell>
                             <TableCell>
                               {PERFIL_LABELS[solicitacao.perfil_solicitado] || solicitacao.perfil_solicitado}
                             </TableCell>
                             <TableCell>
-                              <div className="text-sm text-slate-500">
+                              <div className="text-sm text-slate-500 dark:text-slate-400">
                                 {solicitacao.empresa_solicitante_id ? getEmpresaNome(solicitacao.empresa_solicitante_id) : 'N/A'}
                               </div>
                             </TableCell>
@@ -1024,7 +1026,7 @@ export default function GestaoAcessos() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleOpenExcluirModal(solicitacao)}
-                                className="text-gray-600 border-gray-200 hover:bg-gray-50"
+                                className="text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800"
                               >
                                 <XCircle className="w-4 h-4 mr-1" />
                                 Excluir
@@ -1033,7 +1035,7 @@ export default function GestaoAcessos() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleOpenRejeitarModal(solicitacao)}
-                                className="text-red-600 border-red-200 hover:bg-red-50"
+                                className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
                               >
                                 <XCircle className="w-4 h-4 mr-1" />
                                 Rejeitar
@@ -1086,11 +1088,11 @@ export default function GestaoAcessos() {
               </CardHeader>
               <CardContent>
                 {/* Seção de Filtros Avançados */}
-                <Card className="mb-6 border-slate-200 bg-slate-50">
+                <Card className="mb-6 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <Filter className="w-5 h-5 text-slate-500" />
+                        <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                         Filtros de Pesquisa
                         {activeFiltersCount > 0 && (
                           <Badge variant="secondary" className="ml-2">
@@ -1103,7 +1105,7 @@ export default function GestaoAcessos() {
                           variant="ghost"
                           size="sm"
                           onClick={clearFilters}
-                          className="text-slate-600 hover:text-slate-900"
+                          className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
                         >
                           <X className="w-4 h-4 mr-1" />
                           Limpar Filtros
@@ -1117,7 +1119,7 @@ export default function GestaoAcessos() {
                       <div className="lg:col-span-2">
                         <Label htmlFor="search">Pesquisar</Label>
                         <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                           <Input
                             id="search"
                             placeholder="Nome, email, telefone ou perfil..."
@@ -1290,8 +1292,8 @@ export default function GestaoAcessos() {
                     </div>
 
                     {/* Resultado da Filtragem */}
-                    <div className="mt-4 pt-4 border-t border-slate-200">
-                      <p className="text-sm text-slate-600">
+                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
                         <span className="font-semibold">{filteredUsers.length}</span> {filteredUsers.length === 1 ? 'utilizador encontrado' : 'utilizadores encontrados'}
                         {activeFiltersCount > 0 && <span> com os filtros aplicados</span>}
                       </p>
@@ -1316,19 +1318,19 @@ export default function GestaoAcessos() {
                       {isLoading ? (
                         Array(5).fill(0).map((_, i) => (
                           <TableRow key={i}>
-                            <TableCell><div className="h-4 bg-slate-200 rounded animate-pulse"></div></TableCell>
-                            <TableCell><div className="h-4 bg-slate-200 rounded animate-pulse"></div></TableCell>
-                            <TableCell><div className="h-4 bg-slate-200 rounded animate-pulse"></div></TableCell>
-                            <TableCell><div className="h-4 bg-slate-200 rounded animate-pulse"></div></TableCell>
-                            <TableCell><div className="h-6 bg-slate-200 rounded animate-pulse"></div></TableCell>
-                            <TableCell><div className="h-4 bg-slate-200 rounded animate-pulse"></div></TableCell>
-                            <TableCell><div className="h-8 bg-slate-200 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-6 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-8 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
                           </TableRow>
                         ))
                       ) : filteredUsers.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-slate-500 py-8">
-                            <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                          <TableCell colSpan={7} className="text-center text-slate-500 dark:text-slate-400 py-8">
+                            <Users className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
                             <p className="font-medium">Nenhum utilizador encontrado</p>
                             <p className="text-sm mt-1">
                               {activeFiltersCount > 0 
@@ -1342,7 +1344,7 @@ export default function GestaoAcessos() {
                           <TableCell>
                             <div>
                               <div className="font-medium">{user.full_name}</div>
-                              <div className="text-sm text-slate-500">{user.email}</div>
+                              <div className="text-sm text-slate-500 dark:text-slate-400">{user.email}</div>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -1378,7 +1380,7 @@ export default function GestaoAcessos() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="text-sm text-slate-500">
+                            <div className="text-sm text-slate-500 dark:text-slate-400">
                               {user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0
                                 ? [...new Set(user.aeroportos_acesso)].map(icao => getAeroportoNome(icao)).filter(Boolean).join(', ')
                                 : 'Nenhum'
@@ -1391,7 +1393,7 @@ export default function GestaoAcessos() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleOpenEditUserModal(user)}
-                                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                className="text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950"
                               >
                                 <Edit className="w-3 h-3 mr-1" />
                                 Editar
@@ -1402,7 +1404,7 @@ export default function GestaoAcessos() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleOpenExcluirUserModal(user)}
-                                  className="text-red-600 border-red-200 hover:bg-red-50"
+                                  className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
                                 >
                                   <Trash2 className="w-3 h-3 mr-1" />
                                   Excluir

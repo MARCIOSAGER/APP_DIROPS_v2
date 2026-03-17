@@ -24,22 +24,23 @@ import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { getAeroportosPermitidos, getEmpresaLogoByUser } from '@/components/lib/userUtils';
 import { createPdfDoc, addHeader, addFooter, addTable, loadImageAsBase64 } from '@/lib/pdfTemplate';
 import { Empresa } from '@/entities/Empresa';
+import { useI18n } from '@/components/lib/i18n';
 
 const RecentMovimentosFinanceiros = ({ movimentos }) => (
   <Card className="border-0 shadow-sm">
     <CardHeader><CardTitle className="text-lg">Movimentos Recentes</CardTitle></CardHeader>
     <CardContent>
       {movimentos.length === 0 ? (
-        <p className="text-sm text-gray-500">Nenhum movimento recente.</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400">Nenhum movimento recente.</p>
       ) : (
         <ul className="space-y-2 text-sm">
           {movimentos.map((mov) => (
             <li key={mov.id} className="flex justify-between items-center border-b pb-2 last:border-b-0 last:pb-0">
               <div className="flex-1">
                 <p className="font-medium">{mov.descricao}</p>
-                <p className="text-xs text-gray-500">{new Date(mov.data).toLocaleDateString('pt-AO')} - {mov.categoria}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">{new Date(mov.data).toLocaleDateString('pt-AO')} - {mov.categoria}</p>
               </div>
-              <span className={`font-semibold ${mov.tipo === 'receita' ? 'text-emerald-600' : 'text-red-600'}`}>
+              <span className={`font-semibold ${mov.tipo === 'receita' ? 'text-emerald-600' : 'text-red-600 dark:text-red-400'}`}>
                 {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(mov.valor_kz)}
               </span>
             </li>
@@ -51,6 +52,7 @@ const RecentMovimentosFinanceiros = ({ movimentos }) => (
 );
 
 export default function FundoManeio() {
+  const { t } = useI18n();
   const [movimentos, setMovimentos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [empresas, setEmpresas] = useState([]);
@@ -395,33 +397,33 @@ export default function FundoManeio() {
   ];
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
               <DollarSign className="w-6 md:w-8 h-6 md:h-8 text-emerald-600" />
-              Fundo de Maneio
+              {t('page.fundo_maneio.title')}
             </h1>
-            <p className="text-slate-600 mt-1">Gestão de receitas e despesas operacionais</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.fundo_maneio.subtitle')}</p>
           </div>
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
-            <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 text-slate-700 hover:bg-slate-100">
+            <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <Download className="w-4 h-4 mr-2" />
               Exportar CSV
             </Button>
-            <Button variant="outline" onClick={handleExportPDF} className="border-slate-300 text-slate-700 hover:bg-slate-100">
+            <Button variant="outline" onClick={handleExportPDF} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileText className="w-4 h-4 mr-2" />
               Exportar PDF
             </Button>
             <Button
               variant="outline"
               onClick={() => setEmailModal({ isOpen: true, subject: `Relatório Fundo de Maneio - ${new Date().toLocaleDateString('pt-AO')}`, data: filteredMovimentos })}
-              className="border-slate-300 text-slate-700 hover:bg-slate-100"
+              className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <FileDown className="w-4 h-4 mr-2" />
               Enviar Email
@@ -435,16 +437,16 @@ export default function FundoManeio() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600">Total Receitas</CardTitle></CardHeader>
-            <CardContent><div className="text-2xl font-bold text-emerald-600">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(kpiData.totalReceitas)}</div></CardContent>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Receitas</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(kpiData.totalReceitas)}</div></CardContent>
           </Card>
           <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600">Total Despesas</CardTitle></CardHeader>
-            <CardContent><div className="text-2xl font-bold text-red-600">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(kpiData.totalDespesas)}</div></CardContent>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Despesas</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold text-red-600 dark:text-red-400">{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(kpiData.totalDespesas)}</div></CardContent>
           </Card>
           <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600">Saldo</CardTitle></CardHeader>
-            <CardContent><div className={`text-2xl font-bold ${kpiData.saldo >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(kpiData.saldo)}</div></CardContent>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">Saldo</CardTitle></CardHeader>
+            <CardContent><div className={`text-2xl font-bold ${kpiData.saldo >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(kpiData.saldo)}</div></CardContent>
           </Card>
         </div>
 
@@ -453,11 +455,11 @@ export default function FundoManeio() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Filter className="w-5 h-5 text-slate-500" />
+                <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 Filtros
               </CardTitle>
               {hasActiveFilters && (
-                <Button variant="outline" size="sm" onClick={clearFilters} className="text-red-600 border-red-200 hover:bg-red-50">
+                <Button variant="outline" size="sm" onClick={clearFilters} className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950">
                   <X className="w-4 h-4 mr-1" /> Limpar Filtros
                 </Button>
               )}
@@ -538,10 +540,10 @@ export default function FundoManeio() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="hover:bg-slate-200" onClick={() => handleOpenForm(movimento)}>
-                            <Pencil className="h-4 w-4 text-slate-600" />
+                          <Button variant="ghost" size="icon" className="hover:bg-slate-200 dark:hover:bg-slate-700" onClick={() => handleOpenForm(movimento)}>
+                            <Pencil className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100" onClick={() => handleDeleteClick(movimento.id)}>
+                          <Button variant="ghost" size="icon" className="text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900" onClick={() => handleDeleteClick(movimento.id)}>
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>

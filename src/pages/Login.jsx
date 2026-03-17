@@ -153,10 +153,10 @@ export default function Login() {
 
   const switchMode = (newMode) => { setMode(newMode); setError(null); };
 
-  const inputClass = "h-11 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500/20 transition-colors";
+  const inputClass = "h-11 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500/20 transition-colors";
 
   return (
-    <div className="min-h-screen flex bg-white relative overflow-hidden">
+    <div className="min-h-screen flex bg-white dark:bg-slate-900 relative overflow-hidden">
 
       {/* Left side - Branding (dark panel, hidden on mobile) */}
       <div className="hidden lg:flex flex-1 items-center justify-center relative bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 p-12">
@@ -214,27 +214,27 @@ export default function Login() {
             <div className="inline-flex items-center gap-3 mb-2">
               <LogoDirops className="w-12 h-12 drop-shadow-md" variant="light" />
               <div className="text-left">
-                <h1 className="text-xl font-bold text-slate-900">DIROPS</h1>
-                <p className="text-slate-500 text-xs">Sistema de Gestão Aeroportuária</p>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">DIROPS</h1>
+                <p className="text-slate-500 dark:text-slate-400 text-xs">Sistema de Gestão Aeroportuária</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xl shadow-slate-200/50">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50">
 
             {/* SUCCESS STATES */}
             {mode === 'reset_sent' && (
               <div className="text-center space-y-5 py-4">
-                <div className="mx-auto w-16 h-16 bg-green-50 rounded-full flex items-center justify-center">
+                <div className="mx-auto w-16 h-16 bg-green-50 dark:bg-green-950 rounded-full flex items-center justify-center">
                   <CheckCircle2 className="w-8 h-8 text-green-500" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-slate-900">Email enviado</h3>
-                  <p className="text-slate-500 text-sm">
-                    Enviamos um link de recuperação para <strong className="text-slate-700">{email}</strong>. Verifique a sua caixa de entrada.
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Email enviado</h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">
+                    Enviamos um link de recuperação para <strong className="text-slate-700 dark:text-slate-300">{email}</strong>. Verifique a sua caixa de entrada.
                   </p>
                 </div>
-                <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 h-11" onClick={() => switchMode('login')}>
+                <Button variant="outline" className="w-full border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 h-11" onClick={() => switchMode('login')}>
                   <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao login
                 </Button>
               </div>
@@ -242,19 +242,19 @@ export default function Login() {
 
             {mode === 'register_sent' && (
               <div className="text-center space-y-5 py-4">
-                <div className="mx-auto w-16 h-16 bg-green-50 rounded-full flex items-center justify-center">
+                <div className="mx-auto w-16 h-16 bg-green-50 dark:bg-green-950 rounded-full flex items-center justify-center">
                   <CheckCircle2 className="w-8 h-8 text-green-500" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-slate-900">Conta criada</h3>
-                  <p className="text-slate-500 text-sm">
-                    Verifique o email <strong className="text-slate-700">{email}</strong> para confirmar o registo.
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Conta criada</h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">
+                    Verifique o email <strong className="text-slate-700 dark:text-slate-300">{email}</strong> para confirmar o registo.
                   </p>
                   <p className="text-slate-400 text-xs">
                     Após confirmar, faça login para solicitar o seu perfil de acesso.
                   </p>
                 </div>
-                <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 h-11" onClick={() => switchMode('login')}>
+                <Button variant="outline" className="w-full border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 h-11" onClick={() => switchMode('login')}>
                   <ArrowLeft className="w-4 h-4 mr-2" /> Ir para login
                 </Button>
               </div>
@@ -264,12 +264,12 @@ export default function Login() {
             {mode === 'mfa' && (
               <div className="space-y-6">
                 <div className="space-y-1">
-                  <h3 className="text-xl font-semibold text-slate-900">Verificação 2FA</h3>
-                  <p className="text-slate-500 text-sm">Insira o código do seu aplicativo autenticador.</p>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Verificação 2FA</h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">Insira o código do seu aplicativo autenticador.</p>
                 </div>
                 <form onSubmit={handleMfaVerify} className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-slate-600 text-sm">Código de verificação</Label>
+                    <Label className="text-slate-600 dark:text-slate-400 text-sm">Código de verificação</Label>
                     <div className="relative">
                       <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input
@@ -285,12 +285,12 @@ export default function Login() {
                       />
                     </div>
                   </div>
-                  {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3"><p className="text-red-600 text-sm">{error}</p></div>}
+                  {error && <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-3"><p className="text-red-600 dark:text-red-400 text-sm">{error}</p></div>}
                   <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium" disabled={loading || mfaCode.length !== 6}>
                     {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                     Verificar
                   </Button>
-                  <button type="button" className="w-full text-center text-sm text-slate-500 hover:text-slate-700 transition-colors" onClick={() => { setMode('login'); setMfaCode(''); setMfaFactorId(null); setError(null); }}>
+                  <button type="button" className="w-full text-center text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors" onClick={() => { setMode('login'); setMfaCode(''); setMfaFactorId(null); setError(null); }}>
                     <ArrowLeft className="w-3.5 h-3.5 inline mr-1" />Voltar ao login
                   </button>
                 </form>
@@ -301,23 +301,23 @@ export default function Login() {
             {mode === 'reset' && (
               <div className="space-y-6">
                 <div className="space-y-1">
-                  <h3 className="text-xl font-semibold text-slate-900">Recuperar senha</h3>
-                  <p className="text-slate-500 text-sm">Insira o seu email para receber o link de recuperação.</p>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Recuperar senha</h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">Insira o seu email para receber o link de recuperação.</p>
                 </div>
                 <form onSubmit={handleResetPassword} className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-slate-600 text-sm">Email</Label>
+                    <Label className="text-slate-600 dark:text-slate-400 text-sm">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required className={`${inputClass} pl-10`} />
                     </div>
                   </div>
-                  {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3"><p className="text-red-600 text-sm">{error}</p></div>}
+                  {error && <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-3"><p className="text-red-600 dark:text-red-400 text-sm">{error}</p></div>}
                   <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium" disabled={loading}>
                     {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                     Enviar link de recuperação
                   </Button>
-                  <button type="button" className="w-full text-center text-sm text-slate-500 hover:text-slate-700 transition-colors" onClick={() => switchMode('login')}>
+                  <button type="button" className="w-full text-center text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors" onClick={() => switchMode('login')}>
                     <ArrowLeft className="w-3.5 h-3.5 inline mr-1" />Voltar ao login
                   </button>
                 </form>
@@ -328,26 +328,26 @@ export default function Login() {
             {mode === 'register' && (
               <div className="space-y-6">
                 <div className="space-y-1">
-                  <h3 className="text-xl font-semibold text-slate-900">Solicitar acesso</h3>
-                  <p className="text-slate-500 text-sm">Crie a sua conta para solicitar acesso ao sistema.</p>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Solicitar acesso</h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">Crie a sua conta para solicitar acesso ao sistema.</p>
                 </div>
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-slate-600 text-sm">Nome completo</Label>
+                    <Label className="text-slate-600 dark:text-slate-400 text-sm">Nome completo</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input type="text" placeholder="Seu nome completo" value={fullName} onChange={(e) => setFullName(e.target.value)} required className={`${inputClass} pl-10`} />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-slate-600 text-sm">Email</Label>
+                    <Label className="text-slate-600 dark:text-slate-400 text-sm">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required className={`${inputClass} pl-10`} />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-slate-600 text-sm">Senha</Label>
+                    <Label className="text-slate-600 dark:text-slate-400 text-sm">Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input type={showPassword ? 'text' : 'password'} placeholder="Min. 8 caracteres, maiúscula e número" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className={`${inputClass} pl-10 pr-10`} />
@@ -357,19 +357,19 @@ export default function Login() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-slate-600 text-sm">Confirmar senha</Label>
+                    <Label className="text-slate-600 dark:text-slate-400 text-sm">Confirmar senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input type="password" placeholder="Repita a senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className={`${inputClass} pl-10`} />
                     </div>
                   </div>
-                  {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3"><p className="text-red-600 text-sm">{error}</p></div>}
+                  {error && <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-3"><p className="text-red-600 dark:text-red-400 text-sm">{error}</p></div>}
                   <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium" disabled={loading}>
                     {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                     <UserPlus className="w-4 h-4 mr-2" />
                     Criar conta
                   </Button>
-                  <button type="button" className="w-full text-center text-sm text-slate-500 hover:text-slate-700 transition-colors" onClick={() => switchMode('login')}>
+                  <button type="button" className="w-full text-center text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors" onClick={() => switchMode('login')}>
                     <ArrowLeft className="w-3.5 h-3.5 inline mr-1" />Ja tenho conta
                   </button>
                 </form>
@@ -380,12 +380,12 @@ export default function Login() {
             {mode === 'login' && (
               <div className="space-y-6">
                 <div className="space-y-1">
-                  <h3 className="text-xl font-semibold text-slate-900">Bem-vindo de volta</h3>
-                  <p className="text-slate-500 text-sm">Insira as suas credenciais para aceder ao sistema.</p>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Bem-vindo de volta</h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">Insira as suas credenciais para aceder ao sistema.</p>
                 </div>
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-slate-600 text-sm">Email</Label>
+                    <Label className="text-slate-600 dark:text-slate-400 text-sm">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required className={`${inputClass} pl-10`} />
@@ -393,7 +393,7 @@ export default function Login() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-slate-600 text-sm">Senha</Label>
+                      <Label className="text-slate-600 dark:text-slate-400 text-sm">Senha</Label>
                       <button type="button" className="text-xs text-blue-600 hover:text-blue-700 transition-colors" onClick={() => switchMode('reset')}>
                         Esqueceu a senha?
                       </button>
@@ -406,7 +406,7 @@ export default function Login() {
                       </button>
                     </div>
                   </div>
-                  {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3"><p className="text-red-600 text-sm">{error}</p></div>}
+                  {error && <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-3"><p className="text-red-600 dark:text-red-400 text-sm">{error}</p></div>}
                   <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-lg shadow-blue-600/20" disabled={loading}>
                     {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                     Entrar
@@ -414,14 +414,14 @@ export default function Login() {
                 </form>
 
                 <div className="relative">
-                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
-                  <div className="relative flex justify-center text-xs"><span className="bg-white px-3 text-slate-400">ou</span></div>
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-slate-700"></div></div>
+                  <div className="relative flex justify-center text-xs"><span className="bg-white dark:bg-slate-900 px-3 text-slate-400">ou</span></div>
                 </div>
 
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-11 border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium"
+                  className="w-full h-11 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 font-medium"
                   disabled={loading}
                   onClick={async () => {
                     setLoading(true);
@@ -446,11 +446,11 @@ export default function Login() {
                 </Button>
 
                 <div className="relative">
-                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
-                  <div className="relative flex justify-center text-xs"><span className="bg-white px-3 text-slate-400">Novo no sistema?</span></div>
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-slate-700"></div></div>
+                  <div className="relative flex justify-center text-xs"><span className="bg-white dark:bg-slate-900 px-3 text-slate-400">Novo no sistema?</span></div>
                 </div>
 
-                <Button type="button" variant="outline" className="w-full h-11 border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium" onClick={() => switchMode('register')}>
+                <Button type="button" variant="outline" className="w-full h-11 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 font-medium" onClick={() => switchMode('register')}>
                   <UserPlus className="w-4 h-4 mr-2" />
                   Solicitar acesso
                 </Button>
@@ -461,9 +461,9 @@ export default function Login() {
           <div className="text-center mt-6 space-y-1">
             <p className="text-slate-400 text-xs">DIROPS v2.0</p>
             <p className="text-slate-400 text-xs">
-              <a href="/PoliticaPrivacidade" className="hover:text-slate-600 underline">Política de Privacidade</a>
+              <a href="/PoliticaPrivacidade" className="hover:text-slate-600 dark:hover:text-slate-400 underline">Política de Privacidade</a>
               {' · '}
-              <a href="/TermosServico" className="hover:text-slate-600 underline">Termos de Serviço</a>
+              <a href="/TermosServico" className="hover:text-slate-600 dark:hover:text-slate-400 underline">Termos de Serviço</a>
             </p>
           </div>
         </div>

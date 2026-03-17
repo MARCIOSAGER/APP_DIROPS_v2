@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { isSuperAdmin } from '@/components/lib/userUtils';
 import { base44 } from '@/api/base44Client';
 import AccessDenied from '@/components/shared/AccessDenied';
+import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_OPTIONS = [
   { value: 'ativa', label: 'Ativa', className: 'bg-green-100 text-green-800' },
@@ -33,6 +34,7 @@ const EMPTY_FORM = {
 };
 
 export default function GestaoEmpresas() {
+  const { t } = useI18n();
   const { user: authUser } = useAuth();
   const [empresas, setEmpresas] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -184,15 +186,15 @@ export default function GestaoEmpresas() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Building2 className="w-7 h-7 text-blue-600" />
-            Gestão de Empresas
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Building2 className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+            {t('page.gestao_empresas.title')}
           </h1>
-          <p className="text-slate-500 mt-1">Gerir empresas, logos e associações</p>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">{t('page.gestao_empresas.subtitle')}</p>
         </div>
         <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 text-white">
           <Plus className="w-4 h-4 mr-2" />
-          Nova Empresa
+          {t('btn.new_empresa')}
         </Button>
       </div>
 
@@ -201,12 +203,12 @@ export default function GestaoEmpresas() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="bg-blue-100 rounded-full p-3">
-                <Building2 className="w-6 h-6 text-blue-600" />
+              <div className="bg-blue-100 dark:bg-blue-900 rounded-full p-3">
+                <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{empresas.length}</p>
-                <p className="text-sm text-slate-500">Empresas</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Empresas</p>
               </div>
             </div>
           </CardContent>
@@ -214,12 +216,12 @@ export default function GestaoEmpresas() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="bg-green-100 rounded-full p-3">
-                <MapPin className="w-6 h-6 text-green-600" />
+              <div className="bg-green-100 dark:bg-green-900 rounded-full p-3">
+                <MapPin className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{aeroportos.length}</p>
-                <p className="text-sm text-slate-500">Aeroportos</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Aeroportos</p>
               </div>
             </div>
           </CardContent>
@@ -227,12 +229,12 @@ export default function GestaoEmpresas() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="bg-purple-100 rounded-full p-3">
-                <Users className="w-6 h-6 text-purple-600" />
+              <div className="bg-purple-100 dark:bg-purple-900 rounded-full p-3">
+                <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{users.length}</p>
-                <p className="text-sm text-slate-500">Utilizadores</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Utilizadores</p>
               </div>
             </div>
           </CardContent>
@@ -241,7 +243,7 @@ export default function GestaoEmpresas() {
 
       {/* Search */}
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
         <Input
           placeholder="Pesquisar empresa..."
           value={searchTerm}
@@ -269,7 +271,7 @@ export default function GestaoEmpresas() {
             <TableBody>
               {filteredEmpresas.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={8} className="text-center py-8 text-slate-500 dark:text-slate-400">
                     Nenhuma empresa encontrada
                   </TableCell>
                 </TableRow>
@@ -280,29 +282,29 @@ export default function GestaoEmpresas() {
                   const statusConfig = STATUS_OPTIONS.find(s => s.value === empresa.status) || STATUS_OPTIONS[0];
 
                   return (
-                    <TableRow key={empresa.id} className="cursor-pointer hover:bg-slate-50" onClick={() => handleOpenDetail(empresa)}>
+                    <TableRow key={empresa.id} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800" onClick={() => handleOpenDetail(empresa)}>
                       <TableCell>
                         {empresa.logo_url ? (
                           <img src={empresa.logo_url} alt={empresa.nome} className="h-8 w-auto max-w-[60px] object-contain" />
                         ) : (
-                          <div className="h-8 w-8 bg-slate-100 rounded flex items-center justify-center">
-                            <Building2 className="w-4 h-4 text-slate-400" />
+                          <div className="h-8 w-8 bg-slate-100 dark:bg-slate-800 rounded flex items-center justify-center">
+                            <Building2 className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                           </div>
                         )}
                       </TableCell>
                       <TableCell className="font-medium">{empresa.nome}</TableCell>
-                      <TableCell className="text-slate-600">{empresa.nif || '—'}</TableCell>
-                      <TableCell className="text-slate-600 text-sm">
+                      <TableCell className="text-slate-600 dark:text-slate-400">{empresa.nif || '—'}</TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-400 text-sm">
                         {empresa.email || empresa.telefone || '—'}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-green-50">
+                        <Badge variant="outline" className="bg-green-50 dark:bg-green-950">
                           <MapPin className="w-3 h-3 mr-1" />
                           {numAeroportos}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-blue-50">
+                        <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950">
                           <Users className="w-3 h-3 mr-1" />
                           {numUsers}
                         </Badge>
@@ -313,13 +315,13 @@ export default function GestaoEmpresas() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="icon" onClick={() => handleOpenDetail(empresa)} title="Ver detalhes">
-                            <Eye className="w-4 h-4 text-slate-500" />
+                            <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(empresa)} title="Editar">
-                            <Edit className="w-4 h-4 text-blue-600" />
+                            <Edit className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => handleDelete(empresa)} title="Eliminar">
-                            <Trash2 className="w-4 h-4 text-red-500" />
+                            <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
                           </Button>
                         </div>
                       </TableCell>
@@ -337,7 +339,7 @@ export default function GestaoEmpresas() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-blue-600" />
+              <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               {editingEmpresa ? 'Editar Empresa' : 'Nova Empresa'}
             </DialogTitle>
             <DialogDescription>
@@ -353,14 +355,14 @@ export default function GestaoEmpresas() {
                 {formData.logo_url ? (
                   <img src={formData.logo_url} alt="Logo" className="h-12 w-auto max-w-[120px] object-contain border rounded p-1" />
                 ) : (
-                  <div className="h-12 w-12 bg-slate-100 rounded flex items-center justify-center border">
-                    <Building2 className="w-6 h-6 text-slate-400" />
+                  <div className="h-12 w-12 bg-slate-100 dark:bg-slate-800 rounded flex items-center justify-center border dark:border-slate-700">
+                    <Building2 className="w-6 h-6 text-slate-400 dark:text-slate-500" />
                   </div>
                 )}
                 <div className="flex gap-2">
                   <label className="cursor-pointer">
                     <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                    <span className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-slate-50">
+                    <span className="inline-flex items-center gap-1 px-3 py-2 text-sm border dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800">
                       <Upload className="w-4 h-4" />
                       {isUploading ? 'A carregar...' : 'Upload'}
                     </span>
@@ -372,7 +374,7 @@ export default function GestaoEmpresas() {
                   )}
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Quando não houver logo, será exibido o logo DIROPS padrão.
               </p>
             </div>
@@ -393,7 +395,7 @@ export default function GestaoEmpresas() {
                   id="status"
                   value={formData.status}
                   onChange={(e) => handleChange('status', e.target.value)}
-                  className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full h-10 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md text-sm bg-white dark:bg-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
                   {STATUS_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -429,7 +431,7 @@ export default function GestaoEmpresas() {
                 id="observacoes"
                 value={formData.observacoes}
                 onChange={(e) => handleChange('observacoes', e.target.value)}
-                className="w-full min-h-[80px] px-3 py-2 border border-slate-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
+                className="w-full min-h-[80px] px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md text-sm bg-white dark:bg-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
               />
             </div>
           </div>
@@ -455,7 +457,7 @@ export default function GestaoEmpresas() {
               {selectedEmpresa?.logo_url ? (
                 <img src={selectedEmpresa.logo_url} alt="" className="h-8 w-auto max-w-[80px] object-contain" />
               ) : (
-                <Building2 className="w-6 h-6 text-blue-600" />
+                <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               )}
               {selectedEmpresa?.nome}
             </DialogTitle>
@@ -467,54 +469,54 @@ export default function GestaoEmpresas() {
               {/* Info Grid */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-slate-500">NIF:</span>
+                  <span className="text-slate-500 dark:text-slate-400">NIF:</span>
                   <span className="ml-2 font-medium">{selectedEmpresa.nif || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500">Status:</span>
+                  <span className="text-slate-500 dark:text-slate-400">Status:</span>
                   <Badge className={`ml-2 ${STATUS_OPTIONS.find(s => s.value === selectedEmpresa.status)?.className || ''}`}>
                     {selectedEmpresa.status || 'ativa'}
                   </Badge>
                 </div>
                 <div>
-                  <span className="text-slate-500">Telefone:</span>
+                  <span className="text-slate-500 dark:text-slate-400">Telefone:</span>
                   <span className="ml-2">{selectedEmpresa.telefone || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500">Email:</span>
+                  <span className="text-slate-500 dark:text-slate-400">Email:</span>
                   <span className="ml-2">{selectedEmpresa.email || '—'}</span>
                 </div>
                 {selectedEmpresa.endereco && (
                   <div className="col-span-2">
-                    <span className="text-slate-500">Endereço:</span>
+                    <span className="text-slate-500 dark:text-slate-400">Endereço:</span>
                     <span className="ml-2">{selectedEmpresa.endereco}</span>
                   </div>
                 )}
                 {selectedEmpresa.website && (
                   <div className="col-span-2">
-                    <span className="text-slate-500">Website:</span>
-                    <a href={selectedEmpresa.website} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 hover:underline">{selectedEmpresa.website}</a>
+                    <span className="text-slate-500 dark:text-slate-400">Website:</span>
+                    <a href={selectedEmpresa.website} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 dark:text-blue-400 hover:underline">{selectedEmpresa.website}</a>
                   </div>
                 )}
               </div>
 
               {/* Aeroportos */}
               <div>
-                <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
-                  <MapPin className="w-4 h-4 text-green-600" />
+                <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-3">
+                  <MapPin className="w-4 h-4 text-green-600 dark:text-green-400" />
                   Aeroportos ({getAeroportosDaEmpresa(selectedEmpresa.id).length})
                 </h3>
                 <div className="space-y-2">
                   {getAeroportosDaEmpresa(selectedEmpresa.id).length === 0 ? (
-                    <p className="text-sm text-slate-500 italic">Nenhum aeroporto associado.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 italic">Nenhum aeroporto associado.</p>
                   ) : (
                     getAeroportosDaEmpresa(selectedEmpresa.id).map(aeroporto => (
-                      <div key={aeroporto.id} className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                      <div key={aeroporto.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-950 rounded">
                         <div>
                           <span className="font-medium text-sm">{aeroporto.nome}</span>
                           <Badge variant="outline" className="ml-2 text-xs">{aeroporto.codigo_icao}</Badge>
                         </div>
-                        <Badge className={aeroporto.status === 'operacional' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}>
+                        <Badge className={aeroporto.status === 'operacional' ? 'bg-green-100 text-green-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}>
                           {aeroporto.status || 'operacional'}
                         </Badge>
                       </div>
@@ -525,19 +527,19 @@ export default function GestaoEmpresas() {
 
               {/* Utilizadores */}
               <div>
-                <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
-                  <Users className="w-4 h-4 text-purple-600" />
+                <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   Utilizadores ({getUsersDaEmpresa(selectedEmpresa.id).length})
                 </h3>
                 <div className="space-y-2">
                   {getUsersDaEmpresa(selectedEmpresa.id).length === 0 ? (
-                    <p className="text-sm text-slate-500 italic">Nenhum utilizador associado.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 italic">Nenhum utilizador associado.</p>
                   ) : (
                     getUsersDaEmpresa(selectedEmpresa.id).map(u => (
-                      <div key={u.id} className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                      <div key={u.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-950 rounded">
                         <div>
                           <span className="font-medium text-sm">{u.full_name || u.email}</span>
-                          <span className="text-xs text-slate-500 ml-2">{u.email}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">{u.email}</span>
                         </div>
                         <div className="flex gap-1">
                           {(u.perfis || []).map(p => (
@@ -552,8 +554,8 @@ export default function GestaoEmpresas() {
 
               {selectedEmpresa.observacoes && (
                 <div>
-                  <h3 className="font-semibold text-slate-800 mb-2">Observações</h3>
-                  <p className="text-sm text-slate-600">{selectedEmpresa.observacoes}</p>
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Observações</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{selectedEmpresa.observacoes}</p>
                 </div>
               )}
             </div>

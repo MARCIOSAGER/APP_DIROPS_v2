@@ -19,8 +19,10 @@ import SendEmailModal from '../components/shared/SendEmailModal';
 import { downloadAsCSV } from '../components/lib/export';
 import AlertModal from '../components/shared/AlertModal';
 import { hasUserProfile } from '@/components/lib/userUtils';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function Credenciamento() {
+  const { t } = useI18n();
   const [credenciamentos, setCredenciamentos] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -319,12 +321,12 @@ export default function Credenciamento() {
   const isGestorEmpresa = hasUserProfile(currentUser, 'gestor_empresa');
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Gestão de Credenciamentos</h1>
-            <p className="text-slate-600">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('page.credenciamento.title')}</h1>
+            <p className="text-slate-600 dark:text-slate-400">
               {isGestorEmpresa 
                 ? 'Portal de gestão das suas solicitações de credencial' 
                 : 'Sistema de gestão de credenciais aeroportuárias'
@@ -332,11 +334,11 @@ export default function Credenciamento() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-            <Button variant="outline" onClick={loadData} disabled={isLoading} className="border-slate-300 text-slate-700 hover:bg-slate-100">
+            <Button variant="outline" onClick={loadData} disabled={isLoading} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
-            <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 text-slate-700 hover:bg-slate-100">
+            <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileDown className="w-4 h-4 mr-2" />
               Exportar CSV
             </Button>

@@ -6,34 +6,34 @@ import { AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react';
 const ALERT_TYPES = {
   success: {
     icon: CheckCircle,
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
-    iconColor: 'text-green-600',
-    titleColor: 'text-green-900',
+    bgColor: 'bg-green-50 dark:bg-green-950',
+    borderColor: 'border-green-200 dark:border-green-700',
+    iconColor: 'text-green-600 dark:text-green-400',
+    titleColor: 'text-green-900 dark:text-green-100',
     buttonColor: 'bg-green-600 hover:bg-green-700'
   },
   error: {
     icon: XCircle,
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
-    iconColor: 'text-red-600',
-    titleColor: 'text-red-900',
+    bgColor: 'bg-red-50 dark:bg-red-950',
+    borderColor: 'border-red-200 dark:border-red-700',
+    iconColor: 'text-red-600 dark:text-red-400',
+    titleColor: 'text-red-900 dark:text-red-100',
     buttonColor: 'bg-red-600 hover:bg-red-700'
   },
   warning: {
     icon: AlertTriangle,
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-200',
-    iconColor: 'text-yellow-600',
-    titleColor: 'text-yellow-900',
+    bgColor: 'bg-yellow-50 dark:bg-yellow-950',
+    borderColor: 'border-yellow-200 dark:border-yellow-700',
+    iconColor: 'text-yellow-600 dark:text-yellow-400',
+    titleColor: 'text-yellow-900 dark:text-yellow-100',
     buttonColor: 'bg-yellow-600 hover:bg-yellow-700'
   },
   info: {
     icon: Info,
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    iconColor: 'text-blue-600',
-    titleColor: 'text-blue-900',
+    bgColor: 'bg-blue-50 dark:bg-blue-950',
+    borderColor: 'border-blue-200 dark:border-blue-700',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+    titleColor: 'text-blue-900 dark:text-blue-100',
     buttonColor: 'bg-blue-600 hover:bg-blue-700'
   }
 };
@@ -66,7 +66,7 @@ export default function AlertModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className={`sm:max-w-md ${config.bgColor} ${config.borderColor} border-2`}>
         <DialogHeader className="text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white mb-4 shadow-sm">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white dark:bg-slate-900 mb-4 shadow-sm">
             <IconComponent className={`h-8 w-8 ${config.iconColor}`} />
           </div>
           <DialogTitle className={`text-xl font-semibold ${config.titleColor}`}>
@@ -75,7 +75,7 @@ export default function AlertModal({
         </DialogHeader>
         
         <div className="text-center">
-          <p className="text-gray-700 mb-6 whitespace-pre-line">{message}</p>
+          <p className="text-gray-700 dark:text-slate-300 mb-6 whitespace-pre-line">{message}</p>
         </div>
 
         {children || (

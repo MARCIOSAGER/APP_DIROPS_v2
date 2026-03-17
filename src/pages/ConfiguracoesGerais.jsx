@@ -197,32 +197,32 @@ export default function ConfiguracoesGerais() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-700">A carregar configuracoes...</p>
+          <p className="text-slate-700 dark:text-slate-300">A carregar configuracoes...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
+    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Configuracoes Gerais</h1>
-          <p className="text-slate-600 mt-1">Gerir configuracoes do sistema</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Configuracoes Gerais</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Gerir configuracoes do sistema</p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 border-b border-slate-300 bg-white rounded-t-lg p-4">
+        <div className="flex gap-2 border-b border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-t-lg p-4">
           <button
             onClick={() => setActiveTab('smtp')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'smtp' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'smtp' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <Mail className="w-4 h-4 inline mr-2" />
             Email (SMTP)
           </button>
           <button
             onClick={() => setActiveTab('geral')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'geral' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'geral' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <Settings className="w-4 h-4 inline mr-2" />
             Geral
@@ -251,7 +251,7 @@ export default function ConfiguracoesGerais() {
                     onChange={(e) => handleSmtpChange('smtp_host', e.target.value)}
                     placeholder="smtp.gmail.com"
                   />
-                  <p className="text-xs text-slate-500">Ex: smtp.gmail.com, smtp.office365.com, mail.dominio.com</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Ex: smtp.gmail.com, smtp.office365.com, mail.dominio.com</p>
                 </div>
                 <div className="space-y-2">
                   <Label>Porta</Label>
@@ -260,7 +260,7 @@ export default function ConfiguracoesGerais() {
                     onChange={(e) => handleSmtpChange('smtp_port', e.target.value)}
                     placeholder="587"
                   />
-                  <p className="text-xs text-slate-500">587 (TLS) ou 465 (SSL) - Recomendado: 587</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">587 (TLS) ou 465 (SSL) - Recomendado: 587</p>
                 </div>
               </div>
 
@@ -292,7 +292,7 @@ export default function ConfiguracoesGerais() {
                       {showSmtpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-slate-500">Para Gmail, use uma "Senha de App" gerada nas configuracoes de seguranca</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Para Gmail, use uma "Senha de App" gerada nas configuracoes de seguranca</p>
                 </div>
               </div>
 
@@ -318,7 +318,7 @@ export default function ConfiguracoesGerais() {
               </div>
 
               {/* TLS toggle */}
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                 <input
                   type="checkbox"
                   id="smtp_secure"
@@ -340,7 +340,7 @@ export default function ConfiguracoesGerais() {
                   onChange={(e) => handleSmtpChange('email_notificacoes_padrao', e.target.value)}
                   placeholder="admin@sga.co.ao"
                 />
-                <p className="text-xs text-slate-500">Email que recebera notificacoes administrativas (novos usuarios, alertas, etc.)</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Email que recebera notificacoes administrativas (novos usuarios, alertas, etc.)</p>
               </div>
 
               {/* Actions */}
@@ -358,12 +358,12 @@ export default function ConfiguracoesGerais() {
 
               {/* Test status */}
               {smtpTestStatus === 'success' && (
-                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-300 text-sm">
                   <CheckCircle2 className="w-4 h-4" /> Email de teste enviado com sucesso!
                 </div>
               )}
               {smtpTestStatus === 'error' && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
                   <AlertCircle className="w-4 h-4" /> Falha ao enviar email de teste. Verifique as configuracoes.
                 </div>
               )}
@@ -373,10 +373,10 @@ export default function ConfiguracoesGerais() {
 
         {/* Info card SMTP */}
         {activeTab === 'smtp' && (
-          <Card className="shadow-sm bg-blue-50 border-blue-200">
+          <Card className="shadow-sm bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
             <CardContent className="pt-6">
-              <h3 className="font-semibold text-blue-900 mb-2">Informacao Importante</h3>
-              <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Informacao Importante</h3>
+              <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
                 <li><strong>Gmail:</strong> Use smtp.gmail.com, porta 587, e gere uma "Senha de App" em myaccount.google.com</li>
                 <li><strong>Outlook/Office 365:</strong> Use smtp.office365.com, porta 587</li>
                 <li><strong>Servidor proprio:</strong> Consulte o administrador do seu servidor de email</li>
@@ -400,7 +400,7 @@ export default function ConfiguracoesGerais() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-slate-500">
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                 <Settings className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p>Outras configuracoes serao adicionadas aqui conforme necessario.</p>
               </div>

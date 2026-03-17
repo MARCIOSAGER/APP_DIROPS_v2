@@ -25,7 +25,7 @@ function SignalBars({ bars, barColor }) {
       {[1, 2, 3, 4].map(i => (
         <div
           key={i}
-          className={`w-[3px] rounded-sm transition-colors duration-500 ${i <= bars ? barColor : 'bg-slate-200'}`}
+          className={`w-[3px] rounded-sm transition-colors duration-500 ${i <= bars ? barColor : 'bg-slate-200 dark:bg-slate-700'}`}
           style={{ height: `${4 + i * 3}px` }}
         />
       ))}
@@ -98,7 +98,7 @@ export default function NetworkIndicator() {
 
   return (
     <div
-      className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-slate-200 bg-slate-50 select-none cursor-pointer hover:bg-slate-100 transition-colors"
+      className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 select-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
       title={`Latência: ${latency !== null ? latency + ' ms' : 'N/A'} (mediana de ${samplesRef.current.length} amostras)\nClique para medir agora`}
       onClick={ping}
     >

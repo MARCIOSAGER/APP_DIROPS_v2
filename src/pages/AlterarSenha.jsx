@@ -120,10 +120,10 @@ export default function AlterarSenha() {
 
   if (loadingUser) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 mb-4" />
-          <p className="text-lg text-slate-700">A carregar...</p>
+          <p className="text-lg text-slate-700 dark:text-slate-300">A carregar...</p>
         </div>
       </div>
     );
@@ -131,25 +131,25 @@ export default function AlterarSenha() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
           <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Senha Alterada com Sucesso!</h2>
-          <p className="text-slate-600">A redirecionar...</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">Senha Alterada com Sucesso!</h2>
+          <p className="text-slate-600 dark:text-slate-400">A redirecionar...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4">
       <div className="max-w-md mx-auto">
         <div className="text-center mb-8">
-          <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-8 h-8 text-blue-600" />
+          <div className="bg-blue-100 dark:bg-blue-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900">Definir Nova Senha</h1>
-          <p className="text-slate-600 mt-2">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Definir Nova Senha</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
             {user ? `Olá ${user.full_name || user.email}! ` : ''}Por favor, defina uma nova senha para a sua conta.
           </p>
         </div>
@@ -181,7 +181,7 @@ export default function AlterarSenha() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -203,15 +203,15 @@ export default function AlterarSenha() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-4 rounded-lg space-y-2">
-                <p className="text-sm font-medium text-slate-700 mb-2">Requisitos da senha:</p>
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg space-y-2">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Requisitos da senha:</p>
                 {passwordRequirements.map((req, index) => (
                   <div key={index} className="flex items-center gap-2 text-sm">
                     {req.met ? (
@@ -219,7 +219,7 @@ export default function AlterarSenha() {
                     ) : (
                       <XCircle className="w-4 h-4 text-slate-300" />
                     )}
-                    <span className={req.met ? 'text-green-600' : 'text-slate-500'}>
+                    <span className={req.met ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}>
                       {req.label}
                     </span>
                   </div>

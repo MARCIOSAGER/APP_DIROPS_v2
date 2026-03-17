@@ -35,6 +35,7 @@ import { registarExclusao, registarExportacao } from '@/components/lib/auditoria
 import { createPdfDoc, addHeader, addFooter, addTable, addInfoBox, addSectionTitle, checkPageBreak, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
+import { useI18n } from '@/components/lib/i18n';
 
 const CATEGORIA_COLORS = {
   operacional: 'bg-blue-100 text-blue-800',
@@ -44,6 +45,7 @@ const CATEGORIA_COLORS = {
 };
 
 export default function KPIsOperacionais() {
+  const { t } = useI18n();
   const [currentUser, setCurrentUser] = useState(null); // Added currentUser state
   const [tiposKPI, setTiposKPI] = useState([]);
   const [medicoesKPI, setMedicoesKPI] = useState([]); // Changed from medicoes to medicoesKPI
@@ -856,14 +858,14 @@ Por favor tente novamente ou contacte o suporte técnico.`;
   };
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-              KPIs Operacionais
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100">
+              {t('page.kpis.title')}
             </h1>
-            <p className="text-slate-600 mt-1">Gestão dinâmica das medições de desempenho operacional</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.kpis.subtitle')}</p>
           </div>
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
@@ -890,11 +892,11 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <Trash2 className="w-4 h-4 mr-2" />
               Excluir {selectedMedicoes.length > 0 && `(${selectedMedicoes.length})`}
             </Button>
-            <Button variant="outline" onClick={() => setIsAnalisadorOpen(true)} className="border-purple-300 text-purple-700 hover:bg-purple-50">
+            <Button variant="outline" onClick={() => setIsAnalisadorOpen(true)} className="border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950">
               <Brain className="w-4 h-4 mr-2" />
               Análise IA
             </Button>
-            <Button variant="outline" onClick={() => setIsAssistenteOpen(true)} className="border-blue-300 text-blue-700 hover:bg-blue-50">
+            <Button variant="outline" onClick={() => setIsAssistenteOpen(true)} className="border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950">
               <FileEdit className="w-4 h-4 mr-2" />
               Gerar Relatório
             </Button>
@@ -903,7 +905,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               Configurar KPIs
             </Button>
             {(currentUser?.role === 'admin' || (currentUser?.perfis && currentUser.perfis.includes('administrador'))) && (
-              <Button variant="outline" onClick={() => setIsDiagnosticoOpen(true)} className="border-orange-300 text-orange-700 hover:bg-orange-50">
+              <Button variant="outline" onClick={() => setIsDiagnosticoOpen(true)} className="border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950">
                 <AlertTriangle className="w-4 h-4 mr-2" />
                 Verificar Duplicações
               </Button>
@@ -917,10 +919,10 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Tipos de KPI</p>
-                  <p className="text-3xl font-bold text-slate-900">{tiposKPI.length}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Tipos de KPI</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{tiposKPI.length}</p>
                 </div>
-                <Settings className="h-8 w-8 text-blue-600" />
+                <Settings className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
             </CardContent>
           </Card>
@@ -929,10 +931,10 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Medições Total</p>
-                  <p className="text-3xl font-bold text-slate-900">{medicoesKPI.length}</p> {/* Changed medicoes to medicoesKPI */}
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Medições Total</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{medicoesKPI.length}</p> {/* Changed medicoes to medicoesKPI */}
                 </div>
-                <ClipboardCheck className="h-8 w-8 text-green-600" />
+                <ClipboardCheck className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
             </CardContent>
           </Card>
@@ -941,12 +943,12 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Hoje</p>
-                  <p className="text-3xl font-bold text-orange-600">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Hoje</p>
+                  <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                     {medicoesKPI.filter((m) => m.data_medicao === new Date().toISOString().split('T')[0]).length} {/* Changed medicoes to medicoesKPI */}
                   </p>
                 </div>
-                <ClipboardCheck className="h-8 w-8 text-orange-600" />
+                <ClipboardCheck className="h-8 w-8 text-orange-600 dark:text-orange-400" />
               </div>
             </CardContent>
           </Card>
@@ -955,12 +957,12 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Dentro da Meta</p>
-                  <p className="text-3xl font-bold text-blue-600">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Dentro da Meta</p>
+                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                     {medicoesKPI.filter((m) => m.dentro_da_meta).length} {/* Changed medicoes to medicoesKPI */}
                   </p>
                 </div>
-                <ClipboardCheck className="h-8 w-8 text-blue-600" />
+                <ClipboardCheck className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
             </CardContent>
           </Card>
@@ -995,11 +997,11 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Filter className="w-5 h-5 text-slate-500" />
+                    <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     Filtros de Pesquisa
                   </CardTitle>
                   {hasActiveFilters &&
-                  <Button variant="outline" size="sm" onClick={clearFilters} className="text-red-600 border-red-200 hover:bg-red-50">
+                  <Button variant="outline" size="sm" onClick={clearFilters} className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950">
                       <X className="w-4 h-4 mr-1" />
                       Limpar Filtros
                     </Button>
@@ -1047,7 +1049,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                   <div className="lg:col-span-4">
                     <Label htmlFor="numeroVoo">Número do Voo</Label>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
                       <Input
                         id="numeroVoo"
                         placeholder="Buscar por número do voo"
@@ -1070,15 +1072,15 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                 {isLoading ?
                 <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-slate-500 mt-2">A carregar medições...</p>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2">A carregar medições...</p>
                   </div> :
                 filteredAndSortedMedicoes.length === 0 ?
                 <div className="text-center py-8 text-slate-500">
-                    <ClipboardCheck className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                    <ClipboardCheck className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
                       Nenhuma medição encontrada
                     </h3>
-                    <p className="text-slate-500">
+                    <p className="text-slate-500 dark:text-slate-400">
                       Não há medições de KPI que correspondam aos filtros selecionados.
                     </p>
                   </div> :
@@ -1178,9 +1180,9 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                               </TableCell>
                               <TableCell>
                                 <div className="text-xs">
-                                  <div className="font-medium text-slate-700">{medicao.updated_by || medicao.created_by || '-'}</div>
+                                  <div className="font-medium text-slate-700 dark:text-slate-300">{medicao.updated_by || medicao.created_by || '-'}</div>
                                   {(medicao.updated_date || medicao.created_date) && (
-                                    <div className="text-slate-500">
+                                    <div className="text-slate-500 dark:text-slate-400">
                                       {format(new Date(medicao.updated_date || medicao.created_date), 'dd/MM/yyyy HH:mm', { locale: pt })}
                                     </div>
                                   )}
@@ -1200,7 +1202,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleDeleteClick(medicao.id)}
-                                  className="text-red-600 hover:text-red-800 hover:bg-red-50">
+                                  className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950">
 
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
@@ -1237,12 +1239,12 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-slate-600 text-sm mb-3">{tipo.descricao}</p>
+                        <p className="text-slate-600 dark:text-slate-400 text-sm mb-3">{tipo.descricao}</p>
                         <div className="flex justify-between items-center">
                           <Badge className={CATEGORIA_COLORS[tipo.categoria] || 'bg-gray-100 text-gray-800'}>
                             {tipo.categoria}
                           </Badge>
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
                             Meta: {tipo.meta_objetivo !== null && tipo.meta_objetivo !== undefined ? `${tipo.meta_objetivo} ${tipo.unidade_medida || ''}` : 'N/A'}
                           </span>
                         </div>
@@ -1253,11 +1255,11 @@ Por favor tente novamente ou contacte o suporte técnico.`;
 
                 {sortedTiposKPI.length === 0 &&
                 <div className="text-center py-8 text-slate-500">
-                    <Settings className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                    <Settings className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
                       Nenhum tipo de KPI configurado
                     </h3>
-                    <p className="text-slate-500 mb-4">
+                    <p className="text-slate-500 dark:text-slate-400 mb-4">
                       Configure os tipos de KPI primeiro na secção de configurações.
                     </p>
                     <Button onClick={() => setIsConfigOpen(true)}>
@@ -1283,7 +1285,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <Card className="border-0 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-blue-600" />
+                  <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   Relatório Power BI - KPIs Operacionais
                 </CardTitle>
               </CardHeader>

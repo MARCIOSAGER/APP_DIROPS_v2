@@ -49,6 +49,7 @@ import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
 import { hasUserProfile, ensureUserProfilesExist, getAeroportosPermitidos, filtrarDadosPorAcesso, filtrarDadosPorAeroportoId, isSuperAdmin, getEmailsEmpresa, filtrarDadosPorCriador } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
+import { useI18n } from '@/components/lib/i18n';
 
 import { getDashboardStats } from '@/functions/getDashboardStats';
 
@@ -56,6 +57,7 @@ const formatCurrency = (value) =>
 new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(value || 0);
 
 export default function DashboardInterno() {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [voos, setVoos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -376,7 +378,7 @@ export default function DashboardInterno() {
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Dashboard Operacional</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('page.home.title')}</h1>
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
               Sistema DIROPS • {new Date().toLocaleDateString('pt-AO')}
             </p>
@@ -437,7 +439,7 @@ export default function DashboardInterno() {
         {isLoading ?
         <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-slate-600">{loadingStatus}</p>
+            <p className="mt-4 text-slate-600 dark:text-slate-400">{loadingStatus}</p>
           </div> :
 
         <>
@@ -461,8 +463,8 @@ export default function DashboardInterno() {
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-7 gap-3">
                   <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-blue-50">
-                        <Plane className="h-4 w-4 text-blue-600" />
+                      <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950">
+                        <Plane className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
@@ -481,8 +483,8 @@ export default function DashboardInterno() {
 
                   <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-sky-50">
-                        <Plane className="h-4 w-4 text-sky-600" />
+                      <div className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950">
+                        <Plane className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
@@ -493,8 +495,8 @@ export default function DashboardInterno() {
 
                   <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-cyan-50">
-                        <Plane className="h-4 w-4 text-cyan-600" />
+                      <div className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-950">
+                        <Plane className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
@@ -505,8 +507,8 @@ export default function DashboardInterno() {
 
                   <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-green-50">
-                        <Clock className="h-4 w-4 text-green-600" />
+                      <div className="p-1.5 rounded-lg bg-green-50 dark:bg-green-950">
+                        <Clock className="h-4 w-4 text-green-600 dark:text-green-400" />
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
@@ -520,8 +522,8 @@ export default function DashboardInterno() {
 
                   <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className={`p-1.5 rounded-lg ${(dashboardStats?.ocorrenciasAbertas || 0) > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
-                        <ShieldAlert className={`h-4 w-4 ${(dashboardStats?.ocorrenciasAbertas || 0) > 0 ? 'text-red-600' : 'text-gray-600'}`} />
+                      <div className={`p-1.5 rounded-lg ${(dashboardStats?.ocorrenciasAbertas || 0) > 0 ? 'bg-red-50 dark:bg-red-950' : 'bg-gray-50 dark:bg-gray-900'}`}>
+                        <ShieldAlert className={`h-4 w-4 ${(dashboardStats?.ocorrenciasAbertas || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
@@ -532,8 +534,8 @@ export default function DashboardInterno() {
 
                   <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-yellow-50">
-                        <ClipboardCheck className="h-4 w-4 text-yellow-600" />
+                      <div className="p-1.5 rounded-lg bg-yellow-50 dark:bg-yellow-950">
+                        <ClipboardCheck className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
@@ -544,8 +546,8 @@ export default function DashboardInterno() {
 
                   <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-indigo-50">
-                        <Users className="h-4 w-4 text-indigo-600" />
+                      <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950">
+                        <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
@@ -579,7 +581,7 @@ export default function DashboardInterno() {
                                 <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Total de Voos Ligados</p>
                                 <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats.voosLigados || 0}</p>
                               </div>
-                              <div className="bg-blue-50 text-blue-600 p-2 rounded-lg">
+                              <div className="bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 p-2 rounded-lg">
                                 <LinkIcon className="w-5 h-5" />
                               </div>
                             </div>
@@ -593,7 +595,7 @@ export default function DashboardInterno() {
                                 <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Tempo Médio Permanência</p>
                                 <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{(dashboardStats.tempoMedioPermanencia || 0).toFixed(2)}h</p>
                               </div>
-                              <div className="bg-orange-50 text-orange-600 p-2 rounded-lg">
+                              <div className="bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400 p-2 rounded-lg">
                                 <Timer className="w-5 h-5" />
                               </div>
                             </div>
@@ -607,7 +609,7 @@ export default function DashboardInterno() {
                                 <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Total de Tarifas</p>
                                 <p className="text-slate-900 dark:text-slate-100 text-lg font-bold">{formatCurrency(dashboardStats.totalTarifas || 0)}</p>
                               </div>
-                              <div className="flex-shrink-0 bg-green-50 text-green-600 p-2 rounded-lg">
+                              <div className="flex-shrink-0 bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 p-2 rounded-lg">
                                 <DollarSign className="w-5 h-5" />
                               </div>
                             </div>
@@ -621,7 +623,7 @@ export default function DashboardInterno() {
                                 <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Voos Sem Cálculo</p>
                                 <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats.voosSemCalculo || 0}</p>
                               </div>
-                              <div className="bg-red-50 text-red-600 p-2 rounded-lg">
+                              <div className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 p-2 rounded-lg">
                                 <AlertCircle className="w-5 h-5" />
                               </div>
                             </div>
@@ -635,7 +637,7 @@ export default function DashboardInterno() {
                                 <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Voos Isentos</p>
                                 <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats.voosIsentos || 0}</p>
                               </div>
-                              <div className="bg-yellow-50 text-yellow-600 p-2 rounded-lg">
+                              <div className="bg-yellow-50 dark:bg-yellow-950 text-yellow-600 dark:text-yellow-400 p-2 rounded-lg">
                                 <ShieldCheck className="w-5 h-5" />
                               </div>
                             </div>
@@ -657,40 +659,40 @@ export default function DashboardInterno() {
                     <CardContent>
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                         {dashboardStats.top10Aeroportos.map((aeroporto, index) =>
-                  <Card key={aeroporto.id || aeroporto.codigo_icao} className="border-slate-200 hover:shadow-md transition-shadow">
+                  <Card key={aeroporto.id || aeroporto.codigo_icao} className="border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
                             <CardContent className="p-3">
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-base font-bold text-slate-400">#{index + 1}</span>
-                                    <span className="text-xs font-bold text-blue-600">{aeroporto.codigo || aeroporto.codigo_icao || ''}</span>
+                                    <span className="text-base font-bold text-slate-400 dark:text-slate-500">#{index + 1}</span>
+                                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{aeroporto.codigo || aeroporto.codigo_icao || ''}</span>
                                   </div>
-                                  <p className="text-[10px] text-slate-500">{aeroporto.cidade || ''}</p>
+                                  <p className="text-[10px] text-slate-500 dark:text-slate-400">{aeroporto.cidade || ''}</p>
                                 </div>
                               </div>
 
                               <div className="space-y-1.5">
                                 <div className="bg-slate-50 dark:bg-slate-800 rounded p-1.5">
-                                  <p className="text-[10px] text-slate-600 mb-0.5">Movimentos:</p>
-                                  <p className="text-base font-bold text-slate-900">{aeroporto.totalMovimentos || 0}</p>
+                                  <p className="text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">Movimentos:</p>
+                                  <p className="text-base font-bold text-slate-900 dark:text-slate-100">{aeroporto.totalMovimentos || 0}</p>
                                   <div className="flex justify-between text-[10px] mt-0.5">
                                     <span className="text-green-600">ARR: {aeroporto.movimentosArr || aeroporto.arr || 0}</span>
                                     <span className="text-purple-600">DEP: {aeroporto.movimentosDep || aeroporto.dep || 0}</span>
                                   </div>
                                 </div>
 
-                                <div className="bg-blue-50 rounded p-1.5">
-                                  <p className="text-[10px] text-slate-600 mb-0.5">Passageiros:</p>
-                                  <p className="text-base font-bold text-blue-900">{(aeroporto.passageiros || 0).toLocaleString()}</p>
+                                <div className="bg-blue-50 dark:bg-blue-950 rounded p-1.5">
+                                  <p className="text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">Passageiros:</p>
+                                  <p className="text-base font-bold text-blue-900 dark:text-blue-300">{(aeroporto.passageiros || 0).toLocaleString()}</p>
                                   <div className="flex justify-between text-[10px] mt-0.5">
                                     <span className="text-green-600">ARR: {(aeroporto.passageirosArr || 0).toLocaleString()}</span>
                                     <span className="text-purple-600">DEP: {(aeroporto.passageirosDep || 0).toLocaleString()}</span>
                                   </div>
                                 </div>
 
-                                <div className="bg-orange-50 rounded p-1.5">
-                                  <p className="text-[10px] text-slate-600 mb-0.5">Carga Total:</p>
-                                  <p className="text-base font-bold text-orange-900">{(aeroporto.carga || 0).toLocaleString()} kg</p>
+                                <div className="bg-orange-50 dark:bg-orange-950 rounded p-1.5">
+                                  <p className="text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">Carga Total:</p>
+                                  <p className="text-base font-bold text-orange-900 dark:text-orange-300">{(aeroporto.carga || 0).toLocaleString()} kg</p>
                                   <div className="flex justify-between text-[10px] mt-0.5">
                                     <span className="text-green-600">ARR: {(aeroporto.cargaArr || 0).toLocaleString()} kg</span>
                                     <span className="text-purple-600">DEP: {(aeroporto.cargaDep || 0).toLocaleString()} kg</span>

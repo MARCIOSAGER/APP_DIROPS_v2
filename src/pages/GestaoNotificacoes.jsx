@@ -1433,12 +1433,12 @@ export default function GestaoNotificacoes() {
   });
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
+    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Gestão de Notificações</h1>
-            <p className="text-slate-600 mt-1">Configure regras automáticas de notificação por e-mail e WhatsApp.</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Gestão de Notificações</h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">Configure regras automáticas de notificação por e-mail e WhatsApp.</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
@@ -1453,38 +1453,38 @@ export default function GestaoNotificacoes() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 border-b border-slate-300 bg-white rounded-t-lg p-4 sticky top-0 z-20">
+        <div className="flex gap-2 border-b border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-t-lg p-4 sticky top-0 z-20">
           <button
             onClick={() => setActiveTab('geral')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'geral' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'geral' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <Bell className="w-4 h-4 inline mr-2" />
             Regras ({regras.length})
           </button>
           <button
             onClick={() => setActiveTab('historico')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'historico' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'historico' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <FileText className="w-4 h-4 inline mr-2" />
             Histórico ({historico.length})
           </button>
           <button
             onClick={() => setActiveTab('atendimento')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'atendimento' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'atendimento' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <MessageSquare className="w-4 h-4 inline mr-2" />
             Atendimento
           </button>
           <button
             onClick={() => setActiveTab('placeholders')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'placeholders' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'placeholders' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <FileText className="w-4 h-4 inline mr-2" />
             Placeholders
           </button>
           <button
             onClick={() => setActiveTab('grupos')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'grupos' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'grupos' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <Users className="w-4 h-4 inline mr-2" />
             Grupos WhatsApp
@@ -1516,7 +1516,7 @@ export default function GestaoNotificacoes() {
           </CardHeader>
           <CardContent>
             {regras.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                 <Bell className="w-12 h-12 mx-auto mb-4 opacity-30" />
                 <p>Nenhuma regra configurada.</p>
                 <p className="text-sm mt-1">Clique em "Nova Regra" para começar.</p>
@@ -1531,7 +1531,7 @@ export default function GestaoNotificacoes() {
                       onChange={toggleAllRegras}
                       className="rounded cursor-pointer"
                     />
-                    <span className="text-sm font-medium text-slate-600">
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
                       {regrasSelecionadas.size === 0 ? 'Selecionar Todas' : `${regrasSelecionadas.size} de ${regras.length} selecionadas`}
                     </span>
                   </div>
@@ -1541,7 +1541,7 @@ export default function GestaoNotificacoes() {
                   const isSelected = regrasSelecionadas.has(regra.id);
 
                   return (
-                    <div key={regra.id} className={`border rounded-lg p-4 ${isSelected ? 'bg-blue-50 border-blue-400' : regra.ativo ? 'bg-white' : 'bg-slate-50'}`}>
+                    <div key={regra.id} className={`border rounded-lg p-4 ${isSelected ? 'bg-blue-50 dark:bg-blue-950 border-blue-400' : regra.ativo ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800'}`}>
                       <div className="flex items-start gap-3">
                         <input
                           type="checkbox"
@@ -1558,12 +1558,12 @@ export default function GestaoNotificacoes() {
                           </div>
                           
                           <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-slate-600">
+                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                               <Send className="w-4 h-4" />
                               <span><strong>Evento:</strong> {eventoLabel}</span>
                             </div>
                             
-                            <div className="flex items-center gap-2 text-slate-600">
+                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                               <MessageSquare className="w-4 h-4" />
                               <span><strong>Canais:</strong> {regra.canal_envio.map(c => 
                                 c === 'whatsapp' ? 'WhatsApp' : 'E-mail'
@@ -1571,28 +1571,28 @@ export default function GestaoNotificacoes() {
                             </div>
                             
                             {regra.destinatarios_perfis && regra.destinatarios_perfis.length > 0 && (
-                              <div className="flex items-center gap-2 text-slate-600">
+                              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                 <Users className="w-4 h-4" />
                                 <span><strong>Perfis:</strong> {regra.destinatarios_perfis.join(', ')}</span>
                               </div>
                             )}
                             
                             {regra.destinatarios_usuarios_ids && regra.destinatarios_usuarios_ids.length > 0 && (
-                              <div className="flex items-center gap-2 text-slate-600">
+                              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                 <User className="w-4 h-4" />
                                 <span><strong>Utilizadores:</strong> {regra.destinatarios_usuarios_ids.length} selecionado(s)</span>
                               </div>
                             )}
 
                             {regra.aeroporto_icao_relatorio && (
-                             <div className="flex items-center gap-2 text-slate-600">
+                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                <Globe className="w-4 h-4" />
                                <span><strong>Aeroporto:</strong> {regra.aeroporto_icao_relatorio}</span>
                              </div>
                             )}
 
                             {regra.grupo_whatsapp_id && (
-                             <div className="flex items-center gap-2 text-slate-600">
+                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                <MessageSquare className="w-4 h-4" />
                                <span><strong>Grupo WhatsApp:</strong> {regra.grupo_whatsapp_id}</span>
                              </div>
@@ -1784,7 +1784,7 @@ export default function GestaoNotificacoes() {
 
               {/* Tabela */}
               {historicoFiltrado.length === 0 ? (
-                <div className="text-center py-12 text-slate-500">
+                <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                   <FileText className="w-12 h-12 mx-auto mb-4 opacity-30" />
                   <p>Nenhuma notificação enviada.</p>
                 </div>
@@ -1811,7 +1811,7 @@ export default function GestaoNotificacoes() {
                     </thead>
                     <tbody>
                       {historicoFiltrado.map((item) => (
-                        <tr key={item.id} className={`border-b ${historicoSelecionado.has(item.id) ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+                        <tr key={item.id} className={`border-b ${historicoSelecionado.has(item.id) ? 'bg-blue-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                           <td className="px-4 py-3 w-12">
                             <input
                               type="checkbox"
@@ -1821,9 +1821,9 @@ export default function GestaoNotificacoes() {
                             />
                           </td>
                           <td className="px-4 py-3">
-                            <div className="font-medium text-slate-900">{item.email_destinatario?.split('@')[0]}</div>
+                            <div className="font-medium text-slate-900 dark:text-slate-100">{item.email_destinatario?.split('@')[0]}</div>
                           </td>
-                          <td className="px-4 py-3 text-slate-600">{item.email_destinatario}</td>
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{item.email_destinatario}</td>
                           <td className="px-4 py-3">
                             <Badge variant="outline" className="capitalize">
                               {item.tipo_relatorio?.replace(/_/g, ' ')}
@@ -1850,11 +1850,11 @@ export default function GestaoNotificacoes() {
                               <Badge className="bg-yellow-100 text-yellow-700">⏳ Aguardando</Badge>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-slate-600 text-xs">
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
                             {item.created_date ? (
                               <>
                                 <div>{new Date(item.created_date).toLocaleDateString('pt-PT')}</div>
-                                <div className="text-slate-500">{new Date(item.created_date).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</div>
+                                <div className="text-slate-500 dark:text-slate-400">{new Date(item.created_date).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</div>
                               </>
                             ) : '-'}
                           </td>
@@ -1871,8 +1871,8 @@ export default function GestaoNotificacoes() {
         {/* Formulário Modal */}
         {isFormOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white border-b z-10">
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white dark:bg-slate-900 border-b dark:border-slate-700 z-10">
                 <div className="p-6 pb-0">
                   <h2 className="text-2xl font-bold mb-4">
                     {editingRegra ? 'Editar Regra' : 'Nova Regra'}
@@ -1956,7 +1956,7 @@ export default function GestaoNotificacoes() {
                        value={formData.aeroporto_icao_relatorio}
                        onValueChange={(v) => handleInputChange('aeroporto_icao_relatorio', v)}
                      />
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                       Deixe vazio para aplicar a regra a todos os aeroportos.
                     </p>
                   </div>
@@ -2013,15 +2013,15 @@ export default function GestaoNotificacoes() {
                             >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <div className="font-medium text-slate-900">{g.nome_grupo}</div>
-                                  <div className="text-xs text-slate-500 mt-1">{g.chat_id}</div>
+                                  <div className="font-medium text-slate-900 dark:text-slate-100">{g.nome_grupo}</div>
+                                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{g.chat_id}</div>
                                 </div>
                                 <Badge className="bg-blue-100 text-blue-700 text-xs">
                                   {g.status}
                                 </Badge>
                               </div>
                               {g.data_aprovacao && (
-                                <div className="text-xs text-slate-600 mt-1">
+                                <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                                   Aprovado em {new Date(g.data_aprovacao).toLocaleDateString('pt-PT')}
                                 </div>
                               )}
@@ -2037,8 +2037,8 @@ export default function GestaoNotificacoes() {
                               : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
                           }`}
                         >
-                          <div className="font-medium text-slate-900">❌ Nenhum grupo (envio individual)</div>
-                          <div className="text-xs text-slate-500 mt-1">Enviar notificação individualmente aos utilizadores selecionados</div>
+                          <div className="font-medium text-slate-900 dark:text-slate-100">❌ Nenhum grupo (envio individual)</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Enviar notificação individualmente aos utilizadores selecionados</div>
                         </button>
                         <p className="text-xs text-green-700 mt-3">
                           💡 Selecione um grupo aprovado para enviar a notificação para o grupo via Z-API em vez de individualmente aos utilizadores.
@@ -2057,7 +2057,7 @@ export default function GestaoNotificacoes() {
                             </div>
                           </div>
                         </div>
-                        <div className="bg-white p-3 rounded-lg border border-slate-300">
+                        <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-300 dark:border-slate-600">
                           <Label htmlFor="grupo-whatsapp-manual" className="text-xs mb-1 block">Ou insira o ID do grupo manualmente:</Label>
                           <Input
                             id="grupo-whatsapp-manual"
@@ -2066,7 +2066,7 @@ export default function GestaoNotificacoes() {
                             placeholder="Exemplo: 120363400651901251-group"
                             className="mt-1"
                           />
-                          <p className="text-xs text-slate-500 mt-2">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                             Pode copiar o ID do grupo da aba "Grupos WhatsApp" ou a partir da resposta do webhook do Z-API.
                           </p>
                         </div>
@@ -2078,7 +2078,7 @@ export default function GestaoNotificacoes() {
                 {/* Destinatários - Perfis */}
                 <div>
                   <Label>Perfis Destinatários *</Label>
-                  <p className="text-sm text-slate-500 mb-2">Selecione os perfis que devem receber a notificação.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Selecione os perfis que devem receber a notificação.</p>
                   <Combobox
                     options={PERFIS_DISPONIVEIS}
                     value={formData.destinatarios_perfis}
@@ -2118,7 +2118,7 @@ export default function GestaoNotificacoes() {
                 {/* Destinatários - Utilizadores Específicos */}
                 <div>
                   <Label>Utilizadores Específicos (Opcional)</Label>
-                  <p className="text-sm text-slate-500 mb-2">Adicione utilizadores individuais além dos perfis.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Adicione utilizadores individuais além dos perfis.</p>
                   
                   {/* Campo de Busca e Filtros */}
                   <div className="space-y-2 mb-3">
@@ -2162,7 +2162,7 @@ export default function GestaoNotificacoes() {
                               className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${
                                 isSelected
                                   ? 'border-blue-600 bg-blue-50'
-                                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                               }`}
                             >
                               <button
@@ -2177,7 +2177,7 @@ export default function GestaoNotificacoes() {
                               {formData.canal_envio.includes('whatsapp') && (
                                 <div className="flex items-center gap-2">
                                   {!hasWhatsApp ? (
-                                    <Badge variant="outline" className="text-slate-500 text-xs">
+                                    <Badge variant="outline" className="text-slate-500 dark:text-slate-400 text-xs">
                                       Sem WhatsApp
                                     </Badge>
                                   ) : optInStatus === 'confirmado' ? (
@@ -2240,7 +2240,7 @@ export default function GestaoNotificacoes() {
                     placeholder="Ex: Usar tom formal e profissional, incluir emojis, destacar as informações mais importantes, etc."
                     rows={3}
                   />
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Estas instruções serão consideradas quando usar o botão "Gerar com IA" nos templates abaixo.
                   </p>
                 </div>
@@ -2475,7 +2475,7 @@ export default function GestaoNotificacoes() {
                   <div className="space-y-4">
                     {/* Templates Predefinidos */}
                     <div>
-                      <h4 className="font-semibold text-slate-900 mb-3">Escolha um Modelo de Formatação</h4>
+                      <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Escolha um Modelo de Formatação</h4>
                       <div className="grid grid-cols-2 gap-3 mb-6">
                         {Object.entries(TEMPLATES_AEROPORTOS).map(([key, template]) => (
                           <button
@@ -2485,22 +2485,22 @@ export default function GestaoNotificacoes() {
                             className={`p-4 rounded-lg border-2 text-left transition-all ${
                               formData.template_html_aeroportos === template.html
                                 ? 'border-blue-600 bg-blue-50'
-                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                             }`}
                           >
-                            <div className="font-semibold text-slate-900">{template.nome}</div>
-                            <div className="text-sm text-slate-600 mt-1">{template.descricao}</div>
+                            <div className="font-semibold text-slate-900 dark:text-slate-100">{template.nome}</div>
+                            <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">{template.descricao}</div>
                           </button>
                         ))}
                       </div>
 
                       {/* Preview dos Templates */}
-                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
-                        <h4 className="font-semibold text-slate-900 mb-3">👁️ Pré-visualização dos Modelos</h4>
+                      <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6">
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">👁️ Pré-visualização dos Modelos</h4>
                         <div className="grid grid-cols-2 gap-4">
                           {Object.entries(TEMPLATES_AEROPORTOS).map(([key, template]) => (
-                            <div key={key} className="bg-white p-3 rounded-lg border border-slate-200">
-                              <div className="text-xs font-medium text-slate-600 mb-2">{template.nome}</div>
+                            <div key={key} className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">{template.nome}</div>
                               <div 
                                 dangerouslySetInnerHTML={{
                                   __html: sanitizeHtml((template.html || '')
@@ -2568,15 +2568,15 @@ export default function GestaoNotificacoes() {
                         rows={15}
                         className="font-mono text-sm"
                       />
-                      <p className="text-xs text-slate-500 mt-2">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                         Use HTML e CSS inline. O template será repetido para cada aeroporto automaticamente.
                       </p>
                     </div>
 
                     {/* Preview Individual */}
                     {formData.template_html_aeroportos && formData.template_html_aeroportos.trim() && (
-                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                        <h4 className="font-semibold text-slate-900 mb-3">👁️ Pré-visualização Individual (1 aeroporto):</h4>
+                      <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">👁️ Pré-visualização Individual (1 aeroporto):</h4>
                         <div 
                           className="bg-white p-4 rounded border border-slate-200"
                           dangerouslySetInnerHTML={{
@@ -2602,12 +2602,12 @@ export default function GestaoNotificacoes() {
                         </div>
                         
                         {/* Email Preview Container */}
-                        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                        <div className="bg-white dark:bg-slate-900 rounded-lg shadow-lg overflow-hidden">
                           {/* Email Header */}
                           {formData.mensagem_template_email_assunto && (
                             <div className="bg-slate-100 px-4 py-3 border-b">
-                              <div className="text-xs text-slate-600 mb-1">Assunto:</div>
-                              <div className="font-semibold text-slate-900">
+                              <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">Assunto:</div>
+                              <div className="font-semibold text-slate-900 dark:text-slate-100">
                                 {renderPreview(formData.mensagem_template_email_assunto)}
                               </div>
                             </div>
@@ -2724,14 +2724,14 @@ export default function GestaoNotificacoes() {
         {/* Modal de Executar Automação */}
         {showRunModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full p-6">
               <h3 className="text-lg font-semibold mb-4">Executar Automação</h3>
 
               {(regras.find(r => r.id === runRegraId)?.evento_gatilho === 'relatorio_operacional_consolidado_diario' ||
                                           regras.find(r => r.id === runRegraId)?.evento_gatilho === 'relatorio_operacional_consolidado_semanal' ||
                                           regras.find(r => r.id === runRegraId)?.evento_gatilho === 'relatorio_operacional_consolidado_mensal') ? (
                                       <>
-                                          <p className="text-sm text-slate-600 mb-4">
+                                          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                                             Será executado o relatório operacional consolidado {regras.find(r => r.id === runRegraId)?.evento_gatilho.replace('relatorio_operacional_consolidado_', '')}.
                                           </p>
 
@@ -2753,13 +2753,13 @@ export default function GestaoNotificacoes() {
                               regras.find(r => r.id === runRegraId)?.evento_gatilho === 'relatorio_operacional_semanal' ||
                               regras.find(r => r.id === runRegraId)?.evento_gatilho === 'relatorio_operacional_mensal') ? (
                           <>
-                              <p className="text-sm text-slate-600 mb-4">
+                              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                                 Será executado o relatório operacional {regras.find(r => r.id === runRegraId)?.evento_gatilho.replace('relatorio_operacional_', '')}.
                               </p>
                           </>
                          ) : regras.find(r => r.id === runRegraId)?.evento_gatilho === 'voo_ligado_criado' ? (
                 <>
-                  <p className="text-sm text-slate-600 mb-4">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                     Selecione um voo ligado existente para simular o evento e executar a automação.
                   </p>
 
@@ -2769,7 +2769,7 @@ export default function GestaoNotificacoes() {
                       id="voo-ligado"
                       value={selectedVooLigadoId}
                       onChange={(e) => setSelectedVooLigadoId(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md"
+                      className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md"
                     >
                       <option value="">Selecione um voo ligado...</option>
                       {voosLigados.map(voo => {
@@ -2798,7 +2798,7 @@ export default function GestaoNotificacoes() {
                 <>
                     {regras.find(r => r.id === runRegraId)?.aeroporto_icao_relatorio ? (
                       <div className="mb-6">
-                        <p className="text-sm text-slate-600 mb-2">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
                           Será gerado o relatório operacional para o aeroporto:
                         </p>
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -2809,7 +2809,7 @@ export default function GestaoNotificacoes() {
                       </div>
                     ) : (
                       <>
-                        <p className="text-sm text-slate-600 mb-4">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                           Selecione o aeroporto ou todos os aeroportos para gerar e enviar o relatório operacional.
                         </p>
 
@@ -2819,7 +2819,7 @@ export default function GestaoNotificacoes() {
                             id="aeroporto"
                             value={selectedAeroporto}
                             onChange={(e) => setSelectedAeroporto(e.target.value)}
-                            className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md"
+                            className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md"
                           >
                             <option value="">Selecione um aeroporto...</option>
                             <option value="TODOS">🌍 TODOS OS AEROPORTOS</option>
@@ -2834,7 +2834,7 @@ export default function GestaoNotificacoes() {
                     )}
                   </>
                 ) : (
-                <p className="text-sm text-slate-600 mb-6">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
                   A automação será executada para o evento "{regras.find(r => r.id === runRegraId)?.evento_gatilho}".
                 </p>
               )}
@@ -2878,9 +2878,9 @@ export default function GestaoNotificacoes() {
         {/* Modal de Teste */}
         {showTestModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full p-6">
               <h3 className="text-lg font-semibold mb-4">Enviar Notificação de Teste</h3>
-              <p className="text-sm text-slate-600 mb-4">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                 A notificação será enviada com dados de exemplo para testar o template configurado.
               </p>
               
@@ -2895,7 +2895,7 @@ export default function GestaoNotificacoes() {
                       onChange={(e) => setTesteData(prev => ({ ...prev, email: e.target.value }))}
                       placeholder={currentUser?.email || 'Seu email'}
                     />
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                       Deixe em branco para usar {currentUser?.email}
                     </p>
                   </div>
@@ -2911,7 +2911,7 @@ export default function GestaoNotificacoes() {
                       onChange={(e) => setTesteData(prev => ({ ...prev, whatsapp: e.target.value }))}
                       placeholder="whatsapp:+244..."
                     />
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                       Formato: whatsapp:+244XXXXXXXXX
                     </p>
                   </div>

@@ -18,11 +18,13 @@ import { isSuperAdmin, hasUserProfile } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import FormCobrancaServico from '@/components/servicos/FormCobrancaServico';
 import ConfirmModal from '@/components/shared/ConfirmModal';
+import { useI18n } from '@/components/lib/i18n';
 
 // Tipos automáticos (calculados por tariffCalculations) — NÃO mostrar na aba de serviços avulsos
 const TIPOS_AUTOMATICOS = ['embarque', 'transito_direto', 'transito_transbordo', 'carga', 'seguranca', 'iluminacao', 'cuppss'];
 
 export default function ServicosAeroportuarios() {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
 
   const [currentUser, setCurrentUser] = useState(null);
@@ -189,7 +191,7 @@ export default function ServicosAeroportuarios() {
             <Plus className="w-4 h-4 mr-1" /> Nova Cobrança
           </Button>
           {total > 0 && (
-            <Badge className="bg-green-100 text-green-800 ml-auto text-sm px-3 py-1">
+            <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 ml-auto text-sm px-3 py-1">
               Total: {total.toFixed(2)} USD
             </Badge>
           )}
@@ -197,9 +199,9 @@ export default function ServicosAeroportuarios() {
 
         {/* Table */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>
+          <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-400 dark:text-slate-500" /></div>
         ) : items.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-8">Nenhuma cobrança registada neste período.</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-8">Nenhuma cobrança registada neste período.</p>
         ) : (
           <div className="border rounded-lg overflow-hidden">
             <Table>
@@ -227,7 +229,7 @@ export default function ServicosAeroportuarios() {
                     <TableCell className="text-sm text-right">{Number(c.valor_unitario_usd).toFixed(2)}</TableCell>
                     <TableCell className="text-sm text-right font-semibold">{Number(c.valor_total_usd).toFixed(2)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={c.status === 'facturado' ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'}>
+                      <Badge variant="outline" className={c.status === 'facturado' ? 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300' : 'bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300'}>
                         {c.status === 'facturado' ? 'Facturado' : 'Pendente'}
                       </Badge>
                     </TableCell>
@@ -240,7 +242,7 @@ export default function ServicosAeroportuarios() {
                           <DropdownMenuItem onClick={() => handleEditCobranca(c, cat)}>
                             <Pencil className="mr-2 h-4 w-4" /> Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600" onClick={() => setDeleteTarget(c)}>
+                          <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={() => setDeleteTarget(c)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Excluir
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -263,10 +265,10 @@ export default function ServicosAeroportuarios() {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Layers className="w-5 h-5 text-cyan-600" />
-              Serviços Aeroportuários
+              {t('page.servicos_aeroportuarios.title')}
             </CardTitle>
             <Button variant="outline" size="sm" onClick={loadData} disabled={isLoading}>
-              <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} /> Atualizar
+              <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} /> {t('btn.refresh')}
             </Button>
           </div>
         </CardHeader>

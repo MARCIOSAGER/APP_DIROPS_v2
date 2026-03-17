@@ -152,7 +152,7 @@ export default function SessionTimeoutModal() {
         <div className="flex gap-3">
           <Button
             variant="outline"
-            className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
+            className="flex-1 text-red-600 dark:text-red-400 border-red-200 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-950"
             onClick={logout}
           >
             <LogOut className="w-4 h-4 mr-2" />

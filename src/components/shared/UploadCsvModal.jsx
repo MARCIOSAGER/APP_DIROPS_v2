@@ -519,7 +519,7 @@ export default function UploadCsvModal({
                   <span>A processar...</span> 
                   <span>{processProgress.current} de {processProgress.total}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                   <div 
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
                     style={{ width: `${(processProgress.current / processProgress.total) * 100}%` }}

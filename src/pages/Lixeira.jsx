@@ -17,8 +17,10 @@ import { User } from '@/entities/User';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { isSuperAdmin, getAeroportosPermitidos } from '@/components/lib/userUtils';
 import ConfirmModal from '@/components/shared/ConfirmModal';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function Lixeira() {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [currentUser, setCurrentUser] = useState(null);
   const [aeroportos, setAeroportos] = useState([]);
@@ -157,17 +159,17 @@ export default function Lixeira() {
   }, [checklistInativos, busca]);
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
+    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <Trash2 className="w-8 h-8 text-slate-500" />
-              Lixeira
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+              <Trash2 className="w-8 h-8 text-slate-500 dark:text-slate-400" />
+              {t('page.lixeira.title')}
             </h1>
-            <p className="text-slate-600 mt-1">
-              Itens cancelados ou inativos — restaure ou elimine permanentemente
+            <p className="text-slate-600 dark:text-slate-400 mt-1">
+              {t('page.lixeira.subtitle')}
             </p>
           </div>
           <Badge variant="outline" className="text-lg px-4 py-2">
@@ -178,7 +180,7 @@ export default function Lixeira() {
         {/* Message */}
         {message.text && (
           <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
-            message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'
+            message.type === 'success' ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300' : 'bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
           }`}>
             {message.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
             {message.text}
@@ -194,14 +196,14 @@ export default function Lixeira() {
             placeholder="Pesquisar na lixeira..."
             value={busca}
             onChange={e => setBusca(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         {/* Warning */}
-        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
-          <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-amber-800">
+        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-amber-800 dark:text-amber-200">
             A eliminação permanente não pode ser desfeita. Restaurar um item devolve-o ao seu módulo original com o status anterior.
           </p>
         </div>
@@ -209,13 +211,13 @@ export default function Lixeira() {
         {isLoading ? (
           <div className="text-center py-16">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-400 mb-3" />
-            <p className="text-slate-500">A carregar itens da lixeira...</p>
+            <p className="text-slate-500 dark:text-slate-400">A carregar itens da lixeira...</p>
           </div>
         ) : totalItens === 0 ? (
           <div className="text-center py-16">
             <Trash2 className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-            <h3 className="text-lg font-medium text-slate-600">Lixeira vazia</h3>
-            <p className="text-slate-400">Não existem itens cancelados ou inativos.</p>
+            <h3 className="text-lg font-medium text-slate-600 dark:text-slate-400">Lixeira vazia</h3>
+            <p className="text-slate-400 dark:text-slate-500">Não existem itens cancelados ou inativos.</p>
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -321,15 +323,15 @@ export default function Lixeira() {
 
 function TrashItem({ icon, title, subtitle, detail, isLoading, onRestore, onDelete }) {
   return (
-    <Card className="border-slate-200">
+    <Card className="border-slate-200 dark:border-slate-700">
       <CardContent className="p-4 flex items-center gap-4">
-        <div className="flex-shrink-0 p-2 bg-slate-100 rounded-lg">
+        <div className="flex-shrink-0 p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
           {icon}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-slate-900 truncate">{title}</p>
-          <p className="text-sm text-slate-500">{subtitle}</p>
-          {detail && <p className="text-xs text-slate-400 mt-0.5">{detail}</p>}
+          <p className="font-medium text-slate-900 dark:text-slate-100 truncate">{title}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
+          {detail && <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{detail}</p>}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <Button
@@ -362,7 +364,7 @@ function EmptyTab({ label }) {
   return (
     <div className="text-center py-12">
       <Trash2 className="w-10 h-10 mx-auto text-slate-300 mb-3" />
-      <p className="text-slate-500">Não existem {label}.</p>
+      <p className="text-slate-500 dark:text-slate-400">Não existem {label}.</p>
     </div>
   );
 }

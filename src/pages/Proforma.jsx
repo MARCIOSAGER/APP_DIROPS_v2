@@ -42,6 +42,7 @@ import { base44 } from '@/api/base44Client';
 import { registarCriacao } from '@/components/lib/auditoria';
 import { getAeroportosPermitidos, ensureUserProfilesExist, getEmailsEmpresa, filtrarDadosPorCriador } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
+import { useI18n } from '@/components/lib/i18n';
 
 import EditarFaturaModal from '../components/faturacao/EditarFaturaModal';
 import GerarProformaConsolidadaModal from '../components/faturacao/GerarProformaConsolidadaModal';
@@ -51,14 +52,15 @@ import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
 
 const STATUS_CONFIG = {
-  emitida: { label: 'Emitida', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: FileText },
-  enviada: { label: 'Enviada', color: 'bg-purple-100 text-purple-800 border-purple-200', icon: CheckCircle },
-  paga: { label: 'Paga', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
-  vencida: { label: 'Vencida', color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle },
-  cancelada: { label: 'Cancelada', color: 'bg-gray-100 text-gray-800 border-gray-200', icon: X }
+  emitida: { label: 'Emitida', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700', icon: FileText },
+  enviada: { label: 'Enviada', color: 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-700', icon: CheckCircle },
+  paga: { label: 'Paga', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700', icon: CheckCircle },
+  vencida: { label: 'Vencida', color: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700', icon: AlertCircle },
+  cancelada: { label: 'Cancelada', color: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700', icon: X }
 };
 
 export default function ProformaPage() {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [proformas, setProformas] = useState([]);
   const [companhias, setCompanhias] = useState([]);
@@ -416,13 +418,13 @@ export default function ProformaPage() {
 
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Gestão de Proformas</h1>
-            <p className="text-slate-600 mt-1">Acompanhe e gerencie as notas proforma emitidas.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('page.proforma.title')}</h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.proforma.subtitle')}</p>
           </div>
           {activeTab === 'proformas' && (
             <div className="flex gap-2">
@@ -434,7 +436,7 @@ export default function ProformaPage() {
                 <Layers className="w-4 h-4 mr-2" />
                 Gerar Consolidada
               </Button>
-              <Button onClick={() => setIsRelatorioModalOpen(true)} variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+              <Button onClick={() => setIsRelatorioModalOpen(true)} variant="outline" className="border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950">
                 <FileText className="w-4 h-4 mr-2" />
                 Extrato
               </Button>
@@ -447,17 +449,17 @@ export default function ProformaPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b">
+        <div className="flex gap-1 border-b dark:border-slate-700">
           <button
             onClick={() => setActiveTab('proformas')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'proformas' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'proformas' ? 'border-blue-600 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
           >
             <FileText className="w-4 h-4 inline mr-1.5 -mt-0.5" />
             Proformas
           </button>
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'dashboard' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'dashboard' ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
           >
             <BarChart3 className="w-4 h-4 inline mr-1.5 -mt-0.5" />
             Dashboard de Facturação
@@ -470,28 +472,28 @@ export default function ProformaPage() {
 
         {/* KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <Card className="bg-white">
+          <Card className="bg-white dark:bg-slate-900">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <FileText className="w-5 h-5 text-blue-600" />
+                <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+                  <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600">Total Proformas</p>
-                  <p className="text-2xl font-bold text-slate-900">{kpiData.totalProformas}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Total Proformas</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{kpiData.totalProformas}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white">
+          <Card className="bg-white dark:bg-slate-900">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="bg-green-50 p-3 rounded-lg">
-                  <DollarSign className="w-5 h-5 text-green-600" />
+                <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+                  <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600">Total (USD)</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Total (USD)</p>
                   <p className="text-green-700 text-sm font-bold" title={`${formatCurrency(kpiData.totalValorUSD, 'USD')} US$`}>
                     {formatCurrency(kpiData.totalValorUSD, 'USD')} US$
                   </p>
@@ -500,14 +502,14 @@ export default function ProformaPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white">
+          <Card className="bg-white dark:bg-slate-900">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="bg-emerald-50 p-3 rounded-lg">
                   <DollarSign className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600">Total (AOA)</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Total (AOA)</p>
                   <p className="text-emerald-700 text-sm font-bold" title={`${formatCurrency(kpiData.totalValorAOA)} Kz`}>
                     {formatCurrency(kpiData.totalValorAOA)} Kz
                   </p>
@@ -516,42 +518,42 @@ export default function ProformaPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white">
+          <Card className="bg-white dark:bg-slate-900">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="bg-green-50 p-3 rounded-lg">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+                <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600">Pagas</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Pagas</p>
                   <p className="text-2xl font-bold text-green-700">{kpiData.proformasPagas}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white">
+          <Card className="bg-white dark:bg-slate-900">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="bg-yellow-50 p-3 rounded-lg">
-                  <Clock className="w-5 h-5 text-yellow-600" />
+                <div className="bg-yellow-50 dark:bg-yellow-950 p-3 rounded-lg">
+                  <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600">Pendentes</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Pendentes</p>
                   <p className="text-2xl font-bold text-yellow-700">{kpiData.proformasPendentes}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white">
+          <Card className="bg-white dark:bg-slate-900">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="bg-red-50 p-3 rounded-lg">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
+                <div className="bg-red-50 dark:bg-red-950 p-3 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-600">Vencidas</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Vencidas</p>
                   <p className="text-2xl font-bold text-red-700">{kpiData.proformasVencidas}</p>
                 </div>
               </div>
@@ -563,7 +565,7 @@ export default function ProformaPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Filter className="w-5 h-5 text-slate-500" />
+              <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
               Filtros
             </CardTitle>
           </CardHeader>
@@ -572,7 +574,7 @@ export default function ProformaPage() {
               <div className="lg:col-span-2">
                 <Label htmlFor="busca">Pesquisar por Nº Proforma</Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
                   <Input
                     id="busca"
                     placeholder="Ex: PF-2025-001234..."
@@ -655,28 +657,28 @@ export default function ProformaPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="border rounded-lg overflow-x-auto">
+            <div className="border dark:border-slate-700 rounded-lg overflow-x-auto">
               <Table>
-                <TableHeader className="bg-slate-50">
+                <TableHeader className="bg-slate-50 dark:bg-slate-950">
                   <TableRow>
-                    <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('numero_proforma')}>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('numero_proforma')}>
                       Nº Proforma
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('data_emissao')}>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('data_emissao')}>
                       Data Emissão
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('data_vencimento')}>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('data_vencimento')}>
                       Vencimento
                     </TableHead>
                     <TableHead>Companhia</TableHead>
                     <TableHead>Aeroporto</TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('valor_total_usd')}>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('valor_total_usd')}>
                       Valor (USD)
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('valor_total_aoa')}>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('valor_total_aoa')}>
                       Valor (AOA)
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('status')}>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('status')}>
                       Status
                     </TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -695,10 +697,11 @@ export default function ProformaPage() {
                   ) :
                   proformasFiltradas.length === 0 ?
                   <TableRow>
-                      <TableCell colSpan={9} className="text-center py-10 text-slate-500">
+                      <TableCell colSpan={9} className="text-center py-10 text-slate-500 dark:text-slate-400">
                         Nenhuma proforma encontrada com os filtros selecionados.
                       </TableCell>
                     </TableRow> :
+
 
                   proformasFiltradas.map((proforma) => {
                     const companhia = companhias.find((c) => c.id === proforma.companhia_aerea_id);
@@ -707,12 +710,12 @@ export default function ProformaPage() {
                     const StatusIcon = statusConfig.icon;
 
                     return (
-                      <TableRow key={proforma.id} className="hover:bg-slate-50">
-                          <TableCell className="font-mono font-medium text-blue-700">
+                      <TableRow key={proforma.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
+                          <TableCell className="font-mono font-medium text-blue-700 dark:text-blue-400">
                             <div className="flex items-center gap-1.5">
                               {proforma.numero_proforma}
                               {proforma.tipo === 'consolidada' && (
-                                <Badge variant="outline" className="text-[10px] px-1 py-0 bg-purple-50 text-purple-700 border-purple-200">
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
                                   Consolidada
                                 </Badge>
                               )}
@@ -726,8 +729,8 @@ export default function ProformaPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-col">
-                              <span className="font-medium text-slate-900">{companhia?.nome || 'N/A'}</span>
-                              <span className="text-xs text-slate-500">{companhia?.codigo_icao || ''}</span>
+                              <span className="font-medium text-slate-900 dark:text-slate-100">{companhia?.nome || 'N/A'}</span>
+                              <span className="text-xs text-slate-500 dark:text-slate-400">{companhia?.codigo_icao || ''}</span>
                             </div>
                           </TableCell>
                           <TableCell className="font-mono">{aeroporto?.codigo_icao || 'N/A'}</TableCell>

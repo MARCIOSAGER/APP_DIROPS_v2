@@ -15,7 +15,7 @@ export default function BottomTabs() {
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 flex"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {tabs.map((tab) => {
@@ -25,7 +25,7 @@ export default function BottomTabs() {
             key={tab.label}
             to={tab.url}
             className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 select-none transition-colors ${
-              isActive ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'
+              isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <tab.icon className="w-5 h-5" />

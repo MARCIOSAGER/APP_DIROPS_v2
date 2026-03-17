@@ -36,6 +36,7 @@ import { registarExclusao } from '../components/lib/auditoria';
 import { getAeroportosPermitidos } from '@/components/lib/userUtils';
 import { User } from '@/entities/User';
 import { useCompanyView } from '@/lib/CompanyViewContext';
+import { useI18n } from '@/components/lib/i18n';
 
 // Helper: filtra tarifas por empresa_id
 function filterTarifasByEmpresa(tarifas, empresaId) {
@@ -46,6 +47,7 @@ function filterTarifasByEmpresa(tarifas, empresaId) {
 }
 
 export default function ConfiguracaoTarifas() {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [tarifasPouso, setTarifasPouso] = useState([]);
   const [tarifasPermanencia, setTarifasPermanencia] = useState([]);
@@ -337,37 +339,37 @@ export default function ConfiguracaoTarifas() {
   ];
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <Settings2 className="w-6 md:w-8 h-6 md:h-8 text-blue-600" />
-              Configuração de Tarifas
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+              <Settings2 className="w-6 md:w-8 h-6 md:h-8 text-blue-600 dark:text-blue-400" />
+              {t('page.config_tarifas.title')}
             </h1>
-            <p className="text-slate-600 mt-1">Gestão de tarifas aeroportuárias, impostos e configurações</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.config_tarifas.subtitle')}</p>
           </div>
           <Button variant="outline" onClick={loadData} disabled={isLoading}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Atualizar
+            {t('btn.refresh')}
           </Button>
         </div>
 
         {/* Taxa de câmbio resumo */}
-        <Card className="border-0 shadow-sm bg-blue-50 border-l-4 border-l-blue-500">
+        <Card className="border-0 shadow-sm bg-blue-50 dark:bg-blue-950 border-l-4 border-l-blue-500">
           <CardContent className="py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <DollarSign className="w-6 h-6 text-blue-600" />
+                <DollarSign className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 <div>
-                  <p className="text-sm text-blue-700">Taxa de Câmbio Actual</p>
-                  <p className="text-xl font-bold text-blue-900">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">Taxa de Câmbio Actual</p>
+                  <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
                     {configuracao?.taxa_cambio_usd_aoa || 850} <span className="text-sm font-normal">AOA/USD</span>
                   </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setIsConfiguracaoFormOpen(true)} className="border-blue-300 text-blue-700 hover:bg-blue-100">
+              <Button variant="outline" size="sm" onClick={() => setIsConfiguracaoFormOpen(true)} className="border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900">
                 <Pencil className="w-4 h-4 mr-2" />
                 Alterar
               </Button>
@@ -393,11 +395,11 @@ export default function ConfiguracaoTarifas() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Filter className="w-5 h-5 text-slate-500" />
+                    <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     Filtros
                   </CardTitle>
                   {(filtrosTarifaPouso.categoria !== 'todos' || filtrosTarifaPouso.status !== 'todos' || filtrosTarifaPouso.busca !== '') && (
-                    <Button variant="outline" size="sm" onClick={() => setFiltrosTarifaPouso({ categoria: 'todos', status: 'todos', busca: '' })} className="text-red-600 border-red-200 hover:bg-red-50">
+                    <Button variant="outline" size="sm" onClick={() => setFiltrosTarifaPouso({ categoria: 'todos', status: 'todos', busca: '' })} className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950">
                       <X className="w-4 h-4 mr-1" /> Limpar Filtros
                     </Button>
                   )}
@@ -444,18 +446,18 @@ export default function ConfiguracaoTarifas() {
                     </TableHeader>
                     <TableBody>
                       {tarifasPousoFiltradas.length === 0 ? (
-                        <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Nenhuma tarifa de pouso configurada</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500 dark:text-slate-400">Nenhuma tarifa de pouso configurada</TableCell></TableRow>
                       ) : tarifasPousoFiltradas.map((tarifa) => (
                         <TableRow key={tarifa.id}>
                           <TableCell className="font-medium">{new Intl.NumberFormat('pt-AO').format(tarifa.faixa_min)} kg</TableCell>
                           <TableCell className="font-medium">{new Intl.NumberFormat('pt-AO').format(tarifa.faixa_max)} kg</TableCell>
                           <TableCell><Badge variant="outline" className="capitalize">{tarifa.categoria_aeroporto?.replace('_', ' ')}</Badge></TableCell>
-                          <TableCell className="text-green-700 font-medium">${new Intl.NumberFormat('pt-AO', { minimumFractionDigits: 2 }).format(tarifa.tarifa_domestica)}</TableCell>
-                          <TableCell className="text-blue-700 font-medium">${new Intl.NumberFormat('pt-AO', { minimumFractionDigits: 2 }).format(tarifa.tarifa_internacional)}</TableCell>
-                          <TableCell><Badge className={tarifa.status === 'ativa' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{tarifa.status}</Badge></TableCell>
+                          <TableCell className="text-green-700 dark:text-green-400 font-medium">${new Intl.NumberFormat('pt-AO', { minimumFractionDigits: 2 }).format(tarifa.tarifa_domestica)}</TableCell>
+                          <TableCell className="text-blue-700 dark:text-blue-400 font-medium">${new Intl.NumberFormat('pt-AO', { minimumFractionDigits: 2 }).format(tarifa.tarifa_internacional)}</TableCell>
+                          <TableCell><Badge className={tarifa.status === 'ativa' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'}>{tarifa.status}</Badge></TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="icon" className="hover:bg-slate-200" onClick={() => handleOpenForm('tarifa_pouso', tarifa)}><Pencil className="h-4 w-4 text-slate-600" /></Button>
-                            <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100" onClick={() => handleDeleteClick('TarifaPouso', tarifa.id)}><Trash2 className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="hover:bg-slate-200 dark:hover:bg-slate-700" onClick={() => handleOpenForm('tarifa_pouso', tarifa)}><Pencil className="h-4 w-4 text-slate-600 dark:text-slate-400" /></Button>
+                            <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900" onClick={() => handleDeleteClick('TarifaPouso', tarifa.id)}><Trash2 className="w-4 h-4" /></Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -487,15 +489,15 @@ export default function ConfiguracaoTarifas() {
                   </TableHeader>
                   <TableBody>
                     {tarifasPermanencia.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center py-8 text-slate-500">Nenhuma tarifa de estacionamento configurada</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center py-8 text-slate-500 dark:text-slate-400">Nenhuma tarifa de estacionamento configurada</TableCell></TableRow>
                     ) : tarifasPermanencia.map((tarifa) => (
                       <TableRow key={tarifa.id}>
                         <TableCell><Badge variant="outline" className="capitalize">{tarifa.categoria_aeroporto?.replace('_', ' ')}</Badge></TableCell>
                         <TableCell className="font-medium text-blue-700">${new Intl.NumberFormat('pt-AO', { minimumFractionDigits: 2 }).format(tarifa.tarifa_usd_por_tonelada_hora || 0)}</TableCell>
-                        <TableCell><Badge className={tarifa.status === 'ativa' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{tarifa.status}</Badge></TableCell>
+                        <TableCell><Badge className={tarifa.status === 'ativa' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'}>{tarifa.status}</Badge></TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" className="hover:bg-slate-200" onClick={() => handleOpenForm('tarifa_permanencia', tarifa)}><Pencil className="h-4 w-4 text-slate-600" /></Button>
-                          <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100" onClick={() => handleDeleteClick('TarifaPermanencia', tarifa.id)}><Trash2 className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="icon" className="hover:bg-slate-200 dark:hover:bg-slate-700" onClick={() => handleOpenForm('tarifa_permanencia', tarifa)}><Pencil className="h-4 w-4 text-slate-600 dark:text-slate-400" /></Button>
+                          <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900" onClick={() => handleDeleteClick('TarifaPermanencia', tarifa.id)}><Trash2 className="w-4 h-4" /></Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -511,11 +513,11 @@ export default function ConfiguracaoTarifas() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Filter className="w-5 h-5 text-slate-500" />
+                    <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     Filtros
                   </CardTitle>
                   {(filtrosOutrasTarifas.tipo !== 'todos' || filtrosOutrasTarifas.tipoOperacao !== 'todos' || filtrosOutrasTarifas.categoria !== 'todos' || filtrosOutrasTarifas.status !== 'todos' || filtrosOutrasTarifas.busca !== '') && (
-                    <Button variant="outline" size="sm" onClick={() => setFiltrosOutrasTarifas({ tipo: 'todos', tipoOperacao: 'todos', categoria: 'todos', status: 'todos', busca: '' })} className="text-red-600 border-red-200 hover:bg-red-50">
+                    <Button variant="outline" size="sm" onClick={() => setFiltrosOutrasTarifas({ tipo: 'todos', tipoOperacao: 'todos', categoria: 'todos', status: 'todos', busca: '' })} className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950">
                       <X className="w-4 h-4 mr-1" /> Limpar Filtros
                     </Button>
                   )}
@@ -576,19 +578,19 @@ export default function ConfiguracaoTarifas() {
                     </TableHeader>
                     <TableBody>
                       {outrasTarifasFiltradas.length === 0 ? (
-                        <TableRow><TableCell colSpan={8} className="text-center py-8 text-slate-500">Nenhuma outra tarifa configurada</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={8} className="text-center py-8 text-slate-500 dark:text-slate-400">Nenhuma outra tarifa configurada</TableCell></TableRow>
                       ) : outrasTarifasFiltradas.map((tarifa) => (
                         <TableRow key={tarifa.id}>
                           <TableCell><Badge variant="outline">{tipoOutraTarifaOptions.find(o => o.value === tarifa.tipo)?.label || tarifa.tipo?.replace('_', ' ')}</Badge></TableCell>
                           <TableCell><Badge variant="outline" className="capitalize">{tarifa.tipo_operacao === 'domestica' ? 'Doméstico' : tarifa.tipo_operacao === 'internacional' ? 'Internacional' : 'Ambos'}</Badge></TableCell>
                           <TableCell><Badge variant="outline" className="capitalize">{tarifa.categoria_aeroporto?.replace('_', ' ')}</Badge></TableCell>
-                          <TableCell className="text-green-700 font-medium">${new Intl.NumberFormat('pt-AO', { minimumFractionDigits: 2 }).format(tarifa.valor)}</TableCell>
+                          <TableCell className="text-green-700 dark:text-green-400 font-medium">${new Intl.NumberFormat('pt-AO', { minimumFractionDigits: 2 }).format(tarifa.valor)}</TableCell>
                           <TableCell className="capitalize">{tarifa.unidade?.replace('_', ' ')}</TableCell>
                           <TableCell>{tarifa.descricao}</TableCell>
-                          <TableCell><Badge className={tarifa.status === 'ativa' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{tarifa.status}</Badge></TableCell>
+                          <TableCell><Badge className={tarifa.status === 'ativa' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'}>{tarifa.status}</Badge></TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="icon" className="hover:bg-slate-200" onClick={() => handleOpenForm('outra_tarifa', tarifa)}><Pencil className="h-4 w-4 text-slate-600" /></Button>
-                            <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100" onClick={() => handleDeleteClick('OutraTarifa', tarifa.id)}><Trash2 className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="hover:bg-slate-200 dark:hover:bg-slate-700" onClick={() => handleOpenForm('outra_tarifa', tarifa)}><Pencil className="h-4 w-4 text-slate-600 dark:text-slate-400" /></Button>
+                            <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900" onClick={() => handleDeleteClick('OutraTarifa', tarifa.id)}><Trash2 className="w-4 h-4" /></Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -624,7 +626,7 @@ export default function ConfiguracaoTarifas() {
                     </TableHeader>
                     <TableBody>
                       {tarifasRecursos.length === 0 ? (
-                        <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Nenhuma tarifa de recurso configurada</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500 dark:text-slate-400">Nenhuma tarifa de recurso configurada</TableCell></TableRow>
                       ) : tarifasRecursos.map(tr => (
                         <TableRow key={tr.id}>
                           <TableCell className="font-medium">
@@ -633,11 +635,11 @@ export default function ConfiguracaoTarifas() {
                           <TableCell>{Number(tr.valor_usd || 0).toFixed(2)}</TableCell>
                           <TableCell><Badge variant="outline">{(tr.categoria_aeroporto || '').replace('categoria_', 'Cat. ')}</Badge></TableCell>
                           <TableCell>{{ ambos: 'Ambos', domestica: 'Doméstico', internacional: 'Internacional' }[tr.tipo_operacao] || tr.tipo_operacao}</TableCell>
-                          <TableCell><Badge className={tr.status === 'ativa' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{tr.status === 'ativa' ? 'Ativa' : 'Inativa'}</Badge></TableCell>
-                          <TableCell className="text-xs text-slate-500 max-w-[200px] truncate">{tr.descricao || '-'}</TableCell>
+                          <TableCell><Badge className={tr.status === 'ativa' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'}>{tr.status === 'ativa' ? 'Ativa' : 'Inativa'}</Badge></TableCell>
+                          <TableCell className="text-xs text-slate-500 dark:text-slate-400 max-w-[200px] truncate">{tr.descricao || '-'}</TableCell>
                           <TableCell className="text-right">
                             <Button variant="ghost" size="icon" onClick={() => { setEditingTarifaRecurso(tr); setIsTarifaRecursoFormOpen(true); }}><Pencil className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100" onClick={() => handleDeleteClick('TarifaRecurso', tr.id)}><Trash2 className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900" onClick={() => handleDeleteClick('TarifaRecurso', tr.id)}><Trash2 className="w-4 h-4" /></Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -664,7 +666,7 @@ export default function ConfiguracaoTarifas() {
                   const items = tiposServicoGeral.filter(t => t.categoria === cat);
                   return (
                     <div key={cat} className="mb-6">
-                      <h3 className="text-sm font-semibold text-slate-600 mb-2">
+                      <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">
                         {cat === 'cursos_licencas' ? '📚 Cursos e Licenças' : '🚒 Serviços de Bombeiros'}
                       </h3>
                       <Table>
@@ -679,14 +681,14 @@ export default function ConfiguracaoTarifas() {
                         </TableHeader>
                         <TableBody>
                           {items.length === 0 ? (
-                            <TableRow><TableCell colSpan={5} className="text-center text-slate-400">Nenhum tipo cadastrado</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="text-center text-slate-400 dark:text-slate-500">Nenhum tipo cadastrado</TableCell></TableRow>
                           ) : items.map(item => (
                             <TableRow key={item.id}>
                               <TableCell className="font-medium">{item.label}</TableCell>
-                              <TableCell className="font-semibold text-green-700">{Number(item.valor_padrao_usd || 0).toFixed(2)}</TableCell>
+                              <TableCell className="font-semibold text-green-700 dark:text-green-400">{Number(item.valor_padrao_usd || 0).toFixed(2)}</TableCell>
                               <TableCell><Badge variant="outline">{item.unidade || '—'}</Badge></TableCell>
                               <TableCell>
-                                <Badge variant={item.status === 'ativa' ? 'default' : 'secondary'} className={item.status === 'ativa' ? 'bg-green-100 text-green-700' : ''}>
+                                <Badge variant={item.status === 'ativa' ? 'default' : 'secondary'} className={item.status === 'ativa' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : ''}>
                                   {item.status === 'ativa' ? 'Activa' : 'Inactiva'}
                                 </Badge>
                               </TableCell>
@@ -733,7 +735,7 @@ export default function ConfiguracaoTarifas() {
                   </TableHeader>
                   <TableBody>
                     {clientes.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center text-slate-400">Nenhum cliente cadastrado</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center text-slate-400 dark:text-slate-500">Nenhum cliente cadastrado</TableCell></TableRow>
                     ) : clientes.map(emp => (
                       <TableRow key={emp.id}>
                         <TableCell className="font-medium">{emp.nome}</TableCell>
@@ -781,17 +783,17 @@ export default function ConfiguracaoTarifas() {
                   </TableHeader>
                   <TableBody>
                     {impostos.length === 0 ? (
-                      <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Nenhum imposto configurado</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500 dark:text-slate-400">Nenhum imposto configurado</TableCell></TableRow>
                     ) : impostos.map((imposto) => (
                       <TableRow key={imposto.id}>
                         <TableCell className="font-medium">{imposto.tipo}</TableCell>
-                        <TableCell className="text-blue-700 font-medium">{imposto.valor}%</TableCell>
+                        <TableCell className="text-blue-700 dark:text-blue-400 font-medium">{imposto.valor}%</TableCell>
                         <TableCell>{imposto.aeroporto_id ? aeroportos.find(a => a.id === imposto.aeroporto_id)?.nome || 'N/A' : 'Todos'}</TableCell>
                         <TableCell>{new Date(imposto.data_inicio_vigencia).toLocaleDateString('pt-AO')}</TableCell>
-                        <TableCell><Badge className={imposto.status === 'ativo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{imposto.status}</Badge></TableCell>
+                        <TableCell><Badge className={imposto.status === 'ativo' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'}>{imposto.status}</Badge></TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" className="hover:bg-slate-200" onClick={() => handleOpenForm('imposto', imposto)}><Pencil className="h-4 w-4 text-slate-600" /></Button>
-                          <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100" onClick={() => handleDeleteClick('Imposto', imposto.id)}><Trash2 className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="icon" className="hover:bg-slate-200 dark:hover:bg-slate-700" onClick={() => handleOpenForm('imposto', imposto)}><Pencil className="h-4 w-4 text-slate-600 dark:text-slate-400" /></Button>
+                          <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900" onClick={() => handleDeleteClick('Imposto', imposto.id)}><Trash2 className="w-4 h-4" /></Button>
                         </TableCell>
                       </TableRow>
                     ))}

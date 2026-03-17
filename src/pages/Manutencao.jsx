@@ -31,8 +31,10 @@ import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
 import { getAeroportosPermitidos, filtrarDadosPorAeroportoId, isSuperAdmin } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function Manutencao() {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [currentUser, setCurrentUser] = useState(null);
   const [ordensDeServico, setOrdensDeServico] = useState([]);
@@ -352,11 +354,11 @@ export default function Manutencao() {
     <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Gestão de Manutenção</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{t('page.manutencao.title')}</h1>
           <div className="flex gap-2">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Atualizar
+              {t('btn.refresh')}
             </Button>
           </div>
         </div>
@@ -365,17 +367,17 @@ export default function Manutencao() {
           <TabsList className={`grid w-full ${canManage ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="solicitacoes" className="flex items-center gap-2">
               <ClipboardList className="w-4 h-4" />
-              Solicitações (SS)
+              {t('tab.solicitations')}
               {ssStats.abertas > 0 && <Badge variant="destructive" className="ml-1 text-xs">{ssStats.abertas}</Badge>}
             </TabsTrigger>
             <TabsTrigger value="ordens" className="flex items-center gap-2">
               <Wrench className="w-4 h-4" />
-              Ordens de Serviço (OS)
+              {t('tab.work_orders')}
             </TabsTrigger>
             {canManage && (
               <TabsTrigger value="configuracoes" className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
-                Configurações
+                {t('tab.config')}
               </TabsTrigger>
             )}
           </TabsList>
@@ -384,11 +386,11 @@ export default function Manutencao() {
           <TabsContent value="solicitacoes" className="space-y-6">
             {/* SS Stats */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{ssStats.total}</p><p className="text-sm text-slate-500 dark:text-slate-400">Total SS</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-yellow-600">{ssStats.abertas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Abertas</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-blue-600">{ssStats.em_analise}</p><p className="text-sm text-slate-500 dark:text-slate-400">Em Análise</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600">{ssStats.aprovadas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Aprovadas</p></CardContent></Card>
-              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-red-600">{ssStats.rejeitadas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Rejeitadas</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{ssStats.total}</p><p className="text-sm text-slate-500 dark:text-slate-400">Total SS</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{ssStats.abertas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Abertas</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{ssStats.em_analise}</p><p className="text-sm text-slate-500 dark:text-slate-400">Em Analise</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600 dark:text-green-400">{ssStats.aprovadas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Aprovadas</p></CardContent></Card>
+              <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-red-600 dark:text-red-400">{ssStats.rejeitadas}</p><p className="text-sm text-slate-500 dark:text-slate-400">Rejeitadas</p></CardContent></Card>
             </div>
 
             <div className="flex justify-end">
@@ -425,7 +427,7 @@ export default function Manutencao() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Filter className="w-5 h-5 text-slate-500" />
+                    <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     Filtros e Exportação
                   </CardTitle>
                   <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={isLoading}>

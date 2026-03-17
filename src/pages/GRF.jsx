@@ -29,8 +29,10 @@ import { createPdfDoc, addHeader, addFooter, addTable, fetchEmpresaLogo, PDF } f
 import FormGRF from '../components/grf/FormGRF';
 import SendEmailModal from '../components/shared/SendEmailModal';
 import SuccessModal from '../components/shared/SuccessModal';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function GRFPage() { // Renamed from GRF to GRFPage
+  const { t } = useI18n();
   const [registos, setRegistos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -495,33 +497,33 @@ Por favor tente novamente ou contacte o suporte técnico.`;
   const allSelected = filteredRegistos.length > 0 && filteredRegistos.every(reg => selectedRegistos.includes(reg.id));
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <Plane className="w-6 md:w-8 h-6 md:h-8 text-blue-600" />
-              GRF – Condições da Pista
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+              <Plane className="w-6 md:w-8 h-6 md:h-8 text-blue-600 dark:text-blue-400" />
+              {t('page.grf.title')}
             </h1>
-            <p className="text-slate-600 mt-1">Registo e gestão das condições das pistas dos aeroportos</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.grf.subtitle')}</p>
           </div>
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-            <Button variant="outline" onClick={loadData} className="border-slate-300 text-slate-700 hover:bg-slate-100">
+            <Button variant="outline" onClick={loadData} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <RefreshCw className="w-4 h-4 mr-2" />
               Atualizar
             </Button>
-            <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 text-slate-700 hover:bg-slate-100">
+            <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileDown className="w-4 h-4 mr-2" />
               Exportar CSV
               {selectedRegistos.length > 0 && ` (${selectedRegistos.length})`}
             </Button>
-            <Button variant="outline" onClick={handleExportPDF} className="border-slate-300 text-slate-700 hover:bg-slate-100">
+            <Button variant="outline" onClick={handleExportPDF} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileText className="w-4 h-4 mr-2" />
               Exportar PDF
               {selectedRegistos.length > 0 && ` (${selectedRegistos.length})`}
             </Button>
             {selectedRegistos.length > 0 && (
-              <Button variant="outline" onClick={() => setIsEmailModalOpen(true)} className="border-blue-300 text-blue-600 hover:bg-blue-50">
+              <Button variant="outline" onClick={() => setIsEmailModalOpen(true)} className="border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950">
                 <Mail className="w-4 h-4 mr-2" />
                 Enviar Email ({selectedRegistos.length})
               </Button>
@@ -541,9 +543,9 @@ Por favor tente novamente ou contacte o suporte técnico.`;
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Aeroporto</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Aeroporto</label>
                 <select 
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   value={filtros.aeroporto} 
                   onChange={(e) => setFiltros({...filtros, aeroporto: e.target.value})}
                 >
@@ -555,9 +557,9 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Mês</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Mês</label>
                 <select 
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   value={filtros.mes?.toString()} 
                   onChange={(e) => setFiltros({...filtros, mes: parseInt(e.target.value)})}
                 >
@@ -570,9 +572,9 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Pista</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Pista</label>
                 <select 
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   value={filtros.pista} 
                   onChange={(e) => setFiltros({...filtros, pista: e.target.value})}
                 >
@@ -596,22 +598,22 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-slate-500 mt-2">A carregar registos...</p>
+                <p className="text-slate-500 dark:text-slate-400 mt-2">A carregar registos...</p>
               </div>
             ) : filteredRegistos.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
                 <Plane className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   Nenhum registo encontrado
                 </h3>
-                <p className="text-slate-500">
+                <p className="text-slate-500 dark:text-slate-400">
                   Não há registos GRF que correspondam aos filtros selecionados.
                 </p>
               </div>
             ) : (
               <>
                 {/* Header com seleção */}
-                <div className="mb-4 p-3 bg-slate-50 rounded-lg">
+                <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Checkbox
@@ -619,7 +621,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                         onCheckedChange={handleSelectAll}
                         className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                       />
-                      <span className="text-sm font-medium text-slate-700">
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                         {selectedRegistos.length > 0 
                           ? `${selectedRegistos.length} de ${filteredRegistos.length} selecionados`
                           : `Selecionar todos (${filteredRegistos.length})`
@@ -627,7 +629,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                       </span>
                     </div>
                     {selectedRegistos.length > 0 && (
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
                         Use os botões de exportação/email para os itens selecionados
                       </span>
                     )}

@@ -14,35 +14,35 @@ export default function DuplicateConflictsModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 mb-4">
-            <AlertTriangle className="h-6 w-6 text-yellow-600" />
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900 mb-4">
+            <AlertTriangle className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
           </div>
           <DialogTitle className="text-center text-xl">Conflitos de Duplicados Encontrados</DialogTitle>
-          <DialogDescription className="text-center text-slate-500 pt-2">
+          <DialogDescription className="text-center text-slate-500 dark:text-slate-400 pt-2">
             O seu ficheiro contém registos que já existem na base de dados. Como deseja proceder?
           </DialogDescription>
         </DialogHeader>
         
         <div className="my-6 space-y-4">
-          <div className="flex justify-between items-center bg-green-50 p-4 rounded-lg border border-green-200">
+          <div className="flex justify-between items-center bg-green-50 dark:bg-green-950 p-4 rounded-lg border border-green-200 dark:border-green-700">
             <div className="flex items-center gap-3">
-              <PlusCircle className="w-6 h-6 text-green-600" />
+              <PlusCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
               <div>
-                <p className="font-semibold text-green-800">Novos Registos</p>
-                <p className="text-sm text-green-700">Serão adicionados à base de dados.</p>
+                <p className="font-semibold text-green-800 dark:text-green-200">Novos Registos</p>
+                <p className="text-sm text-green-700 dark:text-green-300">Serão adicionados à base de dados.</p>
               </div>
             </div>
-            <span className="font-bold text-lg text-green-800">{newRecordsCount}</span>
+            <span className="font-bold text-lg text-green-800 dark:text-green-200">{newRecordsCount}</span>
           </div>
-          <div className="flex justify-between items-center bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+          <div className="flex justify-between items-center bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg border border-yellow-200 dark:border-yellow-700">
             <div className="flex items-center gap-3">
-              <RefreshCw className="w-6 h-6 text-yellow-600" />
+              <RefreshCw className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
               <div>
-                <p className="font-semibold text-yellow-800">Registos Duplicados</p>
-                 <p className="text-sm text-yellow-700">Pode ignorá-los ou atualizar os existentes.</p>
+                <p className="font-semibold text-yellow-800 dark:text-yellow-200">Registos Duplicados</p>
+                 <p className="text-sm text-yellow-700 dark:text-yellow-300">Pode ignorá-los ou atualizar os existentes.</p>
               </div>
             </div>
-            <span className="font-bold text-lg text-yellow-800">{conflictsCount}</span>
+            <span className="font-bold text-lg text-yellow-800 dark:text-yellow-200">{conflictsCount}</span>
           </div>
         </div>
 

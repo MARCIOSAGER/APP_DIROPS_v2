@@ -118,10 +118,10 @@ export default function CredenciamentoPublico() {
 
   if (isLoadingData) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
         <Card className="w-full max-w-md"><CardContent className="flex flex-col items-center justify-center py-16">
-          <Loader2 className="animate-spin h-12 w-12 text-blue-600 mb-4" />
-          <p className="text-slate-600">A carregar dados...</p>
+          <Loader2 className="animate-spin h-12 w-12 text-blue-600 dark:text-blue-400 mb-4" />
+          <p className="text-slate-600 dark:text-slate-400">A carregar dados...</p>
         </CardContent></Card>
       </div>
     );
@@ -142,7 +142,7 @@ export default function CredenciamentoPublico() {
   const aeroportoOptions = aeroportos.map(a => ({ value: a.id, label: a.nome }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-blue-950 flex items-center justify-center p-4">
       <div className="w-full max-w-3xl">
         <div className="mb-6">
           <Link to={createPageUrl('portalservicos')}>
@@ -155,8 +155,8 @@ export default function CredenciamentoPublico() {
         <Card className="w-full">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4"><img src="/logo-dirops.png" alt="DIROPS Logo" className="h-12" /></div>
-            <CardTitle className="text-2xl font-bold text-slate-900">Formulário de Solicitação de Credencial</CardTitle>
-            <CardDescription className="text-slate-600 mt-2">Preencha os dados abaixo para iniciar um novo pedido de credenciamento.</CardDescription>
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">Formulário de Solicitação de Credencial</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400 mt-2">Preencha os dados abaixo para iniciar um novo pedido de credenciamento.</CardDescription>
           </CardHeader>
           
           <CardContent>
@@ -200,14 +200,14 @@ export default function CredenciamentoPublico() {
               </div>
 
               {formData.tipo_credencial === 'pessoa' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md bg-slate-50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md bg-slate-50 dark:bg-slate-800">
                   <div className="space-y-2"><Label htmlFor="nome_completo">Nome Completo *</Label><Input id="nome_completo" value={formData.nome_completo} onChange={(e) => handleChange('nome_completo', e.target.value)} /></div>
                   <div className="space-y-2"><Label htmlFor="funcao_empresa">Função na Empresa *</Label><Input id="funcao_empresa" value={formData.funcao_empresa} onChange={(e) => handleChange('funcao_empresa', e.target.value)} /></div>
                 </div>
               )}
               
               {formData.tipo_credencial === 'viatura' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md bg-slate-50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md bg-slate-50 dark:bg-slate-800">
                   <div className="space-y-2"><Label htmlFor="matricula_viatura">Matrícula da Viatura *</Label><Input id="matricula_viatura" value={formData.matricula_viatura} onChange={(e) => handleChange('matricula_viatura', e.target.value)} /></div>
                   <div className="space-y-2"><Label htmlFor="modelo_viatura">Modelo da Viatura *</Label><Input id="modelo_viatura" value={formData.modelo_viatura} onChange={(e) => handleChange('modelo_viatura', e.target.value)} /></div>
                 </div>

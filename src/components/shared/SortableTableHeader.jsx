@@ -27,7 +27,7 @@ export default function SortableTableHeader({
   return (
     <TableHead 
       className={cn(
-        "cursor-pointer hover:bg-slate-100 transition-colors select-none",
+        "cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none",
         className
       )}
       onClick={handleClick}
@@ -36,12 +36,12 @@ export default function SortableTableHeader({
         <span>{label}</span>
         {isSorted ? (
           currentSortDirection === 'asc' ? (
-            <ArrowUp className="w-4 h-4 text-blue-600" />
+            <ArrowUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           ) : (
-            <ArrowDown className="w-4 h-4 text-blue-600" />
+            <ArrowDown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           )
         ) : (
-          <ArrowUpDown className="w-4 h-4 text-gray-400" />
+          <ArrowUpDown className="w-4 h-4 text-gray-400 dark:text-slate-500" />
         )}
       </div>
     </TableHead>

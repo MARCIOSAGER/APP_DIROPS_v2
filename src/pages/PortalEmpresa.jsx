@@ -92,19 +92,19 @@ export default function PortalEmpresa() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-blue-950 flex items-center justify-center">
         <div className="text-center">
-          <RefreshCw className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" />
-          <p className="text-slate-600">A carregar dados da empresa...</p>
+          <RefreshCw className="animate-spin h-12 w-12 text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400">A carregar dados da empresa...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-blue-950">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white dark:bg-slate-900 shadow-sm border-b dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -114,16 +114,16 @@ export default function PortalEmpresa() {
                 className="h-8 mr-4"
               />
               <div>
-                <h1 className="text-xl font-semibold text-slate-900">Portal da Empresa</h1>
+                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Portal da Empresa</h1>
                 {empresa && (
-                  <p className="text-sm text-slate-500">{empresa.nome}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{empresa.nome}</p>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-sm font-medium text-slate-900">{user?.full_name}</p>
-                <p className="text-xs text-slate-500">{user?.email}</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{user?.full_name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
               </div>
               <Button variant="ghost" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
@@ -145,8 +145,8 @@ export default function PortalEmpresa() {
                   <UserCheck className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Total</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</p>
                 </div>
               </div>
             </CardContent>
@@ -159,8 +159,8 @@ export default function PortalEmpresa() {
                   <FileText className="h-6 w-6 text-yellow-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Pendentes</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.pendentes}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Pendentes</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.pendentes}</p>
                 </div>
               </div>
             </CardContent>
@@ -173,8 +173,8 @@ export default function PortalEmpresa() {
                   <UserCheck className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Aprovados</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.aprovados}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Aprovados</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.aprovados}</p>
                 </div>
               </div>
             </CardContent>
@@ -187,8 +187,8 @@ export default function PortalEmpresa() {
                   <UserCheck className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600">Rejeitados</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.rejeitados}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Rejeitados</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.rejeitados}</p>
                 </div>
               </div>
             </CardContent>
@@ -248,8 +248,8 @@ export default function PortalEmpresa() {
             {credenciamentos.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 mb-2">Nenhum credenciamento encontrado</h3>
-                <p className="text-slate-500 mb-6">A sua empresa ainda não tem solicitações de credenciamento.</p>
+                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">Nenhum credenciamento encontrado</h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-6">A sua empresa ainda não tem solicitações de credenciamento.</p>
                 <Button 
                   onClick={() => window.location.href = '/CredenciamentoPublico'}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -261,7 +261,7 @@ export default function PortalEmpresa() {
             ) : (
               <div className="space-y-4">
                 {credenciamentos.map((credenciamento) => (
-                  <div key={credenciamento.id} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
+                  <div key={credenciamento.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
@@ -278,15 +278,15 @@ export default function PortalEmpresa() {
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                           <div>
-                            <span className="text-slate-600">Nome/Matrícula:</span>
+                            <span className="text-slate-600 dark:text-slate-400">Nome/Matrícula:</span>
                             <p className="font-medium">{credenciamento.nome_completo || credenciamento.matricula_viatura}</p>
                           </div>
                           <div>
-                            <span className="text-slate-600">Aeroporto:</span>
+                            <span className="text-slate-600 dark:text-slate-400">Aeroporto:</span>
                             <p className="font-medium">{getAeroportoNome(credenciamento.aeroporto_id)}</p>
                           </div>
                           <div>
-                            <span className="text-slate-600">Data:</span>
+                            <span className="text-slate-600 dark:text-slate-400">Data:</span>
                             <p className="font-medium">
                               {new Date(credenciamento.data_solicitacao).toLocaleDateString('pt-AO')}
                             </p>
@@ -295,8 +295,8 @@ export default function PortalEmpresa() {
                         
                         {credenciamento.justificativa_acesso && (
                           <div className="mt-3 text-sm">
-                            <span className="text-slate-600">Justificativa:</span>
-                            <p className="text-slate-700">{credenciamento.justificativa_acesso}</p>
+                            <span className="text-slate-600 dark:text-slate-400">Justificativa:</span>
+                            <p className="text-slate-700 dark:text-slate-300">{credenciamento.justificativa_acesso}</p>
                           </div>
                         )}
                       </div>

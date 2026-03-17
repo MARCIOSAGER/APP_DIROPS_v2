@@ -245,10 +245,10 @@ export default function SolicitacaoPerfil() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 mb-4" />
-          <p className="text-lg text-slate-700">A carregar...</p>
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 dark:text-blue-400 mb-4" />
+          <p className="text-lg text-slate-700 dark:text-slate-300">A carregar...</p>
         </div>
       </div>
     );
@@ -256,14 +256,14 @@ export default function SolicitacaoPerfil() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-blue-950 flex items-center justify-center p-4">
         <Card className="max-w-lg w-full shadow-xl border-0">
           <CardContent className="p-8 text-center space-y-4">
-            <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto">
-              <Info className="w-10 h-10 text-green-600" />
+            <div className="bg-green-100 dark:bg-green-900 w-20 h-20 rounded-full flex items-center justify-center mx-auto">
+              <Info className="w-10 h-10 text-green-600 dark:text-green-400" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">Solicitação Enviada!</h2>
-            <p className="text-slate-600">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Solicitação Enviada!</h2>
+            <p className="text-slate-600 dark:text-slate-400">
               A sua solicitação de acesso foi recebida com sucesso. Um administrador irá analisá-la e receberá uma notificação por e-mail quando for aprovada.
             </p>
             <Button
@@ -280,21 +280,21 @@ export default function SolicitacaoPerfil() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-blue-950 py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <div className="bg-blue-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
             <UserCog className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Solicitar Acesso ao Sistema</h1>
-          <p className="text-lg text-slate-600">
-            Olá <span className="font-semibold text-blue-600">{user?.full_name?.split(' ')[0] || 'msager'}</span>! Complete o formulário abaixo.
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">Solicitar Acesso ao Sistema</h1>
+          <p className="text-lg text-slate-600 dark:text-slate-400">
+            Olá <span className="font-semibold text-blue-600 dark:text-blue-400">{user?.full_name?.split(' ')[0] || 'msager'}</span>! Complete o formulário abaixo.
           </p>
         </div>
 
-        <Alert className="mb-6 border-blue-300 bg-blue-50 shadow-sm">
-          <Info className="h-5 w-5 text-blue-600" />
-          <AlertDescription className="text-blue-900 ml-2">
+        <Alert className="mb-6 border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950 shadow-sm">
+          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-blue-900 dark:text-blue-100 ml-2">
             A sua solicitação será analisada por um administrador. Receberá uma notificação por e-mail quando for aprovada.
           </AlertDescription>
         </Alert>
@@ -306,16 +306,16 @@ export default function SolicitacaoPerfil() {
           </Alert>
         )}
 
-        <Card className="shadow-xl border-0 bg-white/95 backdrop-blur">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+        <Card className="shadow-xl border-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-b dark:border-slate-700">
             <CardTitle className="text-2xl">Dados da Solicitação</CardTitle>
-            <p className="text-sm text-slate-600 mt-1">Preencha todos os campos obrigatórios (*)</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Preencha todos os campos obrigatórios (*)</p>
           </CardHeader>
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Nome Completo */}
               <div className="space-y-2">
-                <Label htmlFor="nome_completo" className="text-base font-semibold text-slate-700">
+                <Label htmlFor="nome_completo" className="text-base font-semibold text-slate-700 dark:text-slate-300">
                   Nome Completo *
                 </Label>
                 <Input
@@ -332,7 +332,7 @@ export default function SolicitacaoPerfil() {
 
               {/* Email (apenas visualização) */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-base font-semibold text-slate-700">
+                <Label htmlFor="email" className="text-base font-semibold text-slate-700 dark:text-slate-300">
                   Email
                 </Label>
                 <Input
@@ -340,13 +340,13 @@ export default function SolicitacaoPerfil() {
                   type="email"
                   value={formData.email}
                   disabled
-                  className="h-12 text-base bg-slate-50 text-slate-500 cursor-not-allowed border-slate-200"
+                  className="h-12 text-base bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed border-slate-200 dark:border-slate-700"
                 />
               </div>
 
               {/* Telefone */}
               <div className="space-y-2">
-                <Label htmlFor="telefone" className="text-base font-semibold text-slate-700">
+                <Label htmlFor="telefone" className="text-base font-semibold text-slate-700 dark:text-slate-300">
                   Telefone de Contacto *
                 </Label>
                 <Input
@@ -363,7 +363,7 @@ export default function SolicitacaoPerfil() {
 
               {/* Perfil Solicitado */}
               <div className="space-y-2">
-                <Label htmlFor="perfil_solicitado" className="text-base font-semibold text-slate-700">
+                <Label htmlFor="perfil_solicitado" className="text-base font-semibold text-slate-700 dark:text-slate-300">
                   Perfil Solicitado *
                 </Label>
                 <Select
@@ -379,7 +379,7 @@ export default function SolicitacaoPerfil() {
 
               {/* Empresa */}
               <div className="space-y-2">
-                <Label htmlFor="empresa_solicitante_id" className="text-base font-semibold text-slate-700">
+                <Label htmlFor="empresa_solicitante_id" className="text-base font-semibold text-slate-700 dark:text-slate-300">
                   Empresa *
                 </Label>
                 <Combobox
@@ -396,7 +396,7 @@ export default function SolicitacaoPerfil() {
               {/* Aeroportos */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold text-slate-700">
+                  <Label className="text-base font-semibold text-slate-700 dark:text-slate-300">
                     Aeroportos Solicitados *
                   </Label>
                   <div className="flex gap-2">
@@ -436,9 +436,9 @@ export default function SolicitacaoPerfil() {
                 </div>
 
                 {/* Lista de aeroportos disponíveis */}
-                <div className="border border-slate-300 rounded-lg p-2 max-h-60 overflow-y-auto bg-white shadow-sm">
+                <div className="border border-slate-300 dark:border-slate-600 rounded-lg p-2 max-h-60 overflow-y-auto bg-white dark:bg-slate-900 shadow-sm">
                   {aeroportosFiltrados.length === 0 ? (
-                    <p className="text-sm text-slate-500 text-center py-4">Nenhum aeroporto encontrado</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhum aeroporto encontrado</p>
                   ) : (
                     <div className="space-y-1">
                       {aeroportosFiltrados.map((aeroporto) => (
@@ -448,23 +448,23 @@ export default function SolicitacaoPerfil() {
                           onClick={() => handleToggleAeroporto(aeroporto.codigo_icao)}
                           className={`w-full text-left px-3 py-2.5 rounded transition-colors ${
                             formData.aeroportos_solicitados.includes(aeroporto.codigo_icao)
-                              ? 'bg-blue-100 border border-blue-300'
-                              : 'hover:bg-slate-50'
+                              ? 'bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700'
+                              : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                           }`}
                         >
                           <div className="flex items-center gap-2">
                             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
                               formData.aeroportos_solicitados.includes(aeroporto.codigo_icao)
                                 ? 'bg-blue-600 border-blue-600'
-                                : 'border-slate-300'
+                                : 'border-slate-300 dark:border-slate-600'
                             }`}>
                               {formData.aeroportos_solicitados.includes(aeroporto.codigo_icao) && (
                                 <X className="w-3 h-3 text-white" />
                               )}
                             </div>
-                            <span className="font-bold text-blue-600 text-base">{aeroporto.codigo_icao}</span>
-                            <span className="text-slate-700 text-sm">- {aeroporto.nome}</span>
-                            <span className="text-slate-500 text-xs">({aeroporto.cidade})</span>
+                            <span className="font-bold text-blue-600 dark:text-blue-400 text-base">{aeroporto.codigo_icao}</span>
+                            <span className="text-slate-700 dark:text-slate-300 text-sm">- {aeroporto.nome}</span>
+                            <span className="text-slate-500 dark:text-slate-400 text-xs">({aeroporto.cidade})</span>
                           </div>
                         </button>
                       ))}
@@ -475,11 +475,11 @@ export default function SolicitacaoPerfil() {
                 {/* Aeroportos selecionados */}
                 <input type="hidden" required value={formData.aeroportos_solicitados.length > 0 ? 'ok' : ''} />
                 <div className="space-y-2">
-                  <p className="text-sm text-slate-600">
-                    Selecionados: <span className="font-semibold text-blue-600">{formData.aeroportos_solicitados.length}</span>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Selecionados: <span className="font-semibold text-blue-600 dark:text-blue-400">{formData.aeroportos_solicitados.length}</span>
                   </p>
                   {formData.aeroportos_solicitados.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="flex flex-wrap gap-2 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                       {formData.aeroportos_solicitados.map((codigo) => {
                         const aeroporto = aeroportos.find(a => a.codigo_icao === codigo);
                         return (
@@ -509,8 +509,8 @@ export default function SolicitacaoPerfil() {
 
               {/* Justificativa (opcional) */}
               <div className="space-y-2">
-                <Label htmlFor="justificativa" className="text-base font-semibold text-slate-700">
-                  Justificativa <span className="text-slate-400 font-normal">(Opcional)</span>
+                <Label htmlFor="justificativa" className="text-base font-semibold text-slate-700 dark:text-slate-300">
+                  Justificativa <span className="text-slate-400 dark:text-slate-500 font-normal">(Opcional)</span>
                 </Label>
                 <Textarea
                   id="justificativa"

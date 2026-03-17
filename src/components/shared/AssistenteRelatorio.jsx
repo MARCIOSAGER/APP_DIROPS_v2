@@ -38,7 +38,7 @@ export default function AssistenteRelatorio({ isOpen, onClose, dados, contexto, 
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
-            <FileText className="w-6 h-6 text-blue-600" />
+            <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             Assistente de Relatório
           </DialogTitle>
         </DialogHeader>
@@ -46,7 +46,7 @@ export default function AssistenteRelatorio({ isOpen, onClose, dados, contexto, 
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-4" />
-            <p className="text-slate-600">Gerando relatório profissional...</p>
+            <p className="text-slate-600 dark:text-slate-400">Gerando relatório profissional...</p>
           </div>
         )}
 

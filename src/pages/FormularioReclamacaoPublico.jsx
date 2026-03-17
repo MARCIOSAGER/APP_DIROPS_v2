@@ -240,7 +240,7 @@ export default function FormularioReclamacaoPublico() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-blue-950 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         <div className="mb-6">
           <Link to={createPageUrl('portalservicos')}>
@@ -318,11 +318,11 @@ export default function FormularioReclamacaoPublico() {
               </Card>
 
               {/* Dados do Reclamante (Opcionais) */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold mb-4 text-slate-700">
+              <div className="border-t dark:border-slate-700 pt-6">
+                <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-300">
                   Dados de Contacto (Opcional)
                 </h3>
-                <p className="text-sm text-slate-500 mb-4">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                   Forneça os seus dados se desejar receber uma resposta da nossa equipa
                 </p>
                 
@@ -349,12 +349,12 @@ export default function FormularioReclamacaoPublico() {
               </div>
 
               {/* Anexos */}
-              <div className="border-t pt-6">
+              <div className="border-t dark:border-slate-700 pt-6">
                 <Label>Anexos (Opcional)</Label>
-                <p className="text-sm text-slate-500 mb-3">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
                   Anexe fotos ou documentos que ajudem a esclarecer a situação
                 </p>
-                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
+                <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 text-center">
                   <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                   <Input
                     type="file"
@@ -370,7 +370,7 @@ export default function FormularioReclamacaoPublico() {
                   >
                     Clique para selecionar ficheiros
                   </Label>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Formatos aceites: Imagens, PDF, Word (máx. 10MB cada)
                   </p>
                   
@@ -380,10 +380,10 @@ export default function FormularioReclamacaoPublico() {
                   
                   {formData.anexos.length > 0 && (
                     <div className="mt-4 space-y-2">
-                      <h4 className="text-sm font-medium text-slate-700">Ficheiros anexados:</h4>
+                      <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">Ficheiros anexados:</h4>
                       {formData.anexos.map((url, i) => (
-                        <div key={i} className="flex items-center justify-between bg-slate-50 rounded p-2">
-                          <span className="text-sm text-slate-600">Anexo {i+1}</span>
+                        <div key={i} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 rounded p-2">
+                          <span className="text-sm text-slate-600 dark:text-slate-400">Anexo {i+1}</span>
                           <Button
                             type="button"
                             variant="ghost"
@@ -404,13 +404,13 @@ export default function FormularioReclamacaoPublico() {
               </div>
 
               {/* Termos */}
-              <div className="border-t pt-6">
-                <Card className="bg-blue-50 border-blue-200">
+              <div className="border-t dark:border-slate-700 pt-6">
+                <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
                   <CardContent className="p-4">
-                    <h4 className="font-semibold text-slate-800 mb-3">
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-3">
                       Informações Importantes sobre o Tratamento da Reclamação:
                     </h4>
-                    <ul className="space-y-2 text-sm text-slate-700">
+                    <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
                       <li className="flex items-start">
                         <CheckCircle className="w-4 h-4 text-green-600 mr-2 mt-1 flex-shrink-0" />
                         <span>A sua reclamação será analisada pela nossa equipa especializada.</span>
@@ -429,7 +429,7 @@ export default function FormularioReclamacaoPublico() {
                       </li>
                     </ul>
                     
-                    <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-blue-200">
+                    <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-blue-200 dark:border-blue-700">
                       <Checkbox 
                         id="termos-publico"
                         checked={acceptedTerms}
@@ -465,8 +465,8 @@ export default function FormularioReclamacaoPublico() {
         </Card>
 
         {/* Informações de Contacto */}
-        <div className="mt-8 text-center text-sm text-slate-500 p-4 bg-white rounded-lg shadow-sm">
-          <h3 className="font-semibold text-slate-700 mb-2">Outros Meios de Contacto</h3>
+        <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400 p-4 bg-white dark:bg-slate-900 rounded-lg shadow-sm">
+          <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-2">Outros Meios de Contacto</h3>
           <div className="flex flex-col md:flex-row justify-center items-center gap-x-6 gap-y-2">
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-slate-500" />

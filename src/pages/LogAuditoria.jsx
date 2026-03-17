@@ -207,7 +207,7 @@ export default function LogAuditoriaPage() {
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-slate-600">A carregar logs de auditoria...</p>
+          <p className="text-slate-600 dark:text-slate-400">A carregar logs de auditoria...</p>
         </div>
       </div>
     );
@@ -223,7 +223,7 @@ export default function LogAuditoriaPage() {
               <div>
                 <strong>{error.message}</strong>
               </div>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 {error.details}
               </p>
               {error.type === 'auth' && (
@@ -253,7 +253,7 @@ export default function LogAuditoriaPage() {
             <div>
               <strong>Acesso Restrito</strong>
             </div>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
               Os logs de auditoria são confidenciais e estão disponíveis apenas para administradores do sistema.
             </p>
           </AlertDescription>
@@ -266,11 +266,11 @@ export default function LogAuditoriaPage() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Shield className="w-6 h-6 text-blue-600" />
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             Log de Auditoria
           </h1>
-          <p className="text-slate-600">
+          <p className="text-slate-600 dark:text-slate-400">
             Histórico completo de ações realizadas no sistema
           </p>
         </div>
@@ -301,7 +301,7 @@ export default function LogAuditoriaPage() {
             <div>
               <Label>Ação</Label>
               <select
-                className="w-full h-10 px-3 rounded-md border border-slate-200"
+                className="w-full h-10 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-100"
                 value={filters.acao}
                 onChange={(e) => handleFilterChange('acao', e.target.value)}
               >
@@ -318,7 +318,7 @@ export default function LogAuditoriaPage() {
             <div>
               <Label>Módulo</Label>
               <select
-                className="w-full h-10 px-3 rounded-md border border-slate-200"
+                className="w-full h-10 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-100"
                 value={filters.modulo}
                 onChange={(e) => handleFilterChange('modulo', e.target.value)}
               >
@@ -377,25 +377,25 @@ export default function LogAuditoriaPage() {
           {filteredLogs.length === 0 ? (
             <div className="text-center py-8">
               <Eye className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-              <p className="text-slate-500">Nenhum log encontrado</p>
+              <p className="text-slate-500 dark:text-slate-400">Nenhum log encontrado</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-100 border-b border-slate-200">
+                <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                   <tr>
-                    <th className="text-left p-3 font-medium text-slate-700">Data/Hora</th>
-                    <th className="text-left p-3 font-medium text-slate-700">Ação</th>
-                    <th className="text-left p-3 font-medium text-slate-700">Módulo</th>
-                    <th className="text-left p-3 font-medium text-slate-700">Utilizador</th>
-                    <th className="text-left p-3 font-medium text-slate-700">Entidade</th>
-                    <th className="text-center p-3 font-medium text-slate-700">Detalhes</th>
+                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Data/Hora</th>
+                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Ação</th>
+                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Módulo</th>
+                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Utilizador</th>
+                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Entidade</th>
+                    <th className="text-center p-3 font-medium text-slate-700 dark:text-slate-300">Detalhes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredLogs.map((log) => (
-                    <tr key={log.id} className="border-b border-slate-200 hover:bg-slate-50 group">
-                      <td className="p-3 text-slate-600 text-xs">
+                    <tr key={log.id} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 group">
+                      <td className="p-3 text-slate-600 dark:text-slate-400 text-xs">
                         {format(new Date(log.created_date), 'dd/MM HH:mm', { locale: pt })}
                       </td>
                       <td className="p-3">
@@ -410,10 +410,10 @@ export default function LogAuditoriaPage() {
                           </Badge>
                         )}
                       </td>
-                      <td className="p-3 text-slate-700 text-xs truncate max-w-32">
+                      <td className="p-3 text-slate-700 dark:text-slate-300 text-xs truncate max-w-32">
                         {log.usuario_nome}
                       </td>
-                      <td className="p-3 text-slate-700 text-xs truncate max-w-32">
+                      <td className="p-3 text-slate-700 dark:text-slate-300 text-xs truncate max-w-32">
                         {log.entidade}
                       </td>
                       <td className="p-3 text-center">

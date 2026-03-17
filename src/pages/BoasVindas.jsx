@@ -130,10 +130,10 @@ export default function BoasVindas() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 dark:from-blue-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">A carregar informações...</p>
+          <p className="text-slate-600 dark:text-slate-400">A carregar informações...</p>
         </div>
       </div>
     );
@@ -160,12 +160,12 @@ export default function BoasVindas() {
   
   if (!perfilInfo) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 dark:from-blue-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
           <Card className="max-w-md w-full">
             <CardContent className="text-center p-6">
               <Shield className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h1 className="text-xl font-bold text-slate-900 mb-2">Erro de Perfil Inesperado</h1>
-              <p className="text-slate-600 mb-4">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Erro de Perfil Inesperado</h1>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
                 Não foi possível determinar um perfil de acesso válido. Por favor, contacte o administrador do sistema.
               </p>
               <Button onClick={() => window.location.href = createPageUrl('ValidacaoAcesso')}>
@@ -178,7 +178,7 @@ export default function BoasVindas() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 dark:from-blue-950 dark:via-slate-900 dark:to-slate-950 p-4">
       <div className="max-w-4xl mx-auto py-8">
         <div className="text-center mb-8">
           <img
@@ -186,10 +186,10 @@ export default function BoasVindas() {
             alt="DIROPS Logo"
             className="h-20 mx-auto mb-6"
           />
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
             Bem-vindo ao DIROPS
           </h1>
-          <p className="text-xl text-slate-600">
+          <p className="text-xl text-slate-600 dark:text-slate-400">
             Sistema de Gestão Aeroportuária
           </p>
         </div>
@@ -201,8 +201,8 @@ export default function BoasVindas() {
                 <User className="w-8 h-8" />
               </div>
               <div>
-                <CardTitle className="text-2xl">Olá, {user.full_name}!</CardTitle>
-                <p className="text-blue-100 mt-1">
+                <CardTitle className="text-2xl text-white">Olá, {user.full_name}!</CardTitle>
+                <p className="text-blue-100 dark:text-blue-200 mt-1">
                   O seu acesso ao sistema foi configurado com sucesso.
                 </p>
               </div>
@@ -211,20 +211,20 @@ export default function BoasVindas() {
           <CardContent className="p-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h3 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   Perfil de Acesso
                 </h3>
                 <Badge className={`${perfilInfo.color} text-sm px-3 py-1 mb-3`}>
                   {perfilInfo.title}
                 </Badge>
-                <p className="text-slate-600">
+                <p className="text-slate-600 dark:text-slate-400">
                   {perfilInfo.description}
                 </p>
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   Informações da Conta
                 </h3>
                 <div className="space-y-2 text-sm">
@@ -240,7 +240,7 @@ export default function BoasVindas() {
         <Card className="mb-8 shadow-lg border-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileText className="w-6 h-6 text-blue-600" />
+              <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               Funcionalidades Disponíveis
             </CardTitle>
           </CardHeader>
@@ -249,22 +249,22 @@ export default function BoasVindas() {
               {perfilInfo.features.map((feature, index) => (
                 <div key={index} className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">{feature}</span>
+                  <span className="text-slate-700 dark:text-slate-300">{feature}</span>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="mb-8 bg-amber-50 border-amber-200">
+        <Card className="mb-8 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-800">
+            <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
               <Shield className="w-6 h-6" />
               Informações de Segurança
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 text-sm text-amber-800">
+            <div className="space-y-3 text-sm text-amber-800 dark:text-amber-200">
               <p>• Mantenha as suas credenciais de acesso seguras e não as partilhe.</p>
               <p>• Termine sempre a sua sessão ao finalizar o trabalho.</p>
               <p>• Reporte qualquer actividade suspeita ao administrador do sistema.</p>
@@ -282,7 +282,7 @@ export default function BoasVindas() {
             Aceder ao Sistema
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
-          <p className="text-sm text-slate-500 mt-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-4">
             Ao continuar, concorda com os termos de uso e políticas de segurança do sistema.
           </p>
         </div>

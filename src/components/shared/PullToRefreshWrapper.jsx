@@ -23,7 +23,7 @@ export default function PullToRefreshWrapper({ onRefresh, children, className })
     >
       {/* Pull indicator */}
       <div
-        className="absolute left-1/2 z-30 flex items-center justify-center rounded-full bg-white shadow-md border border-slate-200 transition-all duration-200"
+        className="absolute left-1/2 z-30 flex items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-700 transition-all duration-200"
         style={{
           width: indicatorSize,
           height: indicatorSize,

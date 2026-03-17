@@ -4,20 +4,20 @@ import { Button } from '@/components/ui/button';
 
 export default function PoliticaPrivacidade() {
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4">
       <div className="max-w-3xl mx-auto">
-        <Button variant="ghost" className="mb-6 text-slate-600" onClick={() => window.history.back()}>
+        <Button variant="ghost" className="mb-6 text-slate-600 dark:text-slate-400" onClick={() => window.history.back()}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
         </Button>
 
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 space-y-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-8 space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Política de Privacidade</h1>
-            <p className="text-slate-500 text-sm mt-2">Última atualização: 16 de março de 2026</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Política de Privacidade</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Última atualização: 16 de março de 2026</p>
           </div>
 
-          <div className="prose prose-slate max-w-none space-y-4 text-slate-700 text-sm leading-relaxed">
-            <h2 className="text-lg font-semibold text-slate-900">1. Informações que recolhemos</h2>
+          <div className="prose prose-slate dark:prose-invert max-w-none space-y-4 text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">1. Informações que recolhemos</h2>
             <p>
               O DIROPS (Sistema de Gestão Aeroportuária) recolhe as seguintes informações pessoais necessárias para o funcionamento do sistema:
             </p>
@@ -29,7 +29,7 @@ export default function PoliticaPrivacidade() {
               <li>Dados operacionais inseridos no âmbito das funções profissionais</li>
             </ul>
 
-            <h2 className="text-lg font-semibold text-slate-900">2. Como utilizamos as informações</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">2. Como utilizamos as informações</h2>
             <p>As informações recolhidas são utilizadas exclusivamente para:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Autenticação e controlo de acesso ao sistema</li>
@@ -39,7 +39,7 @@ export default function PoliticaPrivacidade() {
               <li>Comunicações relacionadas com o serviço</li>
             </ul>
 
-            <h2 className="text-lg font-semibold text-slate-900">3. Partilha de dados</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">3. Partilha de dados</h2>
             <p>
               Não vendemos, alugamos ou partilhamos os seus dados pessoais com terceiros, exceto:
             </p>
@@ -49,7 +49,7 @@ export default function PoliticaPrivacidade() {
               <li>Mediante o seu consentimento explícito</li>
             </ul>
 
-            <h2 className="text-lg font-semibold text-slate-900">4. Segurança dos dados</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">4. Segurança dos dados</h2>
             <p>
               Implementamos medidas de segurança técnicas e organizacionais para proteger os seus dados, incluindo:
             </p>
@@ -61,12 +61,12 @@ export default function PoliticaPrivacidade() {
               <li>Políticas de senha segura</li>
             </ul>
 
-            <h2 className="text-lg font-semibold text-slate-900">5. Retenção de dados</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">5. Retenção de dados</h2>
             <p>
               Os dados pessoais são mantidos enquanto a sua conta estiver ativa e pelo período necessário para cumprir obrigações legais e regulatórias aplicáveis ao setor da aviação.
             </p>
 
-            <h2 className="text-lg font-semibold text-slate-900">6. Os seus direitos</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">6. Os seus direitos</h2>
             <p>Tem o direito de:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Aceder aos seus dados pessoais</li>
@@ -75,7 +75,7 @@ export default function PoliticaPrivacidade() {
               <li>Exportar os seus dados</li>
             </ul>
 
-            <h2 className="text-lg font-semibold text-slate-900">7. Contacto</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">7. Contacto</h2>
             <p>
               Para questões relacionadas com privacidade, contacte-nos através do email disponível na página de Suporte do sistema.
             </p>

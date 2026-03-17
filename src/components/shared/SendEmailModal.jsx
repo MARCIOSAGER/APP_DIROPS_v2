@@ -84,7 +84,7 @@ export default function SendEmailModal({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Mail className="w-5 h-5 text-blue-600" />
+            <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             Enviar por Email
           </DialogTitle>
         </DialogHeader>
@@ -104,7 +104,7 @@ export default function SendEmailModal({
             {errors.to &&
             <p className="text-sm text-red-500 mt-1">{errors.to}</p>
             }
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Para múltiplos destinatários, separe os emails por vírgula
             </p>
           </div>
@@ -137,8 +137,8 @@ export default function SendEmailModal({
 
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
               <strong>Nota:</strong> O relatório será enviado em formato HTML no corpo do email.
             </p>
           </div>

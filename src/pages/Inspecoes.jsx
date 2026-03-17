@@ -11,12 +11,14 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User'; // Added User import
 import { getAeroportosPermitidos, filtrarDadosPorAeroportoId } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
+import { useI18n } from '@/components/lib/i18n';
 
 import InspecoesList from '../components/inspecoes/InspecoesList';
 import FormInspecao from '../components/inspecoes/FormInspecao';
 import TiposInspecaoConfig from '../components/inspecoes/TiposInspecaoConfig';
 
 export default function Inspecoes() {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [currentUser, setCurrentUser] = useState(null); // Added currentUser state
   const [inspecoes, setInspecoes] = useState([]);
@@ -81,8 +83,8 @@ export default function Inspecoes() {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 dark:text-slate-100">Inspeções Operacionais</h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">Gestão de inspeções e verificações de conformidade</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{t('page.inspecoes.title')}</h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.inspecoes.subtitle')}</p>
           </div>
         </div>
 
@@ -184,7 +186,7 @@ export default function Inspecoes() {
                   <CardContent>
                     <p className="text-slate-600 dark:text-slate-400 text-sm mb-3">{tipo.descricao}</p>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-500 capitalize">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
                         Frequência: {(tipo.frequencia || '').replace('_', ' ')}
                       </span>
                       <Button size="sm">
@@ -199,11 +201,11 @@ export default function Inspecoes() {
             {tiposInspecao.filter(t => t.status === 'ativo').length === 0 && (
               <Card>
                 <CardContent className="text-center py-12">
-                  <ClipboardCheck className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                  <ClipboardCheck className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
                     Nenhum tipo de inspeção configurado
                   </h3>
-                  <p className="text-slate-500 mb-4">
+                  <p className="text-slate-500 dark:text-slate-400 mb-4">
                     Configure os tipos de inspeção na aba "Configurar Tipos" primeiro.
                   </p>
                   <Button onClick={() => document.querySelector('button[data-state="inactive"][value="configurar"]')?.click()}>

@@ -34,38 +34,38 @@ export default function DeleteAccountModal({ isOpen, onClose, onConfirm, userEma
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={handleClose}>
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="bg-red-100 rounded-full p-2">
-              <Trash2 className="w-5 h-5 text-red-600" />
+            <div className="bg-red-100 dark:bg-red-900 rounded-full p-2">
+              <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
               {step === 1 ? 'Eliminar Conta' : 'Confirmação Final'}
             </h2>
           </div>
-          <button onClick={handleClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={handleClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {step === 1 ? (
           <>
-            <div className="flex items-start gap-3 p-4 bg-red-50 rounded-xl mb-6 border border-red-200">
-              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-red-800 space-y-1">
+            <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950 rounded-xl mb-6 border border-red-200 dark:border-red-700">
+              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-red-800 dark:text-red-200 space-y-1">
                 <p className="font-semibold">Aviso: Esta ação é permanente e irreversível.</p>
-                <ul className="list-disc ml-4 space-y-0.5 text-red-700">
+                <ul className="list-disc ml-4 space-y-0.5 text-red-700 dark:text-red-300">
                   <li>Todos os seus dados pessoais serão eliminados</li>
                   <li>O seu acesso ao sistema será revogado imediatamente</li>
                   <li>Esta ação não pode ser desfeita</li>
                 </ul>
               </div>
             </div>
-            <p className="text-sm text-slate-600 mb-6">
-              Conta associada a: <span className="font-medium text-slate-900">{userEmail}</span>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+              Conta associada a: <span className="font-medium text-slate-900 dark:text-slate-100">{userEmail}</span>
             </p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={handleClose}>
@@ -82,9 +82,9 @@ export default function DeleteAccountModal({ isOpen, onClose, onConfirm, userEma
           </>
         ) : (
           <>
-            <p className="text-sm text-slate-600 mb-4">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
               Para confirmar a eliminação da sua conta, escreva{' '}
-              <span className="font-mono font-bold text-red-700">{CONFIRM_WORD}</span>{' '}
+              <span className="font-mono font-bold text-red-700 dark:text-red-400">{CONFIRM_WORD}</span>{' '}
               no campo abaixo:
             </p>
             <Input

@@ -21,6 +21,7 @@ import { RegraPermissao } from '@/entities/RegraPermissao';
 import { User } from '@/entities/User';
 import AlertModal from '../components/shared/AlertModal';
 import { hasUserProfile } from '@/components/lib/userUtils';
+import { useI18n } from '@/components/lib/i18n';
 
 // Todas as páginas disponíveis no sistema
 const PAGINAS_DISPONIVEIS = [
@@ -262,6 +263,7 @@ const PERFIL_INFO = {
 };
 
 export default function GerirPermissoes() {
+  const { t } = useI18n();
   const [currentUser, setCurrentUser] = useState(null);
   const [regras, setRegras] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -414,16 +416,16 @@ export default function GerirPermissoes() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mr-3"></div>
-        <span className="text-lg text-slate-700">A carregar permissões...</span>
+        <span className="text-lg text-slate-700 dark:text-slate-300">A carregar permissões...</span>
       </div>);
 
   }
 
   if (!currentUser || !hasUserProfile(currentUser, 'administrador')) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 p-4">
         <Card className="max-w-md">
           <CardHeader>
             <div className="flex items-center gap-3 text-red-600">
@@ -432,7 +434,7 @@ export default function GerirPermissoes() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-slate-600">
+            <p className="text-slate-600 dark:text-slate-400">
               Apenas administradores podem aceder à gestão de permissões do sistema.
             </p>
           </CardContent>
@@ -442,17 +444,17 @@ export default function GerirPermissoes() {
   }
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <Shield className="w-6 md:w-8 h-6 md:h-8 text-blue-600" />
-              Gestão de Permissões
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+              <Shield className="w-6 md:w-8 h-6 md:h-8 text-blue-600 dark:text-blue-400" />
+              {t('page.gerir_permissoes.title')}
             </h1>
-            <p className="text-slate-600 mt-1">
-              Configure quais páginas cada perfil de utilizador pode aceder
+            <p className="text-slate-600 dark:text-slate-400 mt-1">
+              {t('page.gerir_permissoes.subtitle')}
             </p>
           </div>
 
@@ -487,9 +489,9 @@ export default function GerirPermissoes() {
 
         {/* Alert se houver alterações não salvas */}
         {hasChanges &&
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
+          <Alert className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950">
+            <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+            <AlertDescription className="text-yellow-800 dark:text-yellow-200">
               <strong>Alterações Não Salvas:</strong> Tem alterações pendentes. Não se esqueça de clicar em "Salvar Alterações" para aplicar.
             </AlertDescription>
           </Alert>
@@ -512,11 +514,11 @@ export default function GerirPermissoes() {
                         <Badge className={`${info.cor} border text-sm px-3 py-1`}>
                           {info.label}
                         </Badge>
-                        <span className="text-sm text-slate-500">
+                        <span className="text-sm text-slate-500 dark:text-slate-400">
                           {paginasPermitidas.length} de {PAGINAS_DISPONIVEIS.length} páginas
                         </span>
                       </div>
-                      <CardDescription className="text-slate-600">
+                      <CardDescription className="text-slate-600 dark:text-slate-400">
                         {info.descricao}
                       </CardDescription>
                     </div>
@@ -544,8 +546,8 @@ export default function GerirPermissoes() {
                         <div
                           key={pagina.key}
                           className={`flex items-start gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${isPermitida ?
-                            'border-blue-200 bg-blue-50' :
-                            'border-slate-200 bg-white hover:border-slate-300'}`
+                            'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950' :
+                            'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'}`
                           }
                           onClick={() => handleTogglePagina(perfil, pagina.key)}>
 
@@ -560,9 +562,9 @@ export default function GerirPermissoes() {
                               className="font-medium text-sm cursor-pointer flex items-center gap-2">
 
                               {isPermitida ?
-                                <Eye className="w-4 h-4 text-blue-600" /> :
+                                <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" /> :
 
-                                <EyeOff className="w-4 h-4 text-slate-400" />
+                                <EyeOff className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                               }
                               {pagina.label}
                             </Label>
@@ -595,9 +597,9 @@ export default function GerirPermissoes() {
         </div>
 
         {/* Informações Importantes */}
-        <Alert className="border-blue-200 bg-blue-50">
-          <CheckCircle className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-800">
+        <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
+          <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-blue-800 dark:text-blue-200">
             <strong>Importante:</strong> As alterações de permissões serão aplicadas automaticamente no próximo login dos utilizadores.
             Os utilizadores atualmente logados continuarão a ver as permissões antigas até fazerem logout e login novamente.
           </AlertDescription>

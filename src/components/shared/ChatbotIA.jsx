@@ -138,21 +138,21 @@ export default function ChatbotIA() {
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && (
-                  <div className="bg-blue-100 rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0 mt-1">
-                    <Bot className="w-4 h-4 text-blue-700" />
+                  <div className="bg-blue-100 dark:bg-blue-900 rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="w-4 h-4 text-blue-700 dark:text-blue-300" />
                   </div>
                 )}
                 <div
                   className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
                     msg.role === 'user'
                       ? 'bg-blue-600 text-white rounded-tr-sm'
-                      : 'bg-slate-100 text-slate-800 rounded-tl-sm'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-sm'
                   }`}
                   dangerouslySetInnerHTML={{ __html: renderMessage(msg.content) }}
                 />
                 {msg.role === 'user' && (
-                  <div className="bg-slate-200 rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0 mt-1">
-                    <User className="w-4 h-4 text-slate-600" />
+                  <div className="bg-slate-200 dark:bg-slate-700 rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0 mt-1">
+                    <User className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                   </div>
                 )}
               </div>
@@ -160,23 +160,23 @@ export default function ChatbotIA() {
 
             {isLoading && (
               <div className="flex gap-2 justify-start">
-                <div className="bg-blue-100 rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-4 h-4 text-blue-700" />
+                <div className="bg-blue-100 dark:bg-blue-900 rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 text-blue-700 dark:text-blue-300" />
                 </div>
-                <div className="bg-slate-100 px-3 py-2 rounded-2xl rounded-tl-sm">
-                  <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
+                <div className="bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-2xl rounded-tl-sm">
+                  <Loader2 className="w-4 h-4 text-slate-500 dark:text-slate-400 animate-spin" />
                 </div>
               </div>
             )}
 
             {/* Ticket confirmation card */}
             {ticketPending && !isLoading && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm space-y-2">
-                <div className="flex items-center gap-2 text-amber-700 font-semibold">
+              <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-700 rounded-xl p-3 text-sm space-y-2">
+                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-semibold">
                   <AlertCircle className="w-4 h-4" />
                   Confirmar Ticket de Suporte
                 </div>
-                <div className="text-slate-700 space-y-1">
+                <div className="text-slate-700 dark:text-slate-300 space-y-1">
                   <p><strong>Assunto:</strong> {ticketPending.assunto}</p>
                   <p><strong>Categoria:</strong> {ticketPending.categoria}</p>
                   <p><strong>Mensagem:</strong> {ticketPending.mensagem}</p>
@@ -196,14 +196,14 @@ export default function ChatbotIA() {
           </div>
 
           {/* Input */}
-          <div className="p-3 border-t border-slate-100 flex gap-2">
+          <div className="p-3 border-t border-slate-100 dark:border-slate-700 flex gap-2">
             <input
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
               placeholder="Escreve a tua mensagem..."
-              className="flex-1 text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={isLoading}
             />
             <button
