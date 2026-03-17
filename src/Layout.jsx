@@ -173,7 +173,7 @@ const rootPages = ['Home', 'Operacoes', 'Safety', 'FundoManeio', 'ConfiguracaoTa
 function LayoutContent({ children, currentPageName }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { language, setLanguage, t } = useI18n();
+  const { t } = useI18n();
   const { user: authUser, isLoadingAuth } = useAuth();
   const isRootPage = rootPages.includes(currentPageName);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -183,7 +183,7 @@ function LayoutContent({ children, currentPageName }) {
         const [permissions, setPermissions] = React.useState(_cachedPerms || PERFIL_PERMISSIONS_DEFAULT);
         const [isLoadingPermissions, setIsLoadingPermissions] = React.useState(!_cachedPerms);
         const [hasRedirected, setHasRedirected] = React.useState(false);
-        const [globalLoading, setGlobalLoading] = React.useState(false);
+        const [globalLoading] = React.useState(false);
         const [showTour, setShowTour] = React.useState(false);
         const [logoUrl, setLogoUrl] = React.useState(DEFAULT_LOGO);
         const [empresasList, setEmpresasList] = React.useState([]);

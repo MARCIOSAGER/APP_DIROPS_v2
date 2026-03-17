@@ -44,7 +44,7 @@ export default function AuditoriaList({
   aeroportos = [],
   isLoading = false,
   onReload = () => {},
-  canManage = false, // This prop will no longer gate the edit/delete buttons
+  canManage: _canManage = false, // This prop will no longer gate the edit/delete buttons
   onOpenDetail = () => {},
   onEdit = () => {},
   onCreatePAC = () => {}, // Nova prop

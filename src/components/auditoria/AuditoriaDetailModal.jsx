@@ -58,7 +58,7 @@ export default function AuditoriaDetailModal({
   const [respostas, setRespostas] = useState([]);
   const [itens, setItens] = useState([]);
   const [pacs, setPacs] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [_isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -206,7 +206,7 @@ export default function AuditoriaDetailModal({
               <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #dc2626;">
                 <h3 style="color: #dc2626; margin-top: 0;">Não Conformidades Identificadas</h3>
                 <p style="color: #64748b; margin-bottom: 15px;">Foram identificadas ${naoConformidades.length} não conformidade(s) que requerem ação corretiva:</p>
-                ${naoConformidades.slice(0, 3).map((nc, index) => `
+                ${naoConformidades.slice(0, 3).map((nc, _index) => `
                   <div style="margin-bottom: 15px; padding: 15px; background: #fef2f2; border-radius: 6px;">
                     <div style="font-weight: bold; color: #dc2626; margin-bottom: 5px;">Item ${nc.item?.numero || 'N/A'}</div>
                     <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;">${nc.item?.item || 'N/A'}</div>

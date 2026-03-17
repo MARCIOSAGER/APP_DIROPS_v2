@@ -191,7 +191,7 @@ export default function FormPAC({
         for (const item of itensPac) {
             // Only update items that are not automatically set to 'vencida'
             if (item.id && item.status !== 'vencida') {
-                const { original_nc, ...itemToUpdate } = item;
+                const { original_nc: _original_nc, ...itemToUpdate } = item;
                 await ItemPAC.update(item.id, itemToUpdate);
             }
         }

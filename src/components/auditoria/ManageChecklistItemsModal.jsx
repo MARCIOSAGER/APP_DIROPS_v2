@@ -53,16 +53,15 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
-  const [excelData, setExcelData] = useState([]);
+  const [_excelData, setExcelData] = useState([]);
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   // Estados para confirmação de exclusão
   const [deleteItemInfo, setDeleteItemInfo] = useState({ isOpen: false, item: null });
 
   // Estados para duplicados
-  const [duplicateItems, setDuplicateItems] = useState([]);
-  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
-  const [pendingItems, setPendingItems] = useState([]);
+  const [_duplicateItems, setDuplicateItems] = useState([]);
+  const [_showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
