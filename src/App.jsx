@@ -13,6 +13,7 @@ import { CompanyViewProvider } from '@/lib/CompanyViewContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Login from '@/pages/Login';
 import CookieConsent from '@/components/shared/CookieConsent';
+import { I18nProvider } from '@/components/lib/i18n';
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-screen">
@@ -115,6 +116,7 @@ const AuthenticatedApp = () => {
 
 function App() {
   return (
+    <I18nProvider>
     <AuthProvider>
       <CompanyViewProvider>
       <QueryClientProvider client={queryClientInstance}>
@@ -138,6 +140,7 @@ function App() {
       </QueryClientProvider>
       </CompanyViewProvider>
     </AuthProvider>
+    </I18nProvider>
   )
 }
 

@@ -714,8 +714,6 @@ function LayoutContent({ children, currentPageName }) {
 
 export default function Layout({ children, currentPageName }) {
   return (
-    <I18nProvider>
-      <LayoutContent children={children} currentPageName={currentPageName} />
-    </I18nProvider>
+    <LayoutContent children={children} currentPageName={currentPageName} />
   );
 }
