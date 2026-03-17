@@ -25,7 +25,6 @@ export default function AlterarSenha() {
   useEffect(() => {
     // Listen for PASSWORD_RECOVERY event from reset link
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AlterarSenha] Auth event:', event);
       if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
         if (session?.user) {
           setUser({ email: session.user.email, full_name: session.user.user_metadata?.full_name });
@@ -94,7 +93,6 @@ export default function AlterarSenha() {
       }
 
       setSuccess(true);
-      console.log('[AlterarSenha] Senha alterada com sucesso');
 
       // Redirecionar após 2 segundos
       setTimeout(() => {

@@ -7,10 +7,6 @@ import { pt } from 'date-fns/locale';
 
 export default function ReceitasChart({ voos, calculosTarifa, isLoading }) {
   const chartData = React.useMemo(() => {
-    console.log('🔍 ReceitasChart - Debug:');
-    console.log('  - Total de voos recebidos:', voos?.length || 0);
-    console.log('  - Total de cálculos recebidos:', calculosTarifa?.length || 0);
-
     if (!voos.length || !calculosTarifa || calculosTarifa.length === 0) {
       return Array.from({ length: 7 }, (_, i) => {
         const date = startOfDay(subDays(new Date(), 6 - i));
@@ -29,8 +25,6 @@ export default function ReceitasChart({ voos, calculosTarifa, isLoading }) {
         calculosPorVoo.set(ct.voo_id, ct);
       }
     });
-    console.log('  - Cálculos válidos (não isentos):', calculosPorVoo.size);
-
     // Criar mapa de voo_id -> voo para busca rápida
     const voosMap = new Map(voos.map(v => [v.id, v]));
 
@@ -57,9 +51,6 @@ export default function ReceitasChart({ voos, calculosTarifa, isLoading }) {
         }
       }
     });
-
-    console.log('  - Receitas agrupadas por dia:', receitasPorDia);
-    console.log('  - Dados finais:', last7Days.map(d => ({ data: d.dateLabel, receita: d.receita })));
 
     return last7Days;
   }, [voos, calculosTarifa]);

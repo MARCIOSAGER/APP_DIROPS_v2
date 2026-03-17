@@ -137,7 +137,6 @@ export default function FormVoo({
   // Aeroportos que o usuário tem acesso (empresa-based)
   const aeroportosAcesso = useMemo(() => {
     if (!currentUser || !Array.isArray(aeroportos)) {
-      console.log('⚠️ Dados não carregados ainda:', { currentUser: !!currentUser, aeroportos: Array.isArray(aeroportos) ? aeroportos.length : 'não é array' });
       return [];
     }
 
@@ -236,7 +235,6 @@ export default function FormVoo({
       let tipoVooAjustado = vooInicial.tipo_voo || 'Regular';
       if (vooInicial.companhia_aerea && isMilitaryCompany(vooInicial.companhia_aerea)) {
         tipoVooAjustado = 'Militar';
-        console.log(`🎖️ Voo de companhia militar detectado (${vooInicial.companhia_aerea}). Tipo de voo ajustado automaticamente para "Militar".`);
       }
 
       setFormData({
@@ -440,7 +438,6 @@ export default function FormVoo({
         // Se mudou para uma companhia militar, auto-preencher tipo de voo
         if (isMilitaryCompany(value)) {
           newData.tipo_voo = 'Militar';
-          console.log(`🎖️ Companhia militar detectada (${value}). Tipo de voo ajustado para "Militar".`);
         }
 
         if (prev.tipo_movimento === 'DEP') {
@@ -592,10 +589,7 @@ export default function FormVoo({
 
   const performSave = async () => {
     // Prevenir múltiplas submissões
-    if (isSubmitting) {
-      console.log('⚠️ Submissão já em andamento, ignorando clique duplicado');
-      return;
-    }
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
     setIsLoading(true);

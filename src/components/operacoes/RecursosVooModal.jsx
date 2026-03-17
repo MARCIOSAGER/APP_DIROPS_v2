@@ -89,7 +89,6 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
     ]).then(([recursos, tarifasData, bombeirosTipos]) => {
       // Filtrar tarifas por empresa
       const allTarifas = tarifasData || [];
-      console.log('[RecursosVoo] allTarifas:', allTarifas.length, 'effectiveEmpresaId:', effectiveEmpresaId, 'aeroportoCategoria:', aeroportoCategoria);
       if (effectiveEmpresaId) {
         const empresaTarifas = allTarifas.filter(t => t.empresa_id === effectiveEmpresaId);
         const globalTarifas = allTarifas.filter(t => !t.empresa_id);

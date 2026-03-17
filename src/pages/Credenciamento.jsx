@@ -50,15 +50,12 @@ export default function Credenciamento() {
         { id: '2', nome: 'Área de Carga', status: 'ativo' },
         { id: '3', nome: 'Pista', status: 'ativo' }
       ]);
-      console.log('Dados mínimos carregados para gestor com permissões limitadas');
     } catch (error) {
       console.error('Erro ao carregar dados mínimos:', error);
     }
   };
 
   const loadDataForCompanyManagerSafe = async (user) => {
-    console.log('Carregando dados para gestor de empresa de forma segura');
-    
     // Inicializar com arrays vazios para evitar erros
     let credenciamentosData = [];
     let aeroportosData = [];
@@ -71,7 +68,6 @@ export default function Credenciamento() {
         // Server-side filter by empresa_solicitante_id
         credenciamentosData = await CredenciamentoEntity.filter({ empresa_solicitante_id: user.empresa_id }, '-data_solicitacao');
         credenciamentosData = credenciamentosData || [];
-        console.log('Credenciamentos carregados:', credenciamentosData.length);
       } catch (credError) {
         console.warn('Erro ao carregar credenciamentos:', credError);
         credenciamentosData = [];
@@ -82,7 +78,6 @@ export default function Credenciamento() {
     try {
       aeroportosData = await (user.empresa_id ? Aeroporto.filter({ empresa_id: user.empresa_id }) : Aeroporto.list());
       aeroportosData = aeroportosData.filter(a => a.pais === 'AO');
-      console.log('✅ Aeroportos carregados:', aeroportosData.length);
     } catch (aerError) {
       console.warn('❌ Erro ao carregar aeroportos, usando fallback:', aerError);
       aeroportosData = [
@@ -95,7 +90,6 @@ export default function Credenciamento() {
     // Tentar carregar áreas com fallback
     try {
       areasData = await AreaAcesso.list();
-      console.log('✅ Áreas de acesso carregadas:', areasData.length);
     } catch (areasError) {
       console.warn('❌ Erro ao carregar áreas, usando fallback:', areasError);
       areasData = [
@@ -110,7 +104,6 @@ export default function Credenciamento() {
       try {
         const empresaData = await Empresa.get(user.empresa_id);
         empresasData = empresaData ? [empresaData] : [];
-        console.log('Empresa do utilizador carregada:', empresasData.length);
       } catch (empresaError) {
         console.warn('Erro ao carregar empresa:', empresaError);
         // Criar empresa fictícia para não quebrar o sistema
@@ -130,11 +123,9 @@ export default function Credenciamento() {
     setAreasAcesso(areasData);
     setEmpresas(empresasData);
     
-    console.log('✅ Carregamento seguro concluído para gestor de empresa');
   };
 
   const loadDataForInternalUser = async (user) => {
-    console.log('Carregando dados para utilizador interno');
 
     const [credenciamentosData, empresasData, aeroportosData, areasAcessoData] = await Promise.all([
       CredenciamentoEntity.list('-data_solicitacao'),
@@ -148,7 +139,6 @@ export default function Credenciamento() {
     setAeroportos(aeroportosData.filter(a => a.pais === 'AO'));
     setAreasAcesso(areasAcessoData);
     
-    console.log(`Credenciamentos carregados para interno: ${credenciamentosData.length}`);
   };
 
   useEffect(() => {
@@ -161,7 +151,7 @@ export default function Credenciamento() {
         // Primeiro, tentar carregar o utilizador atual
         const user = await User.me();
         setCurrentUser(user);
-        console.log('Utilizador atual:', user);
+
 
         // Se for gestor de empresa, usar estratégia especial
         if (hasUserProfile(user, 'gestor_empresa')) {
@@ -201,8 +191,6 @@ export default function Credenciamento() {
       // Primeiro, tentar carregar o utilizador atual
       const user = await User.me();
       setCurrentUser(user);
-      console.log('Utilizador atual:', user);
-
       // Se for gestor de empresa, usar estratégia especial
       if (hasUserProfile(user, 'gestor_empresa')) {
         await loadDataForCompanyManagerSafe(user);

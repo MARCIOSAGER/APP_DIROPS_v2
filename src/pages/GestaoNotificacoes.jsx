@@ -307,9 +307,6 @@ export default function GestaoNotificacoes() {
         base44.entities.GrupoWhatsApp.filter({ status: 'aprovado' }).catch(() => [])
       ]);
 
-      console.log('📋 Regras carregadas:', regrasData);
-      console.log('📋 Total de regras:', regrasData?.length || 0);
-
       setRegras(regrasData || []);
       setUsuarios(usuariosData || []);
       setAeroportos(aeroportosData || []);
@@ -632,9 +629,7 @@ export default function GestaoNotificacoes() {
           
           for (const recordId of historicoSelecionado) {
             try {
-              console.log(`🗑️ A apagar histórico ${recordId}...`);
-              const resultado = await base44.entities.HistoricoNotificacao.delete(recordId);
-              console.log(`✅ Apagado: ${recordId}`, resultado);
+              await base44.entities.HistoricoNotificacao.delete(recordId);
               apagaramComSucesso++;
             } catch (e) {
               console.error(`❌ Erro ao apagar ${recordId}:`, e);
@@ -1151,7 +1146,6 @@ export default function GestaoNotificacoes() {
     try {
       // Se forçar reenvio, apagar histórico primeiro
       if (forcarReenvio) {
-        console.log('🗑️ Apagando histórico para forçar reenvio...');
         try {
           // Encontrar e apagar registos do histórico para este utilizador e regra
           const historicoAntigo = await base44.asServiceRole.entities.HistoricoNotificacao.filter({
@@ -1163,7 +1157,6 @@ export default function GestaoNotificacoes() {
             for (const record of historicoAntigo) {
               try {
                 await base44.asServiceRole.entities.HistoricoNotificacao.delete(record.id);
-                console.log('✅ Registado apagado:', record.id);
               } catch (e) {
                 console.error('Erro ao apagar registado:', e);
               }
@@ -1346,28 +1339,17 @@ export default function GestaoNotificacoes() {
       let response;
 
       if (regra.evento_gatilho === 'voo_ligado_criado') {
-        console.log('🚀 Executando automação para voo ligado:', selectedVooLigadoId);
         response = await base44.functions.invoke('notificarVooLigado', {
           voo_ligado_id: selectedVooLigadoId
         });
-        console.log('📥 Resposta da automação:', response);
       } else if (regra.evento_gatilho === 'relatorio_operacional_consolidado_diario') {
-        console.log('🚀 Executando relatório consolidado diário');
         response = await base44.functions.invoke('enviarRelatoriosConsolidadosDiarios', { forcar_reenvio: testeData.forcar_reenvio || false });
-        console.log('📥 Resposta do relatório:', response);
       } else if (regra.evento_gatilho === 'relatorio_operacional_consolidado_semanal') {
-        console.log('🚀 Executando relatório consolidado semanal');
         response = await base44.functions.invoke('enviarRelatoriosConsolidadosSemanais', { forcar_reenvio: testeData.forcar_reenvio || false });
-        console.log('📥 Resposta do relatório:', response);
       } else if (regra.evento_gatilho === 'relatorio_operacional_consolidado_mensal') {
-        console.log('🚀 Executando relatório consolidado mensal');
         response = await base44.functions.invoke('enviarRelatoriosConsolidadosMensais', { forcar_reenvio: testeData.forcar_reenvio || false });
-        console.log('📥 Resposta do relatório:', response);
       } else if (regra.evento_gatilho === 'relatorio_operacional_diario' || regra.evento_gatilho === 'relatorio_operacional_semanal' || regra.evento_gatilho === 'relatorio_operacional_mensal') {
-        const tipoRelatorio = regra.evento_gatilho.replace('relatorio_operacional_', '');
-        console.log('🚀 Executando relatório operacional:', tipoRelatorio);
         response = await base44.functions.invoke('enviarRelatoriosDiarios', {});
-        console.log('📥 Resposta do relatório:', response);
       }
       
       if (response && response.data) {

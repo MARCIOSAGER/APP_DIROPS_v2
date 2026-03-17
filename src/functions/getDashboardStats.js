@@ -41,7 +41,6 @@ export async function getDashboardStats({ aeroporto, periodo, empresaId }) {
       console.error('[getDashboardStats] Error fetching aeroportos:', aeroErr);
     } else {
       empresaIcaos = new Set((aeroportos || []).map(a => a.codigo_icao));
-      console.log(`[getDashboardStats] empresaId=${empresaId}, aeroportos ICAO:`, [...empresaIcaos]);
     }
   }
 
@@ -54,8 +53,6 @@ export async function getDashboardStats({ aeroporto, periodo, empresaId }) {
     fetchAllRows(supabase.from('inspecao').select('id,status,aeroporto_id,empresa_id')),
   ]);
 
-  console.log(`[getDashboardStats] Raw counts: voos=${voos.length}, voosLigados=${voosLigados.length}, calculos=${calculos.length}`);
-
   // Filter voos by empresa (via aeroporto ICAO relationship)
   let voosFiltrados = voos;
   if (empresaIcaos) {
@@ -66,8 +63,6 @@ export async function getDashboardStats({ aeroporto, periodo, empresaId }) {
   if (aeroporto && aeroporto !== 'todos') {
     voosFiltrados = voosFiltrados.filter(v => v.aeroporto_operacao === aeroporto);
   }
-
-  console.log(`[getDashboardStats] After filters: voosFiltrados=${voosFiltrados.length}`);
 
   // Basic stats
   const totalVoos = voosFiltrados.length;

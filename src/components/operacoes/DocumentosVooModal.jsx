@@ -231,13 +231,6 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
 
   if (!vooLigado || !arrVoo || !depVoo) return null;
 
-  console.log('🔍 DocumentosVooModal - Dados do utilizador:', {
-    email: currentUser?.email,
-    role: currentUser?.role,
-    perfis: currentUser?.perfis,
-    isAdmin: currentUser?.role === 'admin' || currentUser?.perfis?.includes('administrador')
-  });
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
@@ -301,14 +294,6 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
                 const isAdmin = currentUser?.role === 'admin' || currentUser?.perfis?.includes('administrador');
                 const isOwner = doc.created_by === currentUser?.email;
                 const canDelete = isAdmin || isOwner;
-
-                console.log('🔍 Documento:', doc.titulo, {
-                  created_by: doc.created_by,
-                  currentUser: currentUser?.email,
-                  isAdmin,
-                  isOwner,
-                  canDelete
-                });
 
                 return (
                   <Card key={doc.id} className="hover:shadow-md transition-shadow">

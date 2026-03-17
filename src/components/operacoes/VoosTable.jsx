@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Link as LinkIcon, Edit, MoreVertical, Trash2, XCircle, ChevronLeft, ChevronRight, Users, Package } from 'lucide-react';
+import { ArrowRight, Link as LinkIcon, Edit, MoreVertical, Trash2, XCircle, ChevronLeft, ChevronRight, Users, Package, Plane } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import {
@@ -273,17 +273,19 @@ export default function VoosTable({
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button
+                            type="button"
                             variant="ghost"
                             size="icon"
                             onClick={() => handleExcluirVoo(voo)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             title="Mover para Lixeira"
+                            aria-label="Mover para Lixeira"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button type="button" variant="ghost" size="icon" aria-label="Mais opções">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -321,8 +323,10 @@ export default function VoosTable({
           </TableBody>
         </Table>
         {voos.length === 0 && !isLoading &&
-          <div className="text-center py-10 text-slate-500">
-            Nenhum voo encontrado para os filtros selecionados.
+          <div className="text-center py-12 text-muted-foreground">
+            <Plane className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+            <p className="text-lg font-medium">Nenhum resultado encontrado</p>
+            <p className="text-sm mt-1">Tente ajustar os filtros ou adicionar novos registos.</p>
           </div>
         }
       </div>

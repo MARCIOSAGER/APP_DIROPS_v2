@@ -649,8 +649,6 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
         body: emailBody
       });
 
-      console.log('Resposta do envio de email:', response);
-
       setIsEmailModalOpen(false);
       setSuccessInfo({
         isOpen: true,
@@ -908,8 +906,6 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
             </Button>
             <Button onClick={async () => {
               try {
-                console.log('🔄 Gerando PDF no frontend...');
-
                 const doc = await createPdfDoc();
 
                 // Buscar informações do usuário e logo da empresa

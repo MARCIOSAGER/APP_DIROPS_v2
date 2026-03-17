@@ -69,10 +69,6 @@ export default function Safety() {
       setOcorrencias(filteredOcorrencias);
       setAeroportos(aeroportosFiltrados);
       
-      console.log('Dados carregados em Safety:', {
-        ocorrencias: filteredOcorrencias.length,
-        aeroportos: aeroportosAngola.length
-      });
     } catch (error) {
       console.error("Erro ao carregar dados de safety:", error);
       setAlertInfo({ isOpen: true, title: 'Erro de Carregamento', message: 'Não foi possível carregar os dados de ocorrências.' });

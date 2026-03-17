@@ -48,12 +48,6 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
     setIsSubmitting(true);
 
     try {
-      console.log('📊 Gerando proforma com dados:', {
-        companhia_id: companhia?.id,
-        companhia_objeto: companhia,
-        calculo_id: calculo.id
-      });
-
       if (!companhia?.id) {
         throw new Error('Companhia aérea não encontrada. Por favor, verifique se a companhia está cadastrada.');
       }

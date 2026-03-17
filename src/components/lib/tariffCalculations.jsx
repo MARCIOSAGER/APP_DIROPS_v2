@@ -47,14 +47,6 @@ const formatCurrency = (amount) => {
  * Calcula todas as tarifas para um voo ligado
  */
 export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOperacao, configuracao, impostos = []) {
-  console.log('🔍 VALIDAÇÃO INICIAL - calculateAllTariffs chamado com:', {
-    temVooLigado: !!vooLigado,
-    temVooArr: !!vooArr,
-    temVooDep: !!vooDep,
-    temAeroportoOperacao: !!aeroportoOperacao,
-    temConfiguracao: !!configuracao
-  });
-
   // Validação crítica dos parâmetros
   if (!vooArr) {
     console.error('❌ CRÍTICO: vooArr não fornecido');
@@ -94,14 +86,7 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
   const outrasTarifas = configuracao.outrasTarifas;
   const taxaCambio = configuracao.taxaCambio || 850;
 
-  console.log('📊 Dados extraídos da configuração:', {
-    aeroportos: aeroportos?.length || 0,
-    aeronaves: aeronaves?.length || 0,
-    tarifasPouso: tarifasPouso?.length || 0,
-    tarifasPermanencia: tarifasPermanencia?.length || 0,
-    outrasTarifas: outrasTarifas?.length || 0,
-    taxaCambio
-  });
+
 
   // Initial validation for essential data arrays
   if (!aeroportos || !Array.isArray(aeroportos) || aeroportos.length === 0) {
@@ -151,21 +136,8 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
   const categoria_aeroporto = aeroportoOperacao.categoria;
   
   // Determinar tipo de voo (Doméstico/Internacional)
-  console.log('🔍 Verificando aeroportos para tipo de operação:', {
-    origem_codigo: vooArr.aeroporto_origem_destino,
-    operacao_codigo: aeroportoOperacao.codigo_icao,
-    destino_codigo: vooDep.aeroporto_origem_destino,
-    total_aeroportos_disponiveis: configuracao.aeroportos?.length || 0
-  });
-
   const aeroportoOrigem = configuracao.aeroportos.find(a => a.codigo_icao === vooArr.aeroporto_origem_destino);
   const aeroportoDestino = configuracao.aeroportos.find(a => a.codigo_icao === vooDep.aeroporto_origem_destino);
-  
-  console.log('🔍 Aeroportos encontrados:', {
-    origem: aeroportoOrigem ? `${aeroportoOrigem.codigo_icao} (${aeroportoOrigem.pais})` : 'NÃO ENCONTRADO',
-    operacao: `${aeroportoOperacao.codigo_icao} (${aeroportoOperacao.pais})`,
-    destino: aeroportoDestino ? `${aeroportoDestino.codigo_icao} (${aeroportoDestino.pais})` : 'NÃO ENCONTRADO'
-  });
 
   // Se não encontrar origem ou destino, assumir doméstico (seguro)
   const isInternational = 
@@ -178,15 +150,6 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
 
   // Verificar se o voo é isento de tarifas
   const isExempt = isExemptFlight(vooArr, vooDep);
-
-  console.log('🔍 Debug cálculo:', {
-    vooArr: vooArr.numero_voo,
-    tipoVooArr: vooArr.tipo_voo,
-    vooDep: vooDep.numero_voo,
-    tipoVooDep: vooDep.tipo_voo,
-    isExempt,
-    aeroporto: aeroportoOperacao.codigo_icao
-  });
 
   // Tempo de permanência (estatístico) vs estacionamento (faturação)
   const tempoPermanenciaMinEstatistica = vooLigado.tempo_permanencia_min || 0;
@@ -246,12 +209,6 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
         observacao: "Voos Militares, Oficiais e Humanitário são isentos de todas as tarifas aeroportuárias quando pelo menos um dos voos (chegada ou partida) é desse tipo.",
         categoria_aeroporto: categoria_aeroporto
       };
-      
-      console.log('✅ Cálculo finalizado (ISENTO):', {
-        voo: vooDep.numero_voo,
-        total_usd: 0,
-        total_aoa: 0
-      });
       
       return results;
     }
@@ -463,7 +420,6 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
           valor: results.tarifa_carga_usd,
           categoria_aeroporto: categoria_aeroporto,
         };
-        console.log(`💼 Tarifa de Carga: ${totalCargaKg} kg (DEP apenas) × $${tarifaPorTonelada}/ton = $${results.tarifa_carga_usd}`);
       } else {
         console.warn(`⚠️ Tarifa de carga não encontrada para categoria ${categoria_aeroporto} e tipo ${tipoOperacaoEnum}`);
         results.tarifa_carga_usd = 0;
@@ -477,7 +433,6 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
         };
       }
     } else {
-      console.log('💼 Sem carga para cobrar');
       results.tarifa_carga_usd = 0;
       results.detalhes_calculo.carga = {
         tipoVoo: tipoOperacao,
@@ -774,7 +729,6 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
           total_usd: results.tarifa_recursos_usd,
           observacao: 'Recursos de solo utilizados durante a permanência da aeronave'
         };
-        console.log(`🔧 Tarifa de Recursos: ${recursosDetalhes.length} recurso(s) = $${results.tarifa_recursos_usd}`);
       } else {
         results.detalhes_calculo.recursos = {
           itens: [],
@@ -820,7 +774,6 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
           total_usd: results.tarifa_servicos_usd,
           observacao: 'Serviços aeroportuários adicionais'
         };
-        console.log(`🏢 Tarifa de Serviços: ${servicosDetalhes.length} serviço(s) = $${results.tarifa_servicos_usd}`);
       } else {
         results.detalhes_calculo.servicos = { itens: [], total_usd: 0 };
       }
@@ -873,7 +826,6 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
     ).toFixed(2));
 
     // ==================== CALCULAR IMPOSTOS ====================
-    console.log('📊 Calculando impostos...');
     let impostosDetalhes = [];
     let totalImpostosUSD = 0;
     let totalImpostosAOA = 0;
@@ -900,8 +852,6 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
         return true;
       });
 
-      console.log(`✅ Impostos aplicáveis: ${impostosAplicaveis.length}`);
-
       // Calcular cada imposto (apenas percentagem sobre subtotal)
       impostosAplicaveis.forEach(imposto => {
         // Percentagem sobre o subtotal em USD, depois converter para AOA
@@ -922,7 +872,6 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
           descricao: imposto.descricao || ''
         });
 
-        console.log(`  ✓ ${imposto.tipo}: ${percentagem}% de $${subtotalUSD.toFixed(2)} = $${valorImpostoUSD.toFixed(2)} = ${valorImpostoAOA.toFixed(2)} Kz`);
       });
     }
 
@@ -950,20 +899,6 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
         origem: vooLigado.estacionamento_origem
       };
     }
-
-    console.log('✅ Cálculo finalizado:', {
-      voo: vooDep.numero_voo,
-      total_usd: results.total_tarifa_usd,
-      total_aoa: results.total_tarifa,
-      componentes: {
-        pouso_usd: results.tarifa_pouso_usd,
-        permanencia_usd: results.tarifa_permanencia_usd,
-        passageiros_usd: results.tarifa_passageiros_usd,
-        carga_usd: results.tarifa_carga_usd,
-        outras_usd: results.outras_tarifas_usd,
-        recursos_usd: results.tarifa_recursos_usd
-      }
-    });
 
     return results;
   } catch (error) {
@@ -1013,7 +948,6 @@ async function saveCalculation(results) {
     };
 
     await CalculoTarifa.create(calculoData);
-    console.log('✅ Cálculo de tarifas salvo com sucesso');
   } catch (error) {
     console.error('❌ Erro ao salvar cálculo de tarifas:', error);
     throw error;

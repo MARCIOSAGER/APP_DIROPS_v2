@@ -83,7 +83,6 @@ export default function DashboardInterno() {
       try {
         const empresaIdFiltro = effectiveEmpresaId || userWithProfiles.empresa_id;
         aeroportosData = await (empresaIdFiltro ? Aeroporto.filter({ empresa_id: empresaIdFiltro }) : Aeroporto.list());
-        console.log('✅ Aeroportos carregados:', aeroportosData.length);
       } catch (err) {
         console.error('❌ Erro ao carregar aeroportos:', err);
       }
@@ -131,8 +130,6 @@ export default function DashboardInterno() {
       const calculosFiltrados = calculosTarifaData.filter(c => vooIdsFiltrados.has(c.voo_id));
       setCalculosTarifa(calculosFiltrados);
 
-      console.log('✅ Dados carregados para gráficos');
-      console.log('📊 Cálculos de Tarifa carregados:', calculosTarifaData.length);
       setLoadingStatus('Concluído!');
     } catch (error) {
       console.error("❌ Erro ao carregar dados específicos:", error);
@@ -173,7 +170,7 @@ export default function DashboardInterno() {
       console.error("❌ Erro geral no Dashboard:", error);
 
       if (error.response?.status === 401 || error.message?.includes('401') || error.message?.includes('not authenticated')) {
-        console.log('Utilizador não autenticado, redirecionando para login');
+        console.debug('Utilizador não autenticado, redirecionando para login');
         window.location.href = '/login';
         return;
       }

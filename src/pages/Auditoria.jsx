@@ -372,7 +372,7 @@ export default function Auditoria() {
         const logoUrl = getEmpresaLogoByUser(currentUser, empresas);
         logoBase64 = await loadImageAsBase64(logoUrl);
       } catch (logoError) {
-        console.log('Logo não carregado:', logoError);
+        console.debug('Logo não carregado:', logoError);
       }
 
       const [respostasData, tipoData] = await Promise.all([

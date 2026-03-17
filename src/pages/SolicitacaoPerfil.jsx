@@ -59,7 +59,6 @@ export default function SolicitacaoPerfil() {
 
       // Se já existe uma solicitação pendente, redirecionar para aguardar aprovação
       if (solicitacoesExistentes && solicitacoesExistentes.length > 0) {
-        console.log('Já existe uma solicitação pendente, redirecionando...');
         window.location.href = createPageUrl('AguardandoAprovacao');
         return;
       }
@@ -108,7 +107,6 @@ export default function SolicitacaoPerfil() {
       });
 
       if (solicitacoesExistentes && solicitacoesExistentes.length > 0) {
-        console.log('Já existe uma solicitação pendente, redirecionando...');
         window.location.href = createPageUrl('AguardandoAprovacao');
         return;
       }

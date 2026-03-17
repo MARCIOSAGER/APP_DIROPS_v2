@@ -34,7 +34,6 @@ export default function AguardandoAprovacao() {
       } else {
         // Se não há solicitação pendente, verificar se o utilizador já foi aprovado
         if (currentUser.perfis && Array.isArray(currentUser.perfis) && currentUser.perfis.length > 0 && currentUser.status === 'ativo') {
-          console.log('Utilizador já aprovado, redirecionando para Home');
           window.location.href = createPageUrl('Home');
           return;
         }
@@ -48,7 +47,6 @@ export default function AguardandoAprovacao() {
       // Retry com backoff se conexão instável
       if (tentativa < MAX_TENTATIVAS) {
         const tempoEspera = tentativa * 2000;
-        console.log(`⏳ Tentando novamente em ${tempoEspera/1000}s...`);
         setTimeout(() => loadData(tentativa + 1), tempoEspera);
       } else {
         setIsLoading(false);

@@ -357,7 +357,7 @@ export default function Reclamacoes() {
         const logoUrl = getEmpresaLogoByUser(user, empresas);
         logoBase64 = await loadImageAsBase64(logoUrl);
       } catch (logoError) {
-        console.log('Logo não carregado:', logoError);
+        // Logo not loaded
       }
 
       const headerOpts = {

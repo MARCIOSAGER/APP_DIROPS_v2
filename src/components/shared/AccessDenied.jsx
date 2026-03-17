@@ -14,7 +14,6 @@ export default function AccessDenied() {
 
         // Se é um usuário novo sem perfis/aeroportos, redirecionar para formulário
         if (user && (!user.perfis || user.perfis.length === 0 || aeroportosPermitidos.length === 0)) {
-          console.log('Novo usuário detectado - redirecionando para formulário de solicitação');
           window.location.href = createPageUrl('SolicitacaoPerfil');
         }
       } catch (error) {

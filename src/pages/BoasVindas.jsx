@@ -97,7 +97,6 @@ export default function BoasVindas() {
       const hasNoValidProfiles = !userData.perfis.some(p => PERFIL_INFO[p]);
 
       if (hasOnlyVisualizador || hasNoValidProfiles) {
-        console.log('Utilizador sem perfis válidos, redirecionando para Solicitação de Perfil.');
         window.location.href = createPageUrl('SolicitacaoPerfil');
         return;
       }

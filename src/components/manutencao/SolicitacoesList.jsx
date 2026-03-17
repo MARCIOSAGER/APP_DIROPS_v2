@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import Select from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Eye, ClipboardCheck, Search } from 'lucide-react';
+import { Eye, ClipboardCheck, Search, FileX } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
@@ -136,13 +136,16 @@ export default function SolicitacoesList({
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-slate-500">
-                    A carregar solicitacoes...
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    A carregar solicitações...
                   </TableCell>
                 </TableRow>
               ) : filteredSolicitacoes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-slate-500">
-                    Nenhuma solicitacao encontrada.
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                    <FileX className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                    <p className="text-lg font-medium">Nenhum resultado encontrado</p>
+                    <p className="text-sm mt-1">Tente ajustar os filtros ou adicionar novos registos.</p>
                   </TableCell>
                 </TableRow>
               ) : (

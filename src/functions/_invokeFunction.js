@@ -28,7 +28,6 @@ export async function invokeFunction(functionName, params = {}) {
   }
 
   // 2. Fallback to Supabase Edge Function
-  console.log(`[invokeFunction] Calling Edge Function: ${functionName}`);
   const { data, error } = await supabase.functions.invoke(functionName, {
     body: params,
   });

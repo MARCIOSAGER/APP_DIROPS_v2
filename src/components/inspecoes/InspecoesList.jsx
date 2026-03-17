@@ -253,7 +253,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
         const logoUrl = getEmpresaLogoByAeroporto(inspecao.aeroporto_id, aeroportos, empresas);
         logoBase64 = await loadImageAsBase64(logoUrl);
       } catch (logoError) {
-        console.log('Logo não adicionado:', logoError);
+        console.debug('Logo não adicionado:', logoError);
       }
 
       const aeroportoNome = getAeroportoNome(inspecao.aeroporto_id);
@@ -383,7 +383,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
                 xPos += photoWidth + 5;
                 photosInRow++;
               } catch (imgError) {
-                console.log('Erro ao carregar imagem:', imgError);
+                console.debug('Erro ao carregar imagem:', imgError);
                 // Placeholder para imagem que falhou
                 doc.setFillColor(240, 240, 240);
                 doc.rect(xPos, yPos, photoWidth, photoHeight, 'F');
@@ -400,7 +400,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
           }
         }
       } catch (error) {
-        console.log('Erro ao carregar evidências:', error);
+        console.debug('Erro ao carregar evidências:', error);
       }
 
       // Footer

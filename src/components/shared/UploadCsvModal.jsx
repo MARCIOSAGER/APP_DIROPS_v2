@@ -280,13 +280,6 @@ export default function UploadCsvModal({
       setConflicts(localConflicts);
       setNewRecords(localNewRecords);
 
-      console.log('Dados processados:', {
-        total: recordsToProcess.length,
-        novos: localNewRecords.length,
-        conflitos: localConflicts.length,
-        exemplo: recordsToProcess[0] // Para debug
-      });
-
       if (localConflicts.length > 0) {
         setShowConflictsModal(true);
       } else { // If no conflicts, proceed directly to import new records
@@ -362,12 +355,9 @@ export default function UploadCsvModal({
         
         if (validRecordsForCreate.length > 0) {
           try {
-            console.log(`Tentando criar ${validRecordsForCreate.length} novos registos em massa.`);
-            // Assuming bulkCreate returns the count or records created if successful
-            const created = await Entity.bulkCreate(validRecordsForCreate); 
-            successCount += created.length || validRecordsForCreate.length; // Use returned length if available
-            for (let i = 0; i < validRecordsForCreate.length; i++) updateProgress(); // Update progress for each successfully processed record
-            console.log(`Criação em massa de ${validRecordsForCreate.length} registos bem-sucedida.`);
+            const created = await Entity.bulkCreate(validRecordsForCreate);
+            successCount += created.length || validRecordsForCreate.length;
+            for (let i = 0; i < validRecordsForCreate.length; i++) updateProgress();
           } catch (bulkError) {
             console.warn('Erro ao criar registos em massa. Tentando criação individual:', bulkError);
             // Fallback to individual creation if bulk fails

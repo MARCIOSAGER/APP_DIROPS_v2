@@ -39,7 +39,6 @@ export const registarAuditoria = async ({
 
     await LogAuditoria.create(logData);
     
-    console.log(`[AUDITORIA] ${user.email} executou ${acao} em ${entidade}${entidadeId ? ` (ID: ${entidadeId})` : ''}`);
   } catch (error) {
     console.error('Erro ao registar auditoria:', error);
     // Não interromper o fluxo principal se houver erro no log

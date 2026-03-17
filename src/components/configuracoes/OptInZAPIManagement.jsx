@@ -224,8 +224,6 @@ export default function OptInZAPIManagement({ onError, onSuccess }) {
     setQrCodeData(null);
     try {
       const response = await base44.functions.invoke('zapiObterQRCode');
-      console.log('Resposta obter QR Code:', response.data);
-
       if (response.data.success && response.data.data) {
         setQrCodeData(response.data.data);
         setShowQRModal(true);

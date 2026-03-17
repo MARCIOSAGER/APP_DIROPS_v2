@@ -992,8 +992,10 @@ export default function GestaoAcessos() {
                         ))
                       ) : solicitacoesPendentes.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center text-slate-500 py-4">
-                            Não há solicitações pendentes.
+                          <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                            <Mail className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                            <p className="text-lg font-medium">Nenhum resultado encontrado</p>
+                            <p className="text-sm mt-1">Não há solicitações pendentes de aprovação.</p>
                           </TableCell>
                         </TableRow>
                       ) : solicitacoesPendentes.map((solicitacao) => {

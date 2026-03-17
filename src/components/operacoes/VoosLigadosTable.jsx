@@ -134,7 +134,6 @@ export default function VoosLigadosTable({
       return;
     }
 
-    console.log('Gerar proformas para:', selectedCalculos);
   };
 
   const handleRecalcularLote = () => {

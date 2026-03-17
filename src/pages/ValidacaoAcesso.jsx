@@ -12,7 +12,7 @@ export default function ValidacaoAcesso() {
     if (isLoadingAuth) return;
 
     if (!isAuthenticated) {
-      console.log('[VALIDACAO] Não autenticado, indo para login');
+      console.debug('[VALIDACAO] Não autenticado, indo para login');
       window.location.href = '/login';
       return;
     }
@@ -20,15 +20,15 @@ export default function ValidacaoAcesso() {
     if (!authUser) return;
 
     const user = ensureUserProfilesExist({ ...authUser });
-    console.log('[VALIDACAO] User:', { email: user.email, status: user.status, perfis: user.perfis, role: user.role });
+    console.debug('[VALIDACAO] User:', { email: user.email, status: user.status, perfis: user.perfis, role: user.role });
 
     if (user.status === 'ativo' && user.perfis && user.perfis.length > 0) {
-      console.log('[VALIDACAO] Ativo com perfis, indo para Home');
+      console.debug('[VALIDACAO] Ativo com perfis, indo para Home');
       window.location.href = createPageUrl('Home');
       return;
     }
 
-    console.log('[VALIDACAO] Sem perfis, indo para SolicitacaoPerfil');
+    console.debug('[VALIDACAO] Sem perfis, indo para SolicitacaoPerfil');
     window.location.href = createPageUrl('SolicitacaoPerfil');
   }, [isLoadingAuth, isAuthenticated, authUser]);
 

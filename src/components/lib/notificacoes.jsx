@@ -175,7 +175,7 @@ export async function notifyAdminsCreation(entityType, entityData, createdBy, ad
     `;
 
     await sendNotificationEmail(adminEmails.join(','), subject, body);
-    console.log(`✅ Notificação de criação de ${entityName} enviada para ${adminEmails.length} administradores`);
+    console.debug(`Notificação de criação de ${entityName} enviada para ${adminEmails.length} administradores`);
   } catch (error) {
     console.error(`❌ Erro ao enviar notificação de criação de ${entityType}:`, error);
   }
@@ -301,7 +301,7 @@ export async function notifyAdminsUpdate(entityType, entityData, updatedBy, addi
     `;
 
     await sendNotificationEmail(adminEmails.join(','), subject, body);
-    console.log(`✅ Notificação de atualização de ${entityName} enviada para ${adminEmails.length} administradores`);
+    console.debug(`Notificação de atualização de ${entityName} enviada para ${adminEmails.length} administradores`);
   } catch (error) {
     console.error(`❌ Erro ao enviar notificação de atualização de ${entityType}:`, error);
   }

@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, ChevronDown, BarChart3, ArrowLeft, BookMarked, Sparkles, Building2, Layers, Trash2, Key
+  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, ChevronDown, BarChart3, ArrowLeft, BookMarked, Sparkles, Building2, Layers, Trash2, Key, Moon, Sun, Globe
 } from "lucide-react";
 import BottomTabs from '@/components/shared/BottomTabs';
 import { useI18n } from '@/components/lib/i18n';
@@ -147,12 +147,10 @@ const getFirstAccessiblePage = (user, permissions) => {
   user = ensureUserProfilesExist(user);
 
   if (!areUserProfilesLoaded(user)) {
-    console.log('Perfis não carregados ou vazios, redirecionando para ValidacaoAcesso');
     return createPageUrl('ValidacaoAcesso');
   }
 
   if (hasUserProfile(user, 'gestor_empresa')) {
-    console.log('Redirecionando gestor de empresa para Credenciamento');
     // Ensure that if 'Credenciamento' is the target, we get its actual URL, which might be external
     const credenciamentoItem = navigationItems.find(item => item.pageKey === 'Credenciamento');
     return credenciamentoItem ? credenciamentoItem.url : createPageUrl('Credenciamento');
@@ -173,7 +171,7 @@ const rootPages = ['Home', 'Operacoes', 'Safety', 'FundoManeio', 'ConfiguracaoTa
 function LayoutContent({ children, currentPageName }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, language, setLanguage } = useI18n();
   const { user: authUser, isLoadingAuth } = useAuth();
   const isRootPage = rootPages.includes(currentPageName);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -185,6 +183,19 @@ function LayoutContent({ children, currentPageName }) {
         const [hasRedirected, setHasRedirected] = React.useState(false);
         const [globalLoading] = React.useState(false);
         const [showTour, setShowTour] = React.useState(false);
+        const [darkMode, setDarkMode] = React.useState(() => {
+          if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('darkMode');
+            if (saved !== null) return saved === 'true';
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
+          }
+          return false;
+        });
+
+        React.useEffect(() => {
+          document.documentElement.classList.toggle('dark', darkMode);
+          localStorage.setItem('darkMode', darkMode);
+        }, [darkMode]);
         const [logoUrl, setLogoUrl] = React.useState(DEFAULT_LOGO);
         const [empresasList, setEmpresasList] = React.useState([]);
         const { viewingAsEmpresa, setViewingAsEmpresa, clearViewingAsEmpresa, isSuperAdminViewing } = useCompanyView();
@@ -262,7 +273,6 @@ function LayoutContent({ children, currentPageName }) {
         // If the first accessible page is different from the current path AND it's not the generic 'ValidacaoAcesso' page,
         // then perform the redirect.
         if (firstAccessiblePage !== currentPath && firstAccessiblePage !== createPageUrl('ValidacaoAcesso')) {
-          console.log('🔄 Redirecionando automaticamente para:', firstAccessiblePage);
           setHasRedirected(true); // Mark that a redirect has been initiated
           window.location.href = firstAccessiblePage;
         } else {
@@ -325,7 +335,7 @@ function LayoutContent({ children, currentPageName }) {
             <div className="text-center">
               <h1 className="text-2xl font-bold text-slate-900 mb-4">Acesso Restrito</h1>
               <p className="text-slate-600 mb-4">É necessário fazer login para aceder a esta página.</p>
-              <Button onClick={() => UserEntity.loginWithRedirect(window.location.href)}>
+              <Button type="button" onClick={() => UserEntity.loginWithRedirect(window.location.href)}>
                 Fazer Login
               </Button>
             </div>
@@ -365,7 +375,7 @@ function LayoutContent({ children, currentPageName }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100">
       <style>{`
         :root {
           --primary: #004A99;
@@ -378,18 +388,6 @@ function LayoutContent({ children, currentPageName }) {
           --safe-area-bottom: env(safe-area-inset-bottom);
           --safe-area-left: env(safe-area-inset-left);
           --safe-area-right: env(safe-area-inset-right);
-        }
-        @media (prefers-color-scheme: dark) {
-          :root {
-            --background: #0f172a;
-            --foreground: #f1f5f9;
-            --card: #1e293b;
-            --card-foreground: #f1f5f9;
-            --border: #334155;
-            --input: #334155;
-            --muted: #94a3b8;
-            --muted-foreground: #94a3b8;
-          }
         }
         body {
           overscroll-behavior: none;
@@ -407,23 +405,23 @@ function LayoutContent({ children, currentPageName }) {
 
       {/* Mobile sticky header */}
       <div
-        className="lg:hidden bg-white border-b border-slate-200 px-4 flex items-center justify-between sticky top-0 z-40"
+        className="lg:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 flex items-center justify-between sticky top-0 z-40"
         style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))', paddingBottom: '0.75rem' }}
       >
         <div className="flex items-center gap-2">
           {!isRootPage ? (
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="select-none">
+            <Button type="button" variant="ghost" size="icon" onClick={() => navigate(-1)} className="select-none" aria-label="Voltar">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           ) : (
-            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="select-none">
+            <Button type="button" variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="select-none" aria-label="Abrir menu">
               <Menu className="h-6 w-6" />
             </Button>
           )}
           <img src={logoUrl} alt="Logo" className="h-[100px] max-w-[180px] object-contain" />
         </div>
         {!isRootPage && (
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="select-none">
+          <Button type="button" variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="select-none" aria-label="Abrir menu">
             <Menu className="h-6 w-6" />
           </Button>
         )}
@@ -431,10 +429,10 @@ function LayoutContent({ children, currentPageName }) {
 
       <div className={`lg:hidden fixed inset-0 z-50 transition-transform transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setSidebarOpen(false)}></div>
-        <div className="relative w-72 h-full bg-white shadow-xl flex flex-col">
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="relative w-72 h-full bg-white dark:bg-slate-900 shadow-xl flex flex-col">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <img src={logoUrl} alt="Logo" className="h-[120px] max-w-[200px] object-contain mx-auto" />
-            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}><X className="h-5 w-5" /></Button>
+            <Button type="button" variant="ghost" size="icon" onClick={() => setSidebarOpen(false)} aria-label="Fechar menu"><X className="h-5 w-5" /></Button>
           </div>
 
           <nav className="p-4 space-y-2 flex-grow overflow-y-auto">
@@ -465,20 +463,45 @@ function LayoutContent({ children, currentPageName }) {
             ))}
           </nav>
 
-          <div className="p-4 border-t border-slate-200 space-y-2">
+          <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-2">
+            {/* Mobile dark/language toggles */}
+            <div className="flex items-center justify-center gap-2 pb-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="flex-1 dark:border-slate-600 dark:text-slate-300"
+                onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
+              >
+                <Globe className="h-3.5 w-3.5 mr-1.5" />
+                {language === 'pt' ? 'EN' : 'PT'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="flex-1 dark:border-slate-600 dark:text-slate-300"
+                onClick={() => setDarkMode(!darkMode)}
+              >
+                {darkMode ? <Sun className="h-3.5 w-3.5 mr-1.5" /> : <Moon className="h-3.5 w-3.5 mr-1.5" />}
+                {darkMode ? 'Claro' : 'Escuro'}
+              </Button>
+            </div>
+
             <div className="flex items-center gap-3 px-2 py-2">
-              <div className="bg-slate-200 rounded-full p-2">
-                <UserIcon className="h-5 w-5 text-slate-600"/>
+              <div className="bg-slate-200 dark:bg-slate-700 rounded-full p-2">
+                <UserIcon className="h-5 w-5 text-slate-600 dark:text-slate-300"/>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-slate-800 truncate">{user.full_name || user.email}</div>
-                <div className="text-xs text-slate-500 capitalize">{user.role}</div>
+                <div className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{user.full_name || user.email}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 capitalize">{user.role}</div>
               </div>
             </div>
 
             <Button
+              type="button"
               variant="outline"
-              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 dark:border-red-800 dark:hover:bg-red-950"
               onClick={handleLogout}
             >
               <LogOut className="mr-2 h-4 w-4" />
@@ -493,8 +516,8 @@ function LayoutContent({ children, currentPageName }) {
       </div>
 
       <div className="flex">
-        <div className="hidden lg:flex flex-col w-64 bg-white border-r border-slate-200 h-screen sticky top-0">
-          <div className="p-4 border-b border-slate-200">
+        <div className="hidden lg:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 h-screen sticky top-0">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-700">
             <div className="flex justify-center">
               <img src={logoUrl} alt="Logo" className="h-[120px] max-w-[200px] object-contain" />
             </div>
@@ -507,16 +530,16 @@ function LayoutContent({ children, currentPageName }) {
                   href={item.url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200`}
                 >
                   <item.icon className={`w-5 h-5 ${item.color}`} />
                   <span className="text-sm font-medium">{item.title}</span>
                 </a>
               ) : (
-                <Link 
-                  key={item.title} 
-                  to={item.url} 
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${location.pathname === item.url ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+                <Link
+                  key={item.title}
+                  to={item.url}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${location.pathname === item.url ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
                 >
                   <item.icon className={`w-5 h-5 ${location.pathname !== item.url ? item.color : ''}`} />
                   <span className="text-sm font-medium">{item.title}</span>
@@ -524,15 +547,15 @@ function LayoutContent({ children, currentPageName }) {
               )
             ))}
           </nav>
-          <div className="p-4 border-t border-slate-200">
-            <div className="text-center text-xs text-slate-400">
+          <div className="p-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="text-center text-xs text-slate-400 dark:text-slate-500">
               Versão 2.1.0
             </div>
           </div>
         </div>
 
         <div className="flex-1">
-          <header className="hidden lg:flex justify-end items-center bg-white border-b border-slate-200 px-6 h-16">
+          <header className="hidden lg:flex justify-end items-center bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-6 h-16">
             <div className="flex items-center gap-4">
               <NetworkIndicator />
 
@@ -551,6 +574,7 @@ function LayoutContent({ children, currentPageName }) {
                           <span className="max-w-[150px] truncate">{viewingAsEmpresa.nome}</span>
                           <span
                             role="button"
+                            aria-label="Limpar seleção de empresa"
                             className="ml-1 hover:bg-blue-800 rounded-full p-0.5"
                             onClick={(e) => { e.stopPropagation(); clearViewingAsEmpresa(); }}
                           >
@@ -590,10 +614,35 @@ function LayoutContent({ children, currentPageName }) {
                 </DropdownMenu>
               )}
 
+              {/* Language toggle */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-slate-500 hover:text-slate-800 border border-slate-200"
+                aria-label={language === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+                onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
+                title={language === 'pt' ? 'English' : 'Português'}
+              >
+                <span className="text-xs font-bold">{language === 'pt' ? 'EN' : 'PT'}</span>
+              </Button>
+
+              {/* Dark mode toggle */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-slate-500 hover:text-slate-800 border border-slate-200 dark:text-slate-300 dark:border-slate-600 dark:hover:text-white"
+                aria-label={darkMode ? 'Modo claro' : 'Modo escuro'}
+                onClick={() => setDarkMode(!darkMode)}
+              >
+                {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+
               {/* Help dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full text-slate-500 hover:text-slate-800 border border-slate-200">
+                  <Button type="button" variant="ghost" size="icon" className="rounded-full text-slate-500 hover:text-slate-800 border border-slate-200" aria-label="Ajuda">
                     <span className="text-sm font-semibold">?</span>
                   </Button>
                 </DropdownMenuTrigger>

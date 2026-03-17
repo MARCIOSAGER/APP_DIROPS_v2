@@ -168,7 +168,6 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
       }
 
       // Buscar TODOS os voos em cache para os aeroportos selecionados
-      console.log('🔄 Buscando voos em cache...');
       const cacheVoos = await Promise.all(
         aeroportosSelecionados.map(aeroporto =>
           base44.entities.CacheVooFR24.filter({
@@ -186,7 +185,6 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
         data_voo_cache: cache.data_voo
       }));
 
-      console.log(`✅ ${voosEmCache.length} voos encontrados em cache`);
       allFlights.push(...voosEmCache);
 
       // Atualizar progresso com voos do cache
@@ -201,7 +199,6 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
       }));
 
       // Buscar novos voos da API para cada aeroporto
-      console.log('🔄 Buscando novos voos da API...');
       let pageCounter = 1;
 
       for (const aeroporto of aeroportosSelecionados) {
@@ -213,7 +210,6 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
           });
 
           if (response && response.data && response.data.flights && Array.isArray(response.data.flights)) {
-            console.log(`✅ ${response.data.flights.length} voos novos da API para ${aeroporto}`);
             allFlights.push(...response.data.flights);
 
             // Atualizar progresso
@@ -278,8 +274,6 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
         return true;
       });
 
-      console.log(`✅ Total: ${voosComCacheId.length} voos com cache_id`);
-
       // Marcar como completo
       now = Date.now();
       elapsed = now - searchStartTime;
@@ -292,7 +286,6 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
       }));
 
       if (voosComCacheId.length > 0) {
-        console.log(`📊 Definindo ${voosComCacheId.length} voos na tabela`);
         setVoosFR24(voosComCacheId);
         setError(null);
       } else {
@@ -331,7 +324,6 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
       setError('Erro ao importar: cache_id não encontrado');
       return;
     }
-    console.log('✅ Abrindo modal para voo:', voo.cache_id);
     setSelectedFR24Voo(voo);
     setSelectedCacheVoo(voo.cache_id);
     setShowReviewModal(true);
@@ -377,14 +369,11 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
   };
 
   const toggleSelectAll = (checked) => {
-    console.log('toggleSelectAll:', checked, 'voosFR24:', voosFR24.length);
     if (checked) {
       const cacheIds = voosFR24.filter(v => v.cache_id).map(v => v.cache_id);
       setSelectedVoos(new Set(cacheIds));
-      console.log('Selecionados:', cacheIds);
     } else {
       setSelectedVoos(new Set());
-      console.log('Desmarcados todos');
     }
   };
 

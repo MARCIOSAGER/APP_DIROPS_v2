@@ -389,44 +389,33 @@ export default function Operacoes() {
           query.data_operacao = { ...query.data_operacao, $lte: filtros.dataFim };
         }
 
-        console.log('🔍 Filtrando voos por data no servidor (com paginação):', query);
-
         // Buscar em lotes com paginação
         let allVoos = [];
         let skip = 0;
         const BATCH_SIZE = 1000;
         let hasMore = true;
 
-        console.log('🔄 Iniciando busca em lotes para período:', query);
-
         while (hasMore) {
-          console.log(`  📥 Lote ${Math.floor(skip/BATCH_SIZE) + 1}: skip=${skip}, limit=${BATCH_SIZE}`);
           const batch = await Voo.filter(query, '-data_operacao', BATCH_SIZE, skip);
 
           if (batch && batch.length > 0) {
-            console.log(`  ✅ Recebidos ${batch.length} voos neste lote`);
             allVoos = [...allVoos, ...batch];
 
             if (batch.length < BATCH_SIZE) {
               hasMore = false;
-              console.log('  🏁 Fim dos dados (lote incompleto)');
             } else {
               skip += BATCH_SIZE;
             }
           } else {
             hasMore = false;
-            console.log('  🏁 Fim dos dados (lote vazio)');
           }
         }
-
-        console.log(`📊 Total: ${allVoos.length} voos carregados`);
 
         // Filtrar por empresa_id direto
         const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
         const filteredVoos = empId ? allVoos.filter(v => v.empresa_id === empId) : allVoos;
 
         setVoos(filteredVoos);
-        console.log(`✅ ${filteredVoos.length} voo(s) encontrado(s) para o período`);
       } catch (error) {
         console.error('❌ Erro ao filtrar voos por data:', error);
         setAlertInfo({
@@ -463,39 +452,28 @@ export default function Operacoes() {
           query.data_operacao = { ...query.data_operacao, $lte: filtrosLigados.dataFim };
         }
 
-        console.log('🔍 Filtrando voos ligados por data no servidor (com paginação):', query);
-        
         // Buscar em lotes com paginação (API limita a 1000 por chamada)
         let allVoos = [];
         let skip = 0;
         const BATCH_SIZE = 1000;
         let hasMore = true;
 
-        console.log('🔄 Iniciando busca em lotes para período:', query);
-
         while (hasMore) {
-          console.log(`  📥 Lote ${Math.floor(skip/BATCH_SIZE) + 1}: skip=${skip}, limit=${BATCH_SIZE}`);
           const batch = await Voo.filter(query, '-data_operacao', BATCH_SIZE, skip);
-          
+
           if (batch && batch.length > 0) {
-            console.log(`  ✅ Recebidos ${batch.length} voos neste lote`);
             allVoos = [...allVoos, ...batch];
-            
+
             if (batch.length < BATCH_SIZE) {
-              // Se recebemos menos do que pedimos, é o último lote
               hasMore = false;
-              console.log('  🏁 Fim dos dados (lote incompleto)');
             } else {
-              // Se recebemos exatamente o que pedimos, há mais
               skip += BATCH_SIZE;
             }
           } else {
             hasMore = false;
-            console.log('  🏁 Fim dos dados (lote vazio)');
           }
         }
 
-        console.log(`📊 Total: ${allVoos.length} voos carregados`);
         const voosFiltered = allVoos;
 
         const voosLigadosFiltered = await VooLigado.list();
@@ -507,7 +485,6 @@ export default function Operacoes() {
 
         setVoos(voosFiltered);
         setVoosLigados(voosLigadosFiltered);
-        console.log(`✅ Total de ${voosFiltered.length} voo(s) encontrado(s), ${validLinkedFlights.length} voo(s) ligado(s)`);
       } catch (error) {
         console.error('❌ Erro ao filtrar voos ligados por data:', error);
         setAlertInfo({
@@ -605,19 +582,6 @@ export default function Operacoes() {
         taxaCambio: configAtualizada?.taxa_cambio_usd_aoa || 850
       };
 
-      console.log('🔍 RECÁLCULO - Dados dos voos:', {
-        vooArr: { id: vooArr.id, numero: vooArr.numero_voo, tipo_voo: vooArr.tipo_voo, aeroporto: vooArr.aeroporto_operacao, pax: vooArr.passageiros_local },
-        vooDep: { id: vooDep.id, numero: vooDep.numero_voo, tipo_voo: vooDep.tipo_voo, pax: vooDep.passageiros_local, carga: vooDep.carga_kg },
-        aeroporto: { icao: aeroportoOperacao.codigo_icao, categoria: aeroportoOperacao.categoria },
-        taxaCambio: currentConfiguracao.taxaCambio,
-        configTarifas: {
-          tarifasPouso: currentConfiguracao.tarifasPouso?.length || 0,
-          tarifasPermanencia: currentConfiguracao.tarifasPermanencia?.length || 0,
-          outrasTarifas: currentConfiguracao.outrasTarifas?.length || 0,
-          aeronaves: currentConfiguracao.aeronaves?.length || 0
-        }
-      });
-
       const calculatedTariffs = await calculateAllTariffs(
         vooLigado,
         vooArr,
@@ -632,14 +596,6 @@ export default function Operacoes() {
         throw new Error('Função calculateAllTariffs retornou null - verifique logs anteriores para detalhes.');
       }
 
-      console.log('✅ Tarifas calculadas com sucesso:', {
-        pouso_usd: calculatedTariffs.tarifa_pouso_usd,
-        permanencia_usd: calculatedTariffs.tarifa_permanencia_usd,
-        passageiros_usd: calculatedTariffs.tarifa_passageiros_usd,
-        total_usd: calculatedTariffs.total_tarifa_usd,
-        total_aoa: calculatedTariffs.total_tarifa
-      });
-
       const calculoComVooLigado = {
         ...calculatedTariffs,
         voo_ligado_id: vooLigado.id
@@ -650,14 +606,11 @@ export default function Operacoes() {
       const existingCalculo = calculosAtualizados.find(ct => ct.voo_id === vooDep.id);
 
       if (existingCalculo) {
-        console.log('📝 Atualizando cálculo existente ID:', existingCalculo.id);
         await CalculoTarifa.update(existingCalculo.id, calculoComVooLigado);
       } else {
-        console.log('📝 Criando novo cálculo');
         await CalculoTarifa.create(calculoComVooLigado);
       }
 
-      console.log('✅ ========== RECÁLCULO CONCLUÍDO ==========');
       return true;
     } catch (error) {
       console.error('❌ ========== ERRO NO RECÁLCULO ==========');
@@ -729,7 +682,7 @@ export default function Operacoes() {
 
       // Se é um voo DEP com vinculação ARR, criar/atualizar o VooLigado e calcular tarifas
       if (savedVoo.tipo_movimento === 'DEP' && linkedArrVooId) {
-        console.log('🔗 ========== INICIANDO VINCULAÇÃO AUTOMÁTICA ==========');
+
 
         // Buscar apenas o voo salvo fresco + usar state para dados estáticos
         const [freshSavedVoo, freshLinkedVoo] = await Promise.all([
@@ -755,8 +708,6 @@ export default function Operacoes() {
         const outrasTarifasAtualizadas = outrasTarifas;
         const impostosAtualizadosBanco = impostos;
         const aeroportosAtualizados = todosAeroportos;
-
-        console.log('✅ Dados frescos carregados do banco');
 
         const vooArr = voosAtualizadosBanco.find(v => v.id === linkedArrVooId);
         const vooDep = voosAtualizadosBanco.find(v => v.id === savedVoo.id);
@@ -791,7 +742,6 @@ export default function Operacoes() {
             );
             vooLigadoData.tempo_estacionamento_min = parkingResult.minutes;
             vooLigadoData.estacionamento_origem = parkingResult.source;
-            console.log(`🔄 Troca de registo: ${vooArr.registo_aeronave} → ${vooData.registo_dep}, estacionamento: ${parkingResult.minutes}min (${parkingResult.source})`);
           }
 
           let vooLigadoInstance;
@@ -816,17 +766,12 @@ export default function Operacoes() {
               await Promise.all(vooLigadoUpdates);
             }
 
-            console.log('✅ Voos atualizados com voo_ligado_id:', vooLigadoInstance.id);
           } catch (updateError) {
             console.warn('⚠️ Erro ao atualizar voo_ligado_id (não crítico):', updateError);
           }
 
           // Calcular tarifas automaticamente com dados FRESCOS
           try {
-            console.log('💰 ========== INICIANDO CÁLCULO AUTOMÁTICO DE TARIFAS ==========');
-            console.log('📊 Voo ARR:', vooArr.numero_voo, '| Voo DEP:', vooDep.numero_voo);
-            console.log('📊 Registo:', vooDep.registo_aeronave, '| Aeroporto:', vooArr.aeroporto_operacao);
-
             // Usar aeroportos atualizados do banco
             const aeroportoOperacao = aeroportosAtualizados.find(a => a.codigo_icao === vooArr.aeroporto_operacao);
 
@@ -835,8 +780,6 @@ export default function Operacoes() {
               console.error('   Aeroportos disponíveis:', aeroportosAtualizados.map(a => a.codigo_icao));
               throw new Error(`Aeroporto "${vooArr.aeroporto_operacao}" não encontrado na base de dados.`);
             }
-
-            console.log('✅ Aeroporto encontrado:', aeroportoOperacao.nome, '| Categoria:', aeroportoOperacao.categoria);
 
             const aeronaveDoVoo = aeronavesAtualizadas.find(a => a.registo === vooDep.registo_aeronave);
             if (!aeronaveDoVoo) {
@@ -850,13 +793,6 @@ export default function Operacoes() {
               throw new Error(`Aeronave "${aeronaveDoVoo.registo}" não possui MTOW configurado. Configure em Configurações > Registos.`);
             }
 
-            console.log('✅ Aeronave encontrada:', aeronaveDoVoo.registo, '| MTOW:', aeronaveDoVoo.mtow_kg, 'kg');
-            console.log('✅ Tarifas carregadas:', {
-              pouso: tarifasPousoAtualizadas.length,
-              permanencia: tarifasPermanenciaAtualizadas.length,
-              outras: outrasTarifasAtualizadas.length
-            });
-
             const currentConfiguracao = {
               aeroportos: aeroportosAtualizados,
               aeronaves: aeronavesAtualizadas,
@@ -865,10 +801,6 @@ export default function Operacoes() {
               outrasTarifas: outrasTarifasAtualizadas,
               taxaCambio: configuracaoSistema?.taxa_cambio_usd_aoa || 850
             };
-
-            console.log('💵 Taxa de câmbio:', currentConfiguracao.taxaCambio, 'AOA/USD');
-            console.log('📊 Impostos carregados:', impostosAtualizadosBanco.length);
-            console.log('🔄 Iniciando calculateAllTariffs...');
 
             const calculatedTariffs = await calculateAllTariffs(
               vooLigadoInstance, 
@@ -884,14 +816,6 @@ export default function Operacoes() {
               throw new Error('Função calculateAllTariffs retornou null - verifique logs anteriores para detalhes.');
             }
 
-            console.log('✅ Tarifas calculadas com sucesso:', {
-              pouso_usd: calculatedTariffs.tarifa_pouso_usd,
-              permanencia_usd: calculatedTariffs.tarifa_permanencia_usd,
-              passageiros_usd: calculatedTariffs.tarifa_passageiros_usd,
-              total_usd: calculatedTariffs.total_tarifa_usd,
-              total_aoa: calculatedTariffs.total_tarifa
-            });
-
             const calculoComVooLigado = {
               ...calculatedTariffs,
               voo_ligado_id: vooLigadoInstance.id
@@ -901,17 +825,12 @@ export default function Operacoes() {
             const existingCalculo = calculosTarifa.find(ct => ct.voo_id === vooDep.id);
 
             if (existingCalculo) {
-              console.log('📝 Atualizando cálculo existente ID:', existingCalculo.id);
               await CalculoTarifa.update(existingCalculo.id, calculoComVooLigado);
-              console.log('✅ Cálculo atualizado com sucesso');
             } else {
-              console.log('📝 Criando novo cálculo');
               await CalculoTarifa.create(calculoComVooLigado);
-              console.log('✅ Novo cálculo criado com sucesso');
             }
 
             tariffsCalculatedSuccessfully = true;
-            console.log('✅ ========== TARIFAS SALVAS COM SUCESSO ==========');
           } catch (calcError) {
             console.error('❌ ========== ERRO CRÍTICO NO CÁLCULO AUTOMÁTICO ==========');
             console.error('   Erro completo:', calcError);
@@ -937,13 +856,11 @@ export default function Operacoes() {
 
       // Se estamos EDITANDO um voo ARR que está vinculado, recalcular
       if (editingVoo && savedVoo.tipo_movimento === 'ARR') {
-        console.log('🔍 Verificando se ARR editado está vinculado...');
 
         // Usar voosLigados do state (não recarregar do banco)
         const vooLigadoExistente = voosLigados.find(vl => vl.id_voo_arr === savedVoo.id);
 
         if (vooLigadoExistente) {
-          console.log('🔄 Voo ARR editado e vinculado - ID VooLigado:', vooLigadoExistente.id);
           try {
               // Usar state + merge do voo editado
               const vooArrAtualizado = { ...savedVoo, ...vooData };
@@ -985,7 +902,6 @@ export default function Operacoes() {
                   }
 
                   tariffsCalculatedSuccessfully = true;
-                  console.log('✅ TARIFAS RECALCULADAS APÓS EDITAR ARR:', calculatedTariffs.total_tarifa_usd, 'USD');
                 } else {
                   throw new Error('calculateAllTariffs retornou null');
                 }
@@ -1535,9 +1451,7 @@ export default function Operacoes() {
 
       try {
         const pdfResponse = await base44.functions.invoke('gerarProformaPdfSimples', { proforma_id: novaProforma.id });
-        if (pdfResponse && pdfResponse.data && pdfResponse.data.pdf_url) {
-          console.log('✅ PDF gerado:', pdfResponse.data.pdf_url);
-        }
+        // PDF generated successfully
       } catch (pdfError) {
         console.warn('⚠️ Erro ao gerar PDF:', pdfError);
       }
@@ -2512,16 +2426,6 @@ export default function Operacoes() {
           ? companhias.find(c => c.codigo_icao === vooDoCalculo.companhia_aerea)
           : null;
 
-        // Log de debug
-        console.log('🔍 Debug GerarFaturaModal:', {
-          voo_id: gerarProformaCalculo.voo_id,
-          vooEncontrado: !!vooDoCalculo,
-          companhia_aerea_codigo: vooDoCalculo?.companhia_aerea,
-          companhiaEncontrada: !!companhiaDoVoo,
-          companhia_id: companhiaDoVoo?.id,
-          totalCompanhias: companhias.length
-        });
-
         if (!companhiaDoVoo) {
           console.error('❌ CRÍTICO: Companhia não encontrada para o voo:', {
             voo: vooDoCalculo?.numero_voo,
@@ -2647,7 +2551,6 @@ export default function Operacoes() {
           vooLigado={uploadMultiplosModalData}
           voos={voos}
           onSuccess={(uploadedFiles) => {
-            console.log('Documentos enviados com sucesso:', uploadedFiles);
             setIsUploadMultiplosModalOpen(false);
             setUploadMultiplosModalData(null);
             setDocumentosVooModalData(uploadMultiplosModalData);
