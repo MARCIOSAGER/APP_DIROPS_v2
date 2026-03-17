@@ -47,30 +47,32 @@ export function useModelosAeronave() {
   });
 }
 
-export async function useTarifas() {
-  const [tarifasPouso, tarifasPermanencia, outrasTarifas] = await Promise.all([
-    useQuery({
-      queryKey: ['tarifas-pouso'],
-      queryFn: () => import('@/entities/TarifaPouso').then(({ TarifaPouso }) => TarifaPouso.list()),
-      staleTime: STATIC_CACHE_TIME,
-      gcTime: STATIC_CACHE_TIME * 2,
-      refetchOnWindowFocus: false,
-    }),
-    useQuery({
-      queryKey: ['tarifas-permanencia'],
-      queryFn: () => import('@/entities/TarifaPermanencia').then(({ TarifaPermanencia }) => TarifaPermanencia.list()),
-      staleTime: STATIC_CACHE_TIME,
-      gcTime: STATIC_CACHE_TIME * 2,
-      refetchOnWindowFocus: false,
-    }),
-    useQuery({
-      queryKey: ['outras-tarifas'],
-      queryFn: () => import('@/entities/OutraTarifa').then(({ OutraTarifa }) => OutraTarifa.list()),
-      staleTime: STATIC_CACHE_TIME,
-      gcTime: STATIC_CACHE_TIME * 2,
-      refetchOnWindowFocus: false,
-    }),
-  ]);
+export function useTarifasPouso() {
+  return useQuery({
+    queryKey: ['tarifas-pouso'],
+    queryFn: () => import('@/entities/TarifaPouso').then(({ TarifaPouso }) => TarifaPouso.list()),
+    staleTime: STATIC_CACHE_TIME,
+    gcTime: STATIC_CACHE_TIME * 2,
+    refetchOnWindowFocus: false,
+  });
+}
 
-  return { tarifasPouso, tarifasPermanencia, outrasTarifas };
+export function useTarifasPermanencia() {
+  return useQuery({
+    queryKey: ['tarifas-permanencia'],
+    queryFn: () => import('@/entities/TarifaPermanencia').then(({ TarifaPermanencia }) => TarifaPermanencia.list()),
+    staleTime: STATIC_CACHE_TIME,
+    gcTime: STATIC_CACHE_TIME * 2,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useOutrasTarifas() {
+  return useQuery({
+    queryKey: ['outras-tarifas'],
+    queryFn: () => import('@/entities/OutraTarifa').then(({ OutraTarifa }) => OutraTarifa.list()),
+    staleTime: STATIC_CACHE_TIME,
+    gcTime: STATIC_CACHE_TIME * 2,
+    refetchOnWindowFocus: false,
+  });
 }
