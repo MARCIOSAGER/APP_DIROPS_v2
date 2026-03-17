@@ -17,7 +17,8 @@ import {
   AlertCircle,
   DollarSign,
   RefreshCw,
-  Layers } from
+  Layers,
+  BarChart3 } from
 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,6 +46,7 @@ import { useCompanyView } from '@/lib/CompanyViewContext';
 import EditarFaturaModal from '../components/faturacao/EditarFaturaModal';
 import GerarProformaConsolidadaModal from '../components/faturacao/GerarProformaConsolidadaModal';
 import GerarRelatorioFaturacaoModal from '../components/faturacao/GerarRelatorioFaturacaoModal';
+import DashboardFaturacao from '../components/faturacao/DashboardFaturacao';
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
 
@@ -81,6 +83,7 @@ export default function ProformaPage() {
     busca: ''
   });
 
+  const [activeTab, setActiveTab] = useState('proformas');
   const [sortField, setSortField] = useState('data_emissao');
   const [sortDirection, setSortDirection] = useState('desc');
 
@@ -421,25 +424,49 @@ export default function ProformaPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Gestão de Proformas</h1>
             <p className="text-slate-600 mt-1">Acompanhe e gerencie as notas proforma emitidas.</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={loadData} disabled={isLoading}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Atualizar
-            </Button>
-            <Button onClick={() => setIsConsolidadaModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Layers className="w-4 h-4 mr-2" />
-              Gerar Consolidada
-            </Button>
-            <Button onClick={() => setIsRelatorioModalOpen(true)} variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
-              <FileText className="w-4 h-4 mr-2" />
-              Extrato
-            </Button>
-            <Button variant="outline" onClick={handleExportCSV}>
-              <Download className="w-4 h-4 mr-2" />
-              Exportar CSV
-            </Button>
-          </div>
+          {activeTab === 'proformas' && (
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={loadData} disabled={isLoading}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+              <Button onClick={() => setIsConsolidadaModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Layers className="w-4 h-4 mr-2" />
+                Gerar Consolidada
+              </Button>
+              <Button onClick={() => setIsRelatorioModalOpen(true)} variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                <FileText className="w-4 h-4 mr-2" />
+                Extrato
+              </Button>
+              <Button variant="outline" onClick={handleExportCSV}>
+                <Download className="w-4 h-4 mr-2" />
+                Exportar CSV
+              </Button>
+            </div>
+          )}
         </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 border-b">
+          <button
+            onClick={() => setActiveTab('proformas')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'proformas' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+          >
+            <FileText className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+            Proformas
+          </button>
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'dashboard' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+          >
+            <BarChart3 className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+            Dashboard de Facturação
+          </button>
+        </div>
+
+        {activeTab === 'dashboard' ? (
+          <DashboardFaturacao companhias={companhias} aeroportos={aeroportos} />
+        ) : (<>
 
         {/* KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -744,6 +771,8 @@ export default function ProformaPage() {
             </div>
           </CardContent>
         </Card>
+
+        </>)}
       </div>
 
       {/* Modals */}
