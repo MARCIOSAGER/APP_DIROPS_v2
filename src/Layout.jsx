@@ -695,7 +695,7 @@ function LayoutContent({ children, currentPageName }) {
           <main className="p-4 md:p-6 lg:p-8">{children}</main>
           <BottomTabs />
           <React.Suspense fallback={null}>
-            <ChatbotIA user={user} />
+            <ChatbotIA />
             <SessionTimeoutModal />
             {showTour && <TourGuiado onClose={() => setShowTour(false)} />}
           </React.Suspense>

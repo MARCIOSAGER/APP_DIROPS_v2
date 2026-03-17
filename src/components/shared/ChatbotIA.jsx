@@ -7,7 +7,7 @@ import { sanitizeHtml } from "@/lib/sanitize";
 
 const TICKET_DATA_PREFIX = "TICKET_DATA:";
 
-export default function ChatbotIA({ user }) {
+export default function ChatbotIA() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -107,16 +107,18 @@ export default function ChatbotIA({ user }) {
     <>
       {/* Floating button */}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-all duration-200"
         title="Assistente Virtual"
+        aria-label="Assistente Virtual"
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
 
       {/* Chat window */}
       {isOpen && (
-        <div className="fixed bottom-36 right-4 lg:bottom-24 lg:right-6 z-50 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden" style={{ maxHeight: '500px' }}>
+        <div className="fixed bottom-36 right-4 lg:bottom-24 lg:right-6 z-50 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden" style={{ maxHeight: '500px' }}>
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-700 to-blue-600 text-white px-4 py-3 flex items-center gap-3">
             <div className="bg-white/20 rounded-full p-1.5">
