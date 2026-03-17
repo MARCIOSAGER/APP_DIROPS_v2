@@ -152,6 +152,11 @@ export default function ConfiguracaoTarifas() {
 
   const handleFormSubmit = async (data) => {
     try {
+      // Convert empty strings to null for UUID fields
+      ['aeroporto_id', 'empresa_id'].forEach(f => {
+        if (data[f] === '' || data[f] === undefined) data[f] = null;
+      });
+
       if (effectiveEmpresaId) {
         data = { ...data, empresa_id: effectiveEmpresaId };
       }
