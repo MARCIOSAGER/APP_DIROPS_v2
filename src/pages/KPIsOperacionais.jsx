@@ -29,6 +29,7 @@ import { downloadAsExcel } from '@/components/lib/export';
 import AlertModal from '@/components/shared/AlertModal';
 import SuccessModal from '@/components/shared/SuccessModal';
 import { getAeroportosPermitidos, filtrarDadosPorAcesso } from '@/components/lib/userUtils';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 import SendEmailModal from '@/components/shared/SendEmailModal';
 import { registarExclusao, registarExportacao } from '@/components/lib/auditoria';
 import { createPdfDoc, addHeader, addFooter, addTable, addInfoBox, addSectionTitle, checkPageBreak, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
@@ -45,6 +46,7 @@ const CATEGORIA_COLORS = {
 
 export default function KPIsOperacionais() {
   const { t } = useI18n();
+  const { effectiveEmpresaId } = useCompanyView();
   const [currentUser, setCurrentUser] = useState(null); // Added currentUser state
   const [tiposKPI, setTiposKPI] = useState([]);
   const [medicoesKPI, setMedicoesKPI] = useState([]); // Changed from medicoes to medicoesKPI
@@ -81,7 +83,7 @@ export default function KPIsOperacionais() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [effectiveEmpresaId]);
 
   useEffect(() => {
     setSelectedMedicoes([]); // Limpar seleção ao mudar os filtros
@@ -103,8 +105,8 @@ export default function KPIsOperacionais() {
       const user = await User.me();
       setCurrentUser(user);
 
-      // Server-side filter by empresa_id when applicable
-      const empId = user.empresa_id;
+      // Use effectiveEmpresaId (respects company view switch for superadmin)
+      const empId = effectiveEmpresaId || user.empresa_id;
       const medicaoPromise = empId
         ? MedicaoKPI.filter({ empresa_id: empId }, '-data_medicao')
         : MedicaoKPI.list('-data_medicao');
@@ -119,7 +121,7 @@ export default function KPIsOperacionais() {
       const aeroportosAngola = aeroportosData.filter((a) => a.pais === 'AO');
 
       // Filtrar aeroportos pelos aeroportos de acesso do utilizador (empresa-based)
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, user.empresa_id);
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, empId);
       setAeroportos(aeroportosFiltrados);
       setTiposKPI(tiposData);
       setCompanhias(companhiasData);

@@ -181,11 +181,19 @@ export default function DashboardInterno() {
 
     try {
       setLoadingStatus(t('common.loading'));
-      // loadData já carrega o user internamente, não precisa carregar duas vezes
-      await loadData();
+      // Race against a 20s timeout to prevent infinite loading
+      await Promise.race([
+        loadData(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 20000))
+      ]);
 
     } catch (error) {
       console.error("❌ Erro geral no Dashboard:", error);
+
+      if (error.message === 'timeout') {
+        setError('O carregamento demorou demasiado. Verifique a sua ligação e tente novamente.');
+        return;
+      }
 
       if (error.response?.status === 401 || error.message?.includes('401') || error.message?.includes('not authenticated')) {
         console.debug('Utilizador não autenticado, redirecionando para login');
