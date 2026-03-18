@@ -14,7 +14,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.png', 'favicon-32.png', 'DIROPS_Logo.png'],
       manifest: {
         name: 'DIROPS-SGA - Sistema de Gestão Aeroportuária',

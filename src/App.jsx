@@ -14,6 +14,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Login from '@/pages/Login';
 import CookieConsent from '@/components/shared/CookieConsent';
 import { I18nProvider } from '@/components/lib/i18n';
+import AppUpdateBanner from '@/components/shared/AppUpdateBanner';
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-screen">
@@ -33,9 +34,31 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     console.error('[ErrorBoundary]', error, errorInfo);
     Sentry.captureException(error, { extra: errorInfo });
+    // Auto-reload on chunk load failure (stale cache after deploy)
+    const msg = error?.message || '';
+    if (msg.includes('Failed to fetch dynamically imported module') || msg.includes('Importing a module script failed')) {
+      const lastReload = sessionStorage.getItem('chunk_reload_at');
+      const now = Date.now();
+      if (!lastReload || now - parseInt(lastReload) > 30000) {
+        sessionStorage.setItem('chunk_reload_at', String(now));
+        window.location.reload();
+      }
+    }
   }
   render() {
     if (this.state.hasError) {
+      const isChunkError = this.state.error?.message?.includes('Failed to fetch dynamically imported module');
+      if (isChunkError) {
+        // Show loading spinner while auto-reloading
+        return (
+          <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
+            <div className="text-center p-8">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4" />
+              <p className="text-slate-600">A carregar nova versão...</p>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
           <div className="text-center p-8 max-w-md">
@@ -137,6 +160,7 @@ function App() {
         </Router>
         <Toaster />
         <CookieConsent />
+        <AppUpdateBanner />
       </QueryClientProvider>
       </CompanyViewProvider>
     </AuthProvider>
