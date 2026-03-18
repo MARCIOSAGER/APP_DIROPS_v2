@@ -6,6 +6,19 @@ import '@/index.css'
 
 window.addEventListener('unhandledrejection', (event) => {
   console.error('[Unhandled Promise Rejection]', event.reason);
+
+  // Auto-reload on chunk load failure (stale cache after deploy)
+  const msg = event.reason?.message || '';
+  if (msg.includes('Failed to fetch dynamically imported module') || msg.includes('Importing a module script failed')) {
+    const lastReload = sessionStorage.getItem('chunk_reload_at');
+    const now = Date.now();
+    // Only reload once per 30s to avoid infinite loop
+    if (!lastReload || now - parseInt(lastReload) > 30000) {
+      sessionStorage.setItem('chunk_reload_at', String(now));
+      window.location.reload();
+    }
+  }
+
   if (window.Sentry) {
     Sentry.captureException(event.reason);
   }
