@@ -1,88 +1,90 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function TermosServico() {
+  const { t } = useI18n();
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4">
       <div className="max-w-3xl mx-auto">
         <Button variant="ghost" className="mb-6 text-slate-600 dark:text-slate-400" onClick={() => window.history.back()}>
-          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+          <ArrowLeft className="w-4 h-4 mr-2" /> {t('termos.voltar')}
         </Button>
 
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-8 space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Termos de Serviço</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Última atualização: 16 de março de 2026</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{t('termos.titulo')}</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">{t('termos.ultimaAtualizacao')}</p>
           </div>
 
           <div className="prose prose-slate dark:prose-invert max-w-none space-y-4 text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">1. Aceitação dos termos</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('termos.sec1Titulo')}</h2>
             <p>
-              Ao aceder e utilizar o DIROPS (Sistema de Gestão Aeroportuária), concorda com estes Termos de Serviço. Se não concordar com algum destes termos, não deverá utilizar o sistema.
+              {t('termos.sec1Corpo')}
             </p>
 
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">2. Descrição do serviço</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('termos.sec2Titulo')}</h2>
             <p>
-              O DIROPS é um sistema de gestão aeroportuária que disponibiliza funcionalidades de:
+              {t('termos.sec2Corpo')}
             </p>
             <ul className="list-disc pl-6 space-y-1">
-              <li>Gestão de operações de voo e movimentos aeroportuários</li>
-              <li>Cálculo e gestão de tarifas aeroportuárias</li>
-              <li>Emissão de proformas e documentos financeiros</li>
-              <li>Gestão de segurança operacional (Safety)</li>
-              <li>Inspeções, auditorias e manutenção</li>
-              <li>Credenciamento de pessoal e empresas</li>
-              <li>Gestão documental</li>
+              <li>{t('termos.sec2Item1')}</li>
+              <li>{t('termos.sec2Item2')}</li>
+              <li>{t('termos.sec2Item3')}</li>
+              <li>{t('termos.sec2Item4')}</li>
+              <li>{t('termos.sec2Item5')}</li>
+              <li>{t('termos.sec2Item6')}</li>
+              <li>{t('termos.sec2Item7')}</li>
             </ul>
 
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">3. Conta de utilizador</h2>
-            <p>Para utilizar o sistema, é necessário:</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('termos.sec3Titulo')}</h2>
+            <p>{t('termos.sec3Corpo')}</p>
             <ul className="list-disc pl-6 space-y-1">
-              <li>Criar uma conta com informações verdadeiras e atualizadas</li>
-              <li>Aguardar aprovação de acesso por um administrador</li>
-              <li>Manter a confidencialidade das suas credenciais de acesso</li>
-              <li>Notificar imediatamente qualquer uso não autorizado da sua conta</li>
+              <li>{t('termos.sec3Item1')}</li>
+              <li>{t('termos.sec3Item2')}</li>
+              <li>{t('termos.sec3Item3')}</li>
+              <li>{t('termos.sec3Item4')}</li>
             </ul>
 
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">4. Uso aceitável</h2>
-            <p>O utilizador compromete-se a:</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('termos.sec4Titulo')}</h2>
+            <p>{t('termos.sec4Corpo')}</p>
             <ul className="list-disc pl-6 space-y-1">
-              <li>Utilizar o sistema apenas para fins profissionais autorizados</li>
-              <li>Não partilhar credenciais de acesso com terceiros</li>
-              <li>Não tentar aceder a dados ou funcionalidades não autorizadas</li>
-              <li>Inserir dados precisos e verdadeiros</li>
-              <li>Cumprir todas as leis e regulamentos aplicáveis</li>
+              <li>{t('termos.sec4Item1')}</li>
+              <li>{t('termos.sec4Item2')}</li>
+              <li>{t('termos.sec4Item3')}</li>
+              <li>{t('termos.sec4Item4')}</li>
+              <li>{t('termos.sec4Item5')}</li>
             </ul>
 
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">5. Propriedade intelectual</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('termos.sec5Titulo')}</h2>
             <p>
-              Todo o conteúdo, design, código e funcionalidades do DIROPS são propriedade dos seus desenvolvedores. Os dados operacionais inseridos pelos utilizadores pertencem às respetivas organizações.
+              {t('termos.sec5Corpo')}
             </p>
 
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">6. Disponibilidade do serviço</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('termos.sec6Titulo')}</h2>
             <p>
-              Esforçamo-nos para manter o sistema disponível 24/7, mas não garantimos disponibilidade ininterrupta. Poderão ocorrer períodos de manutenção programada ou interrupções imprevistas.
+              {t('termos.sec6Corpo')}
             </p>
 
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">7. Limitação de responsabilidade</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('termos.sec7Titulo')}</h2>
             <p>
-              O sistema é fornecido "tal como está". Não nos responsabilizamos por perdas ou danos resultantes do uso do sistema, incluindo perda de dados, interrupções de serviço ou decisões tomadas com base em informações do sistema.
+              {t('termos.sec7Corpo')}
             </p>
 
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">8. Suspensão e encerramento</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('termos.sec8Titulo')}</h2>
             <p>
-              Reservamo-nos o direito de suspender ou encerrar o acesso de qualquer utilizador que viole estes termos, sem aviso prévio.
+              {t('termos.sec8Corpo')}
             </p>
 
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">9. Alterações aos termos</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('termos.sec9Titulo')}</h2>
             <p>
-              Estes termos podem ser atualizados periodicamente. Os utilizadores serão notificados de alterações significativas. O uso continuado do sistema após alterações constitui aceitação dos novos termos.
+              {t('termos.sec9Corpo')}
             </p>
 
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">10. Contacto</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('termos.sec10Titulo')}</h2>
             <p>
-              Para questões relacionadas com estes termos, contacte-nos através do email disponível na página de Suporte do sistema.
+              {t('termos.sec10Corpo')}
             </p>
           </div>
         </div>

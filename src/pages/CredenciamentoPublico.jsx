@@ -17,8 +17,10 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { Empresa } from '@/entities/Empresa';
 import SuccessModal from '../components/shared/SuccessModal';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function CredenciamentoPublico() {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     empresa_solicitante_id: '',
     email_notificacao: '',
@@ -55,7 +57,7 @@ export default function CredenciamentoPublico() {
       setAeroportos(aeroportosData.filter(a => a.pais === 'AO'));
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      setError('Erro ao carregar dados. Recarregue a página.');
+      setError(t('credPublico.erroCarregar'));
     } finally {
       setIsLoadingData(false);
     }
@@ -82,7 +84,7 @@ export default function CredenciamentoPublico() {
     }
     
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_notificacao)) {
-      setError('Por favor, insira um email válido para notificação.');
+      setError(t('credPublico.erroEmailInvalido'));
       return false;
     }
     return true;
@@ -109,7 +111,7 @@ export default function CredenciamentoPublico() {
       setSuccessInfo({ protocolo: data.protocolo });
     } catch (error) {
       console.error('Erro ao submeter solicitação:', error);
-      setError(error.message || 'Erro ao enviar solicitação. Tente novamente.');
+      setError(error.message || t('credPublico.erroEnviar'));
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +123,7 @@ export default function CredenciamentoPublico() {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
         <Card className="w-full max-w-md"><CardContent className="flex flex-col items-center justify-center py-16">
           <Loader2 className="animate-spin h-12 w-12 text-blue-600 dark:text-blue-400 mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">A carregar dados...</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('credPublico.carregando')}</p>
         </CardContent></Card>
       </div>
     );
@@ -130,9 +132,9 @@ export default function CredenciamentoPublico() {
   if (successInfo) {
     return (
       <SuccessModal
-        title="Solicitação de Credencial Enviada!"
-        message="A sua solicitação foi recebida. Irá receber um email de notificação com os próximos passos."
-        buttonText="Voltar ao Portal de Serviços"
+        title={t('credPublico.successTitulo')}
+        message={t('credPublico.successMsg')}
+        buttonText={t('credPublico.voltarPortal')}
         redirectPath={createPageUrl('portalservicos')}
       />
     );
@@ -148,15 +150,15 @@ export default function CredenciamentoPublico() {
           <Link to={createPageUrl('portalservicos')}>
             <Button variant="outline" className="flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
-              Voltar ao Portal de Serviços
+              {t('credPublico.voltarPortal')}
             </Button>
           </Link>
         </div>
         <Card className="w-full">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4"><img src="/logo-dirops.png" alt="DIROPS Logo" className="h-12" /></div>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">Formulário de Solicitação de Credencial</CardTitle>
-            <CardDescription className="text-slate-600 dark:text-slate-400 mt-2">Preencha os dados abaixo para iniciar um novo pedido de credenciamento.</CardDescription>
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t('credPublico.titulo')}</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400 mt-2">{t('credPublico.descricao')}</CardDescription>
           </CardHeader>
           
           <CardContent>
@@ -167,61 +169,61 @@ export default function CredenciamentoPublico() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="empresa"><Building className="inline-block w-4 h-4 mr-1" />Empresa Solicitante *</Label>
+                  <Label htmlFor="empresa"><Building className="inline-block w-4 h-4 mr-1" />{t('credPublico.empresaSolicitante')} *</Label>
                   <Select
                     options={empresaOptions}
                     value={formData.empresa_solicitante_id}
                     onValueChange={(v) => handleChange('empresa_solicitante_id', v)}
-                    placeholder="Selecione a empresa"
+                    placeholder={t('credPublico.selecioneEmpresa')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email_notificacao"><Mail className="inline-block w-4 h-4 mr-1" />E-mail para Notificação *</Label>
+                  <Label htmlFor="email_notificacao"><Mail className="inline-block w-4 h-4 mr-1" />{t('credPublico.emailNotificacao')} *</Label>
                   <Input id="email_notificacao" type="email" value={formData.email_notificacao} onChange={(e) => handleChange('email_notificacao', e.target.value)} placeholder="email.contato@empresa.com" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                  <Label><Plane className="inline-block w-4 h-4 mr-1" />Aeroporto da Credencial *</Label>
+                  <Label><Plane className="inline-block w-4 h-4 mr-1" />{t('credPublico.aeroporto')} *</Label>
                   <Select
                     options={aeroportoOptions}
                     value={formData.aeroporto_id}
                     onValueChange={(v) => handleChange('aeroporto_id', v)}
-                    placeholder="Selecione o aeroporto"
+                    placeholder={t('credPublico.selecioneAeroporto')}
                   />
               </div>
               
               <div className="space-y-3">
-                <Label>Tipo de Credencial *</Label>
+                <Label>{t('credPublico.tipoCredencial')} *</Label>
                 <RadioGroup value={formData.tipo_credencial} onValueChange={(v) => handleChange('tipo_credencial', v)} className="flex gap-6">
-                  <div className="flex items-center space-x-2"><RadioGroupItem value="pessoa" id="pessoa" /><Label htmlFor="pessoa" className="flex items-center gap-2"><User className="w-4 h-4" />Pessoa</Label></div>
-                  <div className="flex items-center space-x-2"><RadioGroupItem value="viatura" id="viatura" /><Label htmlFor="viatura" className="flex items-center gap-2"><Car className="w-4 h-4" />Viatura</Label></div>
+                  <div className="flex items-center space-x-2"><RadioGroupItem value="pessoa" id="pessoa" /><Label htmlFor="pessoa" className="flex items-center gap-2"><User className="w-4 h-4" />{t('credPublico.pessoa')}</Label></div>
+                  <div className="flex items-center space-x-2"><RadioGroupItem value="viatura" id="viatura" /><Label htmlFor="viatura" className="flex items-center gap-2"><Car className="w-4 h-4" />{t('credPublico.viatura')}</Label></div>
                 </RadioGroup>
               </div>
 
               {formData.tipo_credencial === 'pessoa' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md bg-slate-50 dark:bg-slate-800">
-                  <div className="space-y-2"><Label htmlFor="nome_completo">Nome Completo *</Label><Input id="nome_completo" value={formData.nome_completo} onChange={(e) => handleChange('nome_completo', e.target.value)} /></div>
-                  <div className="space-y-2"><Label htmlFor="funcao_empresa">Função na Empresa *</Label><Input id="funcao_empresa" value={formData.funcao_empresa} onChange={(e) => handleChange('funcao_empresa', e.target.value)} /></div>
+                  <div className="space-y-2"><Label htmlFor="nome_completo">{t('credPublico.nomeCompleto')} *</Label><Input id="nome_completo" value={formData.nome_completo} onChange={(e) => handleChange('nome_completo', e.target.value)} /></div>
+                  <div className="space-y-2"><Label htmlFor="funcao_empresa">{t('credPublico.funcaoEmpresa')} *</Label><Input id="funcao_empresa" value={formData.funcao_empresa} onChange={(e) => handleChange('funcao_empresa', e.target.value)} /></div>
                 </div>
               )}
               
               {formData.tipo_credencial === 'viatura' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md bg-slate-50 dark:bg-slate-800">
-                  <div className="space-y-2"><Label htmlFor="matricula_viatura">Matrícula da Viatura *</Label><Input id="matricula_viatura" value={formData.matricula_viatura} onChange={(e) => handleChange('matricula_viatura', e.target.value)} /></div>
-                  <div className="space-y-2"><Label htmlFor="modelo_viatura">Modelo da Viatura *</Label><Input id="modelo_viatura" value={formData.modelo_viatura} onChange={(e) => handleChange('modelo_viatura', e.target.value)} /></div>
+                  <div className="space-y-2"><Label htmlFor="matricula_viatura">{t('credPublico.matriculaViatura')} *</Label><Input id="matricula_viatura" value={formData.matricula_viatura} onChange={(e) => handleChange('matricula_viatura', e.target.value)} /></div>
+                  <div className="space-y-2"><Label htmlFor="modelo_viatura">{t('credPublico.modeloViatura')} *</Label><Input id="modelo_viatura" value={formData.modelo_viatura} onChange={(e) => handleChange('modelo_viatura', e.target.value)} /></div>
                 </div>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="justificativa">Justificativa do Acesso *</Label>
-                <Textarea id="justificativa" value={formData.justificativa_acesso} onChange={(e) => handleChange('justificativa_acesso', e.target.value)} placeholder="Descreva o motivo da necessidade da credencial..." />
+                <Label htmlFor="justificativa">{t('credPublico.justificativa')} *</Label>
+                <Textarea id="justificativa" value={formData.justificativa_acesso} onChange={(e) => handleChange('justificativa_acesso', e.target.value)} placeholder={t('credPublico.justificativaPlaceholder')} />
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <Button type="button" variant="outline" className="flex-1" onClick={() => window.location.href = createPageUrl('servicos')}><ArrowLeft className="w-4 h-4 mr-2" />Voltar</Button>
+                <Button type="button" variant="outline" className="flex-1" onClick={() => window.location.href = createPageUrl('servicos')}><ArrowLeft className="w-4 h-4 mr-2" />{t('credPublico.voltar')}</Button>
                 <Button type="submit" disabled={isLoading} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                  {isLoading ? <><Loader2 className="animate-spin h-4 w-4 mr-2" />A Enviar...</> : <><Send className="w-4 h-4 mr-2" />Enviar Solicitação</>}
+                  {isLoading ? <><Loader2 className="animate-spin h-4 w-4 mr-2" />{t('credPublico.enviando')}</> : <><Send className="w-4 h-4 mr-2" />{t('credPublico.enviarSolicitacao')}</>}
                 </Button>
               </div>
             </form>

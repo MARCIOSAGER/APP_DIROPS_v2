@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  CheckCircle, 
-  ArrowRight, 
-  User, 
-  Shield, 
+import {
+  CheckCircle,
+  ArrowRight,
+  User,
+  Shield,
   Calendar,
   FileText
 } from 'lucide-react';
@@ -14,65 +14,18 @@ import { createPageUrl } from '@/utils';
 import { User as UserEntity } from '@/entities/User';
 import { Empresa } from '@/entities/Empresa';
 import { hasUserProfile, getPrimaryUserProfile, ensureUserProfilesExist, getEmpresaLogoByUser } from '@/components/lib/userUtils';
+import { useI18n } from '@/components/lib/i18n';
 
-const PERFIL_INFO = {
-  administrador: {
-    title: 'Administrador do Sistema',
-    description: 'Acesso completo a todas as funcionalidades e gestão de utilizadores',
-    color: 'bg-purple-100 text-purple-800',
-    features: [
-      'Gestão completa de utilizadores e acessos',
-      'Configuração de aeroportos e companhias',
-      'Supervisão de todas as operações',
-      'Relatórios executivos completos'
-    ]
-  },
-  operacoes: {
-    title: 'Operações Aeroportuárias',
-    description: 'Gestão de voos, movimentos e processos operacionais',
-    color: 'bg-blue-100 text-blue-800',
-    features: [
-      'Registo e gestão de voos',
-      'Controlo de movimentos aeroportuários',
-      'Gestão de ligações entre voos',
-      'Relatórios operacionais'
-    ]
-  },
-  infraestrutura: {
-    title: 'Infraestrutura e Manutenção',
-    description: 'Gestão de ativos, inspeções e ordens de serviço',
-    color: 'bg-orange-100 text-orange-800',
-    features: [
-      'Gestão de inspeções aeroportuárias',
-      'Ordens de serviço e manutenção',
-      'Controlo de ativos e equipamentos',
-      'Planeamento de manutenções'
-    ]
-  },
-  credenciamento: {
-    title: 'Credenciamento',
-    description: 'Gestão de credenciais de acesso',
-    color: 'bg-purple-100 text-purple-800',
-    features: [
-      'Gestão de credenciais',
-      'Controlo de acessos',
-      'Documentação de credenciamento'
-    ]
-  },
-  gestor_empresa: {
-    title: 'Gestor de Empresa',
-    description: 'Gestão de credenciais e informações da empresa',
-    color: 'bg-yellow-100 text-yellow-800',
-    features: [
-      'Gestão de credenciais da empresa',
-      'Visualização de dados operacionais',
-      'Submissão de documentos',
-      'Comunicação com a administração'
-    ]
-  }
+const PERFIL_COLORS = {
+  administrador: 'bg-purple-100 text-purple-800',
+  operacoes: 'bg-blue-100 text-blue-800',
+  infraestrutura: 'bg-orange-100 text-orange-800',
+  credenciamento: 'bg-purple-100 text-purple-800',
+  gestor_empresa: 'bg-yellow-100 text-yellow-800',
 };
 
 export default function BoasVindas() {
+  const { t } = useI18n();
   const [user, setUser] = useState(null);
   const [empresas, setEmpresas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,7 +47,7 @@ export default function BoasVindas() {
       // Se o utilizador só tem o perfil 'visualizador' ou nenhum perfil válido,
       // redirecionar para a solicitação de perfil
       const hasOnlyVisualizador = userData.perfis.length === 1 && hasUserProfile(userData, 'visualizador');
-      const hasNoValidProfiles = !userData.perfis.some(p => PERFIL_INFO[p]);
+      const hasNoValidProfiles = !userData.perfis.some(p => PERFIL_COLORS[p]);
 
       if (hasOnlyVisualizador || hasNoValidProfiles) {
         window.location.href = createPageUrl('SolicitacaoPerfil');
@@ -133,43 +86,56 @@ export default function BoasVindas() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 dark:from-blue-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">A carregar informações...</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('boasVindas.carregando')}</p>
         </div>
       </div>
     );
   }
   
   let perfilPrincipal;
-  let perfilInfo;
 
   const designatedPrimary = getPrimaryUserProfile(user);
-  if (designatedPrimary && PERFIL_INFO[designatedPrimary]) {
+  if (designatedPrimary && PERFIL_COLORS[designatedPrimary]) {
     perfilPrincipal = designatedPrimary;
-    perfilInfo = PERFIL_INFO[designatedPrimary];
   } else {
-    if (user && user.perfis) { 
+    if (user && user.perfis) {
       for (const profile of user.perfis) {
-        if (PERFIL_INFO[profile]) {
+        if (PERFIL_COLORS[profile]) {
           perfilPrincipal = profile;
-          perfilInfo = PERFIL_INFO[profile];
           break;
         }
       }
     }
   }
-  
-  if (!perfilInfo) {
+
+  const PERFIL_FEATURE_COUNTS = {
+    administrador: 4,
+    operacoes: 4,
+    infraestrutura: 4,
+    credenciamento: 3,
+    gestor_empresa: 4,
+  };
+
+  const perfilColor = perfilPrincipal ? PERFIL_COLORS[perfilPrincipal] : null;
+  const perfilTitle = perfilPrincipal ? t(`boasVindas.perfil_${perfilPrincipal}_title`) : null;
+  const perfilDescription = perfilPrincipal ? t(`boasVindas.perfil_${perfilPrincipal}_desc`) : null;
+  const featureCount = perfilPrincipal ? (PERFIL_FEATURE_COUNTS[perfilPrincipal] || 0) : 0;
+  const perfilFeatures = Array.from({ length: featureCount }, (_, i) =>
+    t(`boasVindas.perfil_${perfilPrincipal}_feat${i + 1}`)
+  );
+
+  if (!perfilPrincipal) {
       return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 dark:from-blue-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
           <Card className="max-w-md w-full">
             <CardContent className="text-center p-6">
               <Shield className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Erro de Perfil Inesperado</h1>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">{t('boasVindas.erroPerfilTitulo')}</h1>
               <p className="text-slate-600 dark:text-slate-400 mb-4">
-                Não foi possível determinar um perfil de acesso válido. Por favor, contacte o administrador do sistema.
+                {t('boasVindas.erroPerfilDesc')}
               </p>
               <Button onClick={() => window.location.href = createPageUrl('ValidacaoAcesso')}>
-                Voltar ao Login
+                {t('boasVindas.voltarLogin')}
               </Button>
             </CardContent>
           </Card>
@@ -187,10 +153,10 @@ export default function BoasVindas() {
             className="h-20 mx-auto mb-6"
           />
           <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-            Bem-vindo ao DIROPS
+            {t('boasVindas.titulo')}
           </h1>
           <p className="text-xl text-slate-600 dark:text-slate-400">
-            Sistema de Gestão Aeroportuária
+            {t('boasVindas.subtitulo')}
           </p>
         </div>
 
@@ -201,9 +167,9 @@ export default function BoasVindas() {
                 <User className="w-8 h-8" />
               </div>
               <div>
-                <CardTitle className="text-2xl text-white">Olá, {user.full_name}!</CardTitle>
+                <CardTitle className="text-2xl text-white">{t('boasVindas.ola')}, {user.full_name}!</CardTitle>
                 <p className="text-blue-100 dark:text-blue-200 mt-1">
-                  O seu acesso ao sistema foi configurado com sucesso.
+                  {t('boasVindas.acessoConfigurado')}
                 </p>
               </div>
             </div>
@@ -213,24 +179,24 @@ export default function BoasVindas() {
               <div>
                 <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  Perfil de Acesso
+                  {t('boasVindas.perfilAcesso')}
                 </h3>
-                <Badge className={`${perfilInfo.color} text-sm px-3 py-1 mb-3`}>
-                  {perfilInfo.title}
+                <Badge className={`${perfilColor} text-sm px-3 py-1 mb-3`}>
+                  {perfilTitle}
                 </Badge>
                 <p className="text-slate-600 dark:text-slate-400">
-                  {perfilInfo.description}
+                  {perfilDescription}
                 </p>
               </div>
               <div>
                 <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  Informações da Conta
+                  {t('boasVindas.infoConta')}
                 </h3>
                 <div className="space-y-2 text-sm">
                   <p><span className="font-medium">Email:</span> {user.email}</p>
-                  <p><span className="font-medium">Conta criada:</span> {new Date(user.created_date).toLocaleDateString('pt-AO')}</p>
-                  <p><span className="font-medium">Último acesso:</span> Agora</p>
+                  <p><span className="font-medium">{t('boasVindas.contaCriada')}:</span> {new Date(user.created_date).toLocaleDateString('pt-AO')}</p>
+                  <p><span className="font-medium">{t('boasVindas.ultimoAcesso')}:</span> {t('boasVindas.agora')}</p>
                 </div>
               </div>
             </div>
@@ -241,12 +207,12 @@ export default function BoasVindas() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              Funcionalidades Disponíveis
+              {t('boasVindas.funcDisp')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-4">
-              {perfilInfo.features.map((feature, index) => (
+              {perfilFeatures.map((feature, index) => (
                 <div key={index} className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-700 dark:text-slate-300">{feature}</span>
@@ -260,15 +226,15 @@ export default function BoasVindas() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
               <Shield className="w-6 h-6" />
-              Informações de Segurança
+              {t('boasVindas.infoSeguranca')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-sm text-amber-800 dark:text-amber-200">
-              <p>• Mantenha as suas credenciais de acesso seguras e não as partilhe.</p>
-              <p>• Termine sempre a sua sessão ao finalizar o trabalho.</p>
-              <p>• Reporte qualquer actividade suspeita ao administrador do sistema.</p>
-              <p>• Os seus acessos e actividades são monitorizados para segurança.</p>
+              <p>• {t('boasVindas.seg1')}</p>
+              <p>• {t('boasVindas.seg2')}</p>
+              <p>• {t('boasVindas.seg3')}</p>
+              <p>• {t('boasVindas.seg4')}</p>
             </div>
           </CardContent>
         </Card>
@@ -279,11 +245,11 @@ export default function BoasVindas() {
             size="lg"
             className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
           >
-            Aceder ao Sistema
+            {t('boasVindas.acederSistema')}
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-4">
-            Ao continuar, concorda com os termos de uso e políticas de segurança do sistema.
+            {t('boasVindas.termosUso')}
           </p>
         </div>
       </div>

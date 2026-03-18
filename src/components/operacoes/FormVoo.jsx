@@ -13,6 +13,7 @@ import { normalizeAircraftRegistration, normalizeFlightNumber, createDateTime } 
 import { notifyAdminsCreation } from '@/components/lib/notificacoes';
 import { getAeroportosPermitidos, isSuperAdmin } from '@/components/lib/userUtils';
 import { differenceInMinutes } from 'date-fns';
+import { useI18n } from '@/components/lib/i18n';
 
 // Importar entidades corretas
 import { Aeroporto } from '@/entities/Aeroporto';
@@ -23,12 +24,6 @@ import { RegistoAeronave } from '@/entities/RegistoAeronave';
 import { FormAeroporto } from './config/AeroportosConfig';
 import { FormCompanhia } from './config/CompanhiasConfig';
 import { FormRegisto } from './config/RegistosAeronaveConfig';
-
-const STATUS_CONFIG = {
-  'Programado': { label: 'Programado' },
-  'Realizado': { label: 'Realizado' },
-  'Cancelado': { label: 'Cancelado' }
-};
 
 // Intervalo de tolerância para considerar voos duplicados (em minutos)
 const DUPLICATE_TOLERANCE_MINUTES = 15;
@@ -50,6 +45,7 @@ export default function FormVoo({
   modelos = [],
   currentUser = null
 }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     tipo_movimento: 'ARR',
     numero_voo: '',
@@ -117,12 +113,12 @@ export default function FormVoo({
     if (isCompanyMilitary && !isFlightTypeMilitary) {
       setMilitaryWarning({
         type: 'warning',
-        message: `⚠️ A companhia ${formData.companhia_aerea} é uma companhia militar. O tipo de voo deveria ser "Militar" para garantir isenção de tarifas.`
+        message: `⚠️ ${t('formVoo.avisoCompanhiaMilitar1')} ${formData.companhia_aerea} ${t('formVoo.avisoCompanhiaMilitar2')}`
       });
     } else if (!isCompanyMilitary && isFlightTypeMilitary) {
       setMilitaryWarning({
         type: 'info',
-        message: `ℹ️ Voos do tipo "${formData.tipo_voo}" são isentos de tarifas aeroportuárias.`
+        message: `ℹ️ ${t('formVoo.avisoTipoVooIsento1')} "${formData.tipo_voo}" ${t('formVoo.avisoTipoVooIsento2')}`
       });
     } else {
       setMilitaryWarning(null);
@@ -224,7 +220,7 @@ export default function FormVoo({
       const duplicateVoo = potentialDuplicates[0];
       setDuplicateWarning({
         voo: duplicateVoo,
-        message: `Já existe um voo ${duplicateVoo.tipo_movimento} para a aeronave ${duplicateVoo.registo_aeronave} em ${duplicateVoo.aeroporto_operacao} no dia ${duplicateVoo.data_operacao} às ${duplicateVoo.horario_real || duplicateVoo.horario_previsto} (voo ${duplicateVoo.numero_voo}). Verifique se não é uma duplicidade.`
+        message: `${t('formVoo.avisoVooDuplicado1')} ${duplicateVoo.tipo_movimento} ${t('formVoo.avisoVooDuplicado2')} ${duplicateVoo.registo_aeronave} ${t('formVoo.avisoVooDuplicado3')} ${duplicateVoo.aeroporto_operacao} ${t('formVoo.avisoVooDuplicado4')} ${duplicateVoo.data_operacao} ${t('formVoo.avisoVooDuplicado5')} ${duplicateVoo.horario_real || duplicateVoo.horario_previsto} (${t('formVoo.avisoVooDuplicado6')} ${duplicateVoo.numero_voo}). ${t('formVoo.avisoVooDuplicado7')}`
       });
     } else {
       setDuplicateWarning(null);
@@ -529,15 +525,15 @@ export default function FormVoo({
   const validate = () => {
     const newErrors = {};
 
-    if (!formData.data_operacao) newErrors.data_operacao = 'Data da operação é obrigatória';
-    if (!formData.horario_previsto) newErrors.horario_previsto = 'Horário previsto é obrigatório';
+    if (!formData.data_operacao) newErrors.data_operacao = t('formVoo.erroDataObrigatoria');
+    if (!formData.horario_previsto) newErrors.horario_previsto = t('formVoo.erroHorarioPrevistoObrigatorio');
 
     // REMOVIDA: Validação que impedia horário real anterior ao previsto (voos podem antecipar)
     // Agora permitimos que o horário real seja antes do previsto
 
     if (formData.tipo_movimento === 'DEP') {
       if (!linkedArrVooId) {
-        newErrors.linked_arr_voo = 'É obrigatório vincular um voo de chegada para criar uma partida.';
+        newErrors.linked_arr_voo = t('formVoo.erroVinculoChegadaObrigatorio');
       }
 
       // Validação crítica: Horários DEP não podem ser anteriores OU IGUAIS aos horários ARR
@@ -557,18 +553,18 @@ export default function FormVoo({
                                   (aeroportoDestino && aeroportoDestino.pais !== 'AO') ||
                                   (aeroportoOp && aeroportoOp.pais !== 'AO');
           const minMinutos = isInternacional ? 30 : 20;
-          const tipoLabel = isInternacional ? 'Internacional' : 'Doméstico';
+          const tipoLabel = isInternacional ? t('formVoo.tipoInternacional') : t('formVoo.tipoDomestico');
 
           // Validar horário previsto DEP
           if (formData.horario_previsto) {
             const dateTimeDepPrevisto = createDateTime(formData.data_operacao, formData.horario_previsto, formData.horario_previsto);
 
             if (dateTimeArr && dateTimeDepPrevisto && dateTimeDepPrevisto <= dateTimeArr) {
-              newErrors.horario_previsto = `O horário previsto de partida deve ser posterior ao horário de chegada (${horarioArrReal}).`;
+              newErrors.horario_previsto = `${t('formVoo.erroHorarioPrevistoAnterior')} (${horarioArrReal}).`;
             } else if (dateTimeArr && dateTimeDepPrevisto) {
               const diffMin = (dateTimeDepPrevisto - dateTimeArr) / 60000;
               if (diffMin < minMinutos) {
-                newErrors.horario_previsto = `Voo ${tipoLabel} requer permanência mínima de ${minMinutos} minutos. Diferença atual: ${Math.round(diffMin)} min.`;
+                newErrors.horario_previsto = `${t('formVoo.erroPermMinima1')} ${tipoLabel} ${t('formVoo.erroPermMinima2')} ${minMinutos} ${t('formVoo.erroPermMinima3')} ${Math.round(diffMin)} min.`;
               }
             }
           }
@@ -578,38 +574,38 @@ export default function FormVoo({
             const dateTimeDepReal = createDateTime(formData.data_operacao, formData.horario_real, formData.horario_previsto);
 
             if (dateTimeArr && dateTimeDepReal && dateTimeDepReal <= dateTimeArr) {
-              newErrors.horario_real = `O horário real de partida deve ser posterior ao horário de chegada (${horarioArrReal}).`;
+              newErrors.horario_real = `${t('formVoo.erroHorarioRealAnterior')} (${horarioArrReal}).`;
             } else if (dateTimeArr && dateTimeDepReal) {
               const diffMin = (dateTimeDepReal - dateTimeArr) / 60000;
               if (diffMin < minMinutos) {
-                newErrors.horario_real = `Voo ${tipoLabel} requer permanência mínima de ${minMinutos} minutos. Diferença atual: ${Math.round(diffMin)} min.`;
+                newErrors.horario_real = `${t('formVoo.erroPermMinima1')} ${tipoLabel} ${t('formVoo.erroPermMinima2')} ${minMinutos} ${t('formVoo.erroPermMinima3')} ${Math.round(diffMin)} min.`;
               }
             }
           }
         }
       }
 
-      if (!formData.numero_voo) newErrors.numero_voo = 'Número do voo é obrigatório';
-      if (!formData.aeroporto_origem_destino) newErrors.aeroporto_origem_destino = 'Aeroporto de destino é obrigatório';
+      if (!formData.numero_voo) newErrors.numero_voo = t('formVoo.erroNumeroVooObrigatorio');
+      if (!formData.aeroporto_origem_destino) newErrors.aeroporto_origem_destino = t('formVoo.erroAeroportoDestinoObrigatorio');
 
       // Validação troca de registo
       if (formData.registo_alterado) {
         if (!formData.registo_dep) {
-          newErrors.registo_dep = 'Indique o registo da aeronave que partiu.';
+          newErrors.registo_dep = t('formVoo.erroRegistoDepObrigatorio');
         } else {
           const arrVoo = voos.find(v => v.id === linkedArrVooId);
           if (arrVoo && formData.registo_dep === arrVoo.registo_aeronave) {
-            newErrors.registo_dep = 'O registo DEP deve ser diferente do registo ARR.';
+            newErrors.registo_dep = t('formVoo.erroRegistoDepIgualArr');
           }
         }
       }
 
     } else {// ARR flight
-      if (!formData.numero_voo) newErrors.numero_voo = 'Número do voo é obrigatório';
-      if (!formData.companhia_aerea) newErrors.companhia_aerea = 'Companhia aérea é obrigatória';
-      if (!formData.aeroporto_operacao) newErrors.aeroporto_operacao = 'Aeroporto de operação é obrigatória';
-      if (!formData.registo_aeronave) newErrors.registo_aeronave = 'Registo da aeronave é obrigatório';
-      if (!formData.aeroporto_origem_destino) newErrors.aeroporto_origem_destino = 'Aeroporto de origem é obrigatório';
+      if (!formData.numero_voo) newErrors.numero_voo = t('formVoo.erroNumeroVooObrigatorio');
+      if (!formData.companhia_aerea) newErrors.companhia_aerea = t('formVoo.erroCompanhiaObrigatoria');
+      if (!formData.aeroporto_operacao) newErrors.aeroporto_operacao = t('formVoo.erroAeroportoOperacaoObrigatorio');
+      if (!formData.registo_aeronave) newErrors.registo_aeronave = t('formVoo.erroRegistoObrigatorio');
+      if (!formData.aeroporto_origem_destino) newErrors.aeroporto_origem_destino = t('formVoo.erroAeroportoOrigemObrigatorio');
     }
 
     setErrors(newErrors);
@@ -630,7 +626,7 @@ export default function FormVoo({
         const normalized = normalizeAircraftRegistration(formData.registo_aeronave);
         if (!normalized) {
           // If normalization returns null/undefined for a non-empty string, it's invalid format.
-          setErrors((prev) => ({ ...prev, registo_aeronave: 'O formato do registo da aeronave é inválido.' }));
+          setErrors((prev) => ({ ...prev, registo_aeronave: t('formVoo.erroFormatoRegistoInvalido') }));
           setIsLoading(false);
           return;
         }
@@ -643,7 +639,7 @@ export default function FormVoo({
         numeroVooToSubmit = normalizeFlightNumber(formData.numero_voo);
         
         if (!numeroVooToSubmit || numeroVooToSubmit.length === 0) {
-          setErrors((prev) => ({ ...prev, numero_voo: 'O número do voo é obrigatório.' }));
+          setErrors((prev) => ({ ...prev, numero_voo: t('formVoo.erroNumeroVooObrigatorioNorm') }));
           setIsLoading(false);
           return;
         }
@@ -676,15 +672,15 @@ export default function FormVoo({
         setAlertInfo({
           isOpen: true,
           type: 'error',
-          title: 'Voo Duplicado',
-          message: 'Já existe um voo com este número, data, tipo de movimento e aeroporto. Não é possível criar voos duplicados.'
+          title: t('formVoo.alertVooDuplicadoTitulo'),
+          message: t('formVoo.alertVooDuplicadoMsg')
         });
       } else {
         setAlertInfo({
           isOpen: true,
           type: 'error',
-          title: 'Erro ao salvar voo',
-          message: 'Ocorreu um erro ao salvar o voo. Tente novamente mais tarde.'
+          title: t('formVoo.alertErroSalvarTitulo'),
+          message: t('formVoo.alertErroSalvarMsg')
         });
       }
     } finally {
@@ -704,10 +700,10 @@ export default function FormVoo({
         setAlertInfo({
           isOpen: true,
           type: 'warning',
-          title: 'Possível Duplicidade Detectada',
-          message: `${duplicateWarning.message}\n\nTem certeza que deseja continuar e salvar este voo mesmo assim?`,
+          title: t('formVoo.alertDuplicidadeTitulo'),
+          message: `${duplicateWarning.message}\n\n${t('formVoo.alertDuplicidadeConfirmar')}`,
           showCancel: true,
-          confirmText: 'Sim, Salvar Mesmo Assim',
+          confirmText: t('formVoo.alertDuplicidadeConfirmarBtn'),
           onConfirm: async () => {
             setAlertInfo(prev => ({ ...prev, isOpen: false }));
             await performSave();
@@ -735,8 +731,8 @@ export default function FormVoo({
         setAlertInfo({
           isOpen: true,
           type: 'warning',
-          title: 'Aeroporto Duplicado',
-          message: `Já existe um aeroporto com o código ICAO "${data.codigo_icao}". Nome: ${aeroportoExistente.nome}.`
+          title: t('formVoo.alertAeroportoDuplicadoTitulo'),
+          message: `${t('formVoo.alertAeroportoDuplicadoMsg1')} "${data.codigo_icao}". ${t('formVoo.alertNome')} ${aeroportoExistente.nome}.`
         });
         return;
       }
@@ -764,8 +760,8 @@ export default function FormVoo({
         setAlertInfo({
           isOpen: true,
           type: 'error',
-          title: 'Código de País Inválido',
-          message: 'O código do país deve ter exatamente 2 letras (ex: AO para Angola, PT para Portugal).'
+          title: t('formVoo.alertPaisInvalidoTitulo'),
+          message: t('formVoo.alertPaisInvalidoMsg')
         });
         return;
       }
@@ -798,16 +794,16 @@ export default function FormVoo({
       setAlertInfo({
         isOpen: true,
         type: 'success',
-        title: 'Aeroporto Criado!',
-        message: `O aeroporto "${novoAeroporto.nome}" foi criado com sucesso.`
+        title: t('formVoo.alertAeroportoCriadoTitulo'),
+        message: `${t('formVoo.alertAeroportoCriadoMsg1')} "${novoAeroporto.nome}" ${t('formVoo.alertCriadoSucesso')}`
       });
     } catch (error) {
       console.error('Erro ao criar aeroporto:', error);
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Criar Aeroporto',
-        message: error.message || 'Não foi possível criar o aeroporto. Verifique se todos os campos obrigatórios estão preenchidos corretamente.'
+        title: t('formVoo.alertErroAeroportoTitulo'),
+        message: error.message || t('formVoo.alertErroAeroportoMsg')
       });
     }
   };
@@ -826,8 +822,8 @@ export default function FormVoo({
         setAlertInfo({
           isOpen: true,
           type: 'warning',
-          title: 'Companhia Duplicada',
-          message: `Já existe uma companhia com o código ICAO "${data.codigo_icao}". Nome: ${companhiaExistente.nome}.`
+          title: t('formVoo.alertCompanhiaDuplicadaTitulo'),
+          message: `${t('formVoo.alertCompanhiaDuplicadaMsg1')} "${data.codigo_icao}". ${t('formVoo.alertNome')} ${companhiaExistente.nome}.`
         });
         return;
       }
@@ -853,16 +849,16 @@ export default function FormVoo({
       setAlertInfo({
         isOpen: true,
         type: 'success',
-        title: 'Companhia Criada!',
-        message: `A companhia "${novaCompanhia.nome}" foi criada com sucesso.`
+        title: t('formVoo.alertCompanhiaCriadaTitulo'),
+        message: `${t('formVoo.alertCompanhiaCriadaMsg1')} "${novaCompanhia.nome}" ${t('formVoo.alertCriadoSucesso')}`
       });
     } catch (error) {
       console.error('Erro ao criar companhia:', error);
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Criar Companhia',
-        message: 'Não foi possível criar a companhia. Verifique os dados e tente novamente.'
+        title: t('formVoo.alertErroCompanhiaTitulo'),
+        message: t('formVoo.alertErroCompanhiaMsg')
       });
     }
   };
@@ -876,8 +872,8 @@ export default function FormVoo({
         setAlertInfo({
           isOpen: true,
           type: 'error',
-          title: 'Formato Inválido',
-          message: 'O formato do registo da aeronave é inválido. Use o formato: D2ABC (sem hífens ou espaços).'
+          title: t('formVoo.alertFormatoInvalidoTitulo'),
+          message: t('formVoo.alertFormatoRegistoMsg')
         });
         return;
       }
@@ -891,8 +887,8 @@ export default function FormVoo({
         setAlertInfo({
           isOpen: true,
           type: 'warning',
-          title: 'Registo Duplicado',
-          message: `Já existe uma aeronave com o registo "${data.registo}".`
+          title: t('formVoo.alertRegistoDuplicadoTitulo'),
+          message: `${t('formVoo.alertRegistoDuplicadoMsg')} "${data.registo}".`
         });
         return;
       }
@@ -920,16 +916,16 @@ export default function FormVoo({
       setAlertInfo({
         isOpen: true,
         type: 'success',
-        title: 'Registo Criado!',
-        message: `O registo "${novoRegisto.registo}" foi criado com sucesso.`
+        title: t('formVoo.alertRegistoCriadoTitulo'),
+        message: `${t('formVoo.alertRegistoCriadoMsg1')} "${novoRegisto.registo}" ${t('formVoo.alertCriadoSucesso')}`
       });
     } catch (error) {
       console.error('Erro ao criar registo:', error);
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Criar Registo',
-        message: 'Não foi possível criar o registo. Tente novamente.'
+        title: t('formVoo.alertErroRegistoTitulo'),
+        message: t('formVoo.alertErroRegistoMsg')
       });
     }
   };
@@ -1101,30 +1097,31 @@ export default function FormVoo({
   };
 
   const tipoMovimentoOptions = [
-  { value: 'ARR', label: 'Chegada (ARR)' },
-  { value: 'DEP', label: 'Partida (DEP)' }];
+  { value: 'ARR', label: t('formVoo.tipoMovChegada') },
+  { value: 'DEP', label: t('formVoo.tipoMovPartida') }];
 
 
   const tipoVooOptions = [
-  { value: 'Regular', label: 'Regular' },
-  { value: 'Não Regular', label: 'Não Regular' },
-  { value: 'Humanitário', label: 'Humanitário' },
-  { value: 'Charter', label: 'Charter' },
-  { value: 'Carga', label: 'Carga' },
-  { value: 'Privado', label: 'Privado' },
-  { value: 'Militar', label: 'Militar' },
-  { value: 'Oficial', label: 'Oficial' },
-  { value: 'Técnico', label: 'Técnico' },
-  { value: 'Outro', label: 'Outro' }];
+  { value: 'Regular', label: t('formVoo.tipoVooRegular') },
+  { value: 'Não Regular', label: t('formVoo.tipoVooNaoRegular') },
+  { value: 'Humanitário', label: t('formVoo.tipoVooHumanitario') },
+  { value: 'Charter', label: t('formVoo.tipoVooCharter') },
+  { value: 'Carga', label: t('formVoo.tipoVooCarga') },
+  { value: 'Privado', label: t('formVoo.tipoVooPrivado') },
+  { value: 'Militar', label: t('formVoo.tipoVooMilitar') },
+  { value: 'Oficial', label: t('formVoo.tipoVooOficial') },
+  { value: 'Técnico', label: t('formVoo.tipoVooTecnico') },
+  { value: 'Outro', label: t('formVoo.tipoVooOutro') }];
 
 
-  const statusOptions = Object.entries(STATUS_CONFIG).map(([key, config]) => ({
-    value: key,
-    label: config.label
-  }));
+  const statusOptions = [
+    { value: 'Programado', label: t('formVoo.statusProgramado') },
+    { value: 'Realizado', label: t('formVoo.statusRealizado') },
+    { value: 'Cancelado', label: t('formVoo.statusCancelado') }
+  ];
 
   const voosArrOptions = useMemo(() => [
-  { value: '', label: 'Selecione um voo de chegada para vincular' }, // Changed to mandatory based on validation
+  { value: '', label: t('formVoo.selecioneVooChegada') }, // Changed to mandatory based on validation
   ...voosArrDisponíveis.map((voo) => ({
     value: voo.id,
     label: `${voo.numero_voo} (${voo.registo_aeronave || 'N/A'}) - ${voo.data_operacao} ${voo.horario_previsto}${voo.horario_real ? ` (${voo.horario_real})` : ''} - ${voo.aeroporto_origem_destino} → ${voo.aeroporto_operacao}`
@@ -1136,7 +1133,7 @@ export default function FormVoo({
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {vooInicial ? 'Editar Voo' : 'Novo Voo'}
+            {vooInicial ? t('formVoo.editarVoo') : t('formVoo.novoVoo')}
           </DialogTitle>
         </DialogHeader>
 
@@ -1145,7 +1142,7 @@ export default function FormVoo({
           <Alert className="border-yellow-300 bg-yellow-50">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800 text-sm">
-              <strong>Possível Duplicidade:</strong> {duplicateWarning.message}
+              <strong>{t('formVoo.possívelDuplicidade')}:</strong> {duplicateWarning.message}
             </AlertDescription>
           </Alert>
         )}
@@ -1168,7 +1165,7 @@ export default function FormVoo({
               {/* --- Linha 1: Informações Principais --- */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="data_operacao">Data da Operação *</Label>
+                  <Label htmlFor="data_operacao">{t('formVoo.dataOperacao')} *</Label>
                   <Input
                   id="data_operacao"
                   type="date"
@@ -1179,7 +1176,7 @@ export default function FormVoo({
                   {errors.data_operacao && <p className="text-red-500 text-sm">{errors.data_operacao}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tipo_movimento">Tipo de Movimento *</Label>
+                  <Label htmlFor="tipo_movimento">{t('formVoo.tipoMovimento')} *</Label>
                   <Select
                   id="tipo_movimento"
                   options={tipoMovimentoOptions}
@@ -1188,7 +1185,7 @@ export default function FormVoo({
 
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="numero_voo">Número do Voo *</Label>
+                  <Label htmlFor="numero_voo">{t('formVoo.numeroVoo')} *</Label>
                   <Input
                   id="numero_voo"
                   value={formData.numero_voo}
@@ -1199,7 +1196,7 @@ export default function FormVoo({
                   {errors.numero_voo && <p className="text-red-500 text-sm">{errors.numero_voo}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">{t('formVoo.status')}</Label>
                   <Select
                   id="status"
                   options={statusOptions}
@@ -1212,14 +1209,14 @@ export default function FormVoo({
               {/* --- Linha 2: Companhia e Horários --- */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="companhia_aerea">Companhia Aérea *</Label>
+                  <Label htmlFor="companhia_aerea">{t('formVoo.companhiaAerea')} *</Label>
                   <AsyncCombobox
                   id="companhia_aerea"
                   value={formData.companhia_aerea}
                   onValueChange={(value) => handleInputChange('companhia_aerea', value)}
-                  placeholder="Pesquisar companhia..."
-                  searchPlaceholder="Digite nome ou código ICAO..."
-                  noResultsMessage="Nenhuma companhia encontrada"
+                  placeholder={t('formVoo.pesquisarCompanhia')}
+                  searchPlaceholder={t('formVoo.digitarNomeCodigo')}
+                  noResultsMessage={t('formVoo.nenhumaCompanhia')}
                   onSearch={searchCompanhias}
                   getInitialOption={getCompanhiaInicial}
                   minSearchLength={2}
@@ -1231,19 +1228,19 @@ export default function FormVoo({
                   className="text-xs text-blue-600 hover:text-blue-700 underline flex items-center gap-1 pt-1">
 
                     <Plus className="w-3 h-3" />
-                    Criar nova companhia
+                    {t('formVoo.criarNovaCompanhia')}
                   </button>
                   {errors.companhia_aerea && <p className="text-red-500 text-sm">{errors.companhia_aerea}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="registo_aeronave">Registo *</Label>
+                  <Label htmlFor="registo_aeronave">{t('formVoo.registo')} *</Label>
                   <AsyncCombobox
                   id="registo_aeronave"
                   value={formData.registo_aeronave}
                   onValueChange={(value) => handleInputChange('registo_aeronave', value)}
-                  placeholder={formData.companhia_aerea ? "Pesquisar..." : "Selecione companhia"}
-                  searchPlaceholder="Procurar registo..."
-                  noResultsMessage="Nenhum registo"
+                  placeholder={formData.companhia_aerea ? t('formVoo.pesquisar') : t('formVoo.selecioneCompanhia')}
+                  searchPlaceholder={t('formVoo.procurarRegisto')}
+                  noResultsMessage={t('formVoo.nenhumRegisto')}
                   onSearch={searchRegistos}
                   getInitialOption={getRegistoInicial}
                   minSearchLength={1}
@@ -1257,13 +1254,13 @@ export default function FormVoo({
                   className="text-xs text-blue-600 hover:text-blue-700 underline flex items-center gap-1 pt-1">
 
                       <Plus className="w-3 h-3" />
-                      Criar novo registo
+                      {t('formVoo.criarNovoRegisto')}
                     </button>
                 }
                   {errors.registo_aeronave && <p className="text-red-500 text-sm">{errors.registo_aeronave}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="horario_previsto" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Horário STA UTC *</Label>
+                  <Label htmlFor="horario_previsto" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t('formVoo.horarioSTA')} *</Label>
                   <Input
                   id="horario_previsto"
                   type="time"
@@ -1275,7 +1272,7 @@ export default function FormVoo({
                   {errors.horario_previsto && <p className="text-red-500 text-sm">{errors.horario_previsto}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="horario_real" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Horário Real UTC</Label>
+                  <Label htmlFor="horario_real" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t('formVoo.horarioReal')}</Label>
                   <Input
                   id="horario_real"
                   type="time"
@@ -1291,37 +1288,37 @@ export default function FormVoo({
               {/* --- Linha 3: Rota --- */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="aeroporto_operacao">Aeroporto de Operação *</Label>
+                  <Label htmlFor="aeroporto_operacao">{t('formVoo.aeroportoOperacao')} *</Label>
                   <Combobox
                   id="aeroporto_operacao"
                   options={aeroportoOperacaoOptions}
                   value={formData.aeroporto_operacao}
                   onValueChange={(value) => handleInputChange('aeroporto_operacao', value)}
-                  placeholder={aeroportosAcesso.length === 0 ? "Nenhum aeroporto" : "Pesquisar aeroporto..."}
-                  searchPlaceholder="Procurar aeroporto..."
-                  noResultsMessage="Nenhum aeroporto encontrado"
+                  placeholder={aeroportosAcesso.length === 0 ? t('formVoo.nenhumAeroporto') : t('formVoo.pesquisarAeroporto')}
+                  searchPlaceholder={t('formVoo.procurarAeroporto')}
+                  noResultsMessage={t('formVoo.nenhumAeroportoEncontrado')}
                   className={errors.aeroporto_operacao ? 'border-red-500' : ''}
                   disabled={aeroportosAcesso.length === 1 && !vooInicial} />
 
                   {aeroportosAcesso.length === 0 &&
                 <p className="text-xs text-red-500">
-                      ⚠️ Você não tem acesso a nenhum aeroporto. Contacte o administrador.
+                      ⚠️ {t('formVoo.semAcessoAeroporto')}
                     </p>
                 }
                   {errors.aeroporto_operacao && <p className="text-red-500 text-sm">{errors.aeroporto_operacao}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="aeroporto_origem_destino">
-                    {formData.tipo_movimento === 'ARR' ? 'Origem *' : 'Destino *'}
+                    {formData.tipo_movimento === 'ARR' ? `${t('formVoo.origem')} *` : `${t('formVoo.destino')} *`}
                   </Label>
                   <Combobox
                   id="aeroporto_origem_destino"
                   options={aeroportoOrigemDestinoOptions}
                   value={formData.aeroporto_origem_destino}
                   onValueChange={(value) => handleInputChange('aeroporto_origem_destino', value)}
-                  placeholder="Pesquisar aeroporto..."
-                  searchPlaceholder="Procurar aeroporto..."
-                  noResultsMessage="Nenhum aeroporto encontrado"
+                  placeholder={t('formVoo.pesquisarAeroporto')}
+                  searchPlaceholder={t('formVoo.procurarAeroporto')}
+                  noResultsMessage={t('formVoo.nenhumAeroportoEncontrado')}
                   className={errors.aeroporto_origem_destino ? 'border-red-500' : ''}
                   useDisplayLabel={true} />
 
@@ -1331,7 +1328,7 @@ export default function FormVoo({
                   className="text-xs text-blue-600 hover:text-blue-700 underline flex items-center gap-1 pt-1">
 
                     <Plus className="w-3 h-3" />
-                    Não encontrou? Criar novo aeroporto
+                    {t('formVoo.naoEncontrouCriar')}
                   </button>
                   {errors.aeroporto_origem_destino && <p className="text-red-500 text-sm">{errors.aeroporto_origem_destino}</p>}
                 </div>
@@ -1340,7 +1337,7 @@ export default function FormVoo({
               {/* --- Linha 4: Stand + Checkboxes Especiais --- */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4 items-end">
                 <div className="space-y-2">
-                  <Label htmlFor="posicao_stand">Posição Stand</Label>
+                  <Label htmlFor="posicao_stand">{t('formVoo.posicaoStand')}</Label>
                   <Input
                     id="posicao_stand"
                     value={formData.posicao_stand}
@@ -1355,7 +1352,7 @@ export default function FormVoo({
                     onCheckedChange={(checked) => handleInputChange('aeronave_no_hangar', checked)}
                   />
                   <Label htmlFor="aeronave_no_hangar" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
-                    Hangar (Isenta estacionamento)
+                    {t('formVoo.hangar')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 pb-2">
@@ -1365,7 +1362,7 @@ export default function FormVoo({
                     onCheckedChange={(checked) => handleInputChange('requer_iluminacao_extra', checked)}
                   />
                   <Label htmlFor="requer_iluminacao_extra" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
-                    Sinal.Luz Xtra (Cobra iluminação)
+                    {t('formVoo.iluminacaoExtra')}
                   </Label>
                 </div>
               </div>
@@ -1373,19 +1370,19 @@ export default function FormVoo({
               {/* --- Linha 5: Detalhes Adicionais --- */}
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tipo_voo">Tipo de Voo</Label>
+                  <Label htmlFor="tipo_voo">{t('formVoo.tipoVoo')}</Label>
                   <Combobox
                     id="tipo_voo"
                     options={tipoVooOptions}
                     value={formData.tipo_voo}
                     onValueChange={(value) => handleInputChange('tipo_voo', value)}
-                    placeholder="Selecione o tipo de voo"
-                    searchPlaceholder="Pesquisar tipo de voo..."
-                    noResultsMessage="Nenhum tipo de voo encontrado"
+                    placeholder={t('formVoo.selecioneTipoVoo')}
+                    searchPlaceholder={t('formVoo.pesquisarTipoVoo')}
+                    noResultsMessage={t('formVoo.nenhumTipoVoo')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tripulacao">Tripulação</Label>
+                  <Label htmlFor="tripulacao">{t('formVoo.tripulacao')}</Label>
                   <Input
                   id="tripulacao"
                   type="number"
@@ -1395,7 +1392,7 @@ export default function FormVoo({
 
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="carga_kg">Carga (kg)</Label>
+                  <Label htmlFor="carga_kg">{t('formVoo.cargaKg')}</Label>
                   <Input
                   id="carga_kg"
                   type="number"
@@ -1406,12 +1403,12 @@ export default function FormVoo({
 
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="observacoes">Observações</Label>
+                  <Label htmlFor="observacoes">{t('formVoo.observacoes')}</Label>
                   <Input
                   id="observacoes"
                   value={formData.observacoes}
                   onChange={(e) => handleInputChange('observacoes', e.target.value)}
-                  placeholder="Observações adicionais sobre o voo" />
+                  placeholder={t('formVoo.observacoesPlaceholder')} />
 
                 </div>
               </div>
@@ -1424,7 +1421,7 @@ export default function FormVoo({
               {/* --- Linha 1: Data, Tipo, Vinculação --- */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="data_operacao">Data da Operação *</Label>
+                  <Label htmlFor="data_operacao">{t('formVoo.dataOperacao')} *</Label>
                   <Input
                   id="data_operacao"
                   type="date"
@@ -1435,7 +1432,7 @@ export default function FormVoo({
                   {errors.data_operacao && <p className="text-red-500 text-sm">{errors.data_operacao}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tipo_movimento">Tipo de Movimento *</Label>
+                  <Label htmlFor="tipo_movimento">{t('formVoo.tipoMovimento')} *</Label>
                   <Select
                   id="tipo_movimento"
                   options={tipoMovimentoOptions}
@@ -1444,15 +1441,15 @@ export default function FormVoo({
 
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="linked_arr_voo">Voo Vinculado *</Label>
+                  <Label htmlFor="linked_arr_voo">{t('formVoo.vooVinculado')} *</Label>
                   <Combobox
                   id="linked_arr_voo"
                   options={voosArrOptions}
                   value={linkedArrVooId}
                   onValueChange={handleLinkedVooChange}
-                  placeholder={!formData.data_operacao ? "Preencha a data primeiro" : "Pesquisar voo..."}
-                  searchPlaceholder="Procurar voo..."
-                  noResultsMessage="Nenhum voo disponível"
+                  placeholder={!formData.data_operacao ? t('formVoo.preenchaDataPrimeiro') : t('formVoo.pesquisarVoo')}
+                  searchPlaceholder={t('formVoo.procurarVoo')}
+                  noResultsMessage={t('formVoo.nenhumVooDisponivel')}
                   disabled={!formData.data_operacao}
                   className={`${errors.linked_arr_voo ? 'border-red-500' : ''}`}
                   maxHeight="200px" />
@@ -1464,7 +1461,7 @@ export default function FormVoo({
               {/* --- Linha 2: Detalhes do Voo e Status --- */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="numero_voo">Número do Voo *</Label>
+                  <Label htmlFor="numero_voo">{t('formVoo.numeroVoo')} *</Label>
                   <Input
                   id="numero_voo"
                   value={formData.numero_voo}
@@ -1475,7 +1472,7 @@ export default function FormVoo({
                   {errors.numero_voo && <p className="text-red-500 text-sm">{errors.numero_voo}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="horario_previsto" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Horário STD UTC *</Label>
+                  <Label htmlFor="horario_previsto" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t('formVoo.horarioSTD')} *</Label>
                   <Input
                   id="horario_previsto"
                   type="time"
@@ -1488,12 +1485,12 @@ export default function FormVoo({
                   {errors.horario_previsto && <p className="text-red-500 text-sm">{errors.horario_previsto}</p>}
                   {horarioMinimoDep &&
                 <p className="text-xs text-slate-500">
-                      Deve ser posterior ao voo de chegada ({horarioMinimoDep})
+                      {t('formVoo.devePosteriorChegada')} ({horarioMinimoDep})
                     </p>
                 }
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="horario_real" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Horário Real UTC</Label>
+                  <Label htmlFor="horario_real" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t('formVoo.horarioReal')}</Label>
                   <Input
                   id="horario_real"
                   type="time"
@@ -1506,12 +1503,12 @@ export default function FormVoo({
                   {errors.horario_real && <p className="text-red-500 text-sm">{errors.horario_real}</p>}
                   {horarioMinimoDep &&
                 <p className="text-xs text-slate-500">
-                      Deve ser posterior ao voo de chegada ({horarioMinimoDep})
+                      {t('formVoo.devePosteriorChegada')} ({horarioMinimoDep})
                     </p>
                 }
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">{t('formVoo.status')}</Label>
                   <Select
                   id="status"
                   options={statusOptions}
@@ -1524,7 +1521,7 @@ export default function FormVoo({
               {/* --- Linha 3: Stand + Checkboxes Especiais --- */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4 items-end">
                 <div className="space-y-2">
-                  <Label htmlFor="posicao_stand_dep">Posição Stand</Label>
+                  <Label htmlFor="posicao_stand_dep">{t('formVoo.posicaoStand')}</Label>
                   <Input
                     id="posicao_stand_dep"
                     value={formData.posicao_stand}
@@ -1539,7 +1536,7 @@ export default function FormVoo({
                     onCheckedChange={(checked) => handleInputChange('aeronave_no_hangar', checked)}
                   />
                   <Label htmlFor="aeronave_no_hangar_dep" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
-                    Hangar (Isenta estacionamento)
+                    {t('formVoo.hangar')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 pb-2">
@@ -1549,7 +1546,7 @@ export default function FormVoo({
                     onCheckedChange={(checked) => handleInputChange('requer_iluminacao_extra', checked)}
                   />
                   <Label htmlFor="requer_iluminacao_extra_dep" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
-                    Sinal.Luz Xtra (Cobra iluminação)
+                    {t('formVoo.iluminacaoExtra')}
                   </Label>
                 </div>
               </div>
@@ -1573,7 +1570,7 @@ export default function FormVoo({
                       }}
                     />
                     <Label htmlFor="registo_alterado" className="text-sm font-semibold leading-none cursor-pointer text-orange-700">
-                      Houve alteração de registo (troca de aeronave)
+                      {t('formVoo.houveAlteracaoRegisto')}
                     </Label>
                   </div>
                   {formData.registo_alterado && (
@@ -1581,12 +1578,12 @@ export default function FormVoo({
                       <Alert className="bg-orange-50 border-orange-200">
                         <AlertTriangle className="h-4 w-4 text-orange-600" />
                         <AlertDescription className="text-orange-800 text-sm">
-                          O registo original (ARR) é <strong>{voos.find(v => v.id === linkedArrVooId)?.registo_aeronave}</strong>.
-                          Indique abaixo o registo da aeronave que efetivamente partiu.
+                          {t('formVoo.registoOriginalARR')} <strong>{voos.find(v => v.id === linkedArrVooId)?.registo_aeronave}</strong>.
+                          {t('formVoo.indiquaRegistoDEP')}
                         </AlertDescription>
                       </Alert>
                       <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 max-w-md space-y-1">
-                        <Label className="text-xs">Registo da Aeronave DEP *</Label>
+                        <Label className="text-xs">{t('formVoo.registoAeronaveDEP')} *</Label>
                         <AsyncCombobox
                           id="registo_dep"
                           value={formData.registo_dep}
@@ -1594,9 +1591,9 @@ export default function FormVoo({
                             handleInputChange('registo_dep', value);
                             handleInputChange('registo_aeronave', value);
                           }}
-                          placeholder="Pesquisar registo..."
-                          searchPlaceholder="Procurar registo..."
-                          noResultsMessage="Nenhum registo"
+                          placeholder={t('formVoo.pesquisarRegisto')}
+                          searchPlaceholder={t('formVoo.procurarRegisto')}
+                          noResultsMessage={t('formVoo.nenhumRegisto')}
                           onSearch={searchRegistos}
                           getInitialOption={getRegistoInicial}
                           minSearchLength={1}
@@ -1619,13 +1616,13 @@ export default function FormVoo({
                       onCheckedChange={(checked) => handleInputChange('combustivel_utilizado', checked)}
                     />
                     <Label htmlFor="combustivel_utilizado" className="text-sm font-semibold leading-none cursor-pointer text-amber-700">
-                      Abastecimento de Combustível
+                      {t('formVoo.abastecimentoCombustivel')}
                     </Label>
                   </div>
                   {formData.combustivel_utilizado && (
                     <div className="grid grid-cols-2 gap-3 pl-6 bg-amber-50 p-3 rounded-lg border border-amber-200 max-w-md">
                       <div className="space-y-1">
-                        <Label className="text-xs">Tipo</Label>
+                        <Label className="text-xs">{t('formVoo.combustivelTipo')}</Label>
                         <select
                           value={formData.combustivel_tipo}
                           onChange={(e) => handleInputChange('combustivel_tipo', e.target.value)}
@@ -1636,7 +1633,7 @@ export default function FormVoo({
                         </select>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Litros</Label>
+                        <Label className="text-xs">{t('formVoo.combustivelLitros')}</Label>
                         <Input
                           type="number"
                           min="0"
@@ -1656,15 +1653,15 @@ export default function FormVoo({
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="aeroporto_origem_destino">
-                    {formData.tipo_movimento === 'ARR' ? 'Origem *' : 'Destino *'}
+                    {formData.tipo_movimento === 'ARR' ? `${t('formVoo.origem')} *` : `${t('formVoo.destino')} *`}
                   </Label>
                   <AsyncCombobox
                   id="aeroporto_origem_destino"
                   value={formData.aeroporto_origem_destino}
                   onValueChange={(value) => handleInputChange('aeroporto_origem_destino', value)}
-                  placeholder="Pesquisar a..."
-                  searchPlaceholder="Digite nome ou código ICAO..."
-                  noResultsMessage="Nenhum aeroporto encontrado"
+                  placeholder={t('formVoo.pesquisarAeroporto')}
+                  searchPlaceholder={t('formVoo.digitarNomeCodigo')}
+                  noResultsMessage={t('formVoo.nenhumAeroportoEncontrado')}
                   onSearch={searchAeroportos}
                   getInitialOption={getAeroportoInicial}
                   minSearchLength={2}
@@ -1677,24 +1674,24 @@ export default function FormVoo({
                   className="text-xs text-blue-600 hover:text-blue-700 underline flex items-center gap-1 pt-1">
 
                     <Plus className="w-3 h-3" />
-                    Não encontrou? Criar novo aeroporto
+                    {t('formVoo.naoEncontrouCriar')}
                   </button>
                   {errors.aeroporto_origem_destino && <p className="text-red-500 text-sm">{errors.aeroporto_origem_destino}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tipo_voo">Tipo de Voo</Label>
+                  <Label htmlFor="tipo_voo">{t('formVoo.tipoVoo')}</Label>
                   <Combobox
                     id="tipo_voo"
                     options={tipoVooOptions}
                     value={formData.tipo_voo}
                     onValueChange={(value) => handleInputChange('tipo_voo', value)}
-                    placeholder="Selecione o tipo de voo"
-                    searchPlaceholder="Pesquisar tipo de voo..."
-                    noResultsMessage="Nenhum tipo de voo encontrado"
+                    placeholder={t('formVoo.selecioneTipoVoo')}
+                    searchPlaceholder={t('formVoo.pesquisarTipoVoo')}
+                    noResultsMessage={t('formVoo.nenhumTipoVoo')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tripulacao">Tripulação</Label>
+                  <Label htmlFor="tripulacao">{t('formVoo.tripulacao')}</Label>
                   <Input
                   id="tripulacao"
                   type="number"
@@ -1704,7 +1701,7 @@ export default function FormVoo({
 
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="carga_kg">Carga (kg)</Label>
+                  <Label htmlFor="carga_kg">{t('formVoo.cargaKg')}</Label>
                   <Input
                   id="carga_kg"
                   type="number"
@@ -1715,12 +1712,12 @@ export default function FormVoo({
 
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="observacoes">Observações</Label>
+                  <Label htmlFor="observacoes">{t('formVoo.observacoes')}</Label>
                   <Input
                   id="observacoes"
                   value={formData.observacoes}
                   onChange={(e) => handleInputChange('observacoes', e.target.value)}
-                  placeholder="Observações adicionais" />
+                  placeholder={t('formVoo.observacoesPlaceholderDEP')} />
 
                 </div>
               </div>
@@ -1730,10 +1727,10 @@ export default function FormVoo({
           {/* Passenger Information - Always visible for both types when applicable */}
           {(formData.tipo_movimento === 'ARR' || formData.tipo_movimento === 'DEP') &&
           <div className="space-y-4">
-              <h3 className="text-lg font-medium pt-4 border-t">Informações de Passageiros</h3>
+              <h3 className="text-lg font-medium pt-4 border-t">{t('formVoo.informacoesPassageiros')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="passageiros_local">Passageiros Locais</Label>
+                  <Label htmlFor="passageiros_local">{t('formVoo.passageirosLocais')}</Label>
                   <Input
                   id="passageiros_local"
                   type="number"
@@ -1743,7 +1740,7 @@ export default function FormVoo({
 
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="passageiros_transito_transbordo">Trânsito c/ Transbordo</Label>
+                  <Label htmlFor="passageiros_transito_transbordo">{t('formVoo.transitoTransbordo')}</Label>
                   <Input
                   id="passageiros_transito_transbordo"
                   type="number"
@@ -1753,7 +1750,7 @@ export default function FormVoo({
 
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="passageiros_transito_direto">Trânsito Direto</Label>
+                  <Label htmlFor="passageiros_transito_direto">{t('formVoo.transitoDireto')}</Label>
                   <Input
                   id="passageiros_transito_direto"
                   type="number"
@@ -1763,7 +1760,7 @@ export default function FormVoo({
 
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="passageiros_total">Total (Calculado)</Label>
+                  <Label htmlFor="passageiros_total">{t('formVoo.totalCalculado')}</Label>
                   <Input
                   id="passageiros_total"
                   type="number"
@@ -1779,11 +1776,11 @@ export default function FormVoo({
           {/* Bagagem Information */}
           {(formData.tipo_movimento === 'ARR' || formData.tipo_movimento === 'DEP') &&
           <div className="space-y-4">
-              <h3 className="text-lg font-medium pt-4 border-t">Informações de Bagagem</h3>
+              <h3 className="text-lg font-medium pt-4 border-t">{t('formVoo.informacoesBagagem')}</h3>
               {formData.tipo_movimento === 'ARR' ? (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="bagagem_local">Bagagem Local</Label>
+                    <Label htmlFor="bagagem_local">{t('formVoo.bagagemLocal')}</Label>
                     <Input
                     id="bagagem_local"
                     type="number"
@@ -1792,7 +1789,7 @@ export default function FormVoo({
                     onChange={(e) => handleInputChange('bagagem_local', parseInt(e.target.value) || 0)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="bagagem_transito_transbordo">Trânsito c/ Transbordo</Label>
+                    <Label htmlFor="bagagem_transito_transbordo">{t('formVoo.transitoTransbordo')}</Label>
                     <Input
                     id="bagagem_transito_transbordo"
                     type="number"
@@ -1801,7 +1798,7 @@ export default function FormVoo({
                     onChange={(e) => handleInputChange('bagagem_transito_transbordo', parseInt(e.target.value) || 0)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="bagagem_transito_direto">Trânsito Direto</Label>
+                    <Label htmlFor="bagagem_transito_direto">{t('formVoo.transitoDireto')}</Label>
                     <Input
                     id="bagagem_transito_direto"
                     type="number"
@@ -1810,7 +1807,7 @@ export default function FormVoo({
                     onChange={(e) => handleInputChange('bagagem_transito_direto', parseInt(e.target.value) || 0)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="bagagem_total">Total (Calculado)</Label>
+                    <Label htmlFor="bagagem_total">{t('formVoo.totalCalculado')}</Label>
                     <Input
                     id="bagagem_total"
                     type="number"
@@ -1822,7 +1819,7 @@ export default function FormVoo({
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="bagagem_total">Total de Bagagens</Label>
+                    <Label htmlFor="bagagem_total">{t('formVoo.totalBagagens')}</Label>
                     <Input
                     id="bagagem_total"
                     type="number"
@@ -1839,11 +1836,11 @@ export default function FormVoo({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={isLoading || isSubmitting}>
-              Cancelar
+              {t('formVoo.cancelar')}
             </Button>
           </DialogClose>
           <Button onClick={handleSubmit} disabled={isLoading || isSubmitting} className="bg-[#169c41] hover:bg-[#128a36] text-white">
-            {isLoading || isSubmitting ? 'Salvando...' : vooInicial ? 'Atualizar Voo' : 'Criar Voo'}
+            {isLoading || isSubmitting ? t('formVoo.salvando') : vooInicial ? t('formVoo.atualizarVoo') : t('formVoo.criarVoo')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1852,7 +1849,7 @@ export default function FormVoo({
       <Dialog open={showCreateAeroporto} onOpenChange={setShowCreateAeroporto}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden">
           <DialogHeader>
-            <DialogTitle>Adicionar Novo Aeroporto</DialogTitle>
+            <DialogTitle>{t('formVoo.adicionarNovoAeroporto')}</DialogTitle>
           </DialogHeader>
           <FormAeroporto onSave={handleCreateAeroporto} onCancel={() => setShowCreateAeroporto(false)} />
         </DialogContent>
@@ -1861,7 +1858,7 @@ export default function FormVoo({
       <Dialog open={showCreateCompanhia} onOpenChange={setShowCreateCompanhia}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Adicionar Nova Companhia Aérea</DialogTitle>
+            <DialogTitle>{t('formVoo.adicionarNovaCompanhia')}</DialogTitle>
           </DialogHeader>
           <FormCompanhia onSave={handleCreateCompanhia} onCancel={() => setShowCreateCompanhia(false)} />
         </DialogContent>
@@ -1870,7 +1867,7 @@ export default function FormVoo({
       <Dialog open={showCreateRegisto} onOpenChange={setShowCreateRegisto}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Adicionar Novo Registo de Aeronave</DialogTitle>
+            <DialogTitle>{t('formVoo.adicionarNovoRegisto')}</DialogTitle>
           </DialogHeader>
           <FormRegisto
             onSave={handleCreateRegisto}
