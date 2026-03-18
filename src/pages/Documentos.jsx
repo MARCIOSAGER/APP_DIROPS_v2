@@ -787,6 +787,7 @@ export default function Documentos() {
           onClose={() => setIsUploadMassaOpen(false)}
           onSuccess={loadData}
           aeroporto={null}
+          currentUser={currentUser}
         />
       )}
 

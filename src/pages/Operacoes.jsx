@@ -1526,6 +1526,7 @@ export default function Operacoes() {
       const documentoData = {
         titulo: `${tiposNome[tipoDocumento]} - ${arrVoo?.numero_voo} → ${depVoo?.numero_voo}`,
         categoria: 'outro',
+        empresa_id: currentUser?.empresa_id,
         aeroporto: arrVoo?.aeroporto_operacao,
         voo_ligado_id: uploadDocumentoData.vooLigado.id,
         arquivo_url: fileUrl,

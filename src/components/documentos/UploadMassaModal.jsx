@@ -8,7 +8,7 @@ import { Documento } from '@/entities/Documento';
 import { analisarDocumento } from '@/functions/analisarDocumento';
 import { sanitizeFilename } from '@/lib/sanitize';
 
-export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto }) {
+export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto, currentUser = null }) {
   const [files, setFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState([]);
@@ -82,6 +82,7 @@ export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto
           await Documento.create({
             titulo: sanitizeFilename(file.name).replace(/\.[^/.]+$/, ''),
             categoria: analise.categoria_sugerida || 'outro',
+            empresa_id: currentUser?.empresa_id,
             arquivo_url: fileUrl,
             versao: '1.0',
             data_publicacao: new Date().toISOString().split('T')[0],
