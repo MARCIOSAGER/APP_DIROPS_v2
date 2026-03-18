@@ -50,6 +50,7 @@ import GerarRelatorioFaturacaoModal from '../components/faturacao/GerarRelatorio
 import DashboardFaturacao from '../components/faturacao/DashboardFaturacao';
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
+import CancelarProformaModal from '../components/shared/CancelarProformaModal';
 
 const STATUS_CONFIG = {
   emitida: { labelKey: 'proforma.status_emitida', color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700', icon: FileText },
@@ -70,6 +71,7 @@ export default function ProformaPage() {
 
   const [editingProforma, setEditingProforma] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [cancelarModalInfo, setCancelarModalInfo] = useState({ isOpen: false, proforma: null });
   const [isConsolidadaModalOpen, setIsConsolidadaModalOpen] = useState(false);
   const [isRelatorioModalOpen, setIsRelatorioModalOpen] = useState(false);
 
@@ -228,6 +230,34 @@ export default function ProformaPage() {
         type: 'error',
         title: t('proforma.error_update_title'),
         message: t('proforma.error_update_msg')
+      });
+    }
+  };
+
+  const handleConfirmarCancelamento = async (motivo) => {
+    const proforma = cancelarModalInfo.proforma;
+    try {
+      await Proforma.update(proforma.id, {
+        status: 'cancelada',
+        motivo_cancelamento: motivo,
+        cancelado_por: currentUser?.email || 'sistema',
+        data_cancelamento: new Date().toISOString()
+      });
+      setCancelarModalInfo({ isOpen: false, proforma: null });
+      await loadData();
+      setSuccessInfo({
+        isOpen: true,
+        title: t('proforma.cancelada_sucesso_titulo'),
+        message: t('proforma.cancelada_sucesso_msg')
+      });
+    } catch (error) {
+      console.error('Erro ao cancelar proforma:', error);
+      setCancelarModalInfo({ isOpen: false, proforma: null });
+      setAlertInfo({
+        isOpen: true,
+        type: 'error',
+        title: t('proforma.erro_cancelar_titulo'),
+        message: t('proforma.erro_cancelar_msg')
       });
     }
   };
@@ -763,6 +793,15 @@ export default function ProformaPage() {
                                   <Edit className="mr-2 h-4 w-4" />
                                   {t('proforma.edit')}
                                 </DropdownMenuItem>
+                                {proforma.status !== 'cancelada' && proforma.status !== 'paga' && (
+                                  <DropdownMenuItem
+                                    onClick={() => setCancelarModalInfo({ isOpen: true, proforma })}
+                                    className="text-red-600 dark:text-red-400"
+                                  >
+                                    <X className="mr-2 h-4 w-4" />
+                                    {t('proforma.cancelar_opcao')}
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -805,6 +844,13 @@ export default function ProformaPage() {
         onClose={() => setIsRelatorioModalOpen(false)}
         companhias={companhias}
         aeroportos={aeroportos}
+      />
+
+      <CancelarProformaModal
+        isOpen={cancelarModalInfo.isOpen}
+        onClose={() => setCancelarModalInfo({ isOpen: false, proforma: null })}
+        onConfirm={handleConfirmarCancelamento}
+        proforma={cancelarModalInfo.proforma}
       />
 
       <AlertModal

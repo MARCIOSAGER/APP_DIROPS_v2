@@ -43,6 +43,7 @@ import VoosLigadosFilters from '../components/operacoes/VoosLigadosFilters';
 
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
+import CancelarProformaModal from '../components/shared/CancelarProformaModal';
 import ProgressModal from '../components/operacoes/ProgressModal';
 
 import GerarFaturaModal from '../components/faturacao/GerarFaturaModal';
@@ -150,6 +151,7 @@ export default function Operacoes() {
 
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
+  const [cancelarProformaModal, setCancelarProformaModal] = useState({ isOpen: false, proforma: null, descricao: '', onConfirm: null });
 
   const [progressModal, setProgressModal] = useState({
     isOpen: false,
@@ -972,39 +974,77 @@ export default function Operacoes() {
   };
 
   const handleExcluirVoo = async (voo) => {
-    setAlertInfo({
-      isOpen: true,
-      type: 'error',
-      title: t('operacoes.mover_lixeira'),
-      message: `${voo.numero_voo}?`,
-      showCancel: true,
-      confirmText: t('operacoes.mover'),
-      onConfirm: async () => {
-        setAlertInfo(prev => ({ ...prev, isOpen: false }));
+    const doMoverLixeira = async (motivo) => {
+      try {
+        // Cancel active proformas linked to this voo
         try {
-          await Voo.update(voo.id, { 
-            deleted_at: new Date().toISOString(),
-            deleted_by: currentUser?.email || 'sistema'
-          });
-          
-          await refreshSpecificData(['voos']);
+          const proformasVoo = await Proforma.filter({ voo_id: voo.id });
+          for (const pf of proformasVoo) {
+            if (pf.status !== 'cancelada' && pf.status !== 'paga') {
+              await Proforma.update(pf.id, {
+                status: 'cancelada',
+                motivo_cancelamento: `Voo ${voo.numero_voo} movido para lixeira. Motivo: ${motivo}`,
+                cancelado_por: currentUser?.email || 'sistema',
+                data_cancelamento: new Date().toISOString()
+              });
+            }
+          }
+        } catch (_) {}
 
-          setSuccessInfo({
-            isOpen: true,
-            title: t('operacoes.voo_lixeira'),
-            message: `${voo.numero_voo}`
-          });
-        } catch (error) {
-          console.error('Erro ao mover voo:', error);
-          setAlertInfo({
-            isOpen: true,
-            type: 'error',
-            title: t('operacoes.erro_mover'),
-            message: t('operacoes.erro_mover_msg')
-          });
-        }
+        await Voo.update(voo.id, {
+          deleted_at: new Date().toISOString(),
+          deleted_by: currentUser?.email || 'sistema'
+        });
+
+        await refreshSpecificData(['voos']);
+
+        setSuccessInfo({
+          isOpen: true,
+          title: t('operacoes.voo_lixeira'),
+          message: `${voo.numero_voo}`
+        });
+      } catch (error) {
+        console.error('Erro ao mover voo:', error);
+        setAlertInfo({
+          isOpen: true,
+          type: 'error',
+          title: t('operacoes.erro_mover'),
+          message: t('operacoes.erro_mover_msg')
+        });
       }
-    });
+    };
+
+    // Check for active proformas on this voo
+    let proformasAtivas = [];
+    try {
+      const pfs = await Proforma.filter({ voo_id: voo.id });
+      proformasAtivas = pfs.filter(pf => pf.status !== 'cancelada' && pf.status !== 'paga');
+    } catch (_) {}
+
+    if (proformasAtivas.length > 0) {
+      setCancelarProformaModal({
+        isOpen: true,
+        proforma: proformasAtivas[0],
+        descricao: t('proforma.descricao_cancel_voo'),
+        onConfirm: async (motivo) => {
+          setCancelarProformaModal(prev => ({ ...prev, isOpen: false }));
+          await doMoverLixeira(motivo);
+        }
+      });
+    } else {
+      setAlertInfo({
+        isOpen: true,
+        type: 'error',
+        title: t('operacoes.mover_lixeira'),
+        message: `${voo.numero_voo}?`,
+        showCancel: true,
+        confirmText: t('operacoes.mover'),
+        onConfirm: async () => {
+          setAlertInfo(prev => ({ ...prev, isOpen: false }));
+          await doMoverLixeira('Movido para lixeira pelo utilizador.');
+        }
+      });
+    }
   };
 
   const handleExcluirPermanentemente = async (voo) => {
@@ -1051,54 +1091,96 @@ export default function Operacoes() {
   const handleExcluirVooLigado = async (vooLigado) => {
     const depVoo = voos.find(v => v.id === vooLigado.id_voo_dep);
     const arrVoo = voos.find(v => v.id === vooLigado.id_voo_arr);
-    
-    setAlertInfo({
-      isOpen: true,
-      type: 'error',
-      title: t('operacoes.excluir_vinculacao'),
-      message: `${arrVoo?.numero_voo || 'N/A'} (ARR) / ${depVoo?.numero_voo || 'N/A'} (DEP)`,
-      showCancel: true,
-      confirmText: t('operacoes.excluir_vinculacao'),
-      onConfirm: async () => {
-        setAlertInfo(prev => ({ ...prev, isOpen: false }));
-        try {
-          // 1. Remover cálculo de tarifa associado (AGORA pode buscar por voo_ligado_id também!)
-          const calculoAssociado = calculosTarifa.find(ct => 
-            ct.voo_id === vooLigado.id_voo_dep || ct.voo_ligado_id === vooLigado.id
-          );
-          if (calculoAssociado) {
-            await CalculoTarifa.delete(calculoAssociado.id);
+
+    const doDelete = async (motivo) => {
+      try {
+        const calculoAssociado = calculosTarifa.find(ct =>
+          ct.voo_id === vooLigado.id_voo_dep || ct.voo_ligado_id === vooLigado.id
+        );
+
+        // Cancelar proformas associadas ao calculo
+        if (calculoAssociado) {
+          const proformasAssociadas = await Proforma.filter({ calculo_tarifa_id: calculoAssociado.id });
+          for (const pf of proformasAssociadas) {
+            if (pf.status !== 'cancelada' && pf.status !== 'paga') {
+              await Proforma.update(pf.id, {
+                status: 'cancelada',
+                motivo_cancelamento: `Vinculação excluída: ${arrVoo?.numero_voo || 'N/A'} (ARR) → ${depVoo?.numero_voo || 'N/A'} (DEP). Motivo: ${motivo}`,
+                cancelado_por: currentUser?.email || 'sistema',
+                data_cancelamento: new Date().toISOString()
+              });
+            }
           }
-
-          // 2. Remover referência voo_ligado_id nos voos
-          if (arrVoo && arrVoo.voo_ligado_id === vooLigado.id) {
-            await Voo.update(arrVoo.id, { voo_ligado_id: null });
-          }
-          if (depVoo && depVoo.voo_ligado_id === vooLigado.id) {
-            await Voo.update(depVoo.id, { voo_ligado_id: null });
-          }
-
-          // 3. Excluir o VooLigado
-          await VooLigado.delete(vooLigado.id);
-
-          await refreshSpecificData(['voos', 'voosLigados', 'calculosTarifa']);
-
-          setSuccessInfo({
-            isOpen: true,
-            title: t('operacoes.vinculacao_excluida'),
-            message: t('operacoes.vinculacao_excluida_msg')
-          });
-        } catch (error) {
-          console.error('Erro ao excluir vinculação:', error);
-          setAlertInfo({
-            isOpen: true,
-            type: 'error',
-            title: t('operacoes.erro_excluir'),
-            message: t('operacoes.erro_excluir_vinculacao')
-          });
+          await CalculoTarifa.delete(calculoAssociado.id);
         }
+
+        // Remover referência voo_ligado_id nos voos
+        if (arrVoo && arrVoo.voo_ligado_id === vooLigado.id) {
+          await Voo.update(arrVoo.id, { voo_ligado_id: null });
+        }
+        if (depVoo && depVoo.voo_ligado_id === vooLigado.id) {
+          await Voo.update(depVoo.id, { voo_ligado_id: null });
+        }
+
+        // Excluir o VooLigado
+        await VooLigado.delete(vooLigado.id);
+
+        await refreshSpecificData(['voos', 'voosLigados', 'calculosTarifa']);
+
+        setSuccessInfo({
+          isOpen: true,
+          title: t('operacoes.vinculacao_excluida'),
+          message: t('operacoes.vinculacao_excluida_msg')
+        });
+      } catch (error) {
+        console.error('Erro ao excluir vinculação:', error);
+        setAlertInfo({
+          isOpen: true,
+          type: 'error',
+          title: t('operacoes.erro_excluir'),
+          message: t('operacoes.erro_excluir_vinculacao')
+        });
       }
-    });
+    };
+
+    // Check if there are associated proformas that need cancellation justification
+    const calculoAssociado = calculosTarifa.find(ct =>
+      ct.voo_id === vooLigado.id_voo_dep || ct.voo_ligado_id === vooLigado.id
+    );
+    let proformasAtivas = [];
+    if (calculoAssociado) {
+      try {
+        const pfs = await Proforma.filter({ calculo_tarifa_id: calculoAssociado.id });
+        proformasAtivas = pfs.filter(pf => pf.status !== 'cancelada' && pf.status !== 'paga');
+      } catch (_) {}
+    }
+
+    if (proformasAtivas.length > 0) {
+      // Has active proformas — ask for justification before deleting
+      setCancelarProformaModal({
+        isOpen: true,
+        proforma: proformasAtivas[0],
+        descricao: t('proforma.descricao_cancel_voo_ligado'),
+        onConfirm: async (motivo) => {
+          setCancelarProformaModal(prev => ({ ...prev, isOpen: false }));
+          await doDelete(motivo);
+        }
+      });
+    } else {
+      // No active proformas — standard confirmation
+      setAlertInfo({
+        isOpen: true,
+        type: 'error',
+        title: t('operacoes.excluir_vinculacao'),
+        message: `${arrVoo?.numero_voo || 'N/A'} (ARR) / ${depVoo?.numero_voo || 'N/A'} (DEP)`,
+        showCancel: true,
+        confirmText: t('operacoes.excluir_vinculacao'),
+        onConfirm: async () => {
+          setAlertInfo(prev => ({ ...prev, isOpen: false }));
+          await doDelete('Vinculação excluída pelo utilizador.');
+        }
+      });
+    }
   };
 
   const handleRecalcularTarifasLote = async (selectedVooLigadoIds = null) => {
@@ -2503,6 +2585,14 @@ export default function Operacoes() {
           tipoDocumento={uploadDocumentoData.tipoDocumento}
         />
       )}
+
+      <CancelarProformaModal
+        isOpen={cancelarProformaModal.isOpen}
+        onClose={() => setCancelarProformaModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={cancelarProformaModal.onConfirm || (() => {})}
+        proforma={cancelarProformaModal.proforma}
+        descricao={cancelarProformaModal.descricao}
+      />
 
       <LixeiraVoosModal
         isOpen={isLixeiraModalOpen}
