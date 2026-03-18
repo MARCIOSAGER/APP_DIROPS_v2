@@ -1010,26 +1010,21 @@ export default function FormVoo({
 
   // Funções para lazy loading de aeroportos
   const searchAeroportos = async (searchTerm) => {
-    try {
-      const results = await Aeroporto.list();
-      const searchLower = searchTerm.toLowerCase();
-      return results
-        .filter(a => 
-          a.nome?.toLowerCase().includes(searchLower) || 
-          a.codigo_icao?.toLowerCase().includes(searchLower) ||
-          a.codigo_iata?.toLowerCase().includes(searchLower) ||
-          a.cidade?.toLowerCase().includes(searchLower)
-        )
-        .slice(0, 50)
-        .map(a => ({ 
-          value: a.codigo_icao, 
-          label: `${a.codigo_icao} - ${a.nome}`,
-          displayLabel: a.codigo_icao 
-        }));
-    } catch (err) {
-      console.error('Erro ao pesquisar aeroportos:', err);
-      return [];
-    }
+    const searchLower = searchTerm.toLowerCase();
+    const source = aeroportosOrigemDestino?.length > 0 ? aeroportosOrigemDestino : [];
+    return source
+      .filter(a =>
+        a.nome?.toLowerCase().includes(searchLower) ||
+        a.codigo_icao?.toLowerCase().includes(searchLower) ||
+        a.codigo_iata?.toLowerCase().includes(searchLower) ||
+        a.cidade?.toLowerCase().includes(searchLower)
+      )
+      .slice(0, 50)
+      .map(a => ({
+        value: a.codigo_icao,
+        label: `${a.codigo_icao} - ${a.nome}`,
+        displayLabel: a.codigo_icao
+      }));
   };
 
   const getAeroportoInicial = async (codigoIcao) => {
