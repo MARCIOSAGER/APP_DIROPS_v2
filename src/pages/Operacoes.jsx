@@ -991,12 +991,30 @@ export default function Operacoes() {
           }
         } catch (_) {}
 
+        // Deslincar voo_ligado associado (se existir)
+        try {
+          const vooLigadoAssociado = voosLigados.find(vl =>
+            vl.id_voo_arr === voo.id || vl.id_voo_dep === voo.id
+          );
+          if (vooLigadoAssociado) {
+            // Null out voo_ligado_id on the other voo
+            const outroVooId = vooLigadoAssociado.id_voo_arr === voo.id
+              ? vooLigadoAssociado.id_voo_dep
+              : vooLigadoAssociado.id_voo_arr;
+            if (outroVooId) {
+              await Voo.update(outroVooId, { voo_ligado_id: null });
+            }
+            await Voo.update(voo.id, { voo_ligado_id: null });
+            await VooLigado.delete(vooLigadoAssociado.id);
+          }
+        } catch (_) {}
+
         await Voo.update(voo.id, {
           deleted_at: new Date().toISOString(),
           deleted_by: currentUser?.email || 'sistema'
         });
 
-        await refreshSpecificData(['voos']);
+        await refreshSpecificData(['voos', 'voosLigados', 'calculosTarifa']);
 
         setSuccessInfo({
           isOpen: true,
