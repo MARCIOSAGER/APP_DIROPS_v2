@@ -13,6 +13,7 @@ import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 import { User } from '@/entities/User';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 const PAISES_ISO = [
   { code: 'AD', name: 'Andorra' }, { code: 'AE', name: 'Emirados Árabes Unidos' }, { code: 'AF', name: 'Afeganistão' },
@@ -86,6 +87,7 @@ const PAISES_OPTIONS = PAISES_ISO.map(p => ({ value: p.code, label: `${p.code} �
 
 // Exportar o formulário separadamente para uso em outros componentes
 export function FormCompanhia({ companhia, onSave, onCancel }) {
+  const { t } = useI18n();
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState(companhia || {
     codigo_icao: '',
@@ -121,7 +123,7 @@ export function FormCompanhia({ companhia, onSave, onCancel }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label>Código ICAO *</Label>
+          <Label>{t('configCompanhias.codigoICAO')} *</Label>
           <Input
             value={formData.codigo_icao}
             onChange={(e) => setFormData({ ...formData, codigo_icao: e.target.value.toUpperCase() })}
@@ -131,7 +133,7 @@ export function FormCompanhia({ companhia, onSave, onCancel }) {
 
         </div>
         <div>
-          <Label>Código IATA</Label>
+          <Label>{t('configCompanhias.codigoIATA')}</Label>
           <Input
             value={formData.codigo_iata}
             onChange={(e) => setFormData({ ...formData, codigo_iata: e.target.value.toUpperCase() })}
@@ -140,7 +142,7 @@ export function FormCompanhia({ companhia, onSave, onCancel }) {
 
         </div>
         <div className="col-span-2">
-          <Label>Nome *</Label>
+          <Label>{t('configCompanhias.nome')} *</Label>
           <Input
             value={formData.nome}
             onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
@@ -149,15 +151,15 @@ export function FormCompanhia({ companhia, onSave, onCancel }) {
 
         </div>
         <div>
-          <Label>Nacionalidade</Label>
+          <Label>{t('configCompanhias.nacionalidade')}</Label>
           <Combobox
             options={PAISES_OPTIONS}
             value={formData.nacionalidade}
             onValueChange={(v) => setFormData({ ...formData, nacionalidade: v })}
-            placeholder="Pesquisar país (código ou nome)..." />
+            placeholder={t('configCompanhias.pesquisarPais')} />
         </div>
         <div>
-          <Label>Tipo *</Label>
+          <Label>{t('configCompanhias.tipo')} *</Label>
           <Select
             options={tipoOptions}
             value={formData.tipo}
@@ -165,7 +167,7 @@ export function FormCompanhia({ companhia, onSave, onCancel }) {
 
         </div>
         <div>
-          <Label>Status</Label>
+          <Label>{t('configCompanhias.status')}</Label>
           <Select
             options={statusOptions}
             value={formData.status}
@@ -174,14 +176,15 @@ export function FormCompanhia({ companhia, onSave, onCancel }) {
         </div>
       </div>
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? 'A guardar...' : 'Salvar'}</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>{t('configCompanhias.cancelar')}</Button>
+        <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? t('configCompanhias.aGuardar') : t('configCompanhias.salvar')}</Button>
       </DialogFooter>
     </form>);
 
 }
 
 export default function CompanhiasConfig({ companhias, onUpdate }) {
+  const { t } = useI18n();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCompanhia, setEditingCompanhia] = useState(null);
   const [filtros, setFiltros] = useState({
@@ -411,7 +414,7 @@ export default function CompanhiasConfig({ companhias, onUpdate }) {
   };
 
   const tipoOptions = [
-  { value: 'todos', label: 'Todos os Tipos' },
+  { value: 'todos', label: t('configCompanhias.todosTipos') },
   { value: 'comercial', label: 'Comercial' },
   { value: 'carga', label: 'Carga' },
   { value: 'privada', label: 'Privada' },
@@ -420,7 +423,7 @@ export default function CompanhiasConfig({ companhias, onUpdate }) {
 
 
   const statusOptions = [
-  { value: 'todos', label: 'Todos os Status' },
+  { value: 'todos', label: t('configCompanhias.todosStatus') },
   { value: 'ativa', label: 'Ativa' },
   { value: 'suspensa', label: 'Suspensa' },
   { value: 'inativa', label: 'Inativa' }];
@@ -430,21 +433,21 @@ export default function CompanhiasConfig({ companhias, onUpdate }) {
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Companhias Aéreas</CardTitle>
+          <CardTitle>{t('configCompanhias.titulo')}</CardTitle>
           <Button onClick={() => handleOpenForm()} size="sm" className="bg-blue-600 text-slate-50 px-3 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-blue-600 /90 h-9">
             <Plus className="w-4 h-4 mr-2" />
-            Nova Companhia
+            {t('configCompanhias.novaCompanhia')}
           </Button>
         </CardHeader>
         <CardContent>
           {/* Filtros */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
-              <Label>Pesquisar</Label>
+              <Label>{t('configCompanhias.pesquisar')}</Label>
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
                 <Input
-                  placeholder="Nome, código, nacionalidade..."
+                  placeholder={t('configCompanhias.pesquisarPlaceholder')}
                   value={filtros.busca}
                   onChange={(e) => setFiltros({ ...filtros, busca: e.target.value })}
                   className="pl-8" />
@@ -452,21 +455,21 @@ export default function CompanhiasConfig({ companhias, onUpdate }) {
               </div>
             </div>
             <div>
-              <Label>Tipo</Label>
+              <Label>{t('configCompanhias.tipo')}</Label>
               <Combobox
                 options={tipoOptions}
                 value={filtros.tipo}
                 onValueChange={(v) => setFiltros({ ...filtros, tipo: v })}
-                placeholder="Pesquisar tipo..." />
+                placeholder={t('configCompanhias.pesquisarTipo')} />
 
             </div>
             <div>
-              <Label>Status</Label>
+              <Label>{t('configCompanhias.status')}</Label>
               <Combobox
                 options={statusOptions}
                 value={filtros.status}
                 onValueChange={(v) => setFiltros({ ...filtros, status: v })}
-                placeholder="Pesquisar status..." />
+                placeholder={t('configCompanhias.pesquisarStatus')} />
 
             </div>
           </div>
@@ -478,41 +481,41 @@ export default function CompanhiasConfig({ companhias, onUpdate }) {
                 <TableRow>
                   <SortableTableHeader
                     field="codigo_icao"
-                    label="ICAO"
+                    label={t('configCompanhias.icao')}
                     currentSortField={sortField}
                     currentSortDirection={sortDirection}
                     onSort={handleSort} />
 
                   <SortableTableHeader
                     field="nome"
-                    label="Nome"
+                    label={t('configCompanhias.nome')}
                     currentSortField={sortField}
                     currentSortDirection={sortDirection}
                     onSort={handleSort} />
 
                   <SortableTableHeader
                     field="nacionalidade"
-                    label="Nacionalidade"
+                    label={t('configCompanhias.nacionalidade')}
                     currentSortField={sortField}
                     currentSortDirection={sortDirection}
                     onSort={handleSort} />
 
                   <SortableTableHeader
                     field="tipo"
-                    label="Tipo"
+                    label={t('configCompanhias.tipo')}
                     currentSortField={sortField}
                     currentSortDirection={sortDirection}
                     onSort={handleSort} />
 
                   <SortableTableHeader
                     field="status"
-                    label="Status"
+                    label={t('configCompanhias.status')}
                     currentSortField={sortField}
                     currentSortDirection={sortDirection}
                     onSort={handleSort} />
 
-                  <TableHead>Última Atualização</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead>{t('configCompanhias.ultimaAtualizacao')}</TableHead>
+                  <TableHead className="text-right">{t('configCompanhias.acoes')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -582,7 +585,7 @@ export default function CompanhiasConfig({ companhias, onUpdate }) {
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingCompanhia ? 'Editar Companhia' : 'Nova Companhia'}</DialogTitle>
+            <DialogTitle>{editingCompanhia ? t('configCompanhias.editarCompanhia') : t('configCompanhias.novaCompanhia')}</DialogTitle>
           </DialogHeader>
           <FormCompanhia
             companhia={editingCompanhia}
@@ -607,7 +610,7 @@ export default function CompanhiasConfig({ companhias, onUpdate }) {
           <DialogFooter>
             {alertInfo.showCancel &&
             <Button variant="outline" onClick={() => setAlertInfo((prev) => ({ ...prev, isOpen: false }))}>
-                Cancelar
+                {t('configCompanhias.cancelar')}
               </Button>
             }
             <Button onClick={alertInfo.onConfirm || (() => setAlertInfo((prev) => ({ ...prev, isOpen: false })))}>

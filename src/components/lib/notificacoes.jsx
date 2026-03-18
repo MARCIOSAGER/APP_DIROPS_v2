@@ -1,4 +1,3 @@
-import { User } from '@/entities/User';
 import { supabase } from '@/lib/supabaseClient';
 
 /**

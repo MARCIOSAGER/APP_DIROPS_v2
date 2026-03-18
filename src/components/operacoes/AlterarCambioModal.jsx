@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { DollarSign, Loader2, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm, voos }) {
+  const { t } = useI18n();
   const [novaTaxaCambio, setNovaTaxaCambio] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { guardedSubmit } = useSubmitGuard();
@@ -28,7 +30,7 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
     const taxaCambio = parseFloat(novaTaxaCambio);
     
     if (isNaN(taxaCambio) || taxaCambio <= 0) {
-      alert('Taxa de câmbio inválida');
+      alert(t('cambio.taxaInvalida'));
       return;
     }
 
@@ -39,7 +41,7 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
       onClose();
     } catch (error) {
       console.error('Erro ao alterar taxa de câmbio:', error);
-      alert('Erro ao recalcular com nova taxa de câmbio');
+      alert(t('cambio.erroRecalcular'));
     } finally {
       setIsSubmitting(false);
     }
@@ -55,7 +57,7 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-green-600" />
-            Alterar Taxa de Câmbio
+            {t('cambio.alterarTaxaCambio')}
           </DialogTitle>
         </DialogHeader>
 
@@ -64,11 +66,11 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-600">Voo:</span>
+                <span className="text-slate-600">{t('cambio.voo')}</span>
                 <span className="font-mono font-medium">{vooDep?.numero_voo || 'N/A'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Total (USD):</span>
+                <span className="text-slate-600">{t('cambio.totalUSD')}</span>
                 <span className="font-bold text-green-700">${calculo.total_tarifa_usd?.toFixed(2) || '0.00'}</span>
               </div>
             </div>
@@ -76,7 +78,7 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
 
           {/* Taxa de Câmbio Atual */}
           <div className="space-y-2">
-            <Label>Taxa de Câmbio Atual</Label>
+            <Label>{t('cambio.taxaCambioAtual')}</Label>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-blue-900">1 USD =</span>
@@ -92,7 +94,7 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
 
           {/* Nova Taxa de Câmbio */}
           <div className="space-y-2">
-            <Label htmlFor="nova-taxa">Nova Taxa de Câmbio *</Label>
+            <Label htmlFor="nova-taxa">{t('cambio.novaTaxaCambio')}</Label>
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-600">1 USD =</span>
               <Input
@@ -116,7 +118,7 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-green-900 font-medium">Novo Total (AOA):</span>
+                  <span className="text-sm text-green-900 font-medium">{t('cambio.novoTotalAOA')}</span>
                   <span className="text-lg font-bold text-green-700">
                     {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(novoTotalAoa)}
                   </span>
@@ -125,7 +127,7 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
                   <div className="flex items-center gap-2 text-sm">
                     <AlertTriangle className="w-4 h-4 text-orange-500" />
                     <span className={diferencaAoa > 0 ? 'text-green-700' : 'text-red-700'}>
-                      {diferencaAoa > 0 ? 'Aumento' : 'Diminuição'} de {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(Math.abs(diferencaAoa))}
+                      {diferencaAoa > 0 ? t('cambio.aumento') : t('cambio.diminuicao')} de {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(Math.abs(diferencaAoa))}
                     </span>
                   </div>
                 )}
@@ -134,15 +136,15 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
           )}
 
           <DialogFooter className="gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={onClose}
               disabled={isSubmitting}
             >
-              Cancelar
+              {t('cambio.cancelar')}
             </Button>
-            <Button 
+            <Button
               type="submit"
               disabled={isSubmitting || !novaTaxaCambio || parseFloat(novaTaxaCambio) <= 0}
               className="bg-green-600 hover:bg-green-700"
@@ -150,12 +152,12 @@ export default function AlterarCambioModal({ isOpen, onClose, calculo, onConfirm
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Recalculando...
+                  {t('cambio.recalculando')}
                 </>
               ) : (
                 <>
                   <DollarSign className="w-4 h-4 mr-2" />
-                  Aplicar Nova Taxa
+                  {t('cambio.aplicarNovaTaxa')}
                 </>
               )}
             </Button>

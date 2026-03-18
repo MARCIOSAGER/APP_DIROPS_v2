@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, RotateCcw, AlertTriangle, Mail, Plane } from 'lucide-react';
+import { Trash2, RotateCcw, AlertTriangle, Mail } from 'lucide-react';
 import { Voo } from '@/entities/Voo';
 import { VooLigado } from '@/entities/VooLigado';
 import { CalculoTarifa } from '@/entities/CalculoTarifa';
@@ -13,8 +13,10 @@ import AlertModal from '@/components/shared/AlertModal';
 import SuccessModal from '@/components/shared/SuccessModal';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { User } from '@/entities/User';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhias, aeroportos, voosLigados }) {
+  const { t } = useI18n();
   const [voosNaLixeira, setVoosNaLixeira] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteInfo, setDeleteInfo] = useState({ isOpen: false, id: null });
@@ -277,7 +279,7 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Trash2 className="w-6 h-6 text-yellow-600" />
-              Lixeira de Voos
+              {t('lixeiraVoos.titulo')}
             </DialogTitle>
           </DialogHeader>
 
@@ -288,10 +290,10 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
                   <AlertTriangle className="w-5 h-5 text-yellow-600" />
                   <div>
                     <p className="font-semibold text-yellow-900">
-                      {voosNaLixeira.length} {voosNaLixeira.length === 1 ? 'voo' : 'voos'} na lixeira
+                      {voosNaLixeira.length} {voosNaLixeira.length === 1 ? t('lixeiraVoos.vooNaLixeira') : t('lixeiraVoos.voosNaLixeira')}
                     </p>
                     <p className="text-sm text-yellow-700">
-                      Estes voos podem ser restaurados ou excluídos permanentemente
+                      {t('lixeiraVoos.podemSerRestaurados')}
                     </p>
                   </div>
                 </div>
@@ -303,14 +305,14 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
                     className="border-blue-300 text-blue-700 hover:bg-blue-50"
                   >
                     <Mail className="w-4 h-4 mr-2" />
-                    {isSendingNotification ? 'Enviando...' : 'Notificar Admins'}
+                    {isSendingNotification ? t('lixeiraVoos.enviando') : t('lixeiraVoos.notificarAdmins')}
                   </Button>
                   <Button
                     variant="destructive"
                     onClick={handleLimparLixeira}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Limpar Lixeira
+                    {t('lixeiraVoos.limparLixeira')}
                   </Button>
                 </div>
               </div>
@@ -319,30 +321,30 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
             {isLoading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-slate-500">A carregar lixeira...</p>
+                <p className="text-slate-500">{t('lixeiraVoos.carregando')}</p>
               </div>
             ) : voosNaLixeira.length === 0 ? (
               <div className="text-center py-12 text-slate-500">
                 <Trash2 className="w-16 h-16 mx-auto text-slate-300 mb-4" />
                 <h3 className="text-lg font-semibold text-slate-700 mb-2">
-                  Lixeira Vazia
+                  {t('lixeiraVoos.vazia')}
                 </h3>
-                <p>Não há voos na lixeira no momento.</p>
+                <p>{t('lixeiraVoos.vaziaDesc')}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Voo</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Rota</TableHead>
-                      <TableHead>Companhia</TableHead>
-                      <TableHead>Registo</TableHead>
-                      <TableHead>Excluído Por</TableHead>
-                      <TableHead>Excluído Em</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead>{t('lixeiraVoos.colTipo')}</TableHead>
+                      <TableHead>{t('lixeiraVoos.colVoo')}</TableHead>
+                      <TableHead>{t('lixeiraVoos.colData')}</TableHead>
+                      <TableHead>{t('lixeiraVoos.colRota')}</TableHead>
+                      <TableHead>{t('lixeiraVoos.colCompanhia')}</TableHead>
+                      <TableHead>{t('lixeiraVoos.colRegisto')}</TableHead>
+                      <TableHead>{t('lixeiraVoos.colExcluidoPor')}</TableHead>
+                      <TableHead>{t('lixeiraVoos.colExcluidoEm')}</TableHead>
+                      <TableHead className="text-right">{t('lixeiraVoos.colAcoes')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -390,7 +392,7 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
                                 className="border-green-300 text-green-700 hover:bg-green-50"
                               >
                                 <RotateCcw className="w-4 h-4 mr-1" />
-                                Restaurar
+                                {t('lixeiraVoos.restaurar')}
                               </Button>
                               <Button
                                 variant="destructive"
@@ -398,7 +400,7 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
                                 onClick={() => setDeleteInfo({ isOpen: true, id: voo.id })}
                               >
                                 <Trash2 className="w-4 h-4 mr-1" />
-                                Excluir
+                                {t('lixeiraVoos.excluir')}
                               </Button>
                             </div>
                           </TableCell>
@@ -413,7 +415,7 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
 
           <div className="flex justify-end pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
-              Fechar
+              {t('lixeiraVoos.fechar')}
             </Button>
           </div>
         </DialogContent>
@@ -424,9 +426,9 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
         onClose={() => setRestoreInfo({ isOpen: false, id: null })}
         onConfirm={handleRestoreConfirm}
         type="info"
-        title="Restaurar Voo"
-        message="Tem a certeza que deseja restaurar este voo? Ele voltará a aparecer na lista principal."
-        confirmText="Restaurar"
+        title={t('lixeiraVoos.restaurarTitulo')}
+        message={t('lixeiraVoos.restaurarMsg')}
+        confirmText={t('lixeiraVoos.restaurar')}
         showCancel
       />
 
@@ -435,9 +437,9 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
         onClose={() => setDeleteInfo({ isOpen: false, id: null })}
         onConfirm={handleDeletePermanentConfirm}
         type="error"
-        title="Excluir Permanentemente"
-        message="ATENÇÃO: Esta acção é irreversível! O voo e todas as suas vinculações serão excluídos permanentemente do sistema. Tem a certeza?"
-        confirmText="Excluir Permanentemente"
+        title={t('lixeiraVoos.excluirPermTitulo')}
+        message={t('lixeiraVoos.excluirPermMsg')}
+        confirmText={t('lixeiraVoos.excluirPermBotao')}
         showCancel
       />
 

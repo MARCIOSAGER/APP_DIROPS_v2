@@ -18,8 +18,10 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { createPageUrl } from '@/utils';
 import { sendNotificationEmail } from '@/functions/sendNotificationEmail';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function SolicitacaoPerfil() {
+  const { t } = useI18n();
   const [user, setUser] = useState(null);
   const [empresas, setEmpresas] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -86,7 +88,7 @@ export default function SolicitacaoPerfil() {
 
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      setError('Não foi possível carregar os dados necessários.');
+      setError(t('solic.erro_carregar'));
     } finally {
       setIsLoading(false);
     }
@@ -248,7 +250,7 @@ export default function SolicitacaoPerfil() {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 dark:text-blue-400 mb-4" />
-          <p className="text-lg text-slate-700 dark:text-slate-300">A carregar...</p>
+          <p className="text-lg text-slate-700 dark:text-slate-300">{t('solic.carregando')}</p>
         </div>
       </div>
     );
@@ -262,16 +264,16 @@ export default function SolicitacaoPerfil() {
             <div className="bg-green-100 dark:bg-green-900 w-20 h-20 rounded-full flex items-center justify-center mx-auto">
               <Info className="w-10 h-10 text-green-600 dark:text-green-400" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Solicitação Enviada!</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t('solic.enviada')}</h2>
             <p className="text-slate-600 dark:text-slate-400">
-              A sua solicitação de acesso foi recebida com sucesso. Um administrador irá analisá-la e receberá uma notificação por e-mail quando for aprovada.
+              {t('solic.enviada_msg')}
             </p>
             <Button
               variant="outline"
               onClick={() => window.location.href = createPageUrl('AguardandoAprovacao')}
               className="mt-4"
             >
-              Ver Estado da Solicitação
+              {t('solic.ver_estado')}
             </Button>
           </CardContent>
         </Card>
@@ -286,16 +288,16 @@ export default function SolicitacaoPerfil() {
           <div className="bg-blue-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
             <UserCog className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">Solicitar Acesso ao Sistema</h1>
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">{t('solic.titulo')}</h1>
           <p className="text-lg text-slate-600 dark:text-slate-400">
-            Olá <span className="font-semibold text-blue-600 dark:text-blue-400">{user?.full_name?.split(' ')[0] || 'msager'}</span>! Complete o formulário abaixo.
+            {t('solic.ola')} <span className="font-semibold text-blue-600 dark:text-blue-400">{user?.full_name?.split(' ')[0] || 'msager'}</span>! {t('solic.complete')}
           </p>
         </div>
 
         <Alert className="mb-6 border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950 shadow-sm">
           <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           <AlertDescription className="text-blue-900 dark:text-blue-100 ml-2">
-            A sua solicitação será analisada por um administrador. Receberá uma notificação por e-mail quando for aprovada.
+            {t('solic.info')}
           </AlertDescription>
         </Alert>
 
@@ -308,22 +310,22 @@ export default function SolicitacaoPerfil() {
 
         <Card className="shadow-xl border-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-b dark:border-slate-700">
-            <CardTitle className="text-2xl">Dados da Solicitação</CardTitle>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Preencha todos os campos obrigatórios (*)</p>
+            <CardTitle className="text-2xl">{t('solic.dados')}</CardTitle>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t('solic.campos_obrigatorios')}</p>
           </CardHeader>
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Nome Completo */}
               <div className="space-y-2">
                 <Label htmlFor="nome_completo" className="text-base font-semibold text-slate-700 dark:text-slate-300">
-                  Nome Completo *
+                  {t('solic.nome_completo')}
                 </Label>
                 <Input
                   id="nome_completo"
                   type="text"
                   value={formData.nome_completo}
                   onChange={(e) => setFormData({ ...formData, nome_completo: e.target.value })}
-                  placeholder="Seu nome completo"
+                  placeholder={t('solic.nome_placeholder')}
                   required
                   minLength={3}
                   className="h-12 text-base"
@@ -333,7 +335,7 @@ export default function SolicitacaoPerfil() {
               {/* Email (apenas visualização) */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-base font-semibold text-slate-700 dark:text-slate-300">
-                  Email
+                  {t('solic.email')}
                 </Label>
                 <Input
                   id="email"
@@ -347,7 +349,7 @@ export default function SolicitacaoPerfil() {
               {/* Telefone */}
               <div className="space-y-2">
                 <Label htmlFor="telefone" className="text-base font-semibold text-slate-700 dark:text-slate-300">
-                  Telefone de Contacto *
+                  {t('solic.telefone')}
                 </Label>
                 <Input
                   id="telefone"
@@ -364,14 +366,14 @@ export default function SolicitacaoPerfil() {
               {/* Perfil Solicitado */}
               <div className="space-y-2">
                 <Label htmlFor="perfil_solicitado" className="text-base font-semibold text-slate-700 dark:text-slate-300">
-                  Perfil Solicitado *
+                  {t('solic.perfil')}
                 </Label>
                 <Select
                   id="perfil_solicitado"
                   options={perfilOptions}
                   value={formData.perfil_solicitado}
                   onValueChange={(value) => setFormData({ ...formData, perfil_solicitado: value })}
-                  placeholder="Selecione um perfil"
+                  placeholder={t('solic.selecione_perfil')}
                   className="h-12"
                 />
                 <input type="hidden" required value={formData.perfil_solicitado} />
@@ -380,15 +382,15 @@ export default function SolicitacaoPerfil() {
               {/* Empresa */}
               <div className="space-y-2">
                 <Label htmlFor="empresa_solicitante_id" className="text-base font-semibold text-slate-700 dark:text-slate-300">
-                  Empresa *
+                  {t('solic.empresa')}
                 </Label>
                 <Combobox
                   id="empresa_solicitante_id"
                   options={empresaOptions}
                   value={formData.empresa_solicitante_id}
                   onValueChange={(value) => setFormData({ ...formData, empresa_solicitante_id: value, aeroportos_solicitados: [] })}
-                  placeholder="Selecione a empresa"
-                  searchPlaceholder="Pesquisar empresa..."
+                  placeholder={t('solic.selecione_empresa')}
+                  searchPlaceholder={t('solic.pesquisar_empresa')}
                 />
                 <input type="hidden" required value={formData.empresa_solicitante_id} />
               </div>
@@ -397,7 +399,7 @@ export default function SolicitacaoPerfil() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-base font-semibold text-slate-700 dark:text-slate-300">
-                    Aeroportos Solicitados *
+                    {t('solic.aeroportos')}
                   </Label>
                   <div className="flex gap-2">
                     <Button
@@ -407,7 +409,7 @@ export default function SolicitacaoPerfil() {
                       onClick={handleSelecionarTodos}
                       className="text-xs"
                     >
-                      Selecionar Todos
+                      {t('solic.selecionar_todos')}
                     </Button>
                     {formData.aeroportos_solicitados.length > 0 && (
                       <Button
@@ -417,7 +419,7 @@ export default function SolicitacaoPerfil() {
                         onClick={handleLimparTodos}
                         className="text-xs"
                       >
-                        Limpar Todos
+                        {t('solic.limpar_todos')}
                       </Button>
                     )}
                   </div>
@@ -428,7 +430,7 @@ export default function SolicitacaoPerfil() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
                   <Input
                     type="text"
-                    placeholder="Pesquisar aeroporto por código, nome ou cidade..."
+                    placeholder={t('solic.pesquisar_aeroporto')}
                     value={searchAeroporto}
                     onChange={(e) => setSearchAeroporto(e.target.value)}
                     className="pl-10 h-12 text-base"
@@ -438,7 +440,7 @@ export default function SolicitacaoPerfil() {
                 {/* Lista de aeroportos disponíveis */}
                 <div className="border border-slate-300 dark:border-slate-600 rounded-lg p-2 max-h-60 overflow-y-auto bg-white dark:bg-slate-900 shadow-sm">
                   {aeroportosFiltrados.length === 0 ? (
-                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Nenhum aeroporto encontrado</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">{t('solic.nenhum_aeroporto')}</p>
                   ) : (
                     <div className="space-y-1">
                       {aeroportosFiltrados.map((aeroporto) => (
@@ -476,7 +478,7 @@ export default function SolicitacaoPerfil() {
                 <input type="hidden" required value={formData.aeroportos_solicitados.length > 0 ? 'ok' : ''} />
                 <div className="space-y-2">
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Selecionados: <span className="font-semibold text-blue-600 dark:text-blue-400">{formData.aeroportos_solicitados.length}</span>
+                    {t('solic.selecionados')} <span className="font-semibold text-blue-600 dark:text-blue-400">{formData.aeroportos_solicitados.length}</span>
                   </p>
                   {formData.aeroportos_solicitados.length > 0 ? (
                     <div className="flex flex-wrap gap-2 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -502,7 +504,7 @@ export default function SolicitacaoPerfil() {
                       })}
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-400 italic">Nenhum aeroporto selecionado ainda</p>
+                    <p className="text-sm text-slate-400 italic">{t('solic.nenhum_selecionado')}</p>
                   )}
                 </div>
               </div>
@@ -510,13 +512,13 @@ export default function SolicitacaoPerfil() {
               {/* Justificativa (opcional) */}
               <div className="space-y-2">
                 <Label htmlFor="justificativa" className="text-base font-semibold text-slate-700 dark:text-slate-300">
-                  Justificativa <span className="text-slate-400 dark:text-slate-500 font-normal">(Opcional)</span>
+                  {t('solic.justificativa')} <span className="text-slate-400 dark:text-slate-500 font-normal">{t('solic.opcional')}</span>
                 </Label>
                 <Textarea
                   id="justificativa"
                   value={formData.justificativa}
                   onChange={(e) => setFormData({ ...formData, justificativa: e.target.value })}
-                  placeholder="Explique por que você precisa de acesso ao sistema (opcional)"
+                  placeholder={t('solic.justificativa_placeholder')}
                   rows={4}
                   className="text-base resize-none"
                 />
@@ -530,10 +532,10 @@ export default function SolicitacaoPerfil() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    A enviar solicitação...
+                    {t('solic.enviando')}
                   </>
                 ) : (
-                  'Enviar Solicitação'
+                  t('solic.enviar')
                 )}
               </Button>
             </form>

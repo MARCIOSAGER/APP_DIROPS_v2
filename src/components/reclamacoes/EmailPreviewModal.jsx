@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Eye, X } from 'lucide-react';
 import { sanitizeHtml } from '@/lib/sanitize';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function EmailPreviewModal({ isOpen, onClose, title, body }) {
+  const { t } = useI18n();
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl max-h-[80vh]">
@@ -26,7 +28,7 @@ export default function EmailPreviewModal({ isOpen, onClose, title, body }) {
         <DialogFooter>
           <Button onClick={onClose} variant="outline">
             <X className="w-4 h-4 mr-2" />
-            Fechar
+            {t('emailPreview.fechar')}
           </Button>
         </DialogFooter>
       </DialogContent>

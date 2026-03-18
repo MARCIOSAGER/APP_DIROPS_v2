@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, FileDown, Filter, X, ClipboardList, Wrench, BarChart3, Settings } from 'lucide-react';
+import { Plus, RefreshCw, FileDown, Filter, ClipboardList, Wrench, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Select from '@/components/ui/select';
@@ -12,7 +12,6 @@ import { OrdemServico } from '@/entities/OrdemServico';
 import { SolicitacaoServico } from '@/entities/SolicitacaoServico';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
-import { createPageUrl } from '@/utils';
 import { createPdfDoc, addHeader, addFooter, addTable, fetchEmpresaLogo } from '@/lib/pdfTemplate';
 
 import ManutencaoStats from '../components/manutencao/ManutencaoStats';

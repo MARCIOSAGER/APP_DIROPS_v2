@@ -1,8 +1,10 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Timer, Link as LinkIcon, DollarSign, AlertCircle, ShieldCheck, Users, Package } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function VoosLigadosKPIs({ voosLigados, voos, calculosTarifa }) {
+  const { t } = useI18n();
   // Calcular KPIs
   const totalVoosLigados = voosLigados.length;
 
@@ -58,53 +60,53 @@ export default function VoosLigadosKPIs({ voosLigados, voos, calculosTarifa }) {
 
   const kpis = [
     {
-      title: 'Total de Voos Ligados',
+      title: t('voosLigadosKPIs.totalVoosLigados'),
       value: totalVoosLigados,
       icon: LinkIcon,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50'
     },
     {
-      title: 'Tempo Médio de Permanência',
+      title: t('voosLigadosKPIs.tempoMedioPermanencia'),
       value: `${tempoMedioPermanencia.toFixed(2)}h`,
       icon: Timer,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50'
     },
     {
-      title: 'Total de Tarifas',
+      title: t('voosLigadosKPIs.totalTarifas'),
       value: formatCurrency(totalTarifas),
-      subtitle: `${voosComCalculo} voos calculados`,
+      subtitle: `${voosComCalculo} ${t('voosLigadosKPIs.voosCalculados')}`,
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     },
     {
-      title: 'Voos Sem Cálculo',
+      title: t('voosLigadosKPIs.voosSemCalculo'),
       value: voosSemCalculo,
       icon: AlertCircle,
       color: 'text-red-600',
       bgColor: 'bg-red-50'
     },
     {
-      title: 'Voos Isentos',
+      title: t('voosLigadosKPIs.voosIsentos'),
       value: voosIsentos,
       icon: ShieldCheck,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-50'
     },
     {
-      title: 'Média de Passageiros',
+      title: t('voosLigadosKPIs.mediaPax'),
       value: mediaPax.toFixed(0),
-      subtitle: 'por voo DEP',
+      subtitle: t('voosLigadosKPIs.porVooDEP'),
       icon: Users,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50'
     },
     {
-      title: 'Média de Carga',
+      title: t('voosLigadosKPIs.mediaCarga'),
       value: `${mediaCarga.toFixed(0)} kg`,
-      subtitle: 'por voo DEP',
+      subtitle: t('voosLigadosKPIs.porVooDEP'),
       icon: Package,
       color: 'text-amber-600',
       bgColor: 'bg-amber-50'

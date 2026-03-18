@@ -6,10 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import {
-  Key, Plus, Trash2, Copy, CheckCircle, XCircle, Eye, EyeOff,
-  Shield, Clock, Activity, AlertTriangle, RefreshCw, Loader2, Search
+  Key, Plus, Copy, CheckCircle, XCircle,
+  Shield, Activity, AlertTriangle, RefreshCw, Loader2, Search
 } from 'lucide-react';
 import { ApiKey } from '@/entities/ApiKey';
 import { ApiAccessLog } from '@/entities/ApiAccessLog';
@@ -18,6 +17,7 @@ import { isSuperAdmin } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { useI18n } from '@/components/lib/i18n';
 
 const AVAILABLE_ENTITIES = [
   { value: 'voo', label: 'Voos' },
@@ -60,6 +60,7 @@ async function generateApiKey() {
 }
 
 export default function GestaoAPIKeys() {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [currentUser, setCurrentUser] = useState(null);
   const [keys, setKeys] = useState([]);
@@ -149,7 +150,7 @@ export default function GestaoAPIKeys() {
       loadData();
     } catch (error) {
       console.error('Erro ao criar API key:', error);
-      alert('Erro ao criar API key.');
+      alert(t('apiKeys.erroCriar'));
     } finally {
       setIsCreating(false);
     }
@@ -168,7 +169,7 @@ export default function GestaoAPIKeys() {
       loadData();
     } catch (error) {
       console.error('Erro ao revogar key:', error);
-      alert('Erro ao revogar API key.');
+      alert(t('apiKeys.erroRevogar'));
     } finally {
       setIsRevoking(false);
     }
@@ -213,8 +214,8 @@ export default function GestaoAPIKeys() {
     return (
       <div className="p-6 text-center">
         <Shield className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-slate-700">Acesso Restrito</h2>
-        <p className="text-slate-500 mt-2">Apenas administradores podem gerir API Keys.</p>
+        <h2 className="text-xl font-semibold text-slate-700">{t('apiKeys.acessoRestrito')}</h2>
+        <p className="text-slate-500 mt-2">{t('apiKeys.acessoRestritoDesc')}</p>
       </div>
     );
   }
@@ -226,14 +227,14 @@ export default function GestaoAPIKeys() {
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
               <Key className="w-8 h-8 text-blue-600" />
-              API Keys — Integrações Externas
+              {t('apiKeys.titulo')}
             </h1>
-            <p className="text-slate-500 mt-1">Gerir chaves de acesso para Power BI e outras integrações</p>
+            <p className="text-slate-500 mt-1">{t('apiKeys.subtitulo')}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Atualizar
+              {t('apiKeys.atualizar')}
             </Button>
             <Button onClick={() => {
               setIsCreateOpen(true);
@@ -241,17 +242,17 @@ export default function GestaoAPIKeys() {
               setNewKeyData({ name: '', scopes: [], rate_limit_per_minute: 60, expires_days: '', allowed_ips: '' });
             }} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="w-4 h-4 mr-2" />
-              Nova API Key
+              {t('apiKeys.novaKey')}
             </Button>
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{stats.totalKeys}</p><p className="text-sm text-slate-500">Total Keys</p></CardContent></Card>
-          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600">{stats.activeKeys}</p><p className="text-sm text-slate-500">Ativas</p></CardContent></Card>
-          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-blue-600">{stats.totalRequests}</p><p className="text-sm text-slate-500">Requisições</p></CardContent></Card>
-          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-emerald-600">{stats.successRate}%</p><p className="text-sm text-slate-500">Taxa Sucesso</p></CardContent></Card>
+          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{stats.totalKeys}</p><p className="text-sm text-slate-500">{t('apiKeys.totalKeys')}</p></CardContent></Card>
+          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600">{stats.activeKeys}</p><p className="text-sm text-slate-500">{t('apiKeys.ativas')}</p></CardContent></Card>
+          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-blue-600">{stats.totalRequests}</p><p className="text-sm text-slate-500">{t('apiKeys.requisicoes')}</p></CardContent></Card>
+          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-emerald-600">{stats.successRate}%</p><p className="text-sm text-slate-500">{t('apiKeys.taxaSucesso')}</p></CardContent></Card>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -262,7 +263,7 @@ export default function GestaoAPIKeys() {
             </TabsTrigger>
             <TabsTrigger value="logs" className="flex items-center gap-2">
               <Activity className="w-4 h-4" />
-              Log de Acessos
+              {t('apiKeys.logAcessos')}
             </TabsTrigger>
           </TabsList>
 
@@ -276,8 +277,8 @@ export default function GestaoAPIKeys() {
               <Card>
                 <CardContent className="py-12 text-center">
                   <Key className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-500">Nenhuma API key criada.</p>
-                  <p className="text-sm text-slate-400 mt-1">Crie uma para integrar com Power BI ou outros sistemas.</p>
+                  <p className="text-slate-500">{t('apiKeys.nenhumaKey')}</p>
+                  <p className="text-sm text-slate-400 mt-1">{t('apiKeys.nenhumaKeyDesc')}</p>
                 </CardContent>
               </Card>
             ) : (
@@ -297,26 +298,26 @@ export default function GestaoAPIKeys() {
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-slate-900">{k.name}</span>
                                 {isActive && !isExpired ? (
-                                  <Badge className="bg-green-100 text-green-700 text-xs">Ativa</Badge>
+                                  <Badge className="bg-green-100 text-green-700 text-xs">{t('apiKeys.ativa')}</Badge>
                                 ) : isExpired ? (
-                                  <Badge className="bg-orange-100 text-orange-700 text-xs">Expirada</Badge>
+                                  <Badge className="bg-orange-100 text-orange-700 text-xs">{t('apiKeys.expirada')}</Badge>
                                 ) : (
-                                  <Badge className="bg-red-100 text-red-700 text-xs">Revogada</Badge>
+                                  <Badge className="bg-red-100 text-red-700 text-xs">{t('apiKeys.revogada')}</Badge>
                                 )}
                               </div>
                               <div className="flex items-center gap-4 mt-1 text-xs text-slate-500">
                                 <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">{k.key_prefix}...</span>
-                                <span>Criada: {format(new Date(k.created_date), 'dd/MM/yyyy HH:mm', { locale: pt })}</span>
+                                <span>{t('apiKeys.criada')}: {format(new Date(k.created_date), 'dd/MM/yyyy HH:mm', { locale: pt })}</span>
                                 {k.last_used_at && (
-                                  <span>Último uso: {format(new Date(k.last_used_at), 'dd/MM/yyyy HH:mm', { locale: pt })}</span>
+                                  <span>{t('apiKeys.ultimoUso')}: {format(new Date(k.last_used_at), 'dd/MM/yyyy HH:mm', { locale: pt })}</span>
                                 )}
                                 {k.expires_at && (
-                                  <span>Expira: {format(new Date(k.expires_at), 'dd/MM/yyyy', { locale: pt })}</span>
+                                  <span>{t('apiKeys.expira')}: {format(new Date(k.expires_at), 'dd/MM/yyyy', { locale: pt })}</span>
                                 )}
                               </div>
                               <div className="flex items-center gap-2 mt-1.5">
                                 {(k.scopes || []).length === 0 ? (
-                                  <Badge variant="outline" className="text-xs">Todas as entidades</Badge>
+                                  <Badge variant="outline" className="text-xs">{t('apiKeys.todasEntidades')}</Badge>
                                 ) : (
                                   k.scopes.slice(0, 5).map(s => (
                                     <Badge key={s} variant="outline" className="text-xs">{s}</Badge>
@@ -335,7 +336,7 @@ export default function GestaoAPIKeys() {
                           {isActive && !isExpired && (
                             <Button variant="outline" size="sm" onClick={() => setRevokeKey(k)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
                               <XCircle className="w-4 h-4 mr-1" />
-                              Revogar
+                              {t('apiKeys.revogar')}
                             </Button>
                           )}
                         </div>
@@ -350,21 +351,21 @@ export default function GestaoAPIKeys() {
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
                 <Shield className="w-4 h-4" />
-                Segurança da API
+                {t('apiKeys.segurancaTitle')}
               </h4>
               <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                <li>As API keys são armazenadas com hash SHA-256 — o valor original é mostrado apenas uma vez.</li>
-                <li>Cada key só acede a dados da empresa associada (isolamento multi-tenant).</li>
-                <li>Defina scopes para limitar quais entidades a key pode aceder.</li>
-                <li>Use IPs permitidos para restringir acessos a servidores conhecidos.</li>
-                <li>Revogue imediatamente qualquer key comprometida.</li>
+                <li>{t('apiKeys.seguranca1')}</li>
+                <li>{t('apiKeys.seguranca2')}</li>
+                <li>{t('apiKeys.seguranca3')}</li>
+                <li>{t('apiKeys.seguranca4')}</li>
+                <li>{t('apiKeys.seguranca5')}</li>
               </ul>
             </div>
 
             {/* Power BI instructions */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Como conectar no Power BI</CardTitle>
+                <CardTitle className="text-base">{t('apiKeys.powerBiTitle')}</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-slate-600 space-y-4">
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
@@ -509,7 +510,7 @@ body = Json.FromValue([
                 <Input
                   value={logSearch}
                   onChange={(e) => setLogSearch(e.target.value)}
-                  placeholder="Pesquisar por endpoint ou IP..."
+                  placeholder={t('apiKeys.pesquisarPlaceholder')}
                   className="pl-9"
                 />
               </div>
@@ -521,7 +522,7 @@ body = Json.FromValue([
                     size="sm"
                     onClick={() => setLogStatusFilter(f)}
                   >
-                    {f === 'todos' ? 'Todos' : f === 'sucesso' ? 'Sucesso' : 'Erro'}
+                    {f === 'todos' ? t('apiKeys.todos') : f === 'sucesso' ? t('apiKeys.sucesso') : t('apiKeys.erro')}
                   </Button>
                 ))}
               </div>
@@ -535,7 +536,7 @@ body = Json.FromValue([
               <Card>
                 <CardContent className="py-12 text-center">
                   <Activity className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-500">Nenhum acesso registado.</p>
+                  <p className="text-slate-500">{t('apiKeys.nenhumAcesso')}</p>
                 </CardContent>
               </Card>
             ) : (
@@ -545,12 +546,12 @@ body = Json.FromValue([
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-slate-50">
-                          <th className="text-left p-3 font-medium text-slate-600">Data/Hora</th>
-                          <th className="text-left p-3 font-medium text-slate-600">Endpoint</th>
-                          <th className="text-left p-3 font-medium text-slate-600">Status</th>
-                          <th className="text-left p-3 font-medium text-slate-600">Linhas</th>
-                          <th className="text-left p-3 font-medium text-slate-600">Tempo</th>
-                          <th className="text-left p-3 font-medium text-slate-600">IP</th>
+                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colDataHora')}</th>
+                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colEndpoint')}</th>
+                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colStatus')}</th>
+                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colLinhas')}</th>
+                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colTempo')}</th>
+                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colIP')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -579,7 +580,7 @@ body = Json.FromValue([
                   </div>
                   {filteredLogs.length > 100 && (
                     <p className="text-center text-xs text-slate-400 py-3">
-                      A mostrar 100 de {filteredLogs.length} registos
+                      {t('apiKeys.mostrandoRegistos').replace('{total}', filteredLogs.length)}
                     </p>
                   )}
                 </CardContent>
@@ -595,7 +596,7 @@ body = Json.FromValue([
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Key className="w-5 h-5 text-blue-600" />
-              {createdKey ? 'API Key Criada' : 'Nova API Key'}
+              {createdKey ? t('apiKeys.keyCriada') : t('apiKeys.novaKey')}
             </DialogTitle>
           </DialogHeader>
 
@@ -605,9 +606,9 @@ body = Json.FromValue([
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-semibold text-yellow-800">Copie a key agora!</p>
+                    <p className="font-semibold text-yellow-800">{t('apiKeys.copieAgora')}</p>
                     <p className="text-sm text-yellow-700 mt-1">
-                      Esta é a única vez que a key será mostrada. Não é possível recuperá-la depois.
+                      {t('apiKeys.copieAgoraDesc')}
                     </p>
                   </div>
                 </div>
@@ -631,14 +632,14 @@ body = Json.FromValue([
 
               <DialogFooter>
                 <Button onClick={() => setIsCreateOpen(false)} className="bg-blue-600 hover:bg-blue-700 text-white">
-                  Entendido, já copiei
+                  {t('apiKeys.entendidoCopiei')}
                 </Button>
               </DialogFooter>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="key-name">Nome da Key *</Label>
+                <Label htmlFor="key-name">{t('apiKeys.nomeKey')}</Label>
                 <Input
                   id="key-name"
                   value={newKeyData.name}
@@ -648,8 +649,8 @@ body = Json.FromValue([
               </div>
 
               <div className="space-y-2">
-                <Label>Scopes (entidades permitidas)</Label>
-                <p className="text-xs text-slate-500">Deixe vazio para permitir todas as entidades.</p>
+                <Label>{t('apiKeys.scopes')}</Label>
+                <p className="text-xs text-slate-500">{t('apiKeys.scopesDesc')}</p>
                 <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2 border rounded-lg">
                   {AVAILABLE_ENTITIES.map(e => (
                     <button
@@ -670,7 +671,7 @@ body = Json.FromValue([
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="rate-limit">Limite req/min</Label>
+                  <Label htmlFor="rate-limit">{t('apiKeys.limiteReqMin')}</Label>
                   <Input
                     id="rate-limit"
                     type="number"
@@ -681,12 +682,12 @@ body = Json.FromValue([
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="expires-days">Expirar em (dias)</Label>
+                  <Label htmlFor="expires-days">{t('apiKeys.expirarEmDias')}</Label>
                   <Input
                     id="expires-days"
                     type="number"
                     min={1}
-                    placeholder="Sem expiração"
+                    placeholder={t('apiKeys.semExpiracao')}
                     value={newKeyData.expires_days}
                     onChange={(e) => setNewKeyData(prev => ({ ...prev, expires_days: e.target.value }))}
                   />
@@ -694,27 +695,27 @@ body = Json.FromValue([
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="allowed-ips">IPs Permitidos (opcional)</Label>
+                <Label htmlFor="allowed-ips">{t('apiKeys.ipsPermitidos')}</Label>
                 <Input
                   id="allowed-ips"
                   value={newKeyData.allowed_ips}
                   onChange={(e) => setNewKeyData(prev => ({ ...prev, allowed_ips: e.target.value }))}
                   placeholder="Ex: 192.168.1.100, 10.0.0.1 (vazio = qualquer IP)"
                 />
-                <p className="text-xs text-slate-500">Separe múltiplos IPs com vírgula.</p>
+                <p className="text-xs text-slate-500">{t('apiKeys.separeIPs')}</p>
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>{t('apiKeys.cancelar')}</Button>
                 <Button
                   onClick={handleCreateKey}
                   disabled={isCreating || !newKeyData.name.trim()}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   {isCreating ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> A criar...</>
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('apiKeys.criando')}</>
                   ) : (
-                    <><Key className="w-4 h-4 mr-2" /> Gerar API Key</>
+                    <><Key className="w-4 h-4 mr-2" /> {t('apiKeys.gerarKey')}</>
                   )}
                 </Button>
               </DialogFooter>
@@ -729,20 +730,20 @@ body = Json.FromValue([
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="w-5 h-5" />
-              Revogar API Key
+              {t('apiKeys.revogarKey')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-slate-600">
-              Tem certeza que deseja revogar a API key <strong>"{revokeKey?.name}"</strong>?
+              {t('apiKeys.confirmarRevogar').replace('{name}', revokeKey?.name || '')}
             </p>
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              <p className="font-medium">Esta ação é irreversível.</p>
-              <p className="mt-1">Todas as integrações que usam esta key deixarão de funcionar imediatamente.</p>
+              <p className="font-medium">{t('apiKeys.acaoIrreversivel')}</p>
+              <p className="mt-1">{t('apiKeys.revogarDesc')}</p>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setRevokeKey(null)} disabled={isRevoking}>
-                Cancelar
+                {t('apiKeys.cancelar')}
               </Button>
               <Button
                 onClick={handleRevokeKey}
@@ -750,9 +751,9 @@ body = Json.FromValue([
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
                 {isRevoking ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> A revogar...</>
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('apiKeys.revogando')}</>
                 ) : (
-                  <><XCircle className="w-4 h-4 mr-2" /> Revogar Key</>
+                  <><XCircle className="w-4 h-4 mr-2" /> {t('apiKeys.revogarKey')}</>
                 )}
               </Button>
             </DialogFooter>

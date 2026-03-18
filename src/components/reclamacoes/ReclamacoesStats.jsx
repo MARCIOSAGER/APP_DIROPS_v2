@@ -1,15 +1,17 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  AlertTriangle, 
+import {
+  FileText,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
   TrendingUp,
   Users
 } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function ReclamacoesStats({ reclamacoes, isLoading }) {
+  const { t } = useI18n();
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -50,67 +52,67 @@ export default function ReclamacoesStats({ reclamacoes, isLoading }) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
       <Card className="border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-slate-600">Total</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-600">{t('recl_stats.total')}</CardTitle>
           <FileText className="h-4 w-4 text-slate-400" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-slate-900">{stats.total}</div>
-          <p className="text-xs text-slate-500 mt-1">Reclamações registadas</p>
+          <p className="text-xs text-slate-500 mt-1">{t('recl_stats.registadas')}</p>
         </CardContent>
       </Card>
 
       <Card className="border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-slate-600">Abertas</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-600">{t('recl_stats.abertas')}</CardTitle>
           <AlertTriangle className="h-4 w-4 text-orange-400" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-orange-600">{stats.abertas}</div>
-          <p className="text-xs text-slate-500 mt-1">Requerem atenção</p>
+          <p className="text-xs text-slate-500 mt-1">{t('recl_stats.requerem_atencao')}</p>
         </CardContent>
       </Card>
 
       <Card className="border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-slate-600">Em Tratamento</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-600">{t('recl_stats.em_tratamento')}</CardTitle>
           <Clock className="h-4 w-4 text-blue-400" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-blue-600">{stats.emTratamento}</div>
-          <p className="text-xs text-slate-500 mt-1">Sendo processadas</p>
+          <p className="text-xs text-slate-500 mt-1">{t('recl_stats.sendo_processadas')}</p>
         </CardContent>
       </Card>
 
       <Card className="border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-slate-600">Concluídas</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-600">{t('recl_stats.concluidas')}</CardTitle>
           <CheckCircle className="h-4 w-4 text-green-400" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600">{stats.concluidas}</div>
-          <p className="text-xs text-slate-500 mt-1">Resolvidas</p>
+          <p className="text-xs text-slate-500 mt-1">{t('recl_stats.resolvidas')}</p>
         </CardContent>
       </Card>
 
       <Card className="border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-slate-600">Taxa Resolução</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-600">{t('recl_stats.taxa_resolucao')}</CardTitle>
           <TrendingUp className="h-4 w-4 text-emerald-400" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-emerald-600">{taxaResolucao}%</div>
-          <p className="text-xs text-slate-500 mt-1">Taxa de sucesso</p>
+          <p className="text-xs text-slate-500 mt-1">{t('recl_stats.taxa_sucesso')}</p>
         </CardContent>
       </Card>
 
       <Card className="border-0 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-slate-600">Tempo Médio</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-600">{t('recl_stats.tempo_medio')}</CardTitle>
           <Users className="h-4 w-4 text-purple-400" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-purple-600">{Math.round(tempoMedioResolucao)}</div>
-          <p className="text-xs text-slate-500 mt-1">Dias para resolver</p>
+          <p className="text-xs text-slate-500 mt-1">{t('recl_stats.dias_resolver')}</p>
         </CardContent>
       </Card>
     </div>

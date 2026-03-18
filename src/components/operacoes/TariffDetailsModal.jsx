@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Download, Mail } from 'lucide-react';
+import { Download, Mail } from 'lucide-react';
 import SendEmailModal from '../shared/SendEmailModal';
 import SuccessModal from '../shared/SuccessModal';
 import AlertModal from '../shared/AlertModal';
@@ -10,6 +10,7 @@ import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { createPdfDoc, addHeader, addFooter, addSectionTitle, addKeyValuePairs, addInfoBox, checkPageBreak, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
 import { TarifaPouso } from '@/entities/TarifaPouso';
 import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
+import { useI18n } from '@/components/lib/i18n';
 
 // Helper para obter o label da categoria
 const getCategoriaLabel = (categoria) => {
@@ -23,6 +24,7 @@ const getCategoriaLabel = (categoria) => {
 };
 
 export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation, voos, voosLigados, aeroportos, onExportPDF }) {
+  const { t } = useI18n();
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
@@ -675,37 +677,37 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <DialogTitle className="text-2xl">Cálculo de Tarifas Aeroportuárias</DialogTitle>
+                <DialogTitle className="text-2xl">{t('tarifasModal.titulo')}</DialogTitle>
 
                 {/* Informações de Voos ARR e DEP */}
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-1">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
                     <div>
-                      <span className="font-semibold text-blue-900">Voo ARR:</span>{' '}
+                      <span className="font-semibold text-blue-900">{t('tarifasModal.vooARR')}</span>{' '}
                       <span className="text-blue-700">{vooArr?.numero_voo || 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-900">Data:</span>{' '}
+                      <span className="font-semibold text-blue-900">{t('tarifasModal.data')}</span>{' '}
                       <span className="text-blue-700">{vooArr?.data_operacao ? new Date(vooArr.data_operacao).toLocaleDateString('pt-AO') : 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-900">Voo DEP:</span>{' '}
+                      <span className="font-semibold text-blue-900">{t('tarifasModal.vooDEP')}</span>{' '}
                       <span className="text-blue-700">{vooDep?.numero_voo || 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-900">Data:</span>{' '}
+                      <span className="font-semibold text-blue-900">{t('tarifasModal.data')}</span>{' '}
                       <span className="text-blue-700">{vooDep?.data_operacao ? new Date(vooDep.data_operacao).toLocaleDateString('pt-AO') : 'N/A'}</span>
                     </div>
                     <div className="md:col-span-2">
-                      <span className="font-semibold text-blue-900">Aeroporto:</span>{' '}
+                      <span className="font-semibold text-blue-900">{t('tarifasModal.aeroporto')}</span>{' '}
                       <span className="text-blue-700">{aeroporto?.nome ? `${aeroporto.nome} - ${aeroporto.codigo_icao}` : 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-900">Companhia:</span>{' '}
+                      <span className="font-semibold text-blue-900">{t('tarifasModal.companhia')}</span>{' '}
                       <span className="text-blue-700">{vooDep?.companhia_aerea ? `${vooDep.companhia_aerea} - ${nomeCompanhia}` : nomeCompanhia}</span>
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-900">Registo:</span>{' '}
+                      <span className="font-semibold text-blue-900">{t('tarifasModal.registo')}</span>{' '}
                       <span className="text-blue-700">{vooDep?.registo_aeronave || 'N/A'}</span>
                     </div>
                   </div>
@@ -715,10 +717,10 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
           </DialogHeader>
 
           <div className="space-y-6 py-4">
-            {renderDetailSection('Informações Gerais', infoGerais)}
+            {renderDetailSection(t('tarifasModal.infoGerais'), infoGerais)}
 
             {/* TARIFA DE POUSO */}
-            {detalhes.pouso && typeof detalhes.pouso === 'object' && !detalhes.pouso.erro && renderDetailSection('Tarifa de Pouso', [
+            {detalhes.pouso && typeof detalhes.pouso === 'object' && !detalhes.pouso.erro && renderDetailSection(t('tarifas.tarifaPouso'), [
               ['Tipo de Voo', detalhes.pouso.tipoVoo || 'N/A'],
               ['Faixa de Peso', getFaixaPesoToneladas(detalhes.pouso)],
               ['Tarifa Aplicada', detalhes.pouso.tarifaAplicada ? formatUSD(detalhes.pouso.tarifaAplicada) + '/tonelada' : 'N/A'],
@@ -729,7 +731,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
             ], true, detalhes.pouso.formula)}
 
             {/* TARIFA DE ESTACIONAMENTO */}
-            {detalhes.permanencia && typeof detalhes.permanencia === 'object' && !detalhes.permanencia.erro && tariffCalculation.tarifa_permanencia > 0 && renderDetailSection('Tarifa de Estacionamento', [
+            {detalhes.permanencia && typeof detalhes.permanencia === 'object' && !detalhes.permanencia.erro && tariffCalculation.tarifa_permanencia > 0 && renderDetailSection(t('tarifas.tarifaPermanencia'), [
               ['Tipo', detalhes.permanencia.tipo || 'N/A'],
               ['Tarifa Base USD', detalhes.permanencia.tarifaBase ? formatUSD(detalhes.permanencia.tarifaBase) + '/tonelada/hora' : 'N/A'],
               ['MTOW (Toneladas)', detalhes.permanencia.mtowTonnes ? formatToneladas(detalhes.permanencia.mtowTonnes) : 'N/A'],
@@ -743,7 +745,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
             {/* TARIFA DE PASSAGEIROS */}
             {detalhes.passageiros && typeof detalhes.passageiros === 'object' && !detalhes.passageiros.erro && (
               <>
-                {renderDetailSection('Tarifas de Passageiros', [
+                {renderDetailSection(t('tarifas.tarifasPassageiros'), [
                   ['Tipo de Voo', detalhes.passageiros.tipoVoo || 'N/A'],
                   ['Descrição', detalhes.passageiros.descricao_tarifa || 'Tarifa de Embarque'],
                   ['Tarifa por Pax', formatUSD(detalhes.passageiros.tarifaPorPassageiro)],
@@ -765,7 +767,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
             )}
 
             {/* TARIFA DE CARGA */}
-            {detalhes.carga && typeof detalhes.carga === 'object' && !detalhes.carga.erro && tariffCalculation.tarifa_carga > 0 && renderDetailSection('Tarifa de Carga', [
+            {detalhes.carga && typeof detalhes.carga === 'object' && !detalhes.carga.erro && tariffCalculation.tarifa_carga > 0 && renderDetailSection(t('tarifas.tarifaCarga'), [
               ['Descrição', detalhes.carga.descricao_tarifa || detalhes.carga.tipo || 'N/A'],
               ['Tarifa Por Ton USD', formatUSD(detalhes.carga.tarifaPorTon)],
               ['Carga ARR', detalhes.carga.cargaArr ? `${new Intl.NumberFormat('pt-PT').format(detalhes.carga.cargaArr)} kg` : 'N/A'],
@@ -781,7 +783,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
               <>
                 {detalhes.impostos.map((imposto, index) => (
                   <React.Fragment key={index}>
-                    {renderDetailSection(`Imposto - ${imposto.tipo}`, [
+                    {renderDetailSection(`${t('tarifasModal.impostoLabel')} - ${imposto.tipo}`, [
                       ['Tipo', imposto.tipo],
                       ['Percentagem', `${imposto.valor_configurado}%`],
                       ['Valor USD', formatUSD(imposto.valor_usd)],
@@ -798,7 +800,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
             )}
 
             {/* OUTRAS TARIFAS (ILUMINAÇÃO) */}
-            {detalhes.iluminacao && typeof detalhes.iluminacao === 'object' && !detalhes.iluminacao.erro && tariffCalculation.outras_tarifas > 0 && renderDetailSection('Outras Tarifas (Iluminação)', [
+            {detalhes.iluminacao && typeof detalhes.iluminacao === 'object' && !detalhes.iluminacao.erro && tariffCalculation.outras_tarifas > 0 && renderDetailSection(t('tarifasModal.outrasTarifas'), [
               ['Descrição', detalhes.iluminacao.descricao_tarifa || detalhes.iluminacao.descricao || 'N/A'],
               ['ARR Noturno', detalhes.iluminacao.arrNoturno ? 'Sim' : 'Não'],
               ['DEP Noturno', detalhes.iluminacao.depNoturno ? 'Sim' : 'Não'],
@@ -813,7 +815,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
             {detalhes.recursos && detalhes.recursos.itens && detalhes.recursos.itens.length > 0 && (
               <div className="space-y-3 pb-4 border-b border-slate-200">
                 <h3 className="text-base font-semibold text-orange-700 flex items-center gap-2">
-                  Recursos de Solo
+                  {t('tarifasModal.recursosLabel')}
                   <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">
                     {detalhes.recursos.itens.length} recurso(s)
                   </Badge>
@@ -844,11 +846,11 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
                   ))}
                 </div>
                 <div className="flex justify-between items-center pt-2 text-sm font-semibold">
-                  <span className="text-slate-700">Total Recursos USD</span>
+                  <span className="text-slate-700">{t('tarifasModal.totalRecursosUSD')}</span>
                   <span className="text-orange-800">{formatUSD(tariffCalculation.tarifa_recursos_usd)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm font-semibold">
-                  <span className="text-slate-700">Total Recursos AOA</span>
+                  <span className="text-slate-700">{t('tarifasModal.totalRecursosAOA')}</span>
                   <span className="text-orange-800">{formatCurrency(tariffCalculation.tarifa_recursos)}</span>
                 </div>
               </div>
@@ -857,8 +859,8 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
             {/* Sem recursos */}
             {(!detalhes.recursos || !detalhes.recursos.itens || detalhes.recursos.itens.length === 0) && (
               <div className="space-y-3 pb-4 border-b border-slate-200">
-                <h3 className="text-base font-semibold text-orange-700">Recursos de Solo</h3>
-                <p className="text-sm text-slate-500 italic">Nenhum recurso de solo registado para este voo.</p>
+                <h3 className="text-base font-semibold text-orange-700">{t('tarifasModal.recursosLabel')}</h3>
+                <p className="text-sm text-slate-500 italic">{t('tarifasModal.recursosNenhum')}</p>
               </div>
             )}
 
@@ -866,7 +868,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
             <div className="pt-4 border-t-2 border-slate-300 space-y-2">
               {detalhes.subtotal_sem_impostos_usd && (
                 <div className="flex justify-between items-center text-slate-600">
-                  <h3 className="text-lg font-semibold">SUBTOTAL (sem impostos):</h3>
+                  <h3 className="text-lg font-semibold">{t('tarifasModal.subtotalSemImpostos')}</h3>
                   <span className="text-lg font-semibold">
                     {formatUSD(detalhes.subtotal_sem_impostos_usd)} = {formatCurrency(detalhes.subtotal_sem_impostos_aoa)}
                   </span>
@@ -874,35 +876,35 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
               )}
               {detalhes.total_impostos_usd && detalhes.total_impostos_usd > 0 && (
                 <div className="flex justify-between items-center text-red-600">
-                  <h3 className="text-lg font-semibold">IMPOSTOS:</h3>
+                  <h3 className="text-lg font-semibold">{t('tarifasModal.impostos')}</h3>
                   <span className="text-lg font-semibold">
                     {formatUSD(detalhes.total_impostos_usd)} = {formatCurrency(detalhes.total_impostos_aoa)}
                   </span>
                 </div>
               )}
               <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-                <h3 className="text-xl font-bold text-green-700">TOTAL:</h3>
+                <h3 className="text-xl font-bold text-green-700">{t('tarifasModal.total')}</h3>
                 <span className="text-2xl font-bold text-green-700">
                   {formatUSD(tariffCalculation.total_tarifa_usd)} = {formatCurrency(tariffCalculation.total_tarifa)}
                 </span>
               </div>
               <div className="text-right text-sm text-slate-600 mt-2">
-                Taxa de Câmbio: 1 USD = {tariffCalculation.taxa_cambio_usd_aoa} AOA
+                {t('tarifasModal.taxaCambio')} 1 USD = {tariffCalculation.taxa_cambio_usd_aoa} AOA
               </div>
             </div>
           </div>
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={onClose}>
-              Fechar
+              {t('tarifasModal.fechar')}
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsEmailModalOpen(true)}
               className="gap-2"
             >
               <Mail className="w-4 h-4" />
-              Enviar por Email
+              {t('tarifasModal.enviarEmail')}
             </Button>
             <Button onClick={async () => {
               try {
@@ -1025,8 +1027,8 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
                 
                 setSuccessInfo({
                   isOpen: true,
-                  title: 'PDF Gerado',
-                  message: 'PDF exportado com sucesso!'
+                  title: t('tarifasModal.pdfGerado'),
+                  message: t('tarifasModal.pdfExportado')
                 });
               } catch (error) {
                 console.error('❌ Erro ao exportar PDF:', error);
@@ -1039,7 +1041,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
               }
             }} className="gap-2">
               <Download className="w-4 h-4" />
-              Exportar PDF
+              {t('tarifasModal.exportarPDF')}
             </Button>
           </DialogFooter>
         </DialogContent>

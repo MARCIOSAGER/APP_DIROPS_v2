@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Filter, X, FileDown, Search, Settings, ClipboardCheck, Download, FileText, Mail, Trash2, AlertTriangle, BarChart3, Brain, FileEdit } from 'lucide-react';
+import { Plus, RefreshCw, Filter, X, Search, Settings, ClipboardCheck, Download, FileText, Mail, Trash2, AlertTriangle, BarChart3, Brain, FileEdit } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,7 +13,6 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 import { TipoKPI } from '@/entities/TipoKPI';
-import { CampoKPI } from '@/entities/CampoKPI';
 import { MedicaoKPI } from '@/entities/MedicaoKPI';
 import { ValorCampoKPI } from '@/entities/ValorCampoKPI';
 import { Aeroporto } from '@/entities/Aeroporto';
@@ -161,7 +160,7 @@ export default function KPIsOperacionais() {
         }));
         setSuccessInfo({ isOpen: true, title: 'Sucesso!', message: 'Medição atualizada com sucesso.' });
       } else {
-        const novaMedicao = await MedicaoKPI.create(data.medicao);
+        const novaMedicao = await MedicaoKPI.create({ ...data.medicao, empresa_id: currentUser?.empresa_id });
         // Criar valores dos campos
         await Promise.all(data.valores.map((valor) =>
         ValorCampoKPI.create({ ...valor, medicao_kpi_id: novaMedicao.id })

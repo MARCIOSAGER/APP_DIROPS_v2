@@ -15,34 +15,35 @@ import {
   CheckCircle,
   Search,
   Mail,
-  Link as LinkIcon,
   Wrench
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { OrdemServico } from '@/entities/OrdemServico';
+import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_CONFIG = {
-  aberta: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, label: 'Aberta' },
-  em_analise: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Search, label: 'Em Análise' },
-  aprovada: { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: 'Aprovada' },
-  rejeitada: { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, label: 'Rejeitada' }
+  aberta: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, labelKey: 'ssDetail.statusAberta' },
+  em_analise: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Search, labelKey: 'ssDetail.statusEmAnalise' },
+  aprovada: { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, labelKey: 'ssDetail.statusAprovada' },
+  rejeitada: { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, labelKey: 'ssDetail.statusRejeitada' }
 };
 
 const PRIORIDADE_CONFIG = {
-  baixa: { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Baixa' },
-  media: { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'Média' },
-  alta: { color: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Alta' },
-  urgente: { color: 'bg-red-100 text-red-800 border-red-200', label: 'Urgente' }
+  baixa: { color: 'bg-gray-100 text-gray-800 border-gray-200', labelKey: 'manutencao.baixa' },
+  media: { color: 'bg-blue-100 text-blue-800 border-blue-200', labelKey: 'manutencao.media' },
+  alta: { color: 'bg-orange-100 text-orange-800 border-orange-200', labelKey: 'manutencao.alta' },
+  urgente: { color: 'bg-red-100 text-red-800 border-red-200', labelKey: 'manutencao.urgente' }
 };
 
 const ORIGEM_CONFIG = {
-  interna: { color: 'bg-slate-100 text-slate-800 border-slate-200', label: 'Interna' },
-  externa: { color: 'bg-indigo-100 text-indigo-800 border-indigo-200', label: 'Externa' },
-  inspecao: { color: 'bg-cyan-100 text-cyan-800 border-cyan-200', label: 'Inspeção' }
+  interna: { color: 'bg-slate-100 text-slate-800 border-slate-200', labelKey: 'ssDetail.origemInterna' },
+  externa: { color: 'bg-indigo-100 text-indigo-800 border-indigo-200', labelKey: 'ssDetail.origemExterna' },
+  inspecao: { color: 'bg-cyan-100 text-cyan-800 border-cyan-200', labelKey: 'ssDetail.origemInspecao' }
 };
 
 export default function SolicitacaoDetailModal({ isOpen, onClose, solicitacao, aeroportos }) {
+  const { t } = useI18n();
   const [osNumero, setOsNumero] = useState(null);
   const [loadingOS, setLoadingOS] = useState(false);
 
@@ -93,15 +94,15 @@ export default function SolicitacaoDetailModal({ isOpen, onClose, solicitacao, a
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
-              {solicitacao.numero_ss || 'Solicitação de Serviço'}
+              {solicitacao.numero_ss || t('ssDetail.solicitacaoServico')}
             </div>
             <div className="flex gap-2">
               <Badge className={`${statusConfig.color} border`}>
                 <StatusIcon className="w-3 h-3 mr-1" />
-                {statusConfig.label}
+                {t(statusConfig.labelKey)}
               </Badge>
               <Badge className={`${prioridadeConfig.color} border`}>
-                {prioridadeConfig.label}
+                {t(prioridadeConfig.labelKey)}
               </Badge>
             </div>
           </DialogTitle>
@@ -113,13 +114,13 @@ export default function SolicitacaoDetailModal({ isOpen, onClose, solicitacao, a
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                Informações da Solicitação
+                {t('ssDetail.informacoes')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {solicitacao.numero_ss && (
                 <div className="text-sm">
-                  <span className="text-slate-600">Nº SS:</span>{' '}
+                  <span className="text-slate-600">{t('ssDetail.nSS')}</span>{' '}
                   <span className="font-medium">{solicitacao.numero_ss}</span>
                 </div>
               )}
@@ -132,29 +133,29 @@ export default function SolicitacaoDetailModal({ isOpen, onClose, solicitacao, a
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">Aeroporto:</span>
+                  <span className="text-slate-600">{t('ssDetail.aeroporto')}</span>
                   <span className="font-medium">{getAeroportoNome(solicitacao.aeroporto_id)}</span>
                 </div>
 
                 {solicitacao.localizacao && (
                   <div className="flex items-center gap-2 text-sm">
                     <MapPin className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-600">Localização:</span>
+                    <span className="text-slate-600">{t('ssDetail.localizacao')}</span>
                     <span className="font-medium">{solicitacao.localizacao}</span>
                   </div>
                 )}
 
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">Data:</span>
+                  <span className="text-slate-600">{t('ssDetail.data')}</span>
                   <span className="font-medium">{formatDate(solicitacao.created_date)}</span>
                 </div>
 
                 {solicitacao.origem && (
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="text-slate-600">Origem:</span>
+                    <span className="text-slate-600">{t('ssDetail.origem')}</span>
                     <Badge className={`${origemConfig.color} border text-xs`}>
-                      {origemConfig.label}
+                      {t(origemConfig.labelKey)}
                     </Badge>
                   </div>
                 )}
@@ -167,21 +168,21 @@ export default function SolicitacaoDetailModal({ isOpen, onClose, solicitacao, a
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <User className="w-5 h-5" />
-                Solicitante
+                {t('ssDetail.solicitante')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {solicitacao.solicitante_nome && (
                 <div className="flex items-center gap-2 text-sm">
                   <User className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">Nome:</span>
+                  <span className="text-slate-600">{t('ssDetail.nome')}</span>
                   <span className="font-medium">{solicitacao.solicitante_nome}</span>
                 </div>
               )}
               {solicitacao.solicitante_email && (
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">Email:</span>
+                  <span className="text-slate-600">{t('ssDetail.email')}</span>
                   <span className="font-medium">{solicitacao.solicitante_email}</span>
                 </div>
               )}
@@ -194,7 +195,7 @@ export default function SolicitacaoDetailModal({ isOpen, onClose, solicitacao, a
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Image className="w-5 h-5" />
-                  Fotos ({fotos.length})
+                  {t('ssDetail.fotos')} ({fotos.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -225,14 +226,14 @@ export default function SolicitacaoDetailModal({ isOpen, onClose, solicitacao, a
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <ClipboardCheck className="w-5 h-5" />
-                  Análise
+                  {t('ssDetail.analise')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {solicitacao.analisado_por && (
                   <div className="flex items-center gap-2 text-sm">
                     <User className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-600">Analisado por:</span>
+                    <span className="text-slate-600">{t('ssDetail.analisadoPor')}</span>
                     <span className="font-medium">{solicitacao.analisado_por}</span>
                   </div>
                 )}
@@ -240,7 +241,7 @@ export default function SolicitacaoDetailModal({ isOpen, onClose, solicitacao, a
                 {solicitacao.data_analise && (
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-600">Data da análise:</span>
+                    <span className="text-slate-600">{t('ssDetail.dataAnalise')}</span>
                     <span className="font-medium">{formatDate(solicitacao.data_analise)}</span>
                   </div>
                 )}
@@ -249,7 +250,7 @@ export default function SolicitacaoDetailModal({ isOpen, onClose, solicitacao, a
                   <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <div className="flex items-center gap-2 text-sm font-medium text-red-800 mb-1">
                       <XCircle className="w-4 h-4" />
-                      Motivo da Rejeição
+                      {t('ssDetail.motivoRejeicao')}
                     </div>
                     <p className="text-sm text-red-700 whitespace-pre-wrap">{solicitacao.motivo_rejeicao}</p>
                   </div>
@@ -259,9 +260,9 @@ export default function SolicitacaoDetailModal({ isOpen, onClose, solicitacao, a
                   <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center gap-2 text-sm text-green-800">
                       <Wrench className="w-4 h-4" />
-                      <span>OS Gerada:</span>
+                      <span>{t('ssDetail.osGerada')}</span>
                       <Badge className="bg-green-100 text-green-800 border border-green-300 font-mono">
-                        {loadingOS ? 'Carregando...' : osNumero || solicitacao.ordem_servico_id}
+                        {loadingOS ? t('ssDetail.carregando') : osNumero || solicitacao.ordem_servico_id}
                       </Badge>
                     </div>
                   </div>
@@ -273,7 +274,7 @@ export default function SolicitacaoDetailModal({ isOpen, onClose, solicitacao, a
 
         <div className="flex justify-end">
           <DialogClose asChild>
-            <Button variant="outline">Fechar</Button>
+            <Button variant="outline">{t('ssDetail.fechar')}</Button>
           </DialogClose>
         </div>
       </DialogContent>

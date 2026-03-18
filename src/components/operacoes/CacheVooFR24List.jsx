@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RefreshCw, Trash2, AlertCircle, Eye, ChevronDown, ChevronUp, X, Filter, GripVertical, FileSpreadsheet } from 'lucide-react';
+import { RefreshCw, Trash2, Eye, ChevronDown, ChevronUp, X, Filter, GripVertical, FileSpreadsheet } from 'lucide-react';
 import { CacheVooFR24 } from '@/entities/CacheVooFR24';
 import VooFR24ReviewModal from './VooFR24ReviewModal';
 import AlertModal from '@/components/shared/AlertModal';
@@ -18,6 +19,7 @@ const statusColors = {
 };
 
 export default function CacheVooFR24List() {
+  const { t } = useI18n();
   const [cacheVoos, setCacheVoos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -107,23 +109,23 @@ export default function CacheVooFR24List() {
   }, [resizingColumn, startX, startWidth]);
 
   const columnLabels = {
-    'data_voo': 'Data Voo',
-    'raw_data.flight': 'Flight/Callsign',
-    'raw_data.operating_as': 'Operating',
-    'raw_data.type': 'Tipo',
-    'raw_data.reg': 'Registo',
-    'raw_data.orig_icao': 'Origem ICAO/IATA',
-    'raw_data.runway_takeoff': 'RWY Dec',
-    'raw_data.datetime_takeoff': 'Descolagem',
-    'raw_data.dest_icao': 'Destino ICAO/IATA',
-    'raw_data.dest_icao_actual': 'Dest. Real ICAO/IATA',
-    'raw_data.runway_landed': 'RWY Ater',
-    'raw_data.datetime_landed': 'Ateragem',
-    'raw_data.flight_time': 'Tempo',
-    'raw_data.actual_distance': 'Distância Real/Círc',
-    'raw_data.category': 'Cat',
-    'raw_data.flight_ended': 'End',
-    'status': 'Status'
+    'data_voo': t('cacheFR24.colDataVoo'),
+    'raw_data.flight': t('cacheFR24.colVoo'),
+    'raw_data.operating_as': t('cacheFR24.colOperando'),
+    'raw_data.type': t('cacheFR24.colTipo'),
+    'raw_data.reg': t('cacheFR24.colRegisto'),
+    'raw_data.orig_icao': t('cacheFR24.colOrigem'),
+    'raw_data.runway_takeoff': t('cacheFR24.colPistaDecolagem'),
+    'raw_data.datetime_takeoff': t('cacheFR24.colHoraDecolagem'),
+    'raw_data.dest_icao': t('cacheFR24.colDestino'),
+    'raw_data.dest_icao_actual': t('cacheFR24.colDestinoReal'),
+    'raw_data.runway_landed': t('cacheFR24.colPistaPouso'),
+    'raw_data.datetime_landed': t('cacheFR24.colHoraPouso'),
+    'raw_data.flight_time': t('cacheFR24.colTempoVoo'),
+    'raw_data.actual_distance': t('cacheFR24.colDistancia'),
+    'raw_data.category': t('cacheFR24.colCategoria'),
+    'raw_data.flight_ended': t('cacheFR24.colFinalizado'),
+    'status': t('cacheFR24.status')
   };
 
   const carregarDados = async () => {
@@ -134,7 +136,7 @@ export default function CacheVooFR24List() {
       setCacheVoos(voos || []);
     } catch (err) {
       console.error('❌ Erro ao carregar cache:', err);
-      setError('Erro ao carregar dados em cache.');
+      setError(t('cacheFR24.erroCarregar'));
     } finally {
       setIsLoading(false);
     }
@@ -148,10 +150,10 @@ export default function CacheVooFR24List() {
     setAlertInfo({
       isOpen: true,
       type: 'error',
-      title: 'Excluir Registo',
-      message: 'Tem certeza que deseja excluir este registo permanentemente?',
+      title: t('cacheFR24.excluirTodosTitulo'),
+      message: t('cacheFR24.confirmarExcluir'),
       showCancel: true,
-      confirmText: 'Excluir',
+      confirmText: t('cacheFR24.excluir'),
       action: async () => {
         setIsDeleting(true);
         try {
@@ -159,16 +161,16 @@ export default function CacheVooFR24List() {
           setCacheVoos(prev => prev.filter(v => v.id !== id));
           setSuccessInfo({
             isOpen: true,
-            title: 'Registo Excluído!',
-            message: 'O registo foi removido com sucesso.'
+            title: t('cacheFR24.cacheExcluido'),
+            message: t('cacheFR24.cacheExcluidoMsg')
           });
         } catch (err) {
           console.error('Erro ao excluir:', err);
           setAlertInfo({
             isOpen: true,
             type: 'error',
-            title: 'Erro ao Excluir',
-            message: 'Não foi possível excluir o registo.'
+            title: t('cacheFR24.excluirTodosTitulo'),
+            message: t('cacheFR24.erroExcluir')
           });
         } finally {
           setIsDeleting(false);
@@ -181,10 +183,10 @@ export default function CacheVooFR24List() {
     setAlertInfo({
       isOpen: true,
       type: 'warning',
-      title: 'Rejeitar Voo',
-      message: 'Tem certeza que deseja rejeitar este voo? O registo será mantido com o status "Rejeitado".',
+      title: t('cacheFR24.rejeitado'),
+      message: t('cacheFR24.confirmarExcluir'),
       showCancel: true,
-      confirmText: 'Rejeitar',
+      confirmText: t('cacheFR24.rejeitado'),
       action: async () => {
         setIsDeleting(true);
         try {
@@ -192,16 +194,16 @@ export default function CacheVooFR24List() {
           setCacheVoos(prev => prev.map(v => v.id === id ? { ...v, status: 'rejeitado' } : v));
           setSuccessInfo({
             isOpen: true,
-            title: 'Voo Rejeitado!',
-            message: 'O voo foi marcado como rejeitado.'
+            title: t('cacheFR24.rejeitado'),
+            message: t('cacheFR24.cacheExcluidoMsg')
           });
         } catch (err) {
           console.error('Erro ao rejeitar:', err);
           setAlertInfo({
             isOpen: true,
             type: 'error',
-            title: 'Erro ao Rejeitar',
-            message: 'Não foi possível rejeitar o registo.'
+            title: t('cacheFR24.rejeitado'),
+            message: t('cacheFR24.erroExcluir')
           });
         } finally {
           setIsDeleting(false);
@@ -298,16 +300,16 @@ export default function CacheVooFR24List() {
       
       setSuccessInfo({
         isOpen: true,
-        title: 'Exportação Concluída!',
-        message: 'O arquivo XLSX foi gerado com sucesso.'
+        title: t('cacheFR24.cacheExcluido'),
+        message: t('cacheFR24.cacheExcluidoMsg')
       });
     } catch (error) {
       console.error('Erro ao exportar:', error);
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Exportar',
-        message: 'Não foi possível exportar os dados para XLSX.'
+        title: t('cacheFR24.erroCarregar'),
+        message: t('cacheFR24.erroExcluir')
       });
     } finally {
       setIsLoading(false);
@@ -320,7 +322,7 @@ export default function CacheVooFR24List() {
         <CardContent className="p-6 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
-            <p className="text-slate-600">A carregar histórico de cache...</p>
+            <p className="text-slate-600">{t('cacheFR24.titulo')}...</p>
           </div>
         </CardContent>
       </Card>
@@ -344,8 +346,8 @@ export default function CacheVooFR24List() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <CardTitle>Histórico de Cache FR24</CardTitle>
-            <CardDescription>Todos os voos consultados no Flightradar24 (independente da busca atual).</CardDescription>
+            <CardTitle>{t('cacheFR24.titulo')}</CardTitle>
+            <CardDescription>{t('cacheFR24.descricao')}</CardDescription>
           </div>
           <Button
             variant="ghost"
@@ -369,10 +371,10 @@ export default function CacheVooFR24List() {
           <CardContent className="p-3 sm:p-4">
             <div className="flex flex-wrap items-end gap-3 sm:gap-4">
               <div className="flex-1 min-w-48">
-                <Label htmlFor="busca-cache" className="text-xs sm:text-sm">Pesquisar Voo</Label>
+                <Label htmlFor="busca-cache" className="text-xs sm:text-sm">{t('cacheFR24.buscar')}</Label>
                 <Input
                   id="busca-cache"
-                  placeholder="Número de voo ou FR24 ID..."
+                  placeholder={t('cacheFR24.buscar')}...
                   value={filtroBusca}
                   onChange={(e) => setFiltroBusca(e.target.value)}
                   className="text-xs sm:text-sm"
@@ -380,7 +382,7 @@ export default function CacheVooFR24List() {
               </div>
 
               <div className="w-32">
-                <Label htmlFor="filtro-data-inicio" className="text-xs sm:text-sm">Data Início</Label>
+                <Label htmlFor="filtro-data-inicio" className="text-xs sm:text-sm">{t('cacheFR24.dataInicio')}</Label>
                 <Input
                   id="filtro-data-inicio"
                   type="date"
@@ -391,7 +393,7 @@ export default function CacheVooFR24List() {
               </div>
 
               <div className="w-32">
-                <Label htmlFor="filtro-data-fim" className="text-xs sm:text-sm">Data Fim</Label>
+                <Label htmlFor="filtro-data-fim" className="text-xs sm:text-sm">{t('cacheFR24.dataFim')}</Label>
                 <Input
                   id="filtro-data-fim"
                   type="date"
@@ -402,14 +404,14 @@ export default function CacheVooFR24List() {
               </div>
 
               <div className="w-28">
-                <Label htmlFor="filtro-aeroporto" className="text-xs sm:text-sm">Aeroporto</Label>
+                <Label htmlFor="filtro-aeroporto" className="text-xs sm:text-sm">{t('cacheFR24.aeroporto')}</Label>
                 <select
                   id="filtro-aeroporto"
                   value={filtroAeroporto}
                   onChange={(e) => setFiltroAeroporto(e.target.value)}
                   className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-md"
                 >
-                  <option value="">Todos</option>
+                  <option value="">{t('cacheFR24.todosFiltro')}</option>
                   {aeroportosUnicos.map(ap => (
                     <option key={ap} value={ap}>{ap}</option>
                   ))}
@@ -417,17 +419,17 @@ export default function CacheVooFR24List() {
               </div>
 
               <div className="w-24">
-                <Label htmlFor="filtro-status" className="text-xs sm:text-sm">Status</Label>
+                <Label htmlFor="filtro-status" className="text-xs sm:text-sm">{t('cacheFR24.status')}</Label>
                 <select
                   id="filtro-status"
                   value={filtroStatus}
                   onChange={(e) => setFiltroStatus(e.target.value)}
                   className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-md"
                 >
-                  <option value="todos">Todos</option>
-                  <option value="pendente">Pendente</option>
-                  <option value="importado">Importado</option>
-                  <option value="rejeitado">Rejeitado</option>
+                  <option value="todos">{t('cacheFR24.todos')}</option>
+                  <option value="pendente">{t('cacheFR24.pendente')}</option>
+                  <option value="importado">{t('cacheFR24.importado')}</option>
+                  <option value="rejeitado">{t('cacheFR24.rejeitado')}</option>
                 </select>
               </div>
 
@@ -458,7 +460,7 @@ export default function CacheVooFR24List() {
             className="text-green-700 border-green-300 hover:bg-green-50"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span className="hidden sm:inline ml-2 text-sm">Exportar XLSX</span>
+            <span className="hidden sm:inline ml-2 text-sm">{t('flightradar.export')}</span>
           </Button>
           <Button
             variant="outline"
@@ -467,7 +469,7 @@ export default function CacheVooFR24List() {
             disabled={isLoading}
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline ml-2 text-sm">Atualizar</span>
+            <span className="hidden sm:inline ml-2 text-sm">{t('cacheFR24.recarregar')}</span>
           </Button>
         </div>
 
@@ -475,7 +477,7 @@ export default function CacheVooFR24List() {
 
         {voosFiltratos.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
-            <p className="text-sm sm:text-base">Nenhum voo em cache encontrado.</p>
+            <p className="text-sm sm:text-base">{t('cacheFR24.nenhumVoo')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto max-h-96 border border-slate-200 rounded-md">
@@ -522,7 +524,7 @@ export default function CacheVooFR24List() {
                         </Draggable>
                       ))}
                       {provided.placeholder}
-                      <th className="px-0.5 py-0.5 text-center">Ações</th>
+                      <th className="px-0.5 py-0.5 text-center">{t('cacheFR24.status')}</th>
                     </tr>
                   )}
                 </Droppable>
@@ -537,9 +539,9 @@ export default function CacheVooFR24List() {
                     if (col === 'status') {
                       return (
                         <Badge className={statusConfig.badge}>
-                          {voo.status === 'pendente' && 'Pendente'}
-                          {voo.status === 'importado' && 'Importado'}
-                          {voo.status === 'rejeitado' && 'Rejeitado'}
+                          {voo.status === 'pendente' && t('cacheFR24.pendente')}
+                          {voo.status === 'importado' && t('cacheFR24.importado')}
+                          {voo.status === 'rejeitado' && t('cacheFR24.rejeitado')}
                         </Badge>
                       );
                     }
@@ -682,7 +684,7 @@ export default function CacheVooFR24List() {
         )}
 
         <div className="text-xs text-slate-500 pt-2">
-          <p>Total: {voosFiltratos.length} voo(s)</p>
+          <p>Total: {voosFiltratos.length} {t('cacheFR24.colVoo')}(s)</p>
         </div>
         </CardContent>
         )}

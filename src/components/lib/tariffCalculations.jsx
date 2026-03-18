@@ -923,6 +923,7 @@ async function saveCalculation(results) {
   try {
     const calculoData = {
       voo_id: results.voo_id,
+      empresa_id: results.empresa_id,
       aeroporto_id: results.aeroporto_id,
       data_calculo: results.data_calculo,
       tipo_tarifa: results.tipo_tarifa,

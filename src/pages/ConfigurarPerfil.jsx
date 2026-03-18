@@ -10,12 +10,13 @@ import { User as UserEntity } from '@/entities/User';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { base44 } from '@/api/base44Client';
 import { getAeroportosPermitidos } from '@/components/lib/userUtils';
-import { createPageUrl } from '@/utils';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function ConfigurarPerfil() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -75,7 +76,7 @@ export default function ConfigurarPerfil() {
 
     } catch (error) {
       console.error('Erro ao carregar utilizador:', error);
-      setError('Erro ao carregar dados do utilizador.');
+      setError(t('perfil.erroCarregar'));
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +98,7 @@ export default function ConfigurarPerfil() {
 
   const handleVerifyMFA = async () => {
     if (!mfaVerifyCode || mfaVerifyCode.length !== 6) {
-      setMfaError('Insira o código de 6 dígitos.');
+      setMfaError(t('perfil.insira_codigo'));
       return;
     }
     setMfaLoading(true);
@@ -110,7 +111,7 @@ export default function ConfigurarPerfil() {
       setMfaEnabled(true);
       setMfaSetupData(null);
       setMfaVerifyCode('');
-      setSuccessMessage('Autenticação de dois fatores ativada com sucesso!');
+      setSuccessMessage(t('perfil.2fa_ativada'));
     } catch (e) {
       setMfaError(e.message === 'Invalid TOTP code' ? 'Código inválido. Tente novamente.' : e.message);
     } finally {
@@ -129,7 +130,7 @@ export default function ConfigurarPerfil() {
         if (error) throw error;
       }
       setMfaEnabled(false);
-      setSuccessMessage('Autenticação de dois fatores desativada.');
+      setSuccessMessage(t('perfil.2fa_desativada'));
     } catch (e) {
       setMfaError(e.message);
     } finally {
@@ -166,7 +167,7 @@ export default function ConfigurarPerfil() {
     
     // Validações
     if (!formData.full_name || formData.full_name.trim() === '') {
-      setError('O nome completo é obrigatório.');
+      setError(t('perfil.nome_erro'));
       return;
     }
 
@@ -203,7 +204,7 @@ export default function ConfigurarPerfil() {
       setUser(updatedUser);
       
       setIsEditing(false);
-      setSuccessMessage('Os seus dados foram atualizados com sucesso!');
+      setSuccessMessage(t('perfil.dados_atualizados'));
       
       // Limpar mensagem de sucesso após 5 segundos
       setTimeout(() => {
@@ -212,7 +213,7 @@ export default function ConfigurarPerfil() {
       
     } catch (error) {
       console.error('Erro ao atualizar dados:', error);
-      setError(`Erro ao atualizar os seus dados: ${error.message || 'Tente novamente.'}`);
+      setError(`${t('perfil.erroAtualizar')}: ${error.message || t('perfil.tenteNovamente')}`);
     } finally {
       setIsSaving(false);
     }
@@ -224,7 +225,7 @@ export default function ConfigurarPerfil() {
     
     // Validar se tem WhatsApp configurado
     if (!user.whatsapp_number || user.whatsapp_number.trim() === '') {
-      setError('Configure o seu número de WhatsApp antes de solicitar o opt-in.');
+      setError(t('perfil.optin_erro'));
       return;
     }
     
@@ -240,11 +241,11 @@ export default function ConfigurarPerfil() {
         const updatedUser = await UserEntity.me();
         setUser(updatedUser);
         
-        setSuccessMessage('Solicitação de opt-in enviada! Verifique o seu WhatsApp e responda SIM para confirmar.');
+        setSuccessMessage(t('perfil.optin_enviada'));
       }
     } catch (error) {
       console.error('Erro ao enviar opt-in:', error);
-      setError(`Erro ao enviar solicitação: ${error.message || 'Tente novamente.'}`);
+      setError(`${t('perfil.erroOptin')}: ${error.message || t('perfil.tenteNovamente')}`);
     } finally {
       setIsSendingOptIn(false);
     }
@@ -252,13 +253,13 @@ export default function ConfigurarPerfil() {
   
   const getPerfilLabel = (perfil) => {
     const labels = {
-      'administrador': 'Administrador',
-      'operacoes': 'Operações',
+      'administrador': t('configPerfil.perfilAdmin'),
+      'operacoes': t('configPerfil.perfilOps'),
       'safety': 'Safety',
-      'infraestrutura': 'Infraestrutura',
-      'credenciamento': 'Credenciamento',
-      'gestor_empresa': 'Gestor de Empresa',
-      'visualizador': 'Visualizador'
+      'infraestrutura': t('configPerfil.perfilInfra'),
+      'credenciamento': t('configPerfil.perfilCred'),
+      'gestor_empresa': t('configPerfil.perfilGestor'),
+      'visualizador': t('configPerfil.perfilVisualizador')
     };
     return labels[perfil] || perfil;
   };
@@ -268,7 +269,7 @@ export default function ConfigurarPerfil() {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 dark:text-blue-400" />
-          <p className="mt-2 text-slate-600 dark:text-slate-400">A carregar...</p>
+          <p className="mt-2 text-slate-600 dark:text-slate-400">{t('perfil.carregando')}</p>
         </div>
       </div>
     );
@@ -284,7 +285,7 @@ export default function ConfigurarPerfil() {
             className="gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
           >
             <ArrowLeft className="w-4 h-4" />
-            Voltar
+            {t('perfil.voltar')}
           </Button>
         </div>
 
@@ -292,9 +293,9 @@ export default function ConfigurarPerfil() {
           <div className="bg-blue-100 dark:bg-blue-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <UserCog className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Configurações da Conta</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{t('perfil.titulo')}</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-2">
-            Consulte e atualize as suas informações pessoais.
+            {t('perfil.subtitulo')}
           </p>
         </div>
 
@@ -319,7 +320,7 @@ export default function ConfigurarPerfil() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-xl flex items-center gap-2">
               <User className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              Informações Pessoais
+              {t('perfil.info_pessoais')}
             </CardTitle>
             {!isEditing && (
               <Button
@@ -329,7 +330,7 @@ export default function ConfigurarPerfil() {
                 className="gap-2"
               >
                 <Edit2 className="w-4 h-4" />
-                Editar
+                {t('perfil.editar')}
               </Button>
             )}
           </CardHeader>
@@ -338,20 +339,20 @@ export default function ConfigurarPerfil() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="full_name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Nome Completo *
+                    {t('perfil.nome_obrigatorio')}
                   </Label>
                   <Input
                     id="full_name"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    placeholder="Digite o seu nome completo"
+                    placeholder={t('perfil.nome_placeholder')}
                     className="mt-1"
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="telefone" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Telefone
+                    {t('perfil.telefone')}
                   </Label>
                   <Input
                     id="telefone"
@@ -365,17 +366,17 @@ export default function ConfigurarPerfil() {
                 <div>
                   <Label htmlFor="whatsapp_number" className="text-sm font-medium text-slate-700 flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-green-600" />
-                    WhatsApp (para notificações)
+                    {t('perfil.whatsapp')}
                   </Label>
                   <Input
                     id="whatsapp_number"
                     value={formData.whatsapp_number}
                     onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
-                    placeholder="+244923456789"
+                    placeholder={t('perfil.whatsapp_placeholder')}
                     className="mt-1"
                   />
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Digite apenas o número com código do país (ex: +244923456789)
+                    {t('perfil.whatsapp_info')}
                   </p>
                 </div>
 
@@ -388,12 +389,12 @@ export default function ConfigurarPerfil() {
                     {isSaving ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        A guardar...
+                        {t('perfil.guardando')}
                       </>
                     ) : (
                       <>
                         <Save className="w-4 h-4" />
-                        Guardar Alterações
+                        {t('perfil.guardar')}
                       </>
                     )}
                   </Button>
@@ -404,7 +405,7 @@ export default function ConfigurarPerfil() {
                     className="gap-2"
                   >
                     <X className="w-4 h-4" />
-                    Cancelar
+                    {t('perfil.cancelar')}
                   </Button>
                 </div>
               </div>
@@ -413,34 +414,34 @@ export default function ConfigurarPerfil() {
                 <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                   <User className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                   <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Nome Completo</p>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{user.full_name || 'Não informado'}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('perfil.nome_completo')}</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{user.full_name || t('perfil.nao_informado')}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                   <Phone className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                   <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Telefone</p>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{user.telefone || 'Não informado'}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('perfil.telefone')}</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{user.telefone || t('perfil.nao_informado')}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg md:col-span-2">
                   <MessageSquare className="w-5 h-5 text-green-600" />
                   <div className="flex-1">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">WhatsApp (Notificações)</p>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{user.whatsapp_number || 'Não configurado'}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('perfil.whatsapp_notificacoes')}</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{user.whatsapp_number || t('perfil.nao_configurado')}</p>
                     {user.whatsapp_opt_in_status && (
                       <p className="text-xs mt-1">
                         {user.whatsapp_opt_in_status === 'confirmado' && (
-                          <span className="text-green-600">✓ Confirmado para receber notificações</span>
+                          <span className="text-green-600">✓ {t('perfil.confirmado')}</span>
                         )}
                         {user.whatsapp_opt_in_status === 'pendente' && (
-                          <span className="text-yellow-600">⏳ Aguardando confirmação</span>
+                          <span className="text-yellow-600">⏳ {t('perfil.aguardando')}</span>
                         )}
                         {user.whatsapp_opt_in_status === 'rejeitado' && (
-                          <span className="text-red-600">✗ Rejeitado</span>
+                          <span className="text-red-600">✗ {t('perfil.rejeitado')}</span>
                         )}
                       </p>
                     )}
@@ -455,12 +456,12 @@ export default function ConfigurarPerfil() {
                       {isSendingOptIn ? (
                         <>
                           <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                          A enviar...
+                          {t('perfil.enviando')}
                         </>
                       ) : (
                         <>
                           <MessageSquare className="w-3 h-3 mr-1" />
-                          {user.whatsapp_opt_in_status === 'pendente' ? 'Reenviar Opt-in' : 'Solicitar Opt-in'}
+                          {user.whatsapp_opt_in_status === 'pendente' ? t('perfil.reenviar_optin') : t('perfil.enviar_optin')}
                         </>
                       )}
                     </Button>
@@ -476,10 +477,10 @@ export default function ConfigurarPerfil() {
           <CardHeader>
             <CardTitle className="text-xl flex items-center gap-2">
               <Shield className="w-5 h-5 text-slate-600" />
-              Informações de Acesso
+              {t('perfil.info_acesso')}
             </CardTitle>
             <p className="text-sm text-slate-500 mt-1">
-              Estes dados são geridos pelos administradores do sistema.
+              {t('perfil.info_acesso_desc')}
             </p>
           </CardHeader>
           <CardContent>
@@ -487,7 +488,7 @@ export default function ConfigurarPerfil() {
               <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                 <Mail className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Email</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('configPerfil.email')}</p>
                   <p className="font-medium text-slate-900 dark:text-slate-100">{user.email}</p>
                 </div>
               </div>
@@ -495,7 +496,7 @@ export default function ConfigurarPerfil() {
               <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                 <Shield className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Perfis de Acesso</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('perfil.perfis_acesso')}</p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {user.perfis && user.perfis.length > 0 ? (
                       user.perfis.map((perfil, index) => (
@@ -504,7 +505,7 @@ export default function ConfigurarPerfil() {
                         </span>
                       ))
                     ) : (
-                      <span className="text-sm text-slate-600 dark:text-slate-400">Nenhum perfil atribuído</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">{t('perfil.nenhum_perfil')}</span>
                     )}
                   </div>
                 </div>
@@ -513,15 +514,15 @@ export default function ConfigurarPerfil() {
               <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg md:col-span-2">
                 <CheckCircle className="w-5 h-5 text-green-500" />
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Status</p>
-                  <p className="font-medium text-green-700 dark:text-green-400 capitalize">{user.status || 'Ativo'}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('configPerfil.status')}</p>
+                  <p className="font-medium text-green-700 dark:text-green-400 capitalize">{user.status || t('perfil.statusAtivo')}</p>
                 </div>
               </div>
             </div>
 
             {aeroportosPermitidos.length > 0 && (
               <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <p className="text-sm text-slate-500 mb-2">Aeroportos com Acesso</p>
+                <p className="text-sm text-slate-500 mb-2">{t('perfil.aeroportos_acesso')}</p>
                 <div className="flex flex-wrap gap-2">
                   {aeroportosPermitidos.map(aeroporto => (
                     <span key={aeroporto.id} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
@@ -536,7 +537,7 @@ export default function ConfigurarPerfil() {
 
         <div className="text-center mt-6">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Para alterações no perfil de acesso, aeroportos ou outros dados geridos pelos administradores, por favor contacte a equipa de gestão do sistema.
+            {t('perfil.alteracoes_info')}
           </p>
         </div>
 
@@ -545,10 +546,10 @@ export default function ConfigurarPerfil() {
           <CardHeader>
             <CardTitle className="text-xl flex items-center gap-2">
               <Shield className="w-5 h-5 text-green-600" />
-              Autenticação de Dois Fatores (2FA)
+              {t('perfil.2fa_titulo')}
             </CardTitle>
             <p className="text-sm text-slate-500 mt-1">
-              Adicione uma camada extra de segurança à sua conta.
+              {t('perfil.2fa_desc')}
             </p>
           </CardHeader>
           <CardContent>
@@ -563,8 +564,8 @@ export default function ConfigurarPerfil() {
                 <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-800 dark:text-green-200">2FA Ativo</p>
-                    <p className="text-sm text-green-700 dark:text-green-300">A sua conta está protegida com autenticação de dois fatores.</p>
+                    <p className="font-medium text-green-800 dark:text-green-200">{t('perfil.2fa_ativo')}</p>
+                    <p className="text-sm text-green-700 dark:text-green-300">{t('perfil.2fa_ativo_desc')}</p>
                   </div>
                 </div>
                 <Button
@@ -574,22 +575,22 @@ export default function ConfigurarPerfil() {
                   disabled={mfaLoading}
                 >
                   {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Desativar 2FA
+                  {t('perfil.desativar_2fa')}
                 </Button>
               </div>
             ) : mfaSetupData ? (
               <div className="space-y-4">
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Abra o seu aplicativo autenticador (Google Authenticator, Authy, etc.) e digitalize o código QR abaixo:
+                  {t('perfil.2fa_instrucoes')}
                 </p>
                 <div className="flex justify-center p-4 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg">
                   <img src={mfaSetupData.totp.qr_code} alt="QR Code 2FA" className="w-48 h-48" />
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 text-center break-all">
-                  Chave manual: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{mfaSetupData.totp.secret}</code>
+                  {t('perfil.chave_manual')} <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{mfaSetupData.totp.secret}</code>
                 </p>
                 <div>
-                  <Label className="text-sm">Código de verificação</Label>
+                  <Label className="text-sm">{t('perfil.codigo_verificacao')}</Label>
                   <div className="flex gap-2 mt-1">
                     <Input
                       value={mfaVerifyCode}
@@ -604,7 +605,7 @@ export default function ConfigurarPerfil() {
                       className="bg-green-600 hover:bg-green-700 text-white"
                     >
                       {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      Verificar e Ativar
+                      {t('perfil.verificar_ativar')}
                     </Button>
                   </div>
                 </div>
@@ -615,7 +616,7 @@ export default function ConfigurarPerfil() {
             ) : (
               <div className="space-y-3">
                 <p className="text-sm text-slate-600">
-                  A autenticação de dois fatores adiciona segurança extra ao exigir um código do seu telemóvel além da senha.
+                  {t('perfil.2fa_info')}
                 </p>
                 <Button
                   onClick={handleEnableMFA}
@@ -623,7 +624,7 @@ export default function ConfigurarPerfil() {
                   className="bg-green-600 hover:bg-green-700 text-white gap-2"
                 >
                   {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
-                  Ativar 2FA
+                  {t('perfil.ativar_2fa')}
                 </Button>
               </div>
             )}
@@ -635,16 +636,16 @@ export default function ConfigurarPerfil() {
           <CardHeader>
             <CardTitle className="text-xl flex items-center gap-2 text-red-700 dark:text-red-400">
               <Trash2 className="w-5 h-5" />
-              Eliminar Conta
+              {t('perfil.eliminar_conta')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950 rounded-lg mb-4 border border-red-100 dark:border-red-800">
               <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-red-800 dark:text-red-200">Esta ação é permanente e irreversível</p>
+                <p className="text-sm font-medium text-red-800 dark:text-red-200">{t('perfil.eliminar_permanente')}</p>
                 <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                  Ao eliminar a sua conta, todos os seus dados pessoais serão removidos do sistema e o seu acesso será revogado imediatamente.
+                  {t('perfil.eliminar_desc')}
                 </p>
               </div>
             </div>
@@ -654,7 +655,7 @@ export default function ConfigurarPerfil() {
               onClick={() => setShowDeleteModal(true)}
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Eliminar a Minha Conta
+              {t('perfil.eliminar_minha_conta')}
             </Button>
           </CardContent>
         </Card>
@@ -670,7 +671,7 @@ export default function ConfigurarPerfil() {
             `mailto:suporte@sga.ao?subject=Pedido%20de%20Eliminação%20de%20Conta&body=Olá,%20confirmo%20que%20desejo%20eliminar%20a%20minha%20conta.%20Email%3A%20${encodeURIComponent(user?.email || '')}`,
             '_blank'
           );
-          setSuccessMessage('Pedido enviado. Receberá uma confirmação por email em breve.');
+          setSuccessMessage(t('perfil.pedidoEnviado'));
         }}
       />
     </div>

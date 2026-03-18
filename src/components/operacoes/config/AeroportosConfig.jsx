@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, Search, MapPin, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import Select from '@/components/ui/select';
@@ -12,10 +12,10 @@ import { base44 } from '@/api/base44Client';
 import AlertModal from '../../shared/AlertModal';
 import SuccessModal from '../../shared/SuccessModal';
 import SortableTableHeader from '../../shared/SortableTableHeader';
-import { User } from '@/entities/User';
 import { Empresa } from '@/entities/Empresa';
 import { isSuperAdmin } from '@/components/lib/userUtils';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 const PAISES_ISO = [
   { code: 'AD', name: 'Andorra' }, { code: 'AE', name: 'Emirados Árabes Unidos' }, { code: 'AF', name: 'Afeganistão' },
@@ -102,6 +102,7 @@ const CATEGORIA_CONFIG = {
 
 // Exportar o formulário separadamente para uso em outros componentes
 export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
+  const { t } = useI18n();
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState(aeroporto ? {
     id: aeroporto.id,
@@ -171,7 +172,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
   };
 
   const empresaOptions = [
-    { value: '', label: 'Nenhuma empresa' },
+    { value: '', label: t('configAeroportos.nenhuma') },
     ...empresas.map(e => ({ value: e.id, label: e.nome }))
   ];
 
@@ -179,7 +180,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label>Código ICAO *</Label>
+          <Label>{t('configAeroportos.codigoICAO')} *</Label>
           <Input
             value={formData.codigo_icao}
             onChange={(e) => setFormData({ ...formData, codigo_icao: e.target.value.toUpperCase() })}
@@ -189,7 +190,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 
         </div>
         <div>
-          <Label>Código IATA</Label>
+          <Label>{t('configAeroportos.codigoIATA')}</Label>
           <Input
             value={formData.codigo_iata}
             onChange={(e) => setFormData({ ...formData, codigo_iata: e.target.value.toUpperCase() })}
@@ -198,7 +199,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 
         </div>
         <div className="col-span-2">
-          <Label>Nome *</Label>
+          <Label>{t('configAeroportos.nome')} *</Label>
           <Input
             value={formData.nome}
             onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
@@ -207,7 +208,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 
         </div>
         <div>
-          <Label>Cidade *</Label>
+          <Label>{t('configAeroportos.cidade')} *</Label>
           <Input
             value={formData.cidade}
             onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
@@ -216,7 +217,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 
         </div>
         <div>
-          <Label>Província</Label>
+          <Label>{t('configAeroportos.provincia')}</Label>
           <Input
             value={formData.provincia}
             onChange={(e) => setFormData({ ...formData, provincia: e.target.value })}
@@ -224,26 +225,26 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 
         </div>
         <div>
-          <Label>País *</Label>
+          <Label>{t('configAeroportos.pais')} *</Label>
           <Combobox
             options={PAISES_OPTIONS}
             value={formData.pais}
             onValueChange={(v) => setFormData({ ...formData, pais: v })}
-            placeholder="Pesquisar país (código ou nome)..." />
+            placeholder={t('configAeroportos.pesquisarPais')} />
         </div>
         <div>
-          <Label>Tipo de Operação</Label>
+          <Label>{t('configAeroportos.tipoOperacao')}</Label>
           <Select
             options={[
-            { value: 'DOM', label: 'Doméstico' },
-            { value: 'INT', label: 'Internacional' }]
+            { value: 'DOM', label: t('voosLigados.domestico') },
+            { value: 'INT', label: t('voosLigados.internacional') }]
             }
             value={formData.tipo_operacao}
             onValueChange={(value) => setFormData({ ...formData, tipo_operacao: value })} />
 
         </div>
         <div>
-          <Label>Categoria</Label>
+          <Label>{t('configAeroportos.categoria')}</Label>
           <Select
             options={[
             { value: 'categoria_1', label: 'Categoria 1' },
@@ -256,7 +257,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 
         </div>
         <div>
-          <Label>Status</Label>
+          <Label>{t('configAeroportos.status')}</Label>
           <Select
             options={[
             { value: 'operacional', label: 'Operacional' },
@@ -268,7 +269,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 
         </div>
         <div>
-          <Label>Latitude</Label>
+          <Label>{t('configAeroportos.latitude')}</Label>
           <Input
             type="number"
             step="0.000001"
@@ -278,7 +279,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 
         </div>
         <div>
-          <Label>Longitude</Label>
+          <Label>{t('configAeroportos.longitude')}</Label>
           <Input
             type="number"
             step="0.000001"
@@ -288,7 +289,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 
         </div>
         <div className="col-span-2">
-          <Label>Soleiras (separadas por ;)</Label>
+          <Label>{t('configAeroportos.soleiras')}</Label>
           <Input
             value={formData.soleiras}
             onChange={(e) => setFormData({ ...formData, soleiras: e.target.value })}
@@ -297,7 +298,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
         </div>
 
         <div className="col-span-2">
-          <Label>Empresa</Label>
+          <Label>{t('configAeroportos.empresa')}</Label>
           <select
             value={formData.empresa_id || ''}
             onChange={(e) => setFormData({ ...formData, empresa_id: e.target.value })}
@@ -318,17 +319,17 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
             onCheckedChange={(checked) => setFormData({ ...formData, isSGA: checked })}
           />
           <Label htmlFor="isSGA" className="cursor-pointer mb-0">
-            É aeroporto da SGA
+            {t('configAeroportos.eAeroportoSGA')}
           </Label>
         </div>
       </div>
 
       <div className="flex justify-end gap-2 mt-6">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {t('configAeroportos.cancelar')}
         </Button>
         <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
-          {isSubmitting ? 'A guardar...' : 'Salvar'}
+          {isSubmitting ? t('configAeroportos.aGuardar') : t('configAeroportos.salvar')}
         </Button>
       </div>
     </form>);
@@ -336,6 +337,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 }
 
 export default function AeroportosConfig({ aeroportos, onReload }) {
+  const { t } = useI18n();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAeroporto, setEditingAeroporto] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -373,10 +375,10 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
   const paises = useMemo(() => {
     const uniquePaises = [...new Set(aeroportos.map((a) => a.pais))];
     return [
-      { value: 'todos', label: 'Todos os Países' },
+      { value: 'todos', label: t('configAeroportos.todosPaises') },
       ...uniquePaises.map((p) => ({ value: p, label: p }))
     ];
-  }, [aeroportos]);
+  }, [aeroportos, t]);
 
   const handleSort = (field, direction) => {
     setSortField(field);
@@ -636,11 +638,11 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <MapPin className="w-5 h-5" />
-            Aeroportos
+            {t('configAeroportos.titulo')}
           </CardTitle>
           <Button onClick={() => handleOpenForm()} className="bg-blue-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-10 hover:bg-blue-600/90">
             <Plus className="w-4 h-4 mr-2" />
-            Novo Aeroporto
+            {t('configAeroportos.novoAeroporto')}
           </Button>
         </CardHeader>
         <CardContent>
@@ -654,7 +656,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   onCheckedChange={setApenaSGA}
                 />
                 <Label htmlFor="apenas-sga" className="cursor-pointer mb-0">
-                  Apenas Aeroportos SGA
+                  {t('configAeroportos.apenasAeroportosSGA')}
                 </Label>
               </div>
             )}
@@ -663,7 +665,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
               <div className="flex-[2] relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
-                  placeholder="Pesquisar por nome, código ICAO ou cidade..."
+                  placeholder={t('configAeroportos.buscarPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10" />
@@ -676,7 +678,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
               {isSuperAdmin(currentUser) && (
                 <Select
                   options={[
-                    { value: 'todos', label: 'Todas as Empresas' },
+                    { value: 'todos', label: t('configAeroportos.todasEmpresas') },
                     ...empresas.map(e => ({ value: e.id, label: e.nome }))
                   ]}
                   value={filterEmpresa}
@@ -690,7 +692,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
           {selectedAeroportos.size > 0 && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
               <span className="text-sm font-medium text-slate-700">
-                {selectedAeroportos.size} aeroporto(s) selecionado(s)
+                {selectedAeroportos.size} {t('configAeroportos.aeroportosSelecionados')}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -700,7 +702,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   disabled={isUpdatingBulk}
                   className="text-green-600 border-green-200 hover:bg-green-50"
                 >
-                  Marcar como SGA
+                  {t('configAeroportos.marcarSGA')}
                 </Button>
                 <Button
                   size="sm"
@@ -709,7 +711,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   disabled={isUpdatingBulk}
                   className="text-red-600 border-red-200 hover:bg-red-50"
                 >
-                  Desmarcar SGA
+                  {t('configAeroportos.desmarcarSGA')}
                 </Button>
               </div>
             </div>
@@ -730,7 +732,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   <th className="px-4 py-3 text-left">
                     <SortableTableHeader
                       field="codigo_icao"
-                      label="Código ICAO"
+                      label={t('configAeroportos.codigoICAO')}
                       currentSortField={sortField}
                       currentSortDirection={sortDirection}
                       onSort={handleSort}
@@ -739,7 +741,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   <th className="px-4 py-3 text-left">
                     <SortableTableHeader
                       field="nome"
-                      label="Nome"
+                      label={t('configAeroportos.nome')}
                       currentSortField={sortField}
                       currentSortDirection={sortDirection}
                       onSort={handleSort}
@@ -748,7 +750,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   <th className="px-4 py-3 text-left">
                     <SortableTableHeader
                       field="cidade"
-                      label="Cidade/País"
+                      label={t('configAeroportos.cidadePais')}
                       currentSortField={sortField}
                       currentSortDirection={sortDirection}
                       onSort={handleSort}
@@ -757,7 +759,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   <th className="px-4 py-3 text-left">
                     <SortableTableHeader
                       field="categoria"
-                      label="Categoria"
+                      label={t('configAeroportos.categoria')}
                       currentSortField={sortField}
                       currentSortDirection={sortDirection}
                       onSort={handleSort}
@@ -766,7 +768,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   <th className="px-4 py-3 text-center">
                     <SortableTableHeader
                       field="isSGA"
-                      label="SGA"
+                      label={t('configAeroportos.sga')}
                       currentSortField={sortField}
                       currentSortDirection={sortDirection}
                       onSort={handleSort}
@@ -775,7 +777,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   <th className="px-4 py-3 text-left">
                     <SortableTableHeader
                       field="empresa_id"
-                      label="Empresa"
+                      label={t('configAeroportos.empresa')}
                       currentSortField={sortField}
                       currentSortDirection={sortDirection}
                       onSort={handleSort}
@@ -784,7 +786,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   <th className="px-4 py-3 text-left">
                     <SortableTableHeader
                       field="status"
-                      label="Status"
+                      label={t('configAeroportos.status')}
                       currentSortField={sortField}
                       currentSortDirection={sortDirection}
                       onSort={handleSort}
@@ -793,13 +795,13 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   <th className="px-4 py-3 text-left">
                     <SortableTableHeader
                       field="updated_date"
-                      label="Última Atualização"
+                      label={t('configAeroportos.ultimaAtualizacao')}
                       currentSortField={sortField}
                       currentSortDirection={sortDirection}
                       onSort={handleSort}
                     />
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-600">Ações</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-600">{t('configAeroportos.acoes')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -825,9 +827,9 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                     </td>
                     <td className="px-4 py-3 text-center">
                       {aeroporto.isSGA ? (
-                        <Badge className="bg-green-100 text-green-800">Sim</Badge>
+                        <Badge className="bg-green-100 text-green-800">{t('configAeroportos.sim')}</Badge>
                       ) : (
-                        <Badge variant="secondary">Não</Badge>
+                        <Badge variant="secondary">{t('configAeroportos.nao')}</Badge>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
@@ -889,7 +891,7 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
           <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-xl font-bold mb-4">
-                {editingAeroporto ? 'Editar Aeroporto' : 'Novo Aeroporto'}
+                {editingAeroporto ? t('configAeroportos.editarAeroporto') : t('configAeroportos.novoAeroporto')}
               </h2>
               
               <FormAeroporto

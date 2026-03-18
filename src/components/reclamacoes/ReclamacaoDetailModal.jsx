@@ -28,6 +28,7 @@ import {
   Phone,
   Mail
 } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
@@ -74,6 +75,7 @@ export default function ReclamacaoDetailModal({
   onUpdate,
   onEdit 
 }) {
+  const { t } = useI18n();
   const [reclamacao, setReclamacao] = useState(null);
   const [historico, setHistorico] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -114,7 +116,7 @@ export default function ReclamacaoDetailModal({
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      setMessage({ type: 'error', text: 'Erro ao carregar os dados da reclamação.' });
+      setMessage({ type: 'error', text: t('recl_detail.erro_dados') });
     } finally {
       setIsLoading(false);
     }
@@ -159,7 +161,7 @@ export default function ReclamacaoDetailModal({
         await enviarNotificacaoArea(novaAreaResponsavel, novoStatus);
       }
 
-      setMessage({ type: 'success', text: 'Status atualizado com sucesso!' });
+      setMessage({ type: 'success', text: t('recl_detail.status_atualizado') });
       setObservacao('');
       
       await loadData();
@@ -167,7 +169,7 @@ export default function ReclamacaoDetailModal({
       
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
-      setMessage({ type: 'error', text: 'Erro ao atualizar o status.' });
+      setMessage({ type: 'error', text: t('recl_detail.erro_status') });
     } finally {
       setIsSaving(false);
     }
@@ -186,13 +188,13 @@ export default function ReclamacaoDetailModal({
         usuario_email: 'sistema@sga.co.ao'
       });
 
-      setMessage({ type: 'success', text: 'Observação adicionada com sucesso!' });
+      setMessage({ type: 'success', text: t('recl_detail.obs_adicionada') });
       setObservacao('');
       await loadData();
       
     } catch (error) {
       console.error('Erro ao adicionar observação:', error);
-      setMessage({ type: 'error', text: 'Erro ao adicionar observação.' });
+      setMessage({ type: 'error', text: t('recl_detail.erro_obs') });
     } finally {
       setIsSaving(false);
     }
@@ -252,7 +254,7 @@ export default function ReclamacaoDetailModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <FileText className="w-6 h-6 text-blue-600" />
-            Reclamação {reclamacao.protocolo_numero}
+            {t('recl_detail.reclamacao')} {reclamacao.protocolo_numero}
             <Badge className={statusConfig.color}>
               {statusConfig.label}
             </Badge>
@@ -267,34 +269,34 @@ export default function ReclamacaoDetailModal({
 
         <Tabs defaultValue="detalhes" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
-            <TabsTrigger value="workflow">Workflow</TabsTrigger>
-            <TabsTrigger value="historico">Histórico</TabsTrigger>
-            <TabsTrigger value="resolucao">Resolução</TabsTrigger>
+            <TabsTrigger value="detalhes">{t('recl_detail.detalhes')}</TabsTrigger>
+            <TabsTrigger value="workflow">{t('recl_detail.workflow')}</TabsTrigger>
+            <TabsTrigger value="historico">{t('recl_detail.historico')}</TabsTrigger>
+            <TabsTrigger value="resolucao">{t('recl_detail.resolucao')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="detalhes" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Informações Gerais</CardTitle>
+                  <CardTitle className="text-lg">{t('recl_detail.info_gerais')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label className="font-semibold">Título</Label>
+                    <Label className="font-semibold">{t('recl_detail.titulo')}</Label>
                     <p className="text-sm text-slate-600">{reclamacao.titulo}</p>
                   </div>
                   <div>
-                    <Label className="font-semibold">Descrição</Label>
+                    <Label className="font-semibold">{t('recl_detail.descricao')}</Label>
                     <p className="text-sm text-slate-600">{reclamacao.descricao}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="font-semibold">Categoria</Label>
+                      <Label className="font-semibold">{t('recl_detail.categoria')}</Label>
                       <p className="text-sm text-slate-600 capitalize">{reclamacao.categoria_reclamacao?.replace('_', ' ')}</p>
                     </div>
                     <div>
-                      <Label className="font-semibold">Prioridade</Label>
+                      <Label className="font-semibold">{t('recl_detail.prioridade')}</Label>
                       <Badge variant={reclamacao.prioridade === 'alta' ? 'destructive' : 'outline'}>
                         {reclamacao.prioridade}
                       </Badge>
@@ -305,28 +307,28 @@ export default function ReclamacaoDetailModal({
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Informações de Contacto</CardTitle>
+                  <CardTitle className="text-lg">{t('recl_detail.info_contacto')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-2">
                     {canalConfig.icon && <canalConfig.icon className="w-4 h-4" />}
                     <div>
-                      <Label className="font-semibold">Canal de Entrada</Label>
+                      <Label className="font-semibold">{t('recl_detail.canal_entrada')}</Label>
                       <p className="text-sm text-slate-600">{canalConfig.label}</p>
                     </div>
                   </div>
                   <div>
-                    <Label className="font-semibold">Nome do Reclamante</Label>
-                    <p className="text-sm text-slate-600">{reclamacao.reclamante_nome || 'Não informado'}</p>
+                    <Label className="font-semibold">{t('recl_detail.nome_reclamante')}</Label>
+                    <p className="text-sm text-slate-600">{reclamacao.reclamante_nome || t('recl_detail.nao_informado')}</p>
                   </div>
                   <div>
-                    <Label className="font-semibold">Contacto</Label>
-                    <p className="text-sm text-slate-600">{reclamacao.reclamante_contacto || 'Não informado'}</p>
+                    <Label className="font-semibold">{t('recl_detail.contacto')}</Label>
+                    <p className="text-sm text-slate-600">{reclamacao.reclamante_contacto || t('recl_detail.nao_informado')}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
                     <div>
-                      <Label className="font-semibold">Aeroporto</Label>
+                      <Label className="font-semibold">{t('recl_detail.aeroporto')}</Label>
                       <p className="text-sm text-slate-600">{aeroporto?.nome}</p>
                     </div>
                   </div>
@@ -337,7 +339,7 @@ export default function ReclamacaoDetailModal({
             <div className="flex justify-end">
               <Button onClick={() => onEdit(reclamacao)} variant="outline">
                 <Edit className="w-4 h-4 mr-2" />
-                Editar Informações
+                {t('recl_detail.editar_info')}
               </Button>
             </div>
           </TabsContent>
@@ -345,50 +347,50 @@ export default function ReclamacaoDetailModal({
           <TabsContent value="workflow" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Gestão do Workflow</CardTitle>
+                <CardTitle>{t('recl_detail.gestao_workflow')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="status">Novo Status</Label>
+                    <Label htmlFor="status">{t('recl_detail.novo_status')}</Label>
                     <Select
                       id="status"
                       options={statusOptions}
                       value={novoStatus}
                       onValueChange={setNovoStatus}
-                      placeholder="Selecionar status"
+                      placeholder={t('recl_detail.selecionar_status')}
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="area">Área Responsável</Label>
+                    <Label htmlFor="area">{t('recl_detail.area_responsavel')}</Label>
                     <Select
                       id="area"
                       options={AREA_RESPONSAVEL_OPTIONS}
                       value={novaAreaResponsavel}
                       onValueChange={setNovaAreaResponsavel}
-                      placeholder="Selecionar área"
+                      placeholder={t('recl_detail.selecionar_area')}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="responsavel">Responsável Atual</Label>
+                  <Label htmlFor="responsavel">{t('recl_detail.responsavel_atual')}</Label>
                   <Input
                     id="responsavel"
                     value={novoResponsavel}
                     onChange={(e) => setNovoResponsavel(e.target.value)}
-                    placeholder="Nome ou email do responsável"
+                    placeholder={t('recl_detail.responsavel_placeholder')}
                   />
                 </div>
 
                 <div>
-                  <Label>Prazo para Resposta</Label>
+                  <Label>{t('recl_detail.prazo_resposta')}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start text-left font-normal">
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {prazoResposta ? format(prazoResposta, 'PPP', { locale: pt }) : 'Selecionar data'}
+                        {prazoResposta ? format(prazoResposta, 'PPP', { locale: pt }) : t('recl_detail.selecionar_data')}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -403,12 +405,12 @@ export default function ReclamacaoDetailModal({
                 </div>
 
                 <div>
-                  <Label htmlFor="observacao">Observação (opcional)</Label>
+                  <Label htmlFor="observacao">{t('recl_detail.observacao')}</Label>
                   <Textarea
                     id="observacao"
                     value={observacao}
                     onChange={(e) => setObservacao(e.target.value)}
-                    placeholder="Adicionar observação sobre a mudança..."
+                    placeholder={t('recl_detail.observacao_placeholder')}
                     rows={3}
                   />
                 </div>
@@ -418,24 +420,24 @@ export default function ReclamacaoDetailModal({
                   disabled={isSaving || novoStatus === reclamacao.status}
                   className="w-full"
                 >
-                  {isSaving ? 'Atualizando...' : 'Atualizar Status'}
+                  {isSaving ? t('recl_detail.atualizando') : t('recl_detail.atualizar_status')}
                 </Button>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Adicionar Observação</CardTitle>
+                <CardTitle>{t('recl_detail.adicionar_obs')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Textarea
                   value={observacao}
                   onChange={(e) => setObservacao(e.target.value)}
-                  placeholder="Adicionar observação..."
+                  placeholder={t('recl_detail.obs_placeholder')}
                   rows={3}
                 />
                 <Button onClick={handleAddObservacao} disabled={isSaving || !observacao.trim()}>
-                  {isSaving ? 'Adicionando...' : 'Adicionar Observação'}
+                  {isSaving ? t('recl_detail.adicionando') : t('recl_detail.adicionar_obs')}
                 </Button>
               </CardContent>
             </Card>
@@ -446,7 +448,7 @@ export default function ReclamacaoDetailModal({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <History className="w-5 h-5" />
-                  Histórico da Reclamação
+                  {t('recl_detail.historico_reclamacao')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -474,7 +476,7 @@ export default function ReclamacaoDetailModal({
                       </div>
                     ))
                   ) : (
-                    <p className="text-slate-500 text-center py-8">Nenhum histórico disponível.</p>
+                    <p className="text-slate-500 text-center py-8">{t('recl_detail.nenhum_historico')}</p>
                   )}
                 </div>
               </CardContent>
@@ -484,16 +486,16 @@ export default function ReclamacaoDetailModal({
           <TabsContent value="resolucao" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Resolução da Reclamação</CardTitle>
+                <CardTitle>{t('recl_detail.resolucao_reclamacao')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="solucao">Solução Aplicada</Label>
+                  <Label htmlFor="solucao">{t('recl_detail.solucao_aplicada')}</Label>
                   <Textarea
                     id="solucao"
                     value={solucaoAplicada}
                     onChange={(e) => setSolucaoAplicada(e.target.value)}
-                    placeholder="Descrever a solução aplicada para resolver a reclamação..."
+                    placeholder={t('recl_detail.solucao_placeholder')}
                     rows={5}
                   />
                 </div>
@@ -502,7 +504,7 @@ export default function ReclamacaoDetailModal({
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
-                      Esta reclamação foi concluída em {format(new Date(reclamacao.data_conclusao), 'dd/MM/yyyy HH:mm', { locale: pt })}.
+                      {t('recl_detail.concluida_em')} {format(new Date(reclamacao.data_conclusao), 'dd/MM/yyyy HH:mm', { locale: pt })}.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -517,7 +519,7 @@ export default function ReclamacaoDetailModal({
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Marcar como Concluída
+                    {t('recl_detail.marcar_concluida')}
                   </Button>
                   
                   <Button 
@@ -529,7 +531,7 @@ export default function ReclamacaoDetailModal({
                     variant="destructive"
                   >
                     <XCircle className="w-4 h-4 mr-2" />
-                    Rejeitar Reclamação
+                    {t('recl_detail.rejeitar')}
                   </Button>
                 </div>
               </CardContent>

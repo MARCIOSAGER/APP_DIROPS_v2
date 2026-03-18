@@ -14,8 +14,10 @@ import ConfirmModal from '@/components/shared/ConfirmModal';
 
 import { ItemChecklist } from '@/entities/ItemChecklist';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspecao, onUpdate }) {
+  const { t } = useI18n();
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,7 +76,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Erro ao salvar item:', error);
-      setAlertInfo({ isOpen: true, type: 'error', title: 'Erro', message: 'Não foi possível salvar o item. Tente novamente.' });
+      setAlertInfo({ isOpen: true, type: 'error', title: t('checklist.erroSalvar'), message: t('checklist.erroSalvar') });
     } finally {
       setIsSubmitting(false);
     }
@@ -151,7 +153,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
       if (jsonData.length < 2) {
-        setAlertInfo({ isOpen: true, type: 'warning', title: 'Ficheiro Vazio', message: 'O ficheiro está vazio ou inválido.' });
+        setAlertInfo({ isOpen: true, type: 'warning', title: t('checklist.ficheiroVazio'), message: t('checklist.ficheiroVazioMsg') });
         return;
       }
 
@@ -176,7 +178,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
       }
 
       if (itemsToCreate.length === 0) {
-        setAlertInfo({ isOpen: true, type: 'warning', title: 'Sem Itens', message: 'Nenhum item válido encontrado no ficheiro.' });
+        setAlertInfo({ isOpen: true, type: 'warning', title: t('checklist.semItens'), message: t('checklist.semItensMsg') });
         return;
       }
 
@@ -184,12 +186,12 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
         await ItemChecklist.create(itemData);
       }
 
-      setAlertInfo({ isOpen: true, type: 'success', title: 'Importação Concluída', message: `${itemsToCreate.length} itens importados com sucesso!` });
+      setAlertInfo({ isOpen: true, type: 'success', title: t('checklist.importacaoConcluida'), message: `${itemsToCreate.length} ${t('checklist.itensImportadosSucesso')}` });
       loadItems();
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Erro ao importar ficheiro:', error);
-      setAlertInfo({ isOpen: true, type: 'error', title: 'Erro na Importação', message: 'Erro ao importar ficheiro. Verifique o formato do ficheiro.' });
+      setAlertInfo({ isOpen: true, type: 'error', title: t('checklist.erroImportacaoTitulo'), message: t('checklist.erroImportacaoMsg') });
     } finally {
       setIsSubmitting(false);
       if (fileInputRef.current) {
@@ -204,7 +206,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
       <DialogContent className="sm:max-w-6xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
-            Gerir Itens do Checklist: {tipoInspecao?.nome}
+            {t('checklist.gerirItens')} {tipoInspecao?.nome}
           </DialogTitle>
         </DialogHeader>
 
@@ -212,51 +214,51 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
           {/* Formulário */}
           <div className="flex flex-col overflow-y-auto pr-4">
             <h3 className="text-lg font-semibold border-b pb-2 mb-4">
-              {editingItem ? 'Editar Item' : 'Novo Item do Checklist'}
+              {editingItem ? t('checklist.editarItem') : t('checklist.novoItem')}
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="categoria">Categoria</Label>
-                  <Input id="categoria" value={formData.categoria} onChange={(e) => handleChange('categoria', e.target.value)} placeholder="Ex: Pista, Sinalização" required />
+                  <Label htmlFor="categoria">{t('checklist.categoria')}</Label>
+                  <Input id="categoria" value={formData.categoria} onChange={(e) => handleChange('categoria', e.target.value)} placeholder={t('checklist.categoriaPlaceholder')} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ordem">Ordem</Label>
+                  <Label htmlFor="ordem">{t('checklist.ordem')}</Label>
                   <Input id="ordem" type="number" value={formData.ordem} onChange={(e) => handleChange('ordem', parseInt(e.target.value))} min="1" required />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="item">Item a Verificar</Label>
-                <Textarea id="item" value={formData.item} onChange={(e) => handleChange('item', e.target.value)} placeholder="Descreva o que deve ser verificado..." required />
+                <Label htmlFor="item">{t('checklist.itemVerificar')}</Label>
+                <Textarea id="item" value={formData.item} onChange={(e) => handleChange('item', e.target.value)} placeholder={t('checklist.itemPlaceholder')} required />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="criterio">Critério de Avaliação</Label>
-                <Textarea id="criterio" value={formData.criterio} onChange={(e) => handleChange('criterio', e.target.value)} placeholder="Critério ou referência normativa..." />
+                <Label htmlFor="criterio">{t('checklist.criterio')}</Label>
+                <Textarea id="criterio" value={formData.criterio} onChange={(e) => handleChange('criterio', e.target.value)} placeholder={t('checklist.criterioPlaceholder')} />
               </div>
 
               <div className="flex gap-4 pt-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox id="obrigatorio" checked={formData.obrigatorio} onCheckedChange={(checked) => handleChange('obrigatorio', checked)} />
-                  <Label htmlFor="obrigatorio">Item Obrigatório</Label>
+                  <Label htmlFor="obrigatorio">{t('checklist.obrigatorio')}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="permite_fotos" checked={formData.permite_fotos} onCheckedChange={(checked) => handleChange('permite_fotos', checked)} />
-                  <Label htmlFor="permite_fotos">Permite Anexar Fotos</Label>
+                  <Label htmlFor="permite_fotos">{t('checklist.permiteFotos')}</Label>
                 </div>
               </div>
 
               <div className="pt-4 border-t flex gap-2">
                 <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                  {editingItem ? 'Salvar Alterações' : 'Adicionar Item'}
+                  {editingItem ? t('checklist.salvarAlteracoes') : t('checklist.adicionarItem')}
                 </Button>
                 {editingItem && (
                   <Button type="button" variant="outline" onClick={() => resetForm(items.length + 1)}>
                     <X className="mr-2 h-4 w-4" />
-                    Cancelar Edição
+                    {t('checklist.cancelarEdicao')}
                   </Button>
                 )}
               </div>
@@ -266,15 +268,15 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
           {/* Tabela de Itens */}
           <div className="flex flex-col space-y-4">
             <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="text-lg font-semibold">Itens Configurados ({items.length})</h3>
+              <h3 className="text-lg font-semibold">{t('checklist.itensConfigurados')} ({items.length})</h3>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
                   <Download className="mr-2 h-4 w-4" />
-                  Baixar Modelo
+                  {t('checklist.baixarModelo')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isSubmitting}>
                   <Upload className="mr-2 h-4 w-4" />
-                  Upload Excel
+                  {t('checklist.uploadExcel')}
                 </Button>
                 <input
                   ref={fileInputRef}
@@ -292,11 +294,11 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
                 <Table>
                   <TableHeader className="sticky top-0 bg-slate-50">
                     <TableRow>
-                      <TableHead className="w-16">Ordem</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Opções</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead className="w-16">{t('checklist.colOrdem')}</TableHead>
+                      <TableHead>{t('checklist.colCategoria')}</TableHead>
+                      <TableHead>{t('checklist.colItem')}</TableHead>
+                      <TableHead>{t('checklist.colOpcoes')}</TableHead>
+                      <TableHead className="text-right">{t('checklist.colAcoes')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -307,8 +309,8 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
                         <TableCell className="max-w-xs truncate">{item.item}</TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
-                            {item.obrigatorio && <Badge variant="outline">Obrigatório</Badge>}
-                            {item.permite_fotos && <Badge variant="outline">Permite Fotos</Badge>}
+                            {item.obrigatorio && <Badge variant="outline">{t('checklist.badgeObrigatorio')}</Badge>}
+                            {item.permite_fotos && <Badge variant="outline">{t('checklist.badgePermiteFotos')}</Badge>}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
@@ -325,7 +327,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
                 </Table>
               )}
               {items.length === 0 && !isLoading && (
-                <div className="text-center p-8 text-slate-500">Nenhum item configurado para este checklist.</div>
+                <div className="text-center p-8 text-slate-500">{t('checklist.nenhumItem')}</div>
               )}
             </div>
           </div>
@@ -333,7 +335,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
 
         <DialogFooter className="pt-4">
           <DialogClose asChild>
-            <Button variant="outline">Fechar</Button>
+            <Button variant="outline">{t('checklist.fechar')}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
@@ -351,8 +353,8 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
       isOpen={confirmInfo.isOpen}
       onClose={() => setConfirmInfo({ isOpen: false, itemId: null })}
       onConfirm={confirmDelete}
-      title="Eliminar Item"
-      message="Tem certeza que deseja eliminar este item? Esta ação não pode ser desfeita."
+      title={t('checklist.eliminarItem')}
+      message={t('checklist.confirmarEliminar')}
     />
     </>
   );

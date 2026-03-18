@@ -13,7 +13,7 @@ import { User } from '@/entities/User'; // Added User import
 import SafetyOccurrencesList from '../components/safety/SafetyOccurrencesList';
 import FormSafetyOccurrence from '../components/safety/FormSafetyOccurrence';
 import { downloadAsCSV } from '../components/lib/export';
-import { createPdfDoc, addHeader, addFooter, addTable, PDF } from '@/lib/pdfTemplate';
+import { createPdfDoc, addHeader, addFooter, addTable } from '@/lib/pdfTemplate';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import SendEmailModal from '../components/shared/SendEmailModal';
 import AlertModal from '../components/shared/AlertModal';
@@ -89,7 +89,7 @@ export default function Safety() {
       if (editingOcorrencia) {
         await OcorrenciaSafety.update(editingOcorrencia.id, data);
       } else {
-        await OcorrenciaSafety.create(data);
+        await OcorrenciaSafety.create({ ...data, empresa_id: user?.empresa_id });
       }
       setIsFormOpen(false);
       setEditingOcorrencia(null);

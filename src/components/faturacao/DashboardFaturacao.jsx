@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,7 @@ import { downloadAsExcel } from '@/components/lib/export';
 import {
   Search, Loader2, FileText, DollarSign, Plane, Clock,
   Download, Mail, AlertTriangle, BarChart3, TrendingUp,
-  Filter, X, RefreshCw,
+  Filter,
 } from 'lucide-react';
 
 const fmtNum = (v, d = 2) => {
@@ -65,6 +66,7 @@ const getOutraTarifaLabel = (tipo) => {
 };
 
 export default function DashboardFaturacao({ companhias, aeroportos }) {
+  const { t } = useI18n();
   const [isSearching, setIsSearching] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -122,7 +124,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
 
   const handleBuscar = async () => {
     if (!filtro.companhia_id) {
-      toast({ title: 'Atenção', description: 'Selecione uma companhia.', variant: 'destructive' });
+      toast({ title: t('dashFat.atencao'), description: t('dashFat.selecionarCompanhia'), variant: 'destructive' });
       return;
     }
     setIsSearching(true);
@@ -209,7 +211,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       setProformasMap(pfMap);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
-      toast({ title: 'Erro', description: 'Erro ao buscar dados de faturação.', variant: 'destructive' });
+      toast({ title: t('shared.erro'), description: t('dashFat.erroFaturacao'), variant: 'destructive' });
     } finally {
       setIsSearching(false);
     }
@@ -375,10 +377,10 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
         periodo_inicio: filtro.data_inicio, periodo_fim: filtro.data_fim,
         voos, voosLigados, proformasMap,
       });
-      toast({ title: 'PDF gerado', description: 'O download do PDF iniciou.' });
+      toast({ title: t('dashFat.pdfGerado'), description: t('dashFat.pdfGeradoDesc') });
     } catch (error) {
       console.error('Erro PDF:', error);
-      toast({ title: 'Erro', description: 'Erro ao gerar PDF.', variant: 'destructive' });
+      toast({ title: t('shared.erro'), description: t('dashFat.erroPdf'), variant: 'destructive' });
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -415,7 +417,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
     const comp = companhias.find(c => c.id === filtro.companhia_id);
     const filename = `extrato_faturacao_${comp?.codigo_icao || 'ALL'}_${new Date().toISOString().split('T')[0]}`;
     downloadAsExcel(data, filename);
-    toast({ title: 'XLSX gerado', description: 'Download do ficheiro Excel iniciado.' });
+    toast({ title: t('dashFat.xlsxGerado'), description: t('dashFat.xlsxGeradoDesc') });
   };
 
   // Email with PDF
@@ -436,7 +438,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       setIsEmailModalOpen(true);
     } catch (error) {
       console.error('Erro ao preparar email:', error);
-      toast({ title: 'Erro', description: 'Erro ao gerar PDF para envio.', variant: 'destructive' });
+      toast({ title: t('shared.erro'), description: t('dashFat.erroPdfEmail'), variant: 'destructive' });
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -453,12 +455,12 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
         html: `<p>${message || 'Segue em anexo o Extrato de Facturação.'}</p>`,
         attachments: [{ filename: pdfForEmail.filename, content: pdfForEmail.base64, contentType: 'application/pdf' }],
       });
-      toast({ title: 'Email enviado', description: `Extrato enviado para ${to}` });
+      toast({ title: t('dashFat.emailEnviado'), description: `${t('dashFat.emailEnviadoPara')} ${to}` });
       setIsEmailModalOpen(false);
       setPdfForEmail(null);
     } catch (error) {
       console.error('Erro email:', error);
-      toast({ title: 'Erro', description: `Erro ao enviar: ${error.message}`, variant: 'destructive' });
+      toast({ title: t('shared.erro'), description: `${t('shared.erro')}: ${error.message}`, variant: 'destructive' });
     } finally {
       setIsSendingEmail(false);
     }
@@ -468,7 +470,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
     .filter(c => companhiasComTarifas.has(c.id))
     .map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }));
   const aeroportoOptions = [
-    { value: '', label: 'Todos os Aeroportos' },
+    { value: '', label: t('dashFat.todosAeroportos') },
     ...aeroportos.map(a => ({ value: a.id, label: `${a.nome} (${a.codigo_icao})` })),
   ];
 
@@ -481,35 +483,35 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Filter className="w-5 h-5 text-emerald-600" />
-            Filtros do Extrato
+            {t('dashFat.filtrosExtrato')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs">Companhia <span className="text-red-500">*</span></Label>
+              <Label className="text-xs">{t('dashFat.companhia')} <span className="text-red-500">*</span></Label>
               <Select
                 options={companhiaOptions}
                 value={filtro.companhia_id}
                 onValueChange={v => setFiltro(p => ({ ...p, companhia_id: v }))}
-                placeholder="Selecionar..."
+                placeholder={t('dashFat.selecionar')}
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Aeroporto</Label>
+              <Label className="text-xs">{t('dashFat.aeroporto')}</Label>
               <Select
                 options={aeroportoOptions}
                 value={filtro.aeroporto_id}
                 onValueChange={v => setFiltro(p => ({ ...p, aeroporto_id: v }))}
-                placeholder="Todos"
+                placeholder={t('dashFat.todos')}
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Data Início</Label>
+              <Label className="text-xs">{t('dashFat.dataInicio')}</Label>
               <Input type="date" value={filtro.data_inicio} onChange={e => setFiltro(p => ({ ...p, data_inicio: e.target.value }))} />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Data Fim</Label>
+              <Label className="text-xs">{t('dashFat.dataFim')}</Label>
               <Input type="date" value={filtro.data_fim} onChange={e => setFiltro(p => ({ ...p, data_fim: e.target.value }))} />
             </div>
             <div className="flex items-end">
@@ -518,7 +520,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                 disabled={!filtro.companhia_id || isSearching}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
               >
-                {isSearching ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Buscando...</> : <><Search className="mr-2 h-4 w-4" /> Buscar</>}
+                {isSearching ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('dashFat.buscando')}</> : <><Search className="mr-2 h-4 w-4" /> {t('dashFat.buscar')}</>}
               </Button>
             </div>
           </div>
@@ -531,42 +533,42 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
           <Card><CardContent className="p-3">
             <div className="flex items-center gap-2">
               <div className="bg-blue-50 p-2 rounded-lg"><Plane className="w-4 h-4 text-blue-600" /></div>
-              <div><p className="text-[11px] text-slate-500">Voos</p><p className="text-lg font-bold">{kpis.count}</p></div>
+              <div><p className="text-[11px] text-slate-500">{t('dashFat.voos')}</p><p className="text-lg font-bold">{kpis.count}</p></div>
             </div>
           </CardContent></Card>
 
           <Card><CardContent className="p-3">
             <div className="flex items-center gap-2">
               <div className="bg-green-50 p-2 rounded-lg"><DollarSign className="w-4 h-4 text-green-600" /></div>
-              <div><p className="text-[11px] text-slate-500">Total (USD)</p><p className="text-sm font-bold text-green-700">${fmtNum(kpis.totalUsd)}</p></div>
+              <div><p className="text-[11px] text-slate-500">{t('dashFat.totalUSD')}</p><p className="text-sm font-bold text-green-700">${fmtNum(kpis.totalUsd)}</p></div>
             </div>
           </CardContent></Card>
 
           <Card><CardContent className="p-3">
             <div className="flex items-center gap-2">
               <div className="bg-emerald-50 p-2 rounded-lg"><DollarSign className="w-4 h-4 text-emerald-600" /></div>
-              <div><p className="text-[11px] text-slate-500">Total (AOA)</p><p className="text-sm font-bold text-emerald-700">{fmtNum(kpis.totalAoa)} Kz</p></div>
+              <div><p className="text-[11px] text-slate-500">{t('dashFat.totalAOA')}</p><p className="text-sm font-bold text-emerald-700">{fmtNum(kpis.totalAoa)} Kz</p></div>
             </div>
           </CardContent></Card>
 
           <Card><CardContent className="p-3">
             <div className="flex items-center gap-2">
               <div className="bg-amber-50 p-2 rounded-lg"><TrendingUp className="w-4 h-4 text-amber-600" /></div>
-              <div><p className="text-[11px] text-slate-500">TX Aterr./Desc.</p><p className="text-sm font-bold text-amber-700">${fmtNum(kpis.totalPouso)}</p></div>
+              <div><p className="text-[11px] text-slate-500">{t('dashFat.txAterr')}</p><p className="text-sm font-bold text-amber-700">${fmtNum(kpis.totalPouso)}</p></div>
             </div>
           </CardContent></Card>
 
           <Card><CardContent className="p-3">
             <div className="flex items-center gap-2">
               <div className="bg-purple-50 p-2 rounded-lg"><Clock className="w-4 h-4 text-purple-600" /></div>
-              <div><p className="text-[11px] text-slate-500">Estacionamento</p><p className="text-sm font-bold text-purple-700">${fmtNum(kpis.totalEstac)}</p></div>
+              <div><p className="text-[11px] text-slate-500">{t('dashFat.estacionamento')}</p><p className="text-sm font-bold text-purple-700">${fmtNum(kpis.totalEstac)}</p></div>
             </div>
           </CardContent></Card>
 
           <Card><CardContent className="p-3">
             <div className="flex items-center gap-2">
               <div className="bg-cyan-50 p-2 rounded-lg"><BarChart3 className="w-4 h-4 text-cyan-600" /></div>
-              <div><p className="text-[11px] text-slate-500">Câmbio Médio</p><p className="text-sm font-bold text-cyan-700">{Math.round(kpis.avgCambio)} AOA</p></div>
+              <div><p className="text-[11px] text-slate-500">{t('dashFat.cambioMedio')}</p><p className="text-sm font-bold text-cyan-700">{Math.round(kpis.avgCambio)} AOA</p></div>
             </div>
           </CardContent></Card>
         </div>
@@ -576,17 +578,17 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       {rows.length > 0 && (
         <div className="flex flex-wrap gap-2 justify-end">
           <Button variant="outline" onClick={handleExportXlsx} size="sm">
-            <Download className="w-4 h-4 mr-1" /> Exportar XLSX
+            <Download className="w-4 h-4 mr-1" /> {t('dashFat.exportarXLSX')}
           </Button>
           <Button variant="outline" onClick={handlePrepareEmail} disabled={isGeneratingPdf} size="sm"
             className="border-blue-300 text-blue-700 hover:bg-blue-50">
             {isGeneratingPdf ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
-            Enviar Email
+            {t('dashFat.enviarEmail')}
           </Button>
           <Button onClick={handleExportPdf} disabled={isGeneratingPdf} size="sm"
             className="bg-emerald-600 hover:bg-emerald-700 text-white">
             {isGeneratingPdf ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <FileText className="w-4 h-4 mr-1" />}
-            Exportar PDF
+            {t('dashFat.exportarPDF')}
           </Button>
         </div>
       )}
@@ -597,9 +599,9 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
               <CardTitle className="text-base">
-                Extrato de Facturação {companhiaNome && `— ${companhiaNome}`}
+                {t('dashFat.extratoFaturacao')} {companhiaNome && `— ${companhiaNome}`}
               </CardTitle>
-              <Badge variant="outline">{rows.length} voo(s)</Badge>
+              <Badge variant="outline">{rows.length} {t('dashFat.voosCount')}</Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -610,20 +612,20 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
             ) : rows.length === 0 ? (
               <div className="p-8 text-center text-slate-500">
                 <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
-                <p className="font-medium">Nenhum voo encontrado</p>
-                <p className="text-xs mt-1">Não existem voos com tarifas calculadas para esta companhia/período.</p>
+                <p className="font-medium">{t('dashFat.nenhumVoo')}</p>
+                <p className="text-xs mt-1">{t('dashFat.nenhumVooDesc')}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table className="text-[11px]">
                   <TableHeader className="bg-slate-50 sticky top-0 z-10">
                     <TableRow>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">Registo</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">{t('dashFat.colRegisto')}</TableHead>
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">PMD(t)</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">Tipo</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">Voo (A/D)</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">Aterragem</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">Descolagem</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">{t('dashFat.colTipo')}</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">{t('dashFat.colVoo')}</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">{t('dashFat.colAterragem')}</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">{t('dashFat.colDescolagem')}</TableHead>
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">TX Aterr.</TableHead>
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">Estac.(h)</TableHead>
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">Estac.($)</TableHead>
@@ -676,7 +678,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                     {/* Totals row */}
                     {totals && (
                       <TableRow className="bg-slate-100 font-bold border-t-2">
-                        <TableCell colSpan={6} className="px-2 text-right text-xs">TOTAIS</TableCell>
+                        <TableCell colSpan={6} className="px-2 text-right text-xs">{t('dashFat.totais')}</TableCell>
                         <TableCell className="px-2 text-right">{fmtNum(totals.txAterr)}</TableCell>
                         <TableCell className="px-2" />
                         <TableCell className="px-2 text-right">{fmtNum(totals.estacUsd)}</TableCell>

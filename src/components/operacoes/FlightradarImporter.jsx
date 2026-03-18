@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ import AeroportoMultiSelect from '@/components/ui/aeroporto-multi-select';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 export default function FlightradarImporter({ aeroportos = [], onImportSuccess }) {
+  const { t } = useI18n();
   const [aeroportosSelecionados, setAeroportosSelecionados] = useState([]);
   const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0]);
   const [dataFim, setDataFim] = useState(new Date().toISOString().split('T')[0]);
@@ -114,27 +116,27 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
   }, [resizingColumn, startX, startWidth]);
 
   const columnLabels = {
-    data_voo_cache: 'Data Voo',
-    flight: 'Flight/Callsign',
-    operating_as: 'Operating',
-    type: 'Tipo',
-    reg: 'Registo',
-    orig_icao: 'Origem ICAO/IATA',
-    runway_takeoff: 'RWY Dec',
-    datetime_takeoff: 'Descolagem',
-    dest_icao: 'Destino ICAO/IATA',
-    dest_icao_actual: 'Dest. Real ICAO/IATA',
-    runway_landed: 'RWY Ater',
-    datetime_landed: 'Ateragem',
-    flight_time: 'Tempo',
-    actual_distance: 'Distância Real/Círc',
-    category: 'Cat',
-    flight_ended: 'End'
+    data_voo_cache: t('flightradar.colDataVoo'),
+    flight: t('flightradar.colVoo'),
+    operating_as: t('flightradar.colOperando'),
+    type: t('flightradar.colTipo'),
+    reg: t('flightradar.colRegisto'),
+    orig_icao: t('flightradar.colOrigem'),
+    runway_takeoff: t('flightradar.colPistaDecolagem'),
+    datetime_takeoff: t('flightradar.colHoraDecolagem'),
+    dest_icao: t('flightradar.colDestino'),
+    dest_icao_actual: t('flightradar.colDestinoReal'),
+    runway_landed: t('flightradar.colPistaPouso'),
+    datetime_landed: t('flightradar.colHoraPouso'),
+    flight_time: t('flightradar.colTempoVoo'),
+    actual_distance: t('flightradar.colDistancia'),
+    category: t('flightradar.colCategoria'),
+    flight_ended: t('flightradar.colFinalizado')
   };
 
   const handleBuscar = async () => {
     if (aeroportosSelecionados.length === 0) {
-      setError('Selecione pelo menos um aeroporto');
+      setError(t('flightradar.selectAirports'));
       return;
     }
 
@@ -162,7 +164,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
       const diffDays = Math.floor((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
 
       if (diffDays >= 14) {
-        setError(`Intervalo de datas muito grande (${diffDays} dias). Máximo permitido é 13 dias.`);
+        setError(`${t('flightradar.dateRangeTooLarge')} (${diffDays} dias). ${t('flightradar.maxDays')}`);
         setIsLoading(false);
         return;
       }
@@ -290,7 +292,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
         setError(null);
       } else {
         console.warn('⚠️ Nenhum voo encontrado no período.');
-        setError('Nenhum voo encontrado no período.');
+        setError(t('flightradar.noFlights'));
         setVoosFR24([]);
       }
       } catch (err) {
@@ -407,7 +409,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
 
   const handleImportSelected = async () => {
     if (selectedVoos.size === 0) {
-      setError('Selecione pelo menos um voo para importar');
+      setError(t('flightradar.selectAtLeast'));
       return;
     }
 
@@ -504,20 +506,20 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
 
       <Tabs defaultValue="buscar" className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="buscar">Buscar Voos</TabsTrigger>
-          <TabsTrigger value="historico">Histórico de Cache</TabsTrigger>
+          <TabsTrigger value="buscar">{t('flightradar.tabSearch')}</TabsTrigger>
+          <TabsTrigger value="historico">{t('flightradar.tabHistory')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="buscar">
           <Card>
           <CardHeader>
-            <CardTitle>Importar Voos do Flightradar24</CardTitle>
-            <CardDescription>Busque e importe voos para validação antes de salvar no sistema.</CardDescription>
+            <CardTitle>{t('flightradar.title')}</CardTitle>
+            <CardDescription>{t('flightradar.description')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
-              <Label htmlFor="aeroporto">Aeroportos</Label>
+              <Label htmlFor="aeroporto">{t('flightradar.airports')}</Label>
               <AeroportoMultiSelect
                 aeroportos={aeroportosFiltrados}
                 values={aeroportosSelecionados}
@@ -527,7 +529,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
             </div>
 
             <div>
-              <Label htmlFor="dataInicio">Data Início</Label>
+              <Label htmlFor="dataInicio">{t('flightradar.startDate')}</Label>
               <Input
                 id="dataInicio"
                 type="date"
@@ -537,7 +539,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
             </div>
 
             <div>
-              <Label htmlFor="dataFim">Data Fim</Label>
+              <Label htmlFor="dataFim">{t('flightradar.endDate')}</Label>
               <Input
                 id="dataFim"
                 type="date"
@@ -553,7 +555,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Search className="w-4 h-4 mr-2" />
-                {isLoading ? 'Buscando...' : 'Buscar'}
+                {isLoading ? t('flightradar.searching') : t('flightradar.search')}
               </Button>
             </div>
           </div>
@@ -581,7 +583,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-slate-700">
-                  {voosFR24.length} voo(s) encontrado(s)
+                  {voosFR24.length} {t('flightradar.flightsFound')}
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -591,7 +593,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
                     className="text-green-700 border-green-300 hover:bg-green-50"
                   >
                     <FileSpreadsheet className="w-4 h-4 mr-2" />
-                    Exportar XLSX
+                    {t('flightradar.export')}
                   </Button>
                   {selectedVoos.size > 0 && (
                     <Button
@@ -599,7 +601,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
                       disabled={isImporting}
                       className="bg-green-600 hover:bg-green-700 text-white"
                     >
-                      Importar {selectedVoos.size} Selecionado(s)
+                      {t('flightradar.importSelected')} {selectedVoos.size}
                     </Button>
                   )}
                 </div>
@@ -656,7 +658,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
                             </Draggable>
                           ))}
                           {provided.placeholder}
-                          <th className="px-0.5 py-0.5">Ação</th>
+                          <th className="px-0.5 py-0.5">{t('flightradar.import')}</th>
                         </tr>
                       )}
                     </Droppable>

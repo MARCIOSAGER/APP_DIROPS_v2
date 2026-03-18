@@ -10,8 +10,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import Select from '@/components/ui/select';

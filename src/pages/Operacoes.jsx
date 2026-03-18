@@ -23,14 +23,14 @@ import { OutraTarifa } from '@/entities/OutraTarifa';
 import { Imposto } from '@/entities/Imposto';
 import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
-import { hasUserProfile, getAeroportosPermitidos, filtrarDadosPorAcesso, filtrarDadosPorEmpresa, isSuperAdmin, getEmailsEmpresa, filtrarDadosPorCriador } from '@/components/lib/userUtils';
+import { hasUserProfile, getAeroportosPermitidos, isSuperAdmin } from '@/components/lib/userUtils';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
 import { useAeroportos, useCompanhias, useAeronaves, useModelosAeronave } from '@/components/lib/useStaticData';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 
 import VoosTable from '../components/operacoes/VoosTable';
 import FormVoo from '../components/operacoes/FormVoo';
-import { downloadAsCSV, downloadAsExcel } from '../components/lib/export';
+import { downloadAsExcel } from '../components/lib/export';
 import { calculateAllTariffs } from '../components/lib/tariffCalculations';
 
 import AeroportosConfig from '../components/operacoes/config/AeroportosConfig';
@@ -40,7 +40,6 @@ import RegistosAeronaveConfig from '../components/operacoes/config/RegistosAeron
 import VoosLigadosTable from '../components/operacoes/VoosLigadosTable';
 import TariffDetailsModal from '../components/operacoes/TariffDetailsModal';
 import VoosLigadosFilters from '../components/operacoes/VoosLigadosFilters';
-import FlightradarImporter from '../components/operacoes/FlightradarImporter';
 
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';

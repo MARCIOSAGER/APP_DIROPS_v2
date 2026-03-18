@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import Select from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileText, Upload, Sparkles, Loader2, Download, Shield, Lock, Eye, EyeOff } from 'lucide-react';
+import { FileText, Loader2, Download, Shield, Lock, Eye, EyeOff } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { sanitizeFilename } from '@/lib/sanitize';
 import useSubmitGuard from '@/hooks/useSubmitGuard';

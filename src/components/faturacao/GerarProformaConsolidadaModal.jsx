@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import Select from '@/components/ui/select';
-import { Loader2, FileText, DollarSign, Search, AlertTriangle, Layers } from 'lucide-react';
+import { Loader2, DollarSign, Search, AlertTriangle, Layers } from 'lucide-react';
 import { CalculoTarifa } from '@/entities/CalculoTarifa';
 import { Voo } from '@/entities/Voo';
 import { VooLigado } from '@/entities/VooLigado';
@@ -17,6 +18,7 @@ import { Proforma } from '@/entities/Proforma';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfirm, companhias, aeroportos }) {
+  const { t } = useI18n();
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { guardedSubmit } = useSubmitGuard();
@@ -249,7 +251,7 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
 
   const companhiaOptions = companhias.map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }));
   const aeroportoOptions = [
-    { value: '', label: 'Todos os Aeroportos' },
+    { value: '', label: t('gerarConsolidada.todosAeroportos') },
     ...aeroportos.map(a => ({ value: a.id, label: `${a.nome} (${a.codigo_icao})` }))
   ];
 
@@ -259,17 +261,17 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-blue-600" />
-            Gerar Proforma Consolidada
+            {t('gerarConsolidada.titulo')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Search Filters */}
           <div className="bg-slate-50 border rounded-lg p-4 space-y-4 relative z-10">
-            <h3 className="font-semibold text-slate-700 text-sm">Selecionar Companhia e Período</h3>
+            <h3 className="font-semibold text-slate-700 text-sm">{t('gerarConsolidada.selecionarCompanhia')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Companhia <span className="text-red-500">*</span></Label>
+                <Label className="text-xs">{t('gerarConsolidada.companhia')} <span className="text-red-500">*</span></Label>
                 <Select
                   options={companhiaOptions}
                   value={filtro.companhia_id}
@@ -278,16 +280,16 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Aeroporto</Label>
+                <Label className="text-xs">{t('gerarConsolidada.aeroporto')}</Label>
                 <Select
                   options={aeroportoOptions}
                   value={filtro.aeroporto_id}
                   onValueChange={(v) => setFiltro(prev => ({ ...prev, aeroporto_id: v }))}
-                  placeholder="Todos"
+                  placeholder={t('gerarConsolidada.todosAeroportos')}
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Data Início</Label>
+                <Label className="text-xs">{t('gerarConsolidada.dataInicio')}</Label>
                 <Input
                   type="date"
                   value={filtro.data_inicio}
@@ -295,7 +297,7 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Data Fim</Label>
+                <Label className="text-xs">{t('gerarConsolidada.dataFim')}</Label>
                 <Input
                   type="date"
                   value={filtro.data_fim}
@@ -310,9 +312,9 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
               size="sm"
             >
               {isSearching ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Buscando...</>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('gerarConsolidada.buscando')}</>
               ) : (
-                <><Search className="mr-2 h-4 w-4" /> Buscar Voos</>
+                <><Search className="mr-2 h-4 w-4" /> {t('gerarConsolidada.buscarVoos')}</>
               )}
             </Button>
           </div>
@@ -338,8 +340,8 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
               ) : calculos.length === 0 ? (
                 <div className="p-8 text-center text-slate-500">
                   <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
-                  <p className="font-medium">Nenhum voo encontrado</p>
-                  <p className="text-xs mt-1">Todos os voos desta companhia/período já possuem proforma ou não têm tarifas calculadas.</p>
+                  <p className="font-medium">{t('gerarConsolidada.nenhumVoo')}</p>
+                  <p className="text-xs mt-1">{t('gerarConsolidada.nenhumVooDesc')}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
@@ -352,11 +354,11 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
                             onCheckedChange={toggleAll}
                           />
                         </TableHead>
-                        <TableHead className="text-xs">Voo</TableHead>
-                        <TableHead className="text-xs">Data</TableHead>
-                        <TableHead className="text-xs">Registo</TableHead>
-                        <TableHead className="text-xs">Aeroporto</TableHead>
-                        <TableHead className="text-xs">Permanência</TableHead>
+                        <TableHead className="text-xs">{t('gerarConsolidada.colVoo')}</TableHead>
+                        <TableHead className="text-xs">{t('gerarConsolidada.colData')}</TableHead>
+                        <TableHead className="text-xs">{t('gerarConsolidada.colRegisto')}</TableHead>
+                        <TableHead className="text-xs">{t('gerarConsolidada.colAeroporto')}</TableHead>
+                        <TableHead className="text-xs">{t('gerarConsolidada.colPermanencia')}</TableHead>
                         <TableHead className="text-xs text-right">USD</TableHead>
                         <TableHead className="text-xs text-right">AOA</TableHead>
                       </TableRow>
@@ -397,22 +399,22 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
-                  Resumo da Consolidação — {selectedCalcItems.length} voo(s)
+                  {t('gerarConsolidada.resumo')} — {selectedCalcItems.length} voo(s)
                 </h3>
                 <div className="flex justify-between items-center">
-                  <span className="text-blue-600 font-semibold">Total (USD):</span>
+                  <span className="text-blue-600 font-semibold">{t('gerarConsolidada.totalUSD')}</span>
                   <span className="text-lg font-bold text-blue-900">
                     ${formatCurrency(totais.usd, 'USD')}
                   </span>
                 </div>
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-blue-600 font-semibold">Total (AOA):</span>
+                  <span className="text-blue-600 font-semibold">{t('gerarConsolidada.totalAOA')}</span>
                   <span className="text-xl font-bold text-green-700">
                     {formatCurrency(totais.aoa)} Kz
                   </span>
                 </div>
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-blue-500">Taxa de Câmbio Média:</span>
+                  <span className="text-xs text-blue-500">{t('gerarConsolidada.taxaCambioMedia')}</span>
                   <Badge variant="outline" className="text-xs">1 USD = {Math.round(taxaCambioMedia)} AOA</Badge>
                 </div>
               </div>
@@ -420,7 +422,7 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
               {/* Form Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label className="text-xs">Data de Emissão <span className="text-red-500">*</span></Label>
+                  <Label className="text-xs">{t('gerarConsolidada.dataEmissao')} <span className="text-red-500">*</span></Label>
                   <Input
                     type="date"
                     value={formData.data_emissao}
@@ -429,7 +431,7 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Data de Vencimento <span className="text-red-500">*</span></Label>
+                  <Label className="text-xs">{t('gerarConsolidada.dataVencimento')} <span className="text-red-500">*</span></Label>
                   <Input
                     type="date"
                     value={formData.data_vencimento}
@@ -440,9 +442,9 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Observações</Label>
+                <Label className="text-xs">{t('gerarConsolidada.observacoes')}</Label>
                 <Textarea
-                  placeholder="Observações ou notas adicionais..."
+                  placeholder={t('gerarConsolidada.observacoesPlaceholder')}
                   value={formData.observacoes}
                   onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
                   rows={3}
@@ -459,13 +461,13 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                  Cancelar
+                  {t('gerarConsolidada.cancelar')}
                 </Button>
                 <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
                   {isSubmitting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('gerarConsolidada.gerando')}</>
                   ) : (
-                    <><Layers className="mr-2 h-4 w-4" /> Gerar Consolidada</>
+                    <><Layers className="mr-2 h-4 w-4" /> {t('gerarConsolidada.gerarConsolidada')}</>
                   )}
                 </Button>
               </DialogFooter>

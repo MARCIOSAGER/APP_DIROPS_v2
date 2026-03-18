@@ -13,8 +13,6 @@ import {
   AlertTriangle,
   Shield,
   Eye,
-  Calendar,
-  User as UserIcon,
   ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -23,6 +21,7 @@ import { pt } from 'date-fns/locale';
 import { LogAuditoria } from '@/entities/LogAuditoria';
 import { User } from '@/entities/User';
 import { hasUserProfile } from '@/components/lib/userUtils'; // Importar a função de utilitário
+import { useI18n } from '@/components/lib/i18n';
 
 const ACTION_COLORS = {
   criar: 'bg-green-100 text-green-800',
@@ -47,6 +46,7 @@ const MODULE_COLORS = {
 
 export default function LogAuditoriaPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -85,8 +85,8 @@ export default function LogAuditoriaPage() {
         setHasAccess(false);
         setError({
           type: 'permission',
-          message: 'Acesso negado. Apenas administradores podem visualizar os logs de auditoria.',
-          details: 'Esta funcionalidade requer privilégios administrativos para garantir a segurança e privacidade dos dados do sistema.'
+          message: t('logAuditoria.semAcesso'),
+          details: t('logAuditoria.semAcessoDesc')
         });
         return;
       }
@@ -100,20 +100,20 @@ export default function LogAuditoriaPage() {
       if (error.message && error.message.includes('You must be logged in')) {
         setError({
           type: 'auth',
-          message: 'Sessão expirada. Por favor, faça login novamente.',
-          details: 'A sua sessão expirou por segurança. Clique no botão abaixo para fazer login.'
+          message: t('logAuditoria.sessaoExpirada'),
+          details: t('logAuditoria.sessaoExpiradaDesc')
         });
       } else if (error.response?.status === 403) {
         setError({
           type: 'permission',
-          message: 'Acesso negado aos logs de auditoria.',
-          details: 'Apenas administradores do sistema podem visualizar os logs de auditoria.'
+          message: t('logAuditoria.semAcesso'),
+          details: t('logAuditoria.semAcessoAdminDesc')
         });
       } else {
         setError({
           type: 'network',
-          message: 'Erro ao carregar logs de auditoria.',
-          details: 'Ocorreu um erro de rede ao tentar carregar os dados. Verifique a sua conexão e tente novamente.'
+          message: t('logAuditoria.erroCarregar'),
+          details: t('logAuditoria.erroCarregarDesc')
         });
       }
     } finally {
@@ -207,7 +207,7 @@ export default function LogAuditoriaPage() {
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">A carregar logs de auditoria...</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('logAuditoria.carregando')}</p>
         </div>
       </div>
     );
@@ -228,13 +228,13 @@ export default function LogAuditoriaPage() {
               </p>
               {error.type === 'auth' && (
                 <Button onClick={handleRetryLogin} className="mt-3">
-                  Fazer Login
+                  {t('logAuditoria.fazerLogin')}
                 </Button>
               )}
               {(error.type === 'network' || error.type === 'permission') && (
                 <Button onClick={checkAccessAndLoadData} variant="outline" className="mt-3">
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Tentar Novamente
+                  {t('logAuditoria.tentarNovamente')}
                 </Button>
               )}
             </div>
@@ -251,10 +251,10 @@ export default function LogAuditoriaPage() {
           <Shield className="h-4 w-4" />
           <AlertDescription>
             <div>
-              <strong>Acesso Restrito</strong>
+              <strong>{t('logAuditoria.acessoRestrito')}</strong>
             </div>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Os logs de auditoria são confidenciais e estão disponíveis apenas para administradores do sistema.
+              {t('logAuditoria.acessoRestritoDesc')}
             </p>
           </AlertDescription>
         </Alert>
@@ -268,15 +268,15 @@ export default function LogAuditoriaPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            Log de Auditoria
+            {t('logAuditoria.titulo')}
           </h1>
           <p className="text-slate-600 dark:text-slate-400">
-            Histórico completo de ações realizadas no sistema
+            {t('logAuditoria.historicoCompleto')}
           </p>
         </div>
         <Button onClick={checkAccessAndLoadData} variant="outline">
           <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Atualizar
+          {t('logAuditoria.atualizar')}
         </Button>
       </div>
 
@@ -285,64 +285,64 @@ export default function LogAuditoriaPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="w-5 h-5" />
-            Filtros
+            {t('logAuditoria.filtros')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div>
-              <Label>Pesquisar</Label>
+              <Label>{t('logAuditoria.pesquisar')}</Label>
               <Input
-                placeholder="Utilizador, entidade..."
+                placeholder={t('logAuditoria.pesquisarPlaceholder')}
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
               />
             </div>
             <div>
-              <Label>Ação</Label>
+              <Label>{t('logAuditoria.filtroAcao')}</Label>
               <select
                 className="w-full h-10 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-100"
                 value={filters.acao}
                 onChange={(e) => handleFilterChange('acao', e.target.value)}
               >
-                <option value="">Todas as ações</option>
-                <option value="criar">Criar</option>
-                <option value="editar">Editar</option>
-                <option value="excluir">Excluir</option>
-                <option value="visualizar">Visualizar</option>
-                <option value="exportar">Exportar</option>
-                <option value="login">Login</option>
-                <option value="logout">Logout</option>
+                <option value="">{t('logAuditoria.todasAcoes')}</option>
+                <option value="criar">{t('logAuditoria.opcaoCriar')}</option>
+                <option value="editar">{t('logAuditoria.opcaoEditar')}</option>
+                <option value="excluir">{t('logAuditoria.opcaoExcluir')}</option>
+                <option value="visualizar">{t('logAuditoria.opcaoVisualizar')}</option>
+                <option value="exportar">{t('logAuditoria.opcaoExportar')}</option>
+                <option value="login">{t('logAuditoria.opcaoLogin')}</option>
+                <option value="logout">{t('logAuditoria.opcaoLogout')}</option>
               </select>
             </div>
             <div>
-              <Label>Módulo</Label>
+              <Label>{t('logAuditoria.filtroModulo')}</Label>
               <select
                 className="w-full h-10 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-100"
                 value={filters.modulo}
                 onChange={(e) => handleFilterChange('modulo', e.target.value)}
               >
-                <option value="">Todos os módulos</option>
-                <option value="financeiro">Financeiro</option>
-                <option value="operacoes">Operações</option>
-                <option value="safety">Safety</option>
-                <option value="inspecoes">Inspeções</option>
-                <option value="manutencao">Manutenção</option>
-                <option value="documentos">Documentos</option>
-                <option value="gestao">Gestão</option>
-                <option value="grf">GRF</option>
+                <option value="">{t('logAuditoria.todosModulos')}</option>
+                <option value="financeiro">{t('logAuditoria.moduloFinanceiro')}</option>
+                <option value="operacoes">{t('logAuditoria.moduloOperacoes')}</option>
+                <option value="safety">{t('logAuditoria.moduloSafety')}</option>
+                <option value="inspecoes">{t('logAuditoria.moduloInspecoes')}</option>
+                <option value="manutencao">{t('logAuditoria.moduloManutencao')}</option>
+                <option value="documentos">{t('logAuditoria.moduloDocumentos')}</option>
+                <option value="gestao">{t('logAuditoria.moduloGestao')}</option>
+                <option value="grf">{t('logAuditoria.moduloGRF')}</option>
               </select>
             </div>
             <div>
-              <Label>Utilizador</Label>
+              <Label>{t('logAuditoria.filtroUtilizador')}</Label>
               <Input
-                placeholder="Email ou nome"
+                placeholder={t('logAuditoria.utilizadorPlaceholder')}
                 value={filters.usuario}
                 onChange={(e) => handleFilterChange('usuario', e.target.value)}
               />
             </div>
             <div>
-              <Label>Data Início</Label>
+              <Label>{t('logAuditoria.dataInicio')}</Label>
               <Input
                 type="date"
                 value={filters.dataInicio}
@@ -350,7 +350,7 @@ export default function LogAuditoriaPage() {
               />
             </div>
             <div>
-              <Label>Data Fim</Label>
+              <Label>{t('logAuditoria.dataFim')}</Label>
               <Input
                 type="date"
                 value={filters.dataFim}
@@ -360,7 +360,7 @@ export default function LogAuditoriaPage() {
           </div>
           <div className="mt-4 flex justify-end">
             <Button variant="outline" onClick={clearFilters}>
-              Limpar Filtros
+              {t('logAuditoria.limparFiltros')}
             </Button>
           </div>
         </CardContent>
@@ -370,26 +370,26 @@ export default function LogAuditoriaPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Logs de Auditoria ({filteredLogs.length} registos)
+            {t('logAuditoria.logsAuditoria')} ({filteredLogs.length} {t('logAuditoria.registos')})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {filteredLogs.length === 0 ? (
             <div className="text-center py-8">
               <Eye className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-              <p className="text-slate-500 dark:text-slate-400">Nenhum log encontrado</p>
+              <p className="text-slate-500 dark:text-slate-400">{t('logAuditoria.nenhum')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                   <tr>
-                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Data/Hora</th>
-                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Ação</th>
-                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Módulo</th>
-                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Utilizador</th>
-                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Entidade</th>
-                    <th className="text-center p-3 font-medium text-slate-700 dark:text-slate-300">Detalhes</th>
+                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">{t('logAuditoria.colData')}</th>
+                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">{t('logAuditoria.colAcao')}</th>
+                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">{t('logAuditoria.colModulo')}</th>
+                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">{t('logAuditoria.colUtilizador')}</th>
+                    <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">{t('logAuditoria.entidade')}</th>
+                    <th className="text-center p-3 font-medium text-slate-700 dark:text-slate-300">{t('logAuditoria.colDescricao')}</th>
                   </tr>
                 </thead>
                 <tbody>

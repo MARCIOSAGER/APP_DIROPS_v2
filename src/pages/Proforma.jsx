@@ -40,7 +40,7 @@ import { User } from '@/entities/User';
 import { downloadAsCSV } from '@/components/lib/export';
 import { base44 } from '@/api/base44Client';
 import { registarCriacao } from '@/components/lib/auditoria';
-import { getAeroportosPermitidos, ensureUserProfilesExist, getEmailsEmpresa, filtrarDadosPorCriador } from '@/components/lib/userUtils';
+import { getAeroportosPermitidos, ensureUserProfilesExist } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
 

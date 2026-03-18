@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Bot, User, Loader2, Plus, AlertCircle } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { chatbotIA } from "@/functions/chatbotIA";
 import { enviarTicketSuporte } from "@/functions/enviarTicketSuporte";

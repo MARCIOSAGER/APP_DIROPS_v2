@@ -28,6 +28,7 @@ import { Inspecao } from '@/entities/Inspecao';
 import { Empresa } from '@/entities/Empresa';
 import { getEmpresaLogoByAeroporto } from '@/components/lib/userUtils';
 import { createPdfDoc, addHeader, addFooter, addInfoBox, addSectionTitle, addKeyValuePairs, checkPageBreak, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
+import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_CONFIG = {
   em_andamento: { color: 'bg-blue-100 text-blue-800', icon: Clock },
@@ -37,6 +38,7 @@ const STATUS_CONFIG = {
 };
 
 export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, isLoading, onReload }) {
+  const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [tipoFilter, setTipoFilter] = useState('todos');
@@ -108,12 +110,12 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
 
   const getTipoNome = (tipoId) => {
     const tipo = tiposInspecao.find(t => t.id === tipoId);
-    return tipo?.nome || 'Tipo não encontrado';
+    return tipo?.nome || t('inspecoesList.tipoNaoEncontrado');
   };
 
   const getAeroportoNome = (aeroportoId) => {
     const aeroporto = aeroportos.find(a => a.id === aeroportoId);
-    return aeroporto?.nome || 'Aeroporto não encontrado';
+    return aeroporto?.nome || t('inspecoesList.aeroportoNaoEncontrado');
   };
 
   const handleViewInspecao = (inspecao) => {
@@ -143,7 +145,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
       console.error('Erro ao excluir inspeção:', error);
       setIsDeleteModalOpen(false);
       setInspecaoToDelete(null);
-      setErrorInfo({ isOpen: true, title: 'Erro ao Excluir', message: 'Não foi possível excluir a inspeção. Verifique se possui permissão para esta ação.' });
+      setErrorInfo({ isOpen: true, title: t('inspecoesList.erroExcluirTitulo'), message: t('inspecoesList.erroExcluirMsg') });
     }
   };
 
@@ -153,60 +155,60 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
     try {
       const { SendEmail } = await import('@/integrations/Core');
       
-      const aeroportoNome = aeroportos.find(a => a.id === selectedInspecao.aeroporto_id)?.nome || 'Aeroporto não encontrado';
-      const tipoNome = tiposInspecao.find(t => t.id === selectedInspecao.tipo_inspecao_id)?.nome || 'Tipo não encontrado';
+      const aeroportoNome = aeroportos.find(a => a.id === selectedInspecao.aeroporto_id)?.nome || t('inspecoesList.aeroportoNaoEncontrado');
+      const tipoNome = tiposInspecao.find(t => t.id === selectedInspecao.tipo_inspecao_id)?.nome || t('inspecoesList.tipoNaoEncontrado');
       
       const emailLogoUrl = getEmpresaLogoByAeroporto(selectedInspecao.aeroporto_id, aeroportos, empresas);
       const reportBody = `
         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
             <img src="${emailLogoUrl}" alt="DIROPS Logo" style="height: 60px;">
-            <h1 style="color: #1e40af; margin-top: 20px;">Relatório de Inspeção</h1>
+            <h1 style="color: #1e40af; margin-top: 20px;">${t('inspecoesList.emailRelatorio')}</h1>
           </div>
           
           <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="color: #1e40af; margin-top: 0;">Dados da Inspeção</h2>
+            <h2 style="color: #1e40af; margin-top: 0;">${t('inspecoesList.pdfInfoInspecao')}</h2>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 8px; font-weight: bold;">Tipo:</td>
+                <td style="padding: 8px; font-weight: bold;">${t('inspecoesList.emailTipo')}:</td>
                 <td style="padding: 8px;">${tipoNome}</td>
               </tr>
               <tr>
-                <td style="padding: 8px; font-weight: bold;">Aeroporto:</td>
+                <td style="padding: 8px; font-weight: bold;">${t('inspecoesList.colAeroporto')}:</td>
                 <td style="padding: 8px;">${aeroportoNome}</td>
               </tr>
               <tr>
-                <td style="padding: 8px; font-weight: bold;">Data:</td>
+                <td style="padding: 8px; font-weight: bold;">${t('inspecoesList.colData')}:</td>
                 <td style="padding: 8px;">${new Date(selectedInspecao.data_inspecao).toLocaleDateString('pt-AO')}</td>
               </tr>
               <tr>
-                <td style="padding: 8px; font-weight: bold;">Inspetor:</td>
+                <td style="padding: 8px; font-weight: bold;">${t('inspecoesList.colInspetor')}:</td>
                 <td style="padding: 8px;">${selectedInspecao.inspetor_responsavel}</td>
               </tr>
               <tr>
-                <td style="padding: 8px; font-weight: bold;">Status:</td>
+                <td style="padding: 8px; font-weight: bold;">${t('inspecoesList.colStatus')}:</td>
                 <td style="padding: 8px;">${selectedInspecao.status}</td>
               </tr>
             </table>
           </div>
 
           <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #1e40af;">Resultados</h3>
+            <h3 style="color: #1e40af;">${t('inspecoesList.emailResultados')}</h3>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 8px; font-weight: bold;">Total de Itens:</td>
+                <td style="padding: 8px; font-weight: bold;">${t('inspecoesList.totalItens')}:</td>
                 <td style="padding: 8px;">${selectedInspecao.total_itens || 0}</td>
               </tr>
               <tr>
-                <td style="padding: 8px; font-weight: bold;">Itens Conformes:</td>
+                <td style="padding: 8px; font-weight: bold;">${t('inspecoesList.emailItensConformes')}:</td>
                 <td style="padding: 8px; color: green;">${selectedInspecao.itens_conformes || 0}</td>
               </tr>
               <tr>
-                <td style="padding: 8px; font-weight: bold;">Itens Não Conformes:</td>
+                <td style="padding: 8px; font-weight: bold;">${t('inspecoesList.emailItensNaoConformes')}:</td>
                 <td style="padding: 8px; color: red;">${selectedInspecao.itens_nao_conformes || 0}</td>
               </tr>
               <tr>
-                <td style="padding: 8px; font-weight: bold;">Itens N/A:</td>
+                <td style="padding: 8px; font-weight: bold;">${t('inspecoesList.emailItensNA')}:</td>
                 <td style="padding: 8px;">${selectedInspecao.itens_nao_aplicaveis || 0}</td>
               </tr>
             </table>
@@ -214,7 +216,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
 
           ${selectedInspecao.resumo_geral ? `
             <div style="margin: 20px 0;">
-              <h3 style="color: #1e40af;">Resumo Geral</h3>
+              <h3 style="color: #1e40af;">${t('inspecoesList.pdfResumoGeral')}</h3>
               <p style="background-color: #f8fafc; padding: 15px; border-radius: 8px;">
                 ${selectedInspecao.resumo_geral}
               </p>
@@ -230,7 +232,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
 
       await SendEmail({
         to: recipient,
-        subject: subject || `Relatório de Inspeção - ${tipoNome} - ${aeroportoNome}`,
+        subject: subject || `${t('inspecoesList.emailRelatorio')} - ${tipoNome} - ${aeroportoNome}`,
         body: reportBody,
         from_name: 'DIROPS'
       });
@@ -238,7 +240,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
       return true;
     } catch (error) {
       console.error('Erro ao enviar email:', error);
-      throw new Error(error.message || 'Falha no envio do e-mail. Verifique o endereço e tente novamente.');
+      throw new Error(error.message || t('inspecoesList.erroEnvioEmail'));
     }
   };
 
@@ -261,39 +263,39 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
 
       // Header
       let yPos = addHeader(doc, {
-        title: 'Relatório de Inspeção',
+        title: t('inspecoesList.pdfRelatorio'),
         logoBase64,
         date: dataFormatada,
         meta: [
-          `Aeroporto: ${aeroportoNome}`,
-          `Inspetor: ${inspecao.inspetor_responsavel}`,
+          `${t('inspecoesList.colAeroporto')}: ${aeroportoNome}`,
+          `${t('inspecoesList.colInspetor')}: ${inspecao.inspetor_responsavel}`,
         ],
       });
 
       // Informações da Inspeção
-      yPos = addSectionTitle(doc, yPos, 'INFORMAÇÕES DA INSPEÇÃO');
+      yPos = addSectionTitle(doc, yPos, t('inspecoesList.pdfInfoInspecao'));
       yPos = addInfoBox(doc, yPos, [
-        { label: 'Tipo', value: getTipoNome(inspecao.tipo_inspecao_id) },
-        { label: 'Data', value: dataFormatada },
-        { label: 'Aeroporto', value: aeroportoNome },
-        { label: 'Inspetor', value: inspecao.inspetor_responsavel },
-        { label: 'Status', value: inspecao.status.replace(/_/g, ' ').toUpperCase() },
+        { label: t('inspecoesList.colTipo'), value: getTipoNome(inspecao.tipo_inspecao_id) },
+        { label: t('inspecoesList.colData'), value: dataFormatada },
+        { label: t('inspecoesList.colAeroporto'), value: aeroportoNome },
+        { label: t('inspecoesList.colInspetor'), value: inspecao.inspetor_responsavel },
+        { label: t('inspecoesList.colStatus'), value: inspecao.status.replace(/_/g, ' ').toUpperCase() },
       ]);
 
       // Estatísticas
       yPos = checkPageBreak(doc, yPos, 30);
-      yPos = addSectionTitle(doc, yPos, 'ESTATÍSTICAS');
+      yPos = addSectionTitle(doc, yPos, t('inspecoesList.pdfEstatisticas'));
       yPos = addKeyValuePairs(doc, yPos, [
-        { label: 'Total de Itens', value: String(inspecao.total_itens || 0) },
-        { label: 'Conformes', value: String(inspecao.itens_conformes || 0) },
-        { label: 'Não Conformes', value: String(inspecao.itens_nao_conformes || 0) },
-        { label: 'Conformidade', value: `${getConformityPercentage(inspecao)}%` },
+        { label: t('inspecoesList.totalItens'), value: String(inspecao.total_itens || 0) },
+        { label: t('inspecoesList.conformes'), value: String(inspecao.itens_conformes || 0) },
+        { label: t('inspecoesList.naoConformes'), value: String(inspecao.itens_nao_conformes || 0) },
+        { label: t('inspecoesList.conformidade'), value: `${getConformityPercentage(inspecao)}%` },
       ], { twoColumns: true });
 
       // Resumo Geral
       if (inspecao.resumo_geral) {
         yPos = checkPageBreak(doc, yPos, 30);
-        yPos = addSectionTitle(doc, yPos, 'RESUMO GERAL');
+        yPos = addSectionTitle(doc, yPos, t('inspecoesList.pdfResumoGeral'));
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(PDF.font.body);
@@ -322,7 +324,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(PDF.font.subtitle);
         doc.setTextColor(...PDF.colors.danger);
-        doc.text('ATENÇÃO: REQUER AÇÃO CORRETIVA IMEDIATA', m.left + 4, yPos + 10);
+        doc.text(t('inspecoesList.pdfAtencao'), m.left + 4, yPos + 10);
         yPos += 25;
       }
 
@@ -334,7 +336,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
 
         if (respostasComFotos.length > 0) {
           yPos = checkPageBreak(doc, yPos, 60);
-          yPos = addSectionTitle(doc, yPos, 'EVIDÊNCIAS FOTOGRÁFICAS');
+          yPos = addSectionTitle(doc, yPos, t('inspecoesList.pdfEvidencias'));
 
           for (const resposta of respostasComFotos) {
             yPos = checkPageBreak(doc, yPos, 55);
@@ -343,7 +345,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
             doc.setFontSize(PDF.font.body);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(...PDF.colors.dark);
-            doc.text('Item da Inspeção', m.left, yPos);
+            doc.text(t('inspecoesList.pdfItemInspecao'), m.left, yPos);
             yPos += 7;
 
             if (resposta.observacoes) {
@@ -389,7 +391,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
                 doc.rect(xPos, yPos, photoWidth, photoHeight, 'F');
                 doc.setTextColor(150, 150, 150);
                 doc.setFontSize(PDF.font.caption);
-                doc.text('Imagem\nnão carregada', xPos + photoWidth / 2, yPos + photoHeight / 2, { align: 'center' });
+                doc.text(t('inspecoesList.pdfImagemNaoCarregada'), xPos + photoWidth / 2, yPos + photoHeight / 2, { align: 'center' });
 
                 xPos += photoWidth + 5;
                 photosInRow++;
@@ -409,25 +411,25 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
       doc.save(`inspecao_${getTipoNome(inspecao.tipo_inspecao_id).replace(/\s+/g, '_')}_${format(parseISO(inspecao.data_inspecao), 'yyyy-MM-dd')}.pdf`);
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
-      alert('Erro ao exportar relatório. Tente novamente.');
+      alert(t('inspecoesList.erroExportarPDF'));
     }
   };
 
   const statusOptions = [
-    { value: 'todos', label: 'Todos os Status' },
-    { value: 'em_andamento', label: 'Em Andamento' },
-    { value: 'concluida', label: 'Concluída' },
-    { value: 'aprovada', label: 'Aprovada' },
-    { value: 'rejeitada', label: 'Rejeitada' }
+    { value: 'todos', label: t('inspecoesList.todosStatus') },
+    { value: 'em_andamento', label: t('inspecoesList.emAndamento') },
+    { value: 'concluida', label: t('inspecoesList.concluida') },
+    { value: 'aprovada', label: t('inspecoesList.aprovada') },
+    { value: 'rejeitada', label: t('inspecoesList.rejeitada') }
   ];
 
   const tipoOptions = [
-    { value: 'todos', label: 'Todos os Tipos' },
+    { value: 'todos', label: t('inspecoesList.todosTipos') },
     ...tiposInspecao.map(tipo => ({ value: tipo.id, label: tipo.nome }))
   ];
 
   const aeroportoOptions = [
-    { value: 'todos', label: 'Todos os Aeroportos' },
+    { value: 'todos', label: t('inspecoesList.todosAeroportos') },
     ...aeroportos.map(aeroporto => ({ value: aeroporto.id, label: aeroporto.nome }))
   ];
 
@@ -436,7 +438,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
       {/* Filtros e Ordenação */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Filtros e Ordenação</CardTitle>
+          <CardTitle className="text-lg">{t('inspecoesList.filtrosOrdenacao')}</CardTitle>
           <div className="flex gap-2">
             <Button
               variant={viewMode === 'grid' ? 'default' : 'outline'}
@@ -444,7 +446,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
               onClick={() => setViewMode('grid')}
             >
               <Grid3x3 className="w-4 h-4 mr-2" />
-              Cards
+              {t('inspecoesList.cards')}
             </Button>
             <Button
               variant={viewMode === 'list' ? 'default' : 'outline'}
@@ -452,7 +454,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
               onClick={() => setViewMode('list')}
             >
               <List className="w-4 h-4 mr-2" />
-              Tabela
+              {t('inspecoesList.tabela')}
             </Button>
           </div>
         </CardHeader>
@@ -461,7 +463,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
             <div className="relative lg:col-span-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
               <Input
-                placeholder="Pesquisar inspetor/resumo..."
+                placeholder={t('inspecoesList.pesquisar')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -479,7 +481,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
               options={tipoOptions}
               value={tipoFilter}
               onValueChange={setTipoFilter}
-              placeholder="Tipo de Inspeção"
+              placeholder={t('inspecoesList.tipoInspecao')}
             />
 
             <Select
@@ -491,24 +493,24 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
 
             <Select
               options={[
-                { value: 'data_inspecao', label: 'Data' },
-                { value: 'inspetor_responsavel', label: 'Inspetor' },
-                { value: 'status', label: 'Status' },
-                { value: 'conformidade', label: 'Conformidade' }
+                { value: 'data_inspecao', label: t('inspecoesList.sortData') },
+                { value: 'inspetor_responsavel', label: t('inspecoesList.sortInspetor') },
+                { value: 'status', label: t('inspecoesList.sortStatus') },
+                { value: 'conformidade', label: t('inspecoesList.sortConformidade') }
               ]}
               value={sortCriteria}
               onValueChange={setSortCriteria}
-              placeholder="Ordenar por..."
+              placeholder={t('inspecoesList.ordenarPor')}
             />
 
             <Select
               options={[
-                { value: 'desc', label: '↓ Desc' },
-                { value: 'asc', label: '↑ Asc' }
+                { value: 'desc', label: t('inspecoesList.sortDesc') },
+                { value: 'asc', label: t('inspecoesList.sortAsc') }
               ]}
               value={sortOrder}
               onValueChange={setSortOrder}
-              placeholder="Ordem"
+              placeholder={t('inspecoesList.ordem')}
             />
           </div>
         </CardContent>
@@ -522,13 +524,13 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
               <table className="w-full">
                 <thead className="bg-slate-50 border-b">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Tipo</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Data</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Aeroporto</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Inspetor</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Conformidade</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Ações</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('inspecoesList.colTipo')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('inspecoesList.colData')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('inspecoesList.colAeroporto')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('inspecoesList.colInspetor')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{t('inspecoesList.colStatus')}</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">{t('inspecoesList.colConformidade')}</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">{t('inspecoesList.colAcoes')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -536,15 +538,15 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
                     <tr>
                       <td colSpan="7" className="px-4 py-8 text-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="text-slate-500 mt-2">A carregar inspeções...</p>
+                        <p className="text-slate-500 mt-2">{t('inspecoesList.aCarregar')}</p>
                       </td>
                     </tr>
                   ) : filteredInspecoes.length === 0 ? (
                     <tr>
                       <td colSpan="7" className="px-4 py-12 text-center">
                         <Clock className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                        <h3 className="text-lg font-semibold text-slate-700 mb-2">Nenhuma inspeção encontrada</h3>
-                        <p className="text-slate-500">Não há inspeções que correspondam aos filtros selecionados.</p>
+                        <h3 className="text-lg font-semibold text-slate-700 mb-2">{t('inspecoesList.nenhumaInspecao')}</h3>
+                        <p className="text-slate-500">{t('inspecoesList.nenhumaCorrespondente')}</p>
                       </td>
                     </tr>
                   ) : (
@@ -578,16 +580,16 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-1 justify-center">
-                              <Button variant="ghost" size="sm" onClick={() => handleViewInspecao(inspecao)} title="Ver detalhes">
+                              <Button variant="ghost" size="sm" onClick={() => handleViewInspecao(inspecao)} title={t('inspecoesList.verDetalhes')}>
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleExportPDF(inspecao)} title="Exportar PDF">
+                              <Button variant="ghost" size="sm" onClick={() => handleExportPDF(inspecao)} title={t('inspecoesList.exportarPDF')}>
                                 <FileText className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleOpenEmailModal(inspecao)} title="Enviar email">
+                              <Button variant="ghost" size="sm" onClick={() => handleOpenEmailModal(inspecao)} title={t('inspecoesList.enviarEmail')}>
                                 <Mail className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDeleteInspecao(inspecao)} className="text-red-600 hover:text-red-700 hover:bg-red-50" title="Excluir">
+                              <Button variant="ghost" size="sm" onClick={() => handleDeleteInspecao(inspecao)} className="text-red-600 hover:text-red-700 hover:bg-red-50" title={t('inspecoesList.excluir')}>
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
@@ -606,17 +608,17 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
           {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-slate-500 mt-2">A carregar inspeções...</p>
+            <p className="text-slate-500 mt-2">{t('inspecoesList.aCarregar')}</p>
           </div>
         ) : filteredInspecoes.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
               <Clock className="w-16 h-16 mx-auto text-slate-300 mb-4" />
               <h3 className="text-lg font-semibold text-slate-700 mb-2">
-                Nenhuma inspeção encontrada
+                {t('inspecoesList.nenhumaInspecao')}
               </h3>
               <p className="text-slate-500">
-                Não há inspeções que correspondam aos filtros selecionados.
+                {t('inspecoesList.nenhumaCorrespondente')}
               </p>
             </CardContent>
           </Card>
@@ -660,7 +662,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => handleViewInspecao(inspecao)} className="border-slate-300 text-slate-700 hover:bg-slate-100">
                         <Eye className="w-4 h-4 mr-1" />
-                        Ver
+                        {t('inspecoesList.ver')}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => handleExportPDF(inspecao)} className="border-slate-300 text-slate-700 hover:bg-slate-100">
                         <FileText className="w-4 h-4 mr-1" />
@@ -672,7 +674,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => handleDeleteInspecao(inspecao)} className="border-red-300 text-red-600 hover:bg-red-50">
                         <Trash2 className="w-4 h-4 mr-1" />
-                        Excluir
+                        {t('inspecoesList.excluir')}
                       </Button>
                     </div>
                   </div>
@@ -686,35 +688,35 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
                         <div className="text-2xl font-bold text-slate-900">
                           {inspecao.total_itens || 0}
                         </div>
-                        <div className="text-xs text-slate-500">Total de Itens</div>
+                        <div className="text-xs text-slate-500">{t('inspecoesList.totalItens')}</div>
                       </div>
 
                       <div className="text-center p-3 bg-green-50 rounded-lg">
                         <div className="text-2xl font-bold text-green-700">
                           {inspecao.itens_conformes || 0}
                         </div>
-                        <div className="text-xs text-slate-500">Conformes</div>
+                        <div className="text-xs text-slate-500">{t('inspecoesList.conformes')}</div>
                       </div>
 
                       <div className="text-center p-3 bg-red-50 rounded-lg">
                         <div className="text-2xl font-bold text-red-700">
                           {inspecao.itens_nao_conformes || 0}
                         </div>
-                        <div className="text-xs text-slate-500">Não Conformes</div>
+                        <div className="text-xs text-slate-500">{t('inspecoesList.naoConformes')}</div>
                       </div>
 
                       <div className="text-center p-3 bg-blue-50 rounded-lg">
                         <div className="text-2xl font-bold text-blue-700">
                           {conformityPercentage}%
                         </div>
-                        <div className="text-xs text-slate-500">Conformidade</div>
+                        <div className="text-xs text-slate-500">{t('inspecoesList.conformidade')}</div>
                       </div>
                     </div>
 
                     {/* Resumo */}
                     {inspecao.resumo_geral && (
                       <div>
-                        <h4 className="font-medium text-slate-700 mb-2">Resumo:</h4>
+                        <h4 className="font-medium text-slate-700 mb-2">{t('inspecoesList.resumo')}</h4>
                         <p className="text-sm text-slate-600 line-clamp-2">
                           {inspecao.resumo_geral}
                         </p>
@@ -726,7 +728,7 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
                       <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                         <XCircle className="w-5 h-5 text-red-600" />
                         <span className="text-red-700 font-medium">
-                          Requer Ação Corretiva Imediata
+                          {t('inspecoesList.requerAcaoImediata')}
                         </span>
                       </div>
                     )}
@@ -747,9 +749,9 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
           setSelectedInspecao(null);
         }}
         onSend={handleSendEmail}
-        title="Enviar Relatório de Inspeção"
-        defaultSubject={selectedInspecao ? 
-          `Relatório de Inspeção - ${getTipoNome(selectedInspecao.tipo_inspecao_id)} - ${getAeroportoNome(selectedInspecao.aeroporto_id)}` 
+        title={t('inspecoesList.enviarRelatorio')}
+        defaultSubject={selectedInspecao ?
+          `${t('inspecoesList.emailRelatorio')} - ${getTipoNome(selectedInspecao.tipo_inspecao_id)} - ${getAeroportoNome(selectedInspecao.aeroporto_id)}`
           : ''
         }
       />
@@ -777,13 +779,13 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
         }}
         onConfirm={confirmDelete}
         type="warning"
-        title="Excluir Inspeção"
-        message={inspecaoToDelete ? 
-          `Tem certeza que deseja excluir a inspeção "${getTipoNome(inspecaoToDelete.tipo_inspecao_id)}" de ${format(parseISO(inspecaoToDelete.data_inspecao), 'dd/MM/yyyy', { locale: pt })}?` 
+        title={t('inspecoesList.excluirInspecao')}
+        message={inspecaoToDelete ?
+          `${t('inspecoesList.confirmExcluirMsg')} "${getTipoNome(inspecaoToDelete.tipo_inspecao_id)}" - ${format(parseISO(inspecaoToDelete.data_inspecao), 'dd/MM/yyyy', { locale: pt })}?`
           : ''
         }
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        confirmText={t('inspecoesList.excluir')}
+        cancelText={t('inspecoesList.cancelar')}
       />
 
       <AlertModal

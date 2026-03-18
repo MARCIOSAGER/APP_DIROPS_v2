@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   BookOpen, Plane, DollarSign, Shield, ClipboardCheck,
   Users, FileText, MessageSquare, Settings, ChevronDown, ChevronRight,
-  BarChart3, Wrench, Activity, Bell, Search, Layers
+  BarChart3, Wrench, Bell, Search, Layers
 } from "lucide-react";
 
 const sections = [

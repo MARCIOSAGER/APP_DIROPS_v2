@@ -8,6 +8,7 @@ import Select from '@/components/ui/select';
 import Combobox from '@/components/ui/combobox';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PlusCircle, Save, XCircle, AlertTriangle } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 // Helper: parse "HH:mm" to minutes since midnight
 function parseTimeToMinutes(timeStr) {
   const [h, m] = timeStr.split(':').map(Number);
@@ -28,6 +29,7 @@ import AlertModal from '@/components/shared/AlertModal';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, medicaoInicial, aeroportos, companhias }) {
+  const { t } = useI18n();
   const [campos, setCampos] = useState([]);
   const [medicaoData, setMedicaoData] = useState({
     tipo_kpi_id: tipoKPI?.id || '',
@@ -110,8 +112,8 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
         setAlertInfo({
           isOpen: true,
           type: 'warning',
-          title: 'Atenção',
-          message: 'O horário de início é igual ao horário de fim. Isto significa que o cálculo de minutos será ZERO (0).',
+          title: t('kpi.atencao'),
+          message: t('kpi.horario_igual_msg'),
           onConfirm: () => setAlertInfo((prev) => ({ ...prev, isOpen: false }))
         });
       }
@@ -233,10 +235,10 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
           setAlertInfo({
             isOpen: true,
             type: 'warning',
-            title: 'Confirmar Medição',
-            message: 'O horário de início é igual ao horário de fim. Isto significa que o cálculo de minutos será ZERO (0). Tem certeza que deseja continuar?',
+            title: t('kpi.confirmar_medicao'),
+            message: t('kpi.horario_igual_confirmar'),
             showCancel: true,
-            confirmText: 'Sim, Continuar',
+            confirmText: t('kpi.sim_continuar'),
             onConfirm: () => {
               setAlertInfo((prev) => ({ ...prev, isOpen: false }));
               proceedWithSubmit();
@@ -417,36 +419,36 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <PlusCircle className="w-5 h-5 text-blue-600" />
-            {medicaoInicial ? 'Editar' : 'Nova'} Medição: {tipoKPI?.nome}
+            {medicaoInicial ? t('kpi.editar_medicao') : t('kpi.nova_medicao')} {t('kpi.medicao')} {tipoKPI?.nome}
           </DialogTitle>
         </DialogHeader>
 
         {isLoading ?
         <div className="flex items-center justify-center p-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-slate-500 mt-2 ml-3">A carregar campos...</p>
+            <p className="text-slate-500 mt-2 ml-3">{t('kpi.carregando_campos')}</p>
           </div> :
 
         <form onSubmit={handleSubmit} className="space-y-6">
             {/* Dados Gerais da Medição */}
             <div className="space-y-4 p-4 border rounded-md bg-slate-50">
-              <h3 className="text-lg font-semibold">Dados Gerais</h3>
+              <h3 className="text-lg font-semibold">{t('kpi.dados_gerais')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="aeroporto_id">Aeroporto *</Label>
+                  <Label htmlFor="aeroporto_id">{t('kpi.aeroporto')}</Label>
                   <Select
                   id="aeroporto_id"
                   options={aeroportoOptions}
                   value={medicaoData.aeroporto_id}
                   onValueChange={(v) => handleMedicaoChange('aeroporto_id', v)}
-                  placeholder="Selecione o Aeroporto"
+                  placeholder={t('kpi.selecione_aeroporto')}
                   className={errors.aeroporto_id ? 'border-red-500' : ''} />
 
                   {errors.aeroporto_id && <p className="text-red-500 text-xs flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{errors.aeroporto_id}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="data_medicao">Data da Medição *</Label>
+                  <Label htmlFor="data_medicao">{t('kpi.data_medicao')}</Label>
                   <Input
                   id="data_medicao"
                   type="date"
@@ -456,7 +458,7 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="hora_inicio">Hora Início *</Label>
+                  <Label htmlFor="hora_inicio">{t('kpi.hora_inicio')}</Label>
                   <Input
                   id="hora_inicio"
                   type="time"
@@ -469,7 +471,7 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="hora_fim">Hora Fim *</Label>
+                  <Label htmlFor="hora_fim">{t('kpi.hora_fim')}</Label>
                   <Input
                   id="hora_fim"
                   type="time"
@@ -482,7 +484,7 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="numero_voo">Número do Voo</Label>
+                  <Label htmlFor="numero_voo">{t('kpi.numero_voo')}</Label>
                   <Input
                   id="numero_voo"
                   value={medicaoData.numero_voo}
@@ -492,30 +494,30 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="companhia_aerea_codigo_icao">Companhia Aérea</Label>
+                  <Label htmlFor="companhia_aerea_codigo_icao">{t('kpi.companhia')}</Label>
                   <Combobox
                   id="companhia_aerea_codigo_icao"
                   options={companhiaOptions}
                   value={medicaoData.companhia_aerea_codigo_icao}
                   onValueChange={(v) => handleMedicaoChange('companhia_aerea_codigo_icao', v)}
-                  placeholder="Selecione a Companhia" />
+                  placeholder={t('kpi.selecione_companhia')} />
 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="responsavel_medicao">Responsável *</Label>
+                  <Label htmlFor="responsavel_medicao">{t('kpi.responsavel')}</Label>
                   <Input
                   id="responsavel_medicao"
                   value={medicaoData.responsavel_medicao}
                   onChange={(e) => handleMedicaoChange('responsavel_medicao', e.target.value)}
-                  placeholder="Nome do responsável"
+                  placeholder={t('kpi.responsavel_placeholder')}
                   className={errors.responsavel_medicao ? 'border-red-500' : ''} />
 
                   {errors.responsavel_medicao && <p className="text-red-500 text-xs flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{errors.responsavel_medicao}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="turno">Turno</Label>
+                  <Label htmlFor="turno">{t('kpi.turno')}</Label>
                   <Select
                   id="turno"
                   options={turnoOptions}
@@ -531,7 +533,7 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
           <div key={categoria} className="space-y-4 p-4 border rounded-md bg-blue-50">
                 <h3 className="text-lg font-semibold capitalize">
                   {categoria.replace('_', ' ')} 
-                  ({camposCategoria.length} campos)
+                  ({camposCategoria.length} {t('kpi.campos')})
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {camposCategoria.map((campo) =>
@@ -559,12 +561,12 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
 
             {/* Observações Gerais */}
             <div className="space-y-2">
-              <Label htmlFor="observacoes_gerais">Observações Gerais</Label>
+              <Label htmlFor="observacoes_gerais">{t('kpi.observacoes_gerais')}</Label>
               <Textarea
               id="observacoes_gerais"
               value={medicaoData.observacoes_gerais}
               onChange={(e) => handleMedicaoChange('observacoes_gerais', e.target.value)}
-              placeholder="Observações adicionais sobre a medição..."
+              placeholder={t('kpi.observacoes_placeholder')}
               rows={3} />
 
             </div>
@@ -573,12 +575,12 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
               <DialogClose asChild>
                 <Button type="button" variant="outline">
                   <XCircle className="w-4 h-4 mr-2" />
-                  Cancelar
+                  {t('kpi.cancelar')}
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Save className="w-4 h-4 mr-2" />
-                {isSubmitting ? 'A guardar...' : `${medicaoInicial ? 'Atualizar' : 'Registar'} Medição`}
+                {isSubmitting ? t('kpi.guardando') : `${medicaoInicial ? t('kpi.atualizar_medicao') : t('kpi.registar_medicao')}`}
               </Button>
             </DialogFooter>
           </form>

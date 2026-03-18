@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Save, X, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, Save, X } from 'lucide-react';
 import { TipoOutraTarifa } from '@/entities/TipoOutraTarifa';
 import { toast } from '@/components/ui/use-toast';
 

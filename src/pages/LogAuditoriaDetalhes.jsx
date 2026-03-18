@@ -18,6 +18,7 @@ import { pt } from 'date-fns/locale';
 import { LogAuditoria } from '@/entities/LogAuditoria';
 import { User } from '@/entities/User';
 import { hasUserProfile } from '@/components/lib/userUtils';
+import { useI18n } from '@/components/lib/i18n';
 
 const ACTION_COLORS = {
   criar: 'bg-green-100 text-green-800',
@@ -42,6 +43,7 @@ const MODULE_COLORS = {
 
 export default function LogAuditoriaDetalhesPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const logId = searchParams.get('id');
 
@@ -67,7 +69,7 @@ export default function LogAuditoriaDetalhesPage() {
         setHasAccess(false);
         setError({
           type: 'permission',
-          message: 'Acesso negado. Apenas administradores podem visualizar logs.',
+          message: t('logAuditoria.semAcesso'),
         });
         return;
       }
@@ -78,14 +80,14 @@ export default function LogAuditoriaDetalhesPage() {
       } else {
         setError({
           type: 'notfound',
-          message: 'ID de log não fornecido.',
+          message: t('logAuditoria.idNaoFornecido'),
         });
       }
     } catch (error) {
       console.error('Erro ao verificar acesso:', error);
       setError({
         type: 'error',
-        message: 'Erro ao carregar log de auditoria.',
+        message: t('logAuditoria.erroCarregar'),
       });
     } finally {
       setIsLoading(false);
@@ -99,7 +101,7 @@ export default function LogAuditoriaDetalhesPage() {
       if (!foundLog) {
         setError({
           type: 'notfound',
-          message: 'Log não encontrado.',
+          message: t('logAuditoria.logNaoEncontrado'),
         });
         return;
       }
@@ -109,7 +111,7 @@ export default function LogAuditoriaDetalhesPage() {
       console.error('Erro ao carregar log:', error);
       setError({
         type: 'error',
-        message: 'Erro ao carregar detalhes do log.',
+        message: t('logAuditoria.erroCarregarDetalhes'),
       });
     }
   };
@@ -123,7 +125,7 @@ export default function LogAuditoriaDetalhesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <p className="text-slate-600">A carregar...</p>
+        <p className="text-slate-600">{t('logAuditoria.carregandoDetalhes')}</p>
       </div>
     );
   }
@@ -133,7 +135,7 @@ export default function LogAuditoriaDetalhesPage() {
       <div className="p-6 space-y-4">
         <Button variant="outline" onClick={() => navigate('/LogAuditoria')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
+          {t('logAuditoria.voltar')}
         </Button>
 
         <Alert variant="destructive">
@@ -149,7 +151,7 @@ export default function LogAuditoriaDetalhesPage() {
       <div className="p-6 space-y-4">
         <Alert>
           <Shield className="h-4 w-4" />
-          <AlertDescription>Acesso restrito a administradores.</AlertDescription>
+          <AlertDescription>{t('logAuditoria.acessoRestritoAdmin')}</AlertDescription>
         </Alert>
       </div>
     );
@@ -160,9 +162,9 @@ export default function LogAuditoriaDetalhesPage() {
       <div className="p-6 space-y-4">
         <Button variant="outline" onClick={() => navigate('/LogAuditoria')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
+          {t('logAuditoria.voltar')}
         </Button>
-        <p className="text-slate-600">Log não encontrado.</p>
+        <p className="text-slate-600">{t('logAuditoria.logNaoEncontrado')}</p>
       </div>
     );
   }
@@ -171,14 +173,14 @@ export default function LogAuditoriaDetalhesPage() {
     <div className="p-6 space-y-6">
       <Button variant="outline" onClick={() => navigate('/LogAuditoria')}>
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Voltar ao Log de Auditoria
+        {t('logAuditoria.voltarLog')}
       </Button>
 
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
             <Shield className="w-6 h-6 text-blue-600" />
-            <CardTitle>Detalhes do Log</CardTitle>
+            <CardTitle>{t('logAuditoria.detalhesLog')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -199,7 +201,7 @@ export default function LogAuditoriaDetalhesPage() {
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 <Calendar className="w-4 h-4 inline mr-1" />
-                Data e Hora
+                {t('logAuditoria.dataHora')}
               </label>
               <p className="text-slate-900 font-mono">
                 {format(new Date(log.created_date), 'dd/MM/yyyy HH:mm:ss', { locale: pt })}
@@ -208,7 +210,7 @@ export default function LogAuditoriaDetalhesPage() {
 
             {/* ID do Log */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">ID do Log</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.idLog')}</label>
               <div className="flex items-center gap-2">
                 <p className="text-slate-900 font-mono text-xs break-all">{log.id}</p>
                 <Button
@@ -228,13 +230,13 @@ export default function LogAuditoriaDetalhesPage() {
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 <UserIcon className="w-4 h-4 inline mr-1" />
-                Nome do Utilizador
+                {t('logAuditoria.nomeUtilizador')}
               </label>
               <p className="text-slate-900 font-medium">{log.usuario_nome || 'N/A'}</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Email do Utilizador</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.emailUtilizador')}</label>
               <p className="text-slate-900 font-mono text-sm">{log.usuario_email || 'N/A'}</p>
             </div>
           </div>
@@ -242,12 +244,12 @@ export default function LogAuditoriaDetalhesPage() {
           {/* Entidade */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Entidade Afetada</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.entidadeAfetada')}</label>
               <p className="text-slate-900 font-medium">{log.entidade || 'N/A'}</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">ID da Entidade</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.idEntidade')}</label>
               <p className="text-slate-900 font-mono text-sm">{log.entidade_id || 'N/A'}</p>
             </div>
           </div>
@@ -255,7 +257,7 @@ export default function LogAuditoriaDetalhesPage() {
           {/* Detalhes */}
           {log.detalhes && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Detalhes da Ação</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.detalhesAcao')}</label>
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
                 <p className="text-slate-700 text-sm whitespace-pre-wrap break-words">{log.detalhes}</p>
               </div>
@@ -265,7 +267,7 @@ export default function LogAuditoriaDetalhesPage() {
           {/* Alterações (se houver) */}
           {log.alteracoes && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Alterações Registadas</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.alteracoesRegistadas')}</label>
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
                 <pre className="text-xs overflow-x-auto text-slate-700">
                   {JSON.stringify(log.alteracoes, null, 2)}

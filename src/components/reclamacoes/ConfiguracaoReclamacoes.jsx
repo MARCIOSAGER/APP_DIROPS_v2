@@ -26,6 +26,7 @@ import {
   Eye
 } from 'lucide-react';
 import EmailPreviewModal from './EmailPreviewModal';
+import { useI18n } from '@/components/lib/i18n';
 
 import { ConfiguracaoArea } from '@/entities/ConfiguracaoArea';
 import { User } from '@/entities/User';
@@ -42,6 +43,7 @@ const AREAS_DISPONIVEIS = [
 ];
 
 export default function ConfiguracaoReclamacoes() {
+  const { t } = useI18n();
   const [configuracoes, setConfiguracoes] = useState([]);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,12 +105,12 @@ export default function ConfiguracaoReclamacoes() {
 
   const handleSaveArea = async () => {
     if (!formAreaData.area) {
-      setMessage({ type: 'error', text: 'Selecione uma área.' });
+      setMessage({ type: 'error', text: t('recl_config.erro_area') });
       return;
     }
 
     if (formAreaData.emails_notificacao.filter(email => email.trim()).length === 0) {
-      setMessage({ type: 'error', text: 'Adicione pelo menos um email de notificação.' });
+      setMessage({ type: 'error', text: t('recl_config.erro_email') });
       return;
     }
 
@@ -129,10 +131,10 @@ export default function ConfiguracaoReclamacoes() {
 
       if (editingArea) {
         await ConfiguracaoArea.update(editingArea.id, dadosParaSalvar);
-        setMessage({ type: 'success', text: 'Área atualizada com sucesso!' });
+        setMessage({ type: 'success', text: t('recl_config.area_atualizada') });
       } else {
         await ConfiguracaoArea.create(dadosParaSalvar);
-        setMessage({ type: 'success', text: 'Área configurada com sucesso!' });
+        setMessage({ type: 'success', text: t('recl_config.area_configurada') });
       }
 
       setFormAreaData({
@@ -147,7 +149,7 @@ export default function ConfiguracaoReclamacoes() {
       loadData();
     } catch (error) {
       console.error('Erro ao salvar configuração:', error);
-      setMessage({ type: 'error', text: 'Erro ao salvar configuração da área.' });
+      setMessage({ type: 'error', text: t('recl_config.erro_guardar_area') });
     } finally {
       setIsSaving(false);
     }
@@ -170,11 +172,11 @@ export default function ConfiguracaoReclamacoes() {
     
     try {
       await ConfiguracaoArea.delete(configId);
-      setMessage({ type: 'success', text: 'Configuração excluída com sucesso!' });
+      setMessage({ type: 'success', text: t('recl_config.config_excluida') });
       loadData();
     } catch (error) {
       console.error('Erro ao excluir configuração:', error);
-      setMessage({ type: 'error', text: 'Erro ao excluir configuração.' });
+      setMessage({ type: 'error', text: t('recl_config.erro_excluir') });
     }
   };
 
@@ -238,7 +240,7 @@ export default function ConfiguracaoReclamacoes() {
   ).map(area => ({ value: area.value, label: `${area.icon} ${area.label}` }));
 
   const responsaveisOptions = [
-    { value: '', label: 'Nenhum gestor específico' },
+    { value: '', label: t('recl_config.nenhum_gestor') },
     ...users.map(user => ({
       value: user.email,
       label: `${user.full_name} (${user.email})`
@@ -258,9 +260,9 @@ export default function ConfiguracaoReclamacoes() {
         <div>
           <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
             <Settings className="w-6 h-6 text-blue-600" />
-            Configurações de Reclamações
+            {t('recl_config.titulo')}
           </h2>
-          <p className="text-slate-600 mt-1">Gerir responsáveis, emails e configurações do sistema</p>
+          <p className="text-slate-600 mt-1">{t('recl_config.subtitulo')}</p>
         </div>
       </div>
 
@@ -275,15 +277,15 @@ export default function ConfiguracaoReclamacoes() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="areas" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
-            Áreas e Responsáveis
+            {t('recl_config.areas_responsaveis')}
           </TabsTrigger>
           <TabsTrigger value="emails" className="flex items-center gap-2">
             <Mail className="w-4 h-4" />
-            Templates de Email
+            {t('recl_config.templates_email')}
           </TabsTrigger>
           <TabsTrigger value="gerais" className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
-            Configurações Gerais
+            {t('recl_config.config_gerais')}
           </TabsTrigger>
         </TabsList>
 
@@ -293,32 +295,32 @@ export default function ConfiguracaoReclamacoes() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Plus className="w-5 h-5" />
-                {editingArea ? 'Editar Configuração de Área' : 'Nova Configuração de Área'}
+                {editingArea ? t('recl_config.editar_area') : t('recl_config.nova_area')}
               </CardTitle>
-              <CardDescription>Defina os emails de notificação e o responsável para cada área de tratamento de reclamações.</CardDescription>
+              <CardDescription>{t('recl_config.area_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Área Responsável *</Label>
-                  <Select 
+                  <Label>{t('recl_config.area_responsavel')}</Label>
+                  <Select
                     options={areaOptions}
-                    value={formAreaData.area} 
+                    value={formAreaData.area}
                     onValueChange={(value) => setFormAreaData(prev => ({...prev, area: value}))}
-                    placeholder="Selecionar área..."
+                    placeholder={t('recl_config.selecionar_area')}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label className="flex items-center gap-1">
-                    Responsável Principal (Gestor)
+                    {t('recl_config.gestor_principal')}
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Info className="w-3 h-3 text-slate-500 cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Selecione o gestor da área. <br/>A lista contém todos os utilizadores ativos no sistema.</p>
+                          <p>{t('recl_config.gestor_tooltip')}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -327,13 +329,13 @@ export default function ConfiguracaoReclamacoes() {
                     options={responsaveisOptions}
                     value={formAreaData.responsavel_principal} 
                     onValueChange={(value) => setFormAreaData(prev => ({...prev, responsavel_principal: value}))}
-                    placeholder="Selecionar gestor da área..."
+                    placeholder={t('recl_config.selecionar_gestor')}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Emails de Notificação *</Label>
+                <Label>{t('recl_config.emails_notificacao')}</Label>
                 {formAreaData.emails_notificacao.map((email, index) => (
                   <div key={index} className="flex gap-2">
                     <Input
@@ -361,13 +363,13 @@ export default function ConfiguracaoReclamacoes() {
                   className="w-full"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Email
+                  {t('recl_config.adicionar_email')}
                 </Button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Prazo de Resposta Específico (dias)</Label>
+                  <Label>{t('recl_config.prazo_resposta')}</Label>
                   <Input
                     type="number"
                     placeholder="Ex: 5"
@@ -377,7 +379,7 @@ export default function ConfiguracaoReclamacoes() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Nível de Escalamento</Label>
+                  <Label>{t('recl_config.nivel_escalamento')}</Label>
                   <Select 
                     options={nivelEscalamentoOptions}
                     value={formAreaData.nivel_escalamento} 
@@ -408,7 +410,7 @@ export default function ConfiguracaoReclamacoes() {
                 )}
                 <Button onClick={handleSaveArea} disabled={isSaving}>
                   <Save className="w-4 h-4 mr-2" />
-                  {isSaving ? 'A guardar...' : (editingArea ? 'Atualizar' : 'Guardar')}
+                  {isSaving ? t('recl_config.guardando') : (editingArea ? t('recl_config.atualizar') : t('recl_config.guardar'))}
                 </Button>
               </div>
             </CardContent>
@@ -417,22 +419,22 @@ export default function ConfiguracaoReclamacoes() {
           {/* Lista de áreas configuradas */}
           <Card>
             <CardHeader>
-              <CardTitle>Áreas Configuradas</CardTitle>
+              <CardTitle>{t('recl_config.areas_configuradas')}</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="text-slate-500 mt-2">A carregar configurações...</p>
+                  <p className="text-slate-500 mt-2">{t('recl_config.carregando')}</p>
                 </div>
               ) : configuracoes.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="w-16 h-16 mx-auto text-slate-300 mb-4" />
                   <h3 className="text-lg font-semibold text-slate-700 mb-2">
-                    Nenhuma área configurada
+                    {t('recl_config.nenhuma_area')}
                   </h3>
                   <p className="text-slate-500">
-                    Configure as áreas responsáveis para começar a gerir reclamações.
+                    {t('recl_config.nenhuma_area_desc')}
                   </p>
                 </div>
               ) : (
@@ -449,12 +451,12 @@ export default function ConfiguracaoReclamacoes() {
                               </h3>
                               
                               <div className="text-sm text-slate-600">
-                                <p><strong>Emails:</strong> {config.emails_notificacao?.join(', ') || 'Nenhum'}</p>
+                                <p><strong>{t('recl_config.emails')}</strong> {config.emails_notificacao?.join(', ') || 'Nenhum'}</p>
                                 {config.responsavel_principal && (
-                                  <p><strong>Responsável:</strong> {config.responsavel_principal}</p>
+                                  <p><strong>{t('recl_config.responsavel_label')}</strong> {config.responsavel_principal}</p>
                                 )}
                                 {config.configuracoes_extras?.prazo_resposta_especifico && (
-                                  <p><strong>Prazo:</strong> {config.configuracoes_extras.prazo_resposta_especifico} dias</p>
+                                  <p><strong>{t('recl_config.prazo_label')}</strong> {config.configuracoes_extras.prazo_resposta_especifico} {t('recl_config.dias')}</p>
                                 )}
                               </div>
 
@@ -490,13 +492,13 @@ export default function ConfiguracaoReclamacoes() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                Templates de Email
+                {t('recl_config.templates_email')}
               </CardTitle>
               <CardDescription>Personalize os emails automáticos enviados pelo sistema.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label>Template - Reclamação Recebida</Label>
+                <Label>{t('recl_config.template_recebida')}</Label>
                 <Textarea
                   placeholder="Ex: Olá {reclamante}, a sua reclamação '{titulo}' com protocolo {protocolo} foi recebida..."
                   value={configGerais.template_email_recebida}
@@ -509,13 +511,13 @@ export default function ConfiguracaoReclamacoes() {
                     </p>
                     <Button variant="outline" size="sm" onClick={() => showPreview('recebida')}>
                         <Eye className="w-4 h-4 mr-2" />
-                        Visualizar
+                        {t('recl_config.visualizar')}
                     </Button>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Template - Reclamação Concluída</Label>
+                <Label>{t('recl_config.template_conclusao')}</Label>
                 <Textarea
                   placeholder="Ex: A sua reclamação {protocolo} foi concluída. Solução: {solucao}"
                   value={configGerais.template_email_conclusao}
@@ -528,14 +530,14 @@ export default function ConfiguracaoReclamacoes() {
                     </p>
                     <Button variant="outline" size="sm" onClick={() => showPreview('concluida')}>
                         <Eye className="w-4 h-4 mr-2" />
-                        Visualizar
+                        {t('recl_config.visualizar')}
                     </Button>
                 </div>
               </div>
 
               <Button className="w-full">
                 <Save className="w-4 h-4 mr-2" />
-                Guardar Templates
+                {t('recl_config.guardar_templates')}
               </Button>
             </CardContent>
           </Card>
@@ -546,13 +548,13 @@ export default function ConfiguracaoReclamacoes() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="w-5 h-5" />
-                Configurações Gerais do Sistema
+                {t('recl_config.config_gerais_sistema')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Prazo Padrão de Resposta (dias)</Label>
+                  <Label>{t('recl_config.prazo_padrao_resposta')}</Label>
                   <Input
                     type="number"
                     value={configGerais.prazo_resposta_padrao}
@@ -561,7 +563,7 @@ export default function ConfiguracaoReclamacoes() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Prazo Padrão de Conclusão (dias)</Label>
+                  <Label>{t('recl_config.prazo_padrao_conclusao')}</Label>
                   <Input
                     type="number"
                     value={configGerais.prazo_conclusao_padrao}
@@ -570,7 +572,7 @@ export default function ConfiguracaoReclamacoes() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Alerta de Prazo (dias antes)</Label>
+                  <Label>{t('recl_config.alerta_prazo')}</Label>
                   <Input
                     type="number"
                     value={configGerais.dias_antes_alerta}
@@ -579,7 +581,7 @@ export default function ConfiguracaoReclamacoes() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Email do Administrador Principal</Label>
+                  <Label>{t('recl_config.email_admin')}</Label>
                   <Input
                     type="email"
                     value={configGerais.email_admin_principal}
@@ -588,7 +590,7 @@ export default function ConfiguracaoReclamacoes() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Horário de Funcionamento - Início</Label>
+                  <Label>{t('recl_config.horario_inicio')}</Label>
                   <Input
                     type="time"
                     value={configGerais.horario_funcionamento_inicio}
@@ -597,7 +599,7 @@ export default function ConfiguracaoReclamacoes() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Horário de Funcionamento - Fim</Label>
+                  <Label>{t('recl_config.horario_fim')}</Label>
                   <Input
                     type="time"
                     value={configGerais.horario_funcionamento_fim}
@@ -608,7 +610,7 @@ export default function ConfiguracaoReclamacoes() {
 
               <Button className="w-full">
                 <Save className="w-4 h-4 mr-2" />
-                Guardar Configurações
+                {t('recl_config.guardar_config')}
               </Button>
             </CardContent>
           </Card>

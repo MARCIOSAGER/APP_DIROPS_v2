@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,7 @@ import { sanitizeHtml } from '@/lib/sanitize';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, RefreshCw, Bell, Send, Mail, MessageSquare, MessageCircle, Users, User, AlertCircle, Sparkles, Play, Globe, FileText } from 'lucide-react';
+import { Plus, Edit, Trash2, RefreshCw, Bell, Send, Mail, MessageSquare, Users, User, AlertCircle, Sparkles, Play, Globe, FileText } from 'lucide-react';
 import Select from '@/components/ui/select';
 import Combobox from '@/components/ui/combobox';
 import { RegraNotificacao } from '@/entities/RegraNotificacao';
@@ -226,6 +227,7 @@ const PLACEHOLDERS_INFO_SISTEMA = {
   };
 
 export default function GestaoNotificacoes() {
+  const { t } = useI18n();
   const [regras, setRegras] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -1421,7 +1423,7 @@ export default function GestaoNotificacoes() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-lg">A carregar...</p>
+        <p className="text-lg">{t('notificacoes.carregando')}</p>
       </div>
     );
   }
@@ -1437,17 +1439,17 @@ export default function GestaoNotificacoes() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Gestão de Notificações</h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">Configure regras automáticas de notificação por e-mail e WhatsApp.</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{t('notificacoes.titulo')}</h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">{t('notificacoes.descricao')}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              <span className="ml-2">Atualizar</span>
+              <span className="ml-2">{t('notificacoes.atualizar')}</span>
             </Button>
             <Button onClick={() => handleOpenForm()} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="w-4 h-4 mr-2" />
-              Nova Regra
+              {t('notificacoes.novaRegra')}
             </Button>
           </div>
         </div>
@@ -1459,35 +1461,35 @@ export default function GestaoNotificacoes() {
             className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'geral' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <Bell className="w-4 h-4 inline mr-2" />
-            Regras ({regras.length})
+            {t('notificacoes.regras')} ({regras.length})
           </button>
           <button
             onClick={() => setActiveTab('historico')}
             className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'historico' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <FileText className="w-4 h-4 inline mr-2" />
-            Histórico ({historico.length})
+            {t('notificacoes.historico')} ({historico.length})
           </button>
           <button
             onClick={() => setActiveTab('atendimento')}
             className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'atendimento' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <MessageSquare className="w-4 h-4 inline mr-2" />
-            Atendimento
+            {t('notificacoes.atendimento')}
           </button>
           <button
             onClick={() => setActiveTab('placeholders')}
             className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'placeholders' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <FileText className="w-4 h-4 inline mr-2" />
-            Placeholders
+            {t('notificacoes.placeholders')}
           </button>
           <button
             onClick={() => setActiveTab('grupos')}
             className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'grupos' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <Users className="w-4 h-4 inline mr-2" />
-            Grupos WhatsApp
+            {t('notificacoes.gruposWhatsapp')}
           </button>
         </div>
 
@@ -1498,10 +1500,10 @@ export default function GestaoNotificacoes() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-blue-600" />
-                  Regras de Notificação
-                  <Badge variant="outline">{regras.length} {regras.length === 1 ? 'regra' : 'regras'}</Badge>
+                  {t('notificacoes.regrasNotificacao')}
+                  <Badge variant="outline">{regras.length} {regras.length === 1 ? t('notificacoes.regra') : t('notificacoes.regras')}</Badge>
                 </CardTitle>
-                <CardDescription>Lista de todas as regras configuradas no sistema.</CardDescription>
+                <CardDescription>{t('notificacoes.listaRegrasDesc')}</CardDescription>
               </div>
               {regrasSelecionadas.size > 0 && (
                 <Button 
@@ -1509,7 +1511,7 @@ export default function GestaoNotificacoes() {
                   className="bg-red-600 hover:bg-red-700"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Apagar {regrasSelecionadas.size} Selecionada(s)
+                  {t('notificacoes.apagarSelecionadas').replace('{n}', regrasSelecionadas.size)}
                 </Button>
               )}
             </div>
@@ -1518,8 +1520,8 @@ export default function GestaoNotificacoes() {
             {regras.length === 0 ? (
               <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                 <Bell className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                <p>Nenhuma regra configurada.</p>
-                <p className="text-sm mt-1">Clique em "Nova Regra" para começar.</p>
+                <p>{t('notificacoes.nenhumaRegra')}</p>
+                <p className="text-sm mt-1">{t('notificacoes.nenhumaRegraDesc')}</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -1532,7 +1534,7 @@ export default function GestaoNotificacoes() {
                       className="rounded cursor-pointer"
                     />
                     <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                      {regrasSelecionadas.size === 0 ? 'Selecionar Todas' : `${regrasSelecionadas.size} de ${regras.length} selecionadas`}
+                      {regrasSelecionadas.size === 0 ? t('notificacoes.selecionarTodas') : `${regrasSelecionadas.size} ${t('notificacoes.de')} ${regras.length} ${t('notificacoes.selecionadas')}`}
                     </span>
                   </div>
                 )}
@@ -1553,19 +1555,19 @@ export default function GestaoNotificacoes() {
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="font-semibold text-lg">{regra.nome}</h3>
                             <Badge variant={regra.ativo ? 'default' : 'outline'}>
-                              {regra.ativo ? 'Ativa' : 'Inativa'}
+                              {regra.ativo ? t('notificacoes.ativo') : t('notificacoes.inativo')}
                             </Badge>
                           </div>
                           
                           <div className="space-y-2 text-sm">
                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                               <Send className="w-4 h-4" />
-                              <span><strong>Evento:</strong> {eventoLabel}</span>
+                              <span><strong>{t('notificacoes.evento')}:</strong> {eventoLabel}</span>
                             </div>
                             
                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                               <MessageSquare className="w-4 h-4" />
-                              <span><strong>Canais:</strong> {regra.canal_envio.map(c => 
+                              <span><strong>{t('notificacoes.canais')}:</strong> {regra.canal_envio.map(c =>
                                 c === 'whatsapp' ? 'WhatsApp' : 'E-mail'
                               ).join(', ')}</span>
                             </div>
@@ -1573,28 +1575,28 @@ export default function GestaoNotificacoes() {
                             {regra.destinatarios_perfis && regra.destinatarios_perfis.length > 0 && (
                               <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                 <Users className="w-4 h-4" />
-                                <span><strong>Perfis:</strong> {regra.destinatarios_perfis.join(', ')}</span>
+                                <span><strong>{t('notificacoes.perfis')}:</strong> {regra.destinatarios_perfis.join(', ')}</span>
                               </div>
                             )}
                             
                             {regra.destinatarios_usuarios_ids && regra.destinatarios_usuarios_ids.length > 0 && (
                               <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                 <User className="w-4 h-4" />
-                                <span><strong>Utilizadores:</strong> {regra.destinatarios_usuarios_ids.length} selecionado(s)</span>
+                                <span><strong>{t('notificacoes.utilizadores')}:</strong> {regra.destinatarios_usuarios_ids.length} {t('notificacoes.selecionados')}</span>
                               </div>
                             )}
 
                             {regra.aeroporto_icao_relatorio && (
                              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                <Globe className="w-4 h-4" />
-                               <span><strong>Aeroporto:</strong> {regra.aeroporto_icao_relatorio}</span>
+                               <span><strong>{t('notificacoes.aeroporto')}:</strong> {regra.aeroporto_icao_relatorio}</span>
                              </div>
                             )}
 
                             {regra.grupo_whatsapp_id && (
                              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                <MessageSquare className="w-4 h-4" />
-                               <span><strong>Grupo WhatsApp:</strong> {regra.grupo_whatsapp_id}</span>
+                               <span><strong>{t('notificacoes.grupoWhatsapp')}:</strong> {regra.grupo_whatsapp_id}</span>
                              </div>
                             )}
                           </div>
@@ -1605,11 +1607,11 @@ export default function GestaoNotificacoes() {
                             checked={regra.ativo}
                             onCheckedChange={() => handleToggleAtivo(regra)}
                           />
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleOpenRunModal(regra)}
-                            title="Executar Automação"
+                            title={t('notificacoes.executarAutomacao')}
                           >
                             <Play className="w-4 h-4 text-green-600" />
                           </Button>
@@ -1689,9 +1691,9 @@ export default function GestaoNotificacoes() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-green-600" />
-                    Histórico de Notificações Enviadas
+                    {t('notificacoes.historicoTitle')}
                   </CardTitle>
-                  <CardDescription>Últimas 100 notificações enviadas pelo sistema.</CardDescription>
+                  <CardDescription>{t('notificacoes.historicoDesc')}</CardDescription>
                 </div>
                 {historico.length > 0 && (
                   <Button 
@@ -1730,7 +1732,7 @@ export default function GestaoNotificacoes() {
                     className="bg-red-600 hover:bg-red-700"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Limpar Histórico
+                    {t('notificacoes.limparHistorico')}
                   </Button>
                 )}
               </div>
@@ -1739,23 +1741,23 @@ export default function GestaoNotificacoes() {
               {/* Filtros */}
               <div className="flex gap-4 pb-4 border-b">
                 <div className="flex-1">
-                  <Label className="text-sm mb-2">Status</Label>
+                  <Label className="text-sm mb-2">{t('notificacoes.status')}</Label>
                   <Select
                     options={[
-                      { value: 'todos', label: 'Todos os Status' },
-                      { value: 'sucesso', label: '✅ Enviado' },
-                      { value: 'erro', label: '❌ Erro' },
-                      { value: 'aguardando_confirmacao', label: '⏳ Aguardando' }
+                      { value: 'todos', label: t('notificacoes.todosStatus') },
+                      { value: 'sucesso', label: `✅ ${t('notificacoes.enviado')}` },
+                      { value: 'erro', label: `❌ ${t('apiKeys.erro')}` },
+                      { value: 'aguardando_confirmacao', label: `⏳ ${t('notificacoes.aguardando')}` }
                     ]}
                     value={filtrosHistorico.status}
                     onValueChange={(v) => setFiltrosHistorico(prev => ({ ...prev, status: v }))}
                   />
                 </div>
                 <div className="flex-1">
-                  <Label className="text-sm mb-2">Canal</Label>
+                  <Label className="text-sm mb-2">{t('notificacoes.canais')}</Label>
                   <Select
                     options={[
-                      { value: 'todos', label: 'Todos os Canais' },
+                      { value: 'todos', label: t('notificacoes.todosCanais') },
                       { value: 'email', label: '📧 Email' },
                       { value: 'whatsapp', label: '💬 WhatsApp' }
                     ]}
@@ -1769,7 +1771,7 @@ export default function GestaoNotificacoes() {
               {historicoFiltrado.length > 0 && historicoSelecionado.size > 0 && (
                 <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg mb-4">
                   <span className="text-sm font-medium text-blue-700">
-                    {historicoSelecionado.size} de {historicoFiltrado.length} notificação(ões) selecionada(s)
+                    {t('notificacoes.historicoSelecionadas').replace('{n}', historicoSelecionado.size).replace('{total}', historicoFiltrado.length)}
                   </span>
                   <Button
                     onClick={handleApagarHistoricoSelecionado}
@@ -1777,7 +1779,7 @@ export default function GestaoNotificacoes() {
                     size="sm"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Apagar Selecionadas
+                    {t('notificacoes.historicoApagar')}
                   </Button>
                 </div>
               )}
@@ -1786,7 +1788,7 @@ export default function GestaoNotificacoes() {
               {historicoFiltrado.length === 0 ? (
                 <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                   <FileText className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                  <p>Nenhuma notificação enviada.</p>
+                  <p>{t('notificacoes.nenhumaNotificacao')}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -1801,12 +1803,12 @@ export default function GestaoNotificacoes() {
                             className="rounded cursor-pointer"
                           />
                         </th>
-                        <th className="text-left px-4 py-2 font-medium">Utilizador</th>
-                        <th className="text-left px-4 py-2 font-medium">Email</th>
-                        <th className="text-left px-4 py-2 font-medium">Tipo Relatório</th>
-                        <th className="text-left px-4 py-2 font-medium">Canais</th>
-                        <th className="text-left px-4 py-2 font-medium">Status</th>
-                        <th className="text-left px-4 py-2 font-medium">Data</th>
+                        <th className="text-left px-4 py-2 font-medium">{t('notificacoes.colUtilizador')}</th>
+                        <th className="text-left px-4 py-2 font-medium">{t('notificacoes.colEmail')}</th>
+                        <th className="text-left px-4 py-2 font-medium">{t('notificacoes.colTipoRelatorio')}</th>
+                        <th className="text-left px-4 py-2 font-medium">{t('notificacoes.colCanais')}</th>
+                        <th className="text-left px-4 py-2 font-medium">{t('notificacoes.colStatus')}</th>
+                        <th className="text-left px-4 py-2 font-medium">{t('notificacoes.colData')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1841,13 +1843,13 @@ export default function GestaoNotificacoes() {
                           </td>
                           <td className="px-4 py-3">
                             {item.status === 'sucesso' ? (
-                              <Badge className="bg-green-100 text-green-700">✅ Enviado</Badge>
+                              <Badge className="bg-green-100 text-green-700">✅ {t('notificacoes.enviado')}</Badge>
                             ) : item.status === 'erro' ? (
                               <Badge className="bg-red-100 text-red-700" title={item.motivo_erro}>
-                                ❌ Erro
+                                ❌ {t('apiKeys.erro')}
                               </Badge>
                             ) : (
-                              <Badge className="bg-yellow-100 text-yellow-700">⏳ Aguardando</Badge>
+                              <Badge className="bg-yellow-100 text-yellow-700">⏳ {t('notificacoes.aguardando')}</Badge>
                             )}
                           </td>
                           <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
@@ -1875,7 +1877,7 @@ export default function GestaoNotificacoes() {
               <div className="sticky top-0 bg-white dark:bg-slate-900 border-b dark:border-slate-700 z-10">
                 <div className="p-6 pb-0">
                   <h2 className="text-2xl font-bold mb-4">
-                    {editingRegra ? 'Editar Regra' : 'Nova Regra'}
+                    {editingRegra ? t('notificacoes.editarRegra') : t('notificacoes.novaRegra')}
                   </h2>
                 </div>
                 
@@ -1890,7 +1892,7 @@ export default function GestaoNotificacoes() {
                         : 'border-transparent text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Configurações Gerais
+                    {t('notificacoes.configuracoesGerais')}
                   </button>
                   {formData.evento_gatilho === 'relatorio_operacional_consolidado' && (
                     <button
@@ -1902,7 +1904,7 @@ export default function GestaoNotificacoes() {
                           : 'border-transparent text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      Template HTML Aeroportos
+                      {t('notificacoes.templateHtmlTab')}
                     </button>
                   )}
                 </div>
@@ -1914,7 +1916,7 @@ export default function GestaoNotificacoes() {
                   <>
                 {/* Nome */}
                 <div>
-                  <Label htmlFor="nome">Nome da Regra *</Label>
+                  <Label htmlFor="nome">{t('notificacoes.nomeRegra')}</Label>
                   <Input
                     id="nome"
                     value={formData.nome}
@@ -1926,11 +1928,11 @@ export default function GestaoNotificacoes() {
 
                 {/* Evento Gatilho */}
                 <div>
-                  <Label htmlFor="evento">Evento Gatilho *</Label>
+                  <Label htmlFor="evento">{t('notificacoes.evento')} *</Label>
                   <Select
                     id="evento"
                     options={[
-                      { value: '', label: 'Selecione um evento...' },
+                      { value: '', label: t('notificacoes.selecioneEvento') },
                       ...EVENTOS_DISPONIVEIS
                     ]}
                     value={formData.evento_gatilho}
@@ -1943,28 +1945,28 @@ export default function GestaoNotificacoes() {
                   formData.evento_gatilho === 'relatorio_operacional_semanal' || 
                   formData.evento_gatilho === 'relatorio_operacional_mensal') && (
                   <div>
-                    <Label htmlFor="aeroporto">Aeroporto Específico (Opcional)</Label>
+                    <Label htmlFor="aeroporto">{t('notificacoes.aeroportoEspecifico')}</Label>
                     <Select
                        id="aeroporto"
                        options={[
-                         { value: '', label: 'Todos os aeroportos' },
-                         ...aeroportos.filter(a => AEROPORTOS_ANGOLA.includes(a.codigo_icao)).map(a => ({ 
-                           value: a.codigo_icao, 
-                           label: `${a.codigo_icao} - ${a.nome}` 
+                         { value: '', label: t('notificacoes.todosAeroportos') },
+                         ...aeroportos.filter(a => AEROPORTOS_ANGOLA.includes(a.codigo_icao)).map(a => ({
+                           value: a.codigo_icao,
+                           label: `${a.codigo_icao} - ${a.nome}`
                          }))
                        ]}
                        value={formData.aeroporto_icao_relatorio}
                        onValueChange={(v) => handleInputChange('aeroporto_icao_relatorio', v)}
                      />
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Deixe vazio para aplicar a regra a todos os aeroportos.
+                      {t('notificacoes.aeroportoVazioInfo')}
                     </p>
                   </div>
                 )}
 
                 {/* Canais de Envio */}
                 <div>
-                  <Label>Canais de Envio *</Label>
+                  <Label>{t('notificacoes.canais')} *</Label>
                   <div className="flex gap-4 mt-2">
                     {CANAIS_DISPONIVEIS.map(canal => {
                       const Icon = canal.icon;
@@ -1992,7 +1994,7 @@ export default function GestaoNotificacoes() {
                 {formData.canal_envio.includes('whatsapp') && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <Label htmlFor="grupo-whatsapp">Grupo WhatsApp (Opcional)</Label>
+                      <Label htmlFor="grupo-whatsapp">{t('notificacoes.grupoWhatsappOpcional')}</Label>
                       {gruposWhatsApp.length > 0 && (
                         <Badge className="bg-green-600 text-white">{gruposWhatsApp.length} grupo(s)</Badge>
                       )}
@@ -2022,7 +2024,7 @@ export default function GestaoNotificacoes() {
                               </div>
                               {g.data_aprovacao && (
                                 <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                                  Aprovado em {new Date(g.data_aprovacao).toLocaleDateString('pt-PT')}
+                                  {t('notificacoes.aprovadoEm')} {new Date(g.data_aprovacao).toLocaleDateString('pt-PT')}
                                 </div>
                               )}
                             </button>
@@ -2037,11 +2039,11 @@ export default function GestaoNotificacoes() {
                               : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
                           }`}
                         >
-                          <div className="font-medium text-slate-900 dark:text-slate-100">❌ Nenhum grupo (envio individual)</div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Enviar notificação individualmente aos utilizadores selecionados</div>
+                          <div className="font-medium text-slate-900 dark:text-slate-100">❌ {t('notificacoes.semGrupoIndividual')}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('notificacoes.semGrupoDesc')}</div>
                         </button>
                         <p className="text-xs text-green-700 mt-3">
-                          💡 Selecione um grupo aprovado para enviar a notificação para o grupo via Z-API em vez de individualmente aos utilizadores.
+                          💡 {t('notificacoes.grupoAprovadoDica')}
                         </p>
                       </>
                     ) : (
@@ -2050,24 +2052,24 @@ export default function GestaoNotificacoes() {
                           <div className="flex items-start gap-2">
                             <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                             <div>
-                              <p className="text-sm font-medium text-yellow-800">Nenhum grupo WhatsApp aprovado</p>
+                              <p className="text-sm font-medium text-yellow-800">{t('notificacoes.nenhumGrupoAprovado')}</p>
                               <p className="text-xs text-yellow-700 mt-1">
-                                Acesse a aba "Grupos WhatsApp" para registar e aprovar grupos. Uma vez aprovados, aparecerão aqui.
+                                {t('notificacoes.nenhumGrupoAprovadoDesc')}
                               </p>
                             </div>
                           </div>
                         </div>
                         <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-300 dark:border-slate-600">
-                          <Label htmlFor="grupo-whatsapp-manual" className="text-xs mb-1 block">Ou insira o ID do grupo manualmente:</Label>
+                          <Label htmlFor="grupo-whatsapp-manual" className="text-xs mb-1 block">{t('notificacoes.inserirIdManual')}</Label>
                           <Input
                             id="grupo-whatsapp-manual"
                             value={formData.grupo_whatsapp_id}
                             onChange={(e) => handleInputChange('grupo_whatsapp_id', e.target.value)}
-                            placeholder="Exemplo: 120363400651901251-group"
+                            placeholder={t('notificacoes.idGrupoPlaceholder')}
                             className="mt-1"
                           />
                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                            Pode copiar o ID do grupo da aba "Grupos WhatsApp" ou a partir da resposta do webhook do Z-API.
+                            {t('notificacoes.idGrupoInfo')}
                           </p>
                         </div>
                       </>
@@ -2077,8 +2079,8 @@ export default function GestaoNotificacoes() {
 
                 {/* Destinatários - Perfis */}
                 <div>
-                  <Label>Perfis Destinatários *</Label>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Selecione os perfis que devem receber a notificação.</p>
+                  <Label>{t('notificacoes.perfis')} *</Label>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{t('notificacoes.perfisDesc')}</p>
                   <Combobox
                     options={PERFIS_DISPONIVEIS}
                     value={formData.destinatarios_perfis}
@@ -2117,17 +2119,17 @@ export default function GestaoNotificacoes() {
 
                 {/* Destinatários - Utilizadores Específicos */}
                 <div>
-                  <Label>Utilizadores Específicos (Opcional)</Label>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Adicione utilizadores individuais além dos perfis.</p>
+                  <Label>{t('notificacoes.utilizadores')}</Label>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{t('notificacoes.utilizadoresDesc')}</p>
                   
                   {/* Campo de Busca e Filtros */}
                   <div className="space-y-2 mb-3">
                     <Input
-                      placeholder="🔍 Pesquisar utilizador por nome ou email..."
+                      placeholder={`🔍 ${t('notificacoes.pesquisarUtilizador')}`}
                       value={searchUsuario}
                       onChange={(e) => setSearchUsuario(e.target.value)}
                     />
-                    
+
                     {formData.canal_envio.includes('whatsapp') && (
                       <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
                         <input
@@ -2138,7 +2140,7 @@ export default function GestaoNotificacoes() {
                           className="rounded"
                         />
                         <Label htmlFor="filtrar-optin" className="cursor-pointer text-sm">
-                          Mostrar apenas utilizadores com WhatsApp confirmado
+                          {t('notificacoes.filtrarOptin')}
                         </Label>
                       </div>
                     )}
@@ -2146,9 +2148,9 @@ export default function GestaoNotificacoes() {
 
                   <div className="border rounded-lg p-4 max-h-48 overflow-y-auto">
                     {usuarios.length === 0 ? (
-                      <p className="text-sm text-slate-500">Nenhum utilizador disponível.</p>
+                      <p className="text-sm text-slate-500">{t('notificacoes.nenhumUtilizador')}</p>
                     ) : usuariosFiltrados.length === 0 ? (
-                      <p className="text-sm text-slate-500">Nenhum utilizador encontrado para "{searchUsuario}".</p>
+                      <p className="text-sm text-slate-500">{t('notificacoes.utilizadorNaoEncontrado').replace('{search}', searchUsuario)}</p>
                     ) : (
                       <div className="space-y-2">
                         {usuariosFiltrados.map(user => {
@@ -2178,19 +2180,19 @@ export default function GestaoNotificacoes() {
                                 <div className="flex items-center gap-2">
                                   {!hasWhatsApp ? (
                                     <Badge variant="outline" className="text-slate-500 dark:text-slate-400 text-xs">
-                                      Sem WhatsApp
+                                      {t('notificacoes.semWhatsApp')}
                                     </Badge>
                                   ) : optInStatus === 'confirmado' ? (
                                     <Badge className="bg-green-100 text-green-700 text-xs">
-                                      ✓ Confirmado
+                                      ✓ {t('notificacoes.optinConfirmado')}
                                     </Badge>
                                   ) : optInStatus === 'pendente' ? (
                                     <Badge variant="outline" className="text-yellow-600 text-xs">
-                                      ⏳ Pendente
+                                      ⏳ {t('notificacoes.optinPendente')}
                                     </Badge>
                                   ) : optInStatus === 'rejeitado' ? (
                                     <Badge variant="outline" className="text-red-600 text-xs">
-                                      ✗ Rejeitado
+                                      ✗ {t('notificacoes.optinRejeitado')}
                                     </Badge>
                                   ) : (
                                     <Button
@@ -2207,12 +2209,12 @@ export default function GestaoNotificacoes() {
                                       {enviandoOptIn[user.id] ? (
                                         <>
                                           <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                                          Enviando...
+                                          {t('notificacoes.enviandoOptin')}
                                         </>
                                       ) : (
                                         <>
                                           <MessageSquare className="w-3 h-3 mr-1" />
-                                          Pedir Opt-in
+                                          {t('notificacoes.pedirOptin')}
                                         </>
                                       )}
                                     </Button>
@@ -2231,7 +2233,7 @@ export default function GestaoNotificacoes() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <Sparkles className="w-5 h-5 text-purple-600" />
-                    <Label htmlFor="prompt-ia">Instruções Personalizadas para IA (Opcional)</Label>
+                    <Label htmlFor="prompt-ia">{t('notificacoes.instrucoes')}</Label>
                   </div>
                   <Textarea
                     id="prompt-ia"
@@ -2241,7 +2243,7 @@ export default function GestaoNotificacoes() {
                     rows={3}
                   />
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Estas instruções serão consideradas quando usar o botão "Gerar com IA" nos templates abaixo.
+                    {t('notificacoes.instrucoesInfo')}
                   </p>
                 </div>
 
@@ -2251,12 +2253,12 @@ export default function GestaoNotificacoes() {
                     <div className="flex items-start gap-2">
                       <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
                       <div className="flex-1">
-                        <p className="font-medium text-blue-900 mb-2">Placeholders Disponíveis:</p>
-                        
+                        <p className="font-medium text-blue-900 mb-2">{t('notificacoes.placeholdersDisp')}</p>
+
                         {/* Placeholders do Sistema */}
                         {placeholdersDoSistema.length > 0 && (
                           <div className="mb-3">
-                            <p className="text-xs font-medium text-blue-800 mb-1">📊 Do Sistema:</p>
+                            <p className="text-xs font-medium text-blue-800 mb-1">📊 {t('notificacoes.placeholdersSistema')}</p>
                             <div className="flex flex-wrap gap-2">
                               {placeholdersDoSistema.map(ph => (
                                 <code key={ph} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs cursor-pointer hover:bg-blue-200" title="Clique para copiar">
@@ -2270,12 +2272,12 @@ export default function GestaoNotificacoes() {
                         {/* Placeholders Globais */}
                         {placeholdersGlobais.length > 0 && (
                           <div>
-                            <p className="text-xs font-medium text-blue-800 mb-1">🏷️ Globais:</p>
+                            <p className="text-xs font-medium text-blue-800 mb-1">🏷️ {t('notificacoes.placeholdersGlobais')}</p>
                             <div className="flex flex-wrap gap-2">
                               {placeholdersGlobais.map(ph => (
-                                <code 
-                                  key={ph.id} 
-                                  className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs cursor-pointer hover:bg-green-200" 
+                                <code
+                                  key={ph.id}
+                                  className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs cursor-pointer hover:bg-green-200"
                                   title={ph.descricao}
                                 >
                                   {`{{${ph.nome}}}`}
@@ -2293,7 +2295,7 @@ export default function GestaoNotificacoes() {
                 {formData.canal_envio.includes('whatsapp') && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <Label htmlFor="whatsapp-template">Template WhatsApp</Label>
+                      <Label htmlFor="whatsapp-template">{t('notificacoes.templateWhatsApp')}</Label>
                       <div className="flex items-center gap-2">
                         <span className={`text-xs font-medium ${formData.mensagem_template_whatsapp.length > 1600 ? 'text-red-600' : formData.mensagem_template_whatsapp.length > 1400 ? 'text-yellow-600' : 'text-slate-600'}`}>
                           {formData.mensagem_template_whatsapp.length}/1600
@@ -2309,12 +2311,12 @@ export default function GestaoNotificacoes() {
                           {isGeneratingIA.whatsapp ? (
                             <>
                               <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                              Gerando...
+                              {t('notificacoes.gerandoIA')}
                             </>
                           ) : (
                             <>
                               <Sparkles className="w-3 h-3 mr-1" />
-                              {formData.mensagem_template_whatsapp ? 'Gerar Novamente' : 'Gerar com IA'}
+                              {formData.mensagem_template_whatsapp ? t('notificacoes.gerarNovamente') : t('notificacoes.gerarComIA')}
                             </>
                           )}
                         </Button>
@@ -2331,27 +2333,27 @@ export default function GestaoNotificacoes() {
                     {formData.mensagem_template_whatsapp.length > 1600 && (
                       <div className="mt-2 p-3 bg-red-50 border border-red-300 rounded-lg">
                         <p className="text-sm text-red-700 font-medium">
-                          ⚠️ Limite excedido! O WhatsApp aceita no máximo 1600 caracteres.
+                          ⚠️ {t('notificacoes.limiteExcedido')}
                         </p>
                         <p className="text-xs text-red-600 mt-1">
-                          Reduza o comprimento da mensagem em {formData.mensagem_template_whatsapp.length - 1600} caracteres.
+                          {t('notificacoes.limiteReduzir').replace('{n}', formData.mensagem_template_whatsapp.length - 1600)}
                         </p>
                       </div>
                     )}
                     {formData.mensagem_template_whatsapp.length > 1400 && formData.mensagem_template_whatsapp.length <= 1600 && (
                       <div className="mt-2 p-2 bg-yellow-50 border border-yellow-300 rounded-lg">
                         <p className="text-xs text-yellow-700">
-                          ⚠️ Atenção: Está próximo do limite de 1600 caracteres ({1600 - formData.mensagem_template_whatsapp.length} restantes).
+                          ⚠️ {t('notificacoes.limitePerto').replace('{n}', 1600 - formData.mensagem_template_whatsapp.length)}
                         </p>
                       </div>
                     )}
-                    
+
                     {/* Preview WhatsApp */}
                     {formData.mensagem_template_whatsapp && formData.evento_gatilho && (
                       <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
                           <MessageSquare className="w-4 h-4 text-green-700" />
-                          <span className="text-sm font-medium text-green-900">Pré-visualização WhatsApp:</span>
+                          <span className="text-sm font-medium text-green-900">{t('notificacoes.previewWhatsApp')}</span>
                         </div>
                         <div className="bg-white p-3 rounded-lg text-sm whitespace-pre-wrap">
                           {renderPreview(formData.mensagem_template_whatsapp)}
@@ -2365,7 +2367,7 @@ export default function GestaoNotificacoes() {
                   <>
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <Label htmlFor="email-assunto">Assunto do E-mail</Label>
+                        <Label htmlFor="email-assunto">{t('notificacoes.assuntoEmail')}</Label>
                         <Button
                           type="button"
                           variant="outline"
@@ -2377,12 +2379,12 @@ export default function GestaoNotificacoes() {
                           {isGeneratingIA.email_assunto ? (
                             <>
                               <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                              Gerando...
+                              {t('notificacoes.gerandoIA')}
                             </>
                           ) : (
                             <>
                               <Sparkles className="w-3 h-3 mr-1" />
-                              {formData.mensagem_template_email_assunto ? 'Gerar Novamente' : 'Gerar com IA'}
+                              {formData.mensagem_template_email_assunto ? t('notificacoes.gerarNovamente') : t('notificacoes.gerarComIA')}
                             </>
                           )}
                         </Button>
@@ -2393,13 +2395,13 @@ export default function GestaoNotificacoes() {
                         onChange={(e) => handleInputChange('mensagem_template_email_assunto', e.target.value)}
                         placeholder="Ex: Novo Voo {{numero_voo}} - {{aeroporto}}"
                       />
-                      
+
                       {/* Preview Assunto */}
                       {formData.mensagem_template_email_assunto && formData.evento_gatilho && (
                         <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <div className="flex items-center gap-2 mb-1">
                             <Mail className="w-4 h-4 text-blue-700" />
-                            <span className="text-xs font-medium text-blue-900">Preview Assunto:</span>
+                            <span className="text-xs font-medium text-blue-900">{t('notificacoes.previewAssunto')}</span>
                           </div>
                           <div className="text-sm font-medium">
                             {renderPreview(formData.mensagem_template_email_assunto)}
@@ -2409,7 +2411,7 @@ export default function GestaoNotificacoes() {
                     </div>
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <Label htmlFor="email-corpo">Corpo do E-mail</Label>
+                        <Label htmlFor="email-corpo">{t('notificacoes.corpoEmail')}</Label>
                         <Button
                           type="button"
                           variant="outline"
@@ -2421,12 +2423,12 @@ export default function GestaoNotificacoes() {
                           {isGeneratingIA.email_corpo ? (
                             <>
                               <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                              Gerando...
+                              {t('notificacoes.gerandoIA')}
                             </>
                           ) : (
                             <>
                               <Sparkles className="w-3 h-3 mr-1" />
-                              {formData.mensagem_template_email_corpo ? 'Gerar Novamente' : 'Gerar com IA'}
+                              {formData.mensagem_template_email_corpo ? t('notificacoes.gerarNovamente') : t('notificacoes.gerarComIA')}
                             </>
                           )}
                         </Button>
@@ -2438,15 +2440,15 @@ export default function GestaoNotificacoes() {
                         placeholder="Pode usar HTML. Ex: <p>Voo <strong>{{numero_voo}}</strong> foi criado.</p>"
                         rows={6}
                       />
-                      
+
                       {/* Preview Corpo */}
                       {formData.mensagem_template_email_corpo && formData.evento_gatilho && (
                         <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
                             <Mail className="w-4 h-4 text-blue-700" />
-                            <span className="text-sm font-medium text-blue-900">Pré-visualização E-mail:</span>
+                            <span className="text-sm font-medium text-blue-900">{t('notificacoes.previewEmail')}</span>
                           </div>
-                          <div 
+                          <div
                             className="bg-white p-4 rounded-lg text-sm"
                             dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderPreview(formData.mensagem_template_email_corpo)) }}
                           />
@@ -2464,7 +2466,7 @@ export default function GestaoNotificacoes() {
                     onCheckedChange={(checked) => handleInputChange('ativo', checked)}
                   />
                   <Label htmlFor="ativo" className="cursor-pointer">
-                    Regra ativa (notificações serão enviadas automaticamente)
+                    {t('notificacoes.regraAtiva')}
                   </Label>
                 </div>
                   </>
@@ -2475,7 +2477,7 @@ export default function GestaoNotificacoes() {
                   <div className="space-y-4">
                     {/* Templates Predefinidos */}
                     <div>
-                      <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Escolha um Modelo de Formatação</h4>
+                      <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">{t('notificacoes.modeloFormatacao')}</h4>
                       <div className="grid grid-cols-2 gap-3 mb-6">
                         {Object.entries(TEMPLATES_AEROPORTOS).map(([key, template]) => (
                           <button
@@ -2496,7 +2498,7 @@ export default function GestaoNotificacoes() {
 
                       {/* Preview dos Templates */}
                       <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6">
-                        <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">👁️ Pré-visualização dos Modelos</h4>
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">👁️ {t('notificacoes.previewModelos')}</h4>
                         <div className="grid grid-cols-2 gap-4">
                           {Object.entries(TEMPLATES_AEROPORTOS).map(([key, template]) => (
                             <div key={key} className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -2520,12 +2522,12 @@ export default function GestaoNotificacoes() {
                     </div>
 
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                      <h4 className="font-semibold text-blue-900 mb-2">ℹ️ Personalizar Template</h4>
+                      <h4 className="font-semibold text-blue-900 mb-2">ℹ️ {t('notificacoes.personalizarTemplate')}</h4>
                       <p className="text-sm text-blue-800 mb-2">
-                        Escolha um modelo acima e depois customize-o conforme necessário abaixo. Pode editar o HTML diretamente.
+                        {t('notificacoes.personalizarDesc')}
                       </p>
                       <div className="mt-3">
-                        <p className="text-sm font-medium text-blue-900 mb-1">Placeholders disponíveis:</p>
+                        <p className="text-sm font-medium text-blue-900 mb-1">{t('notificacoes.placeholdersHtml')}</p>
                         <div className="flex flex-wrap gap-1">
                            {['{{codigo_icao}}', '{{nome}}', '{{total_voos}}', '{{total_passageiros}}', '{{total_carga}}', '{{total_faturacao_usd}}', '{{total_faturacao_aoa}}'].map((ph, idx) => (
                              <code key={idx} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
@@ -2538,7 +2540,7 @@ export default function GestaoNotificacoes() {
 
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <Label htmlFor="template-html">Template HTML Personalizado (Opcional)</Label>
+                        <Label htmlFor="template-html">{t('notificacoes.templateHtmlPersonalizado')}</Label>
                         <Button
                           type="button"
                           variant="outline"
@@ -2550,12 +2552,12 @@ export default function GestaoNotificacoes() {
                           {isGeneratingIA.template_html ? (
                             <>
                               <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                              Gerando...
+                              {t('notificacoes.gerandoIA')}
                             </>
                           ) : (
                             <>
                               <Sparkles className="w-3 h-3 mr-1" />
-                              {formData.template_html_aeroportos ? 'Gerar Novamente' : 'Gerar com IA'}
+                              {formData.template_html_aeroportos ? t('notificacoes.gerarNovamente') : t('notificacoes.gerarComIA')}
                             </>
                           )}
                         </Button>
@@ -2569,14 +2571,14 @@ export default function GestaoNotificacoes() {
                         className="font-mono text-sm"
                       />
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                        Use HTML e CSS inline. O template será repetido para cada aeroporto automaticamente.
+                        {t('notificacoes.templateHtmlInfo')}
                       </p>
                     </div>
 
                     {/* Preview Individual */}
                     {formData.template_html_aeroportos && formData.template_html_aeroportos.trim() && (
                       <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                        <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">👁️ Pré-visualização Individual (1 aeroporto):</h4>
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">👁️ {t('notificacoes.previewIndividual')}</h4>
                         <div 
                           className="bg-white p-4 rounded border border-slate-200"
                           dangerouslySetInnerHTML={{
@@ -2598,7 +2600,7 @@ export default function GestaoNotificacoes() {
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
                         <div className="flex items-center gap-2 mb-3">
                           <Mail className="w-5 h-5 text-blue-700" />
-                          <h4 className="font-semibold text-blue-900">📧 Pré-visualização E-mail Completo:</h4>
+                          <h4 className="font-semibold text-blue-900">📧 {t('notificacoes.previewCompleto')}</h4>
                         </div>
                         
                         {/* Email Preview Container */}
@@ -2606,7 +2608,7 @@ export default function GestaoNotificacoes() {
                           {/* Email Header */}
                           {formData.mensagem_template_email_assunto && (
                             <div className="bg-slate-100 px-4 py-3 border-b">
-                              <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">Assunto:</div>
+                              <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">{t('notificacoes.previewEmailAssunto')}</div>
                               <div className="font-semibold text-slate-900 dark:text-slate-100">
                                 {renderPreview(formData.mensagem_template_email_assunto)}
                               </div>
@@ -2689,7 +2691,7 @@ export default function GestaoNotificacoes() {
                         </div>
                         
                         <p className="text-xs text-blue-700 mt-2">
-                          Esta é uma pré-visualização de como o email ficará com 3 aeroportos de exemplo.
+                          {t('notificacoes.previewEmailNota')}
                         </p>
                       </div>
                     )}
@@ -2699,7 +2701,7 @@ export default function GestaoNotificacoes() {
                 {/* Botões */}
                 <div className="flex justify-end gap-3 pt-4 border-t">
                   <Button type="button" variant="outline" onClick={handleCloseForm}>
-                    Cancelar
+                    {t('notificacoes.cancelar')}
                   </Button>
                   {editingRegra && (
                     <Button
@@ -2709,11 +2711,11 @@ export default function GestaoNotificacoes() {
                       className="border-green-600 text-green-600 hover:bg-green-50"
                     >
                       <Send className="w-4 h-4 mr-2" />
-                      Enviar Teste
+                      {t('notificacoes.enviarTesteBtn')}
                     </Button>
                   )}
                   <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-                    {editingRegra ? 'Atualizar' : 'Criar'} Regra
+                    {editingRegra ? t('notificacoes.atualizar') : t('notificacoes.criar')} {t('notificacoes.regra')}
                   </Button>
                 </div>
               </form>
@@ -2725,7 +2727,7 @@ export default function GestaoNotificacoes() {
         {showRunModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full p-6">
-              <h3 className="text-lg font-semibold mb-4">Executar Automação</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('notificacoes.executarAutomacao')}</h3>
 
               {(regras.find(r => r.id === runRegraId)?.evento_gatilho === 'relatorio_operacional_consolidado_diario' ||
                                           regras.find(r => r.id === runRegraId)?.evento_gatilho === 'relatorio_operacional_consolidado_semanal' ||
@@ -2744,8 +2746,8 @@ export default function GestaoNotificacoes() {
                                               className="rounded w-4 h-4 cursor-pointer"
                                             />
                                             <label htmlFor="forcar-reenvio" className="cursor-pointer text-sm">
-                                              <span className="font-medium text-orange-900">🔄 Forçar Reenvio</span>
-                                              <p className="text-xs text-orange-700 mt-0.5">Limpar histórico e reenviar mesmo que já tenha sido enviado</p>
+                                              <span className="font-medium text-orange-900">🔄 {t('notificacoes.forcarReenvio')}</span>
+                                              <p className="text-xs text-orange-700 mt-0.5">{t('notificacoes.forcarReenvioDesc')}</p>
                                             </label>
                                           </div>
                                        </>
@@ -2764,14 +2766,14 @@ export default function GestaoNotificacoes() {
                   </p>
 
                   <div className="mb-6">
-                    <Label htmlFor="voo-ligado">Voo Ligado</Label>
+                    <Label htmlFor="voo-ligado">{t('notificacoes.vooLigadoLabel')}</Label>
                     <select
                       id="voo-ligado"
                       value={selectedVooLigadoId}
                       onChange={(e) => setSelectedVooLigadoId(e.target.value)}
                       className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md"
                     >
-                      <option value="">Selecione um voo ligado...</option>
+                      <option value="">{t('notificacoes.selecioneVooLigado')}</option>
                       {voosLigados.map(voo => {
                         // Formatar a descrição do voo
                         let descricao = '';
@@ -2814,14 +2816,14 @@ export default function GestaoNotificacoes() {
                         </p>
 
                         <div className="mb-6">
-                          <Label htmlFor="aeroporto">Aeroporto *</Label>
+                          <Label htmlFor="aeroporto">{t('notificacoes.aeroporto')} *</Label>
                           <select
                             id="aeroporto"
                             value={selectedAeroporto}
                             onChange={(e) => setSelectedAeroporto(e.target.value)}
                             className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md"
                           >
-                            <option value="">Selecione um aeroporto...</option>
+                            <option value="">{t('notificacoes.selecioneAeroporto')}</option>
                             <option value="TODOS">🌍 TODOS OS AEROPORTOS</option>
                             {aeroportosModal.filter(a => AEROPORTOS_ANGOLA.includes(a.codigo_icao)).map(aeroporto => (
                               <option key={aeroporto.codigo_icao} value={aeroporto.codigo_icao}>
@@ -2851,7 +2853,7 @@ export default function GestaoNotificacoes() {
                   }}
                   disabled={isRunning}
                 >
-                  Cancelar
+                  {t('notificacoes.cancelar')}
                 </Button>
                 <Button
                   onClick={handleExecutarAutomacao}
@@ -2861,12 +2863,12 @@ export default function GestaoNotificacoes() {
                   {isRunning ? (
                     <>
                       <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      A executar...
+                      {t('notificacoes.executando')}
                     </>
                   ) : (
                     <>
                       <Play className="w-4 h-4 mr-2" />
-                      Executar
+                      {t('notificacoes.executar')}
                     </>
                   )}
                 </Button>
@@ -2879,15 +2881,15 @@ export default function GestaoNotificacoes() {
         {showTestModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full p-6">
-              <h3 className="text-lg font-semibold mb-4">Enviar Notificação de Teste</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('notificacoes.enviarTeste')}</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                A notificação será enviada com dados de exemplo para testar o template configurado.
+                {t('notificacoes.enviarTesteDesc')}
               </p>
               
               <div className="space-y-4 mb-6">
                 {formData.canal_envio.includes('email') && (
                   <div>
-                    <Label htmlFor="teste-email">Email (opcional)</Label>
+                    <Label htmlFor="teste-email">{t('notificacoes.emailOpcional')}</Label>
                     <Input
                       id="teste-email"
                       type="email"
@@ -2896,14 +2898,14 @@ export default function GestaoNotificacoes() {
                       placeholder={currentUser?.email || 'Seu email'}
                     />
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Deixe em branco para usar {currentUser?.email}
+                      {t('notificacoes.emailDeixarVazio').replace('{email}', currentUser?.email || '')}
                     </p>
                   </div>
                 )}
                 
                 {formData.canal_envio.includes('whatsapp') && (
                   <div>
-                    <Label htmlFor="teste-whatsapp">WhatsApp (opcional)</Label>
+                    <Label htmlFor="teste-whatsapp">{t('notificacoes.whatsappOpcional')}</Label>
                     <Input
                       id="teste-whatsapp"
                       type="tel"
@@ -2912,7 +2914,7 @@ export default function GestaoNotificacoes() {
                       placeholder="whatsapp:+244..."
                     />
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Formato: whatsapp:+244XXXXXXXXX
+                      {t('notificacoes.whatsappFormato')}
                     </p>
                   </div>
                 )}
@@ -2921,13 +2923,13 @@ export default function GestaoNotificacoes() {
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Users className="w-5 h-5 text-green-600" />
-                      <Label className="font-medium text-green-900">Teste de Grupo WhatsApp</Label>
+                      <Label className="font-medium text-green-900">{t('notificacoes.grupoWhatsappOpcional')}</Label>
                     </div>
                     <div className="text-sm text-green-800 mb-2">
-                      <p><strong>ID do Grupo:</strong> {formData.grupo_whatsapp_id}</p>
+                      <p><strong>{t('notificacoes.grupoIdLabel')}</strong> {formData.grupo_whatsapp_id}</p>
                     </div>
                     <p className="text-xs text-green-700">
-                      💡 A mensagem de teste também será enviada para o grupo configurado via Z-API.
+                      💡 {t('notificacoes.grupoDica')}
                     </p>
                   </div>
                 )}
@@ -2942,7 +2944,7 @@ export default function GestaoNotificacoes() {
                   }}
                   disabled={isSendingTest}
                 >
-                  Cancelar
+                  {t('notificacoes.cancelar')}
                 </Button>
                 <Button
                   onClick={handleEnviarTeste}
@@ -2952,12 +2954,12 @@ export default function GestaoNotificacoes() {
                   {isSendingTest ? (
                     <>
                       <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      A enviar...
+                      {t('notificacoes.enviando')}
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4 mr-2" />
-                      Enviar Teste
+                      {t('notificacoes.enviarTeste')}
                     </>
                   )}
                 </Button>

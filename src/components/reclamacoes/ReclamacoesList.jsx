@@ -14,6 +14,7 @@ import {
   Trash2,
   Mail
 } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import {
@@ -64,6 +65,7 @@ export default function ReclamacoesList({
   onSelectAll,
   onSendProtocolo,
 }) {
+  const { t } = useI18n();
   const canDelete = true; // Always allow deletion in public mode
 
   if (isLoading) {
@@ -87,10 +89,10 @@ export default function ReclamacoesList({
         <CardContent className="text-center py-12">
           <AlertTriangle className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
           <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
-            Nenhuma reclamação encontrada
+            {t('recl.nenhuma_encontrada')}
           </h3>
           <p className="text-slate-500 dark:text-slate-400">
-            Não existem reclamações que correspondam aos filtros aplicados.
+            {t('recl.nenhuma_filtros')}
           </p>
         </CardContent>
       </Card>
@@ -114,8 +116,8 @@ export default function ReclamacoesList({
           />
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
             {selectedReclamacoes.length > 0
-              ? `${selectedReclamacoes.length} selecionada(s)`
-              : 'Selecionar todas'
+              ? `${selectedReclamacoes.length} ${t('recl.selecionadas')}`
+              : t('recl.selecionar_todas')
             }
           </span>
         </div>
@@ -123,7 +125,7 @@ export default function ReclamacoesList({
         {selectedReclamacoes.length > 0 && (
           <div className="flex items-center space-x-2">
             <Badge variant="outline" className="bg-blue-50 text-blue-700">
-              {selectedReclamacoes.length} item(s) selecionado(s)
+              {selectedReclamacoes.length} {t('recl.itens_selecionados')}
             </Badge>
           </div>
         )}
@@ -170,7 +172,7 @@ export default function ReclamacoesList({
                     {isPrazoProximo && (
                       <Badge className="bg-red-100 text-red-800">
                         <Clock className="w-3 h-3 mr-1" />
-                        Prazo Próximo
+                        {t('recl.prazo_proximo')}
                       </Badge>
                     )}
                   </div>
@@ -181,7 +183,7 @@ export default function ReclamacoesList({
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-slate-500 dark:text-slate-400 mb-3">
                     <div className="flex items-center gap-1">
-                      <span className="font-medium">Protocolo:</span>
+                      <span className="font-medium">{t('recl.protocolo')}</span>
                       <span className="font-mono">{reclamacao.protocolo_numero}</span>
                     </div>
 
@@ -213,14 +215,14 @@ export default function ReclamacoesList({
 
                     {areaResponsavel && (
                       <div className="flex items-center gap-1">
-                        <span className="font-medium">Área:</span>
+                        <span className="font-medium">{t('recl.area')}</span>
                         <span>{areaResponsavel}</span>
                       </div>
                     )}
 
                     {reclamacao.responsavel_atual && (
                       <div className="flex items-center gap-1">
-                        <span className="font-medium">Responsável:</span>
+                        <span className="font-medium">{t('recl.responsavel')}</span>
                         <span>{reclamacao.responsavel_atual}</span>
                       </div>
                     )}
@@ -228,7 +230,7 @@ export default function ReclamacoesList({
 
                   {reclamacao.categoria_reclamacao && (
                     <div className="flex items-center gap-2 pt-3 border-t dark:border-slate-700 mt-3">
-                      <span className="text-xs font-medium text-slate-500">Categoria:</span>
+                      <span className="text-xs font-medium text-slate-500">{t('recl.categoria')}</span>
                       <Badge variant="outline" className="text-xs">
                         {reclamacao.categoria_reclamacao.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </Badge>
@@ -244,23 +246,23 @@ export default function ReclamacoesList({
                     className="w-full"
                   >
                     <Eye className="w-4 h-4 mr-2" />
-                    Ver Detalhes
+                    {t('recl.ver_detalhes')}
                   </Button>
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" variant="outline">
-                        Ações
+                        {t('recl.acoes')}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => onEdit(reclamacao)}>
                         <Edit className="w-4 h-4 mr-2" />
-                        Editar
+                        {t('recl.editar')}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onSendProtocolo(reclamacao)}>
                         <Mail className="w-4 h-4 mr-2" />
-                        Enviar Protocolo
+                        {t('recl.enviar_protocolo')}
                       </DropdownMenuItem>
                       {canDelete && (
                         <DropdownMenuItem
@@ -268,7 +270,7 @@ export default function ReclamacoesList({
                           className="text-red-600 focus:text-red-600 focus:bg-red-50"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
-                          Excluir
+                          {t('recl.excluir')}
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>

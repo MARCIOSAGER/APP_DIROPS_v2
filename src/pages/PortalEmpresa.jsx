@@ -8,21 +8,26 @@ import { Credenciamento } from '@/entities/Credenciamento';
 import { Empresa } from '@/entities/Empresa';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { getEmpresaLogoByUser } from '@/components/lib/userUtils';
+import { useI18n } from '@/components/lib/i18n';
 
-const STATUS_CONFIG = {
-  pendente: { color: 'bg-yellow-100 text-yellow-800', label: 'Pendente' },
-  em_verificacao: { color: 'bg-blue-100 text-blue-800', label: 'Em Verificação' },
-  aguardando_aprovacao_diretor: { color: 'bg-purple-100 text-purple-800', label: 'Aguardando Aprovação' },
-  aprovado: { color: 'bg-green-100 text-green-800', label: 'Aprovado' },
-  aguardando_pagamento: { color: 'bg-orange-100 text-orange-800', label: 'Aguardando Pagamento' },
-  pagamento_confirmado: { color: 'bg-cyan-100 text-cyan-800', label: 'Pagamento Confirmado' },
-  rejeitado: { color: 'bg-red-100 text-red-800', label: 'Rejeitado' },
-  credenciado: { color: 'bg-emerald-100 text-emerald-800', label: 'Credenciado' },
-  expirado: { color: 'bg-gray-100 text-gray-800', label: 'Expirado' },
-  inativo: { color: 'bg-slate-100 text-slate-800', label: 'Inativo' }
+const STATUS_CONFIG_BASE = {
+  pendente: { color: 'bg-yellow-100 text-yellow-800', labelKey: 'portal.statusPendente' },
+  em_verificacao: { color: 'bg-blue-100 text-blue-800', labelKey: 'portal.statusEmVerificacao' },
+  aguardando_aprovacao_diretor: { color: 'bg-purple-100 text-purple-800', labelKey: 'portal.statusAguardandoAprovacao' },
+  aprovado: { color: 'bg-green-100 text-green-800', labelKey: 'portal.statusAprovado' },
+  aguardando_pagamento: { color: 'bg-orange-100 text-orange-800', labelKey: 'portal.statusAguardandoPagamento' },
+  pagamento_confirmado: { color: 'bg-cyan-100 text-cyan-800', labelKey: 'portal.statusPagamentoConfirmado' },
+  rejeitado: { color: 'bg-red-100 text-red-800', labelKey: 'portal.statusRejeitado' },
+  credenciado: { color: 'bg-emerald-100 text-emerald-800', labelKey: 'portal.statusCredenciado' },
+  expirado: { color: 'bg-gray-100 text-gray-800', labelKey: 'portal.statusExpirado' },
+  inativo: { color: 'bg-slate-100 text-slate-800', labelKey: 'portal.statusInativo' }
 };
 
 export default function PortalEmpresa() {
+  const { t } = useI18n();
+  const STATUS_CONFIG = Object.fromEntries(
+    Object.entries(STATUS_CONFIG_BASE).map(([k, v]) => [k, { ...v, label: t(v.labelKey) }])
+  );
   const [user, setUser] = useState(null);
   const [empresa, setEmpresa] = useState(null);
   const [empresas, setEmpresas] = useState([]);
@@ -95,7 +100,7 @@ export default function PortalEmpresa() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-blue-950 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="animate-spin h-12 w-12 text-blue-600 dark:text-blue-400 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">A carregar dados da empresa...</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('portal.carregando')}</p>
         </div>
       </div>
     );
@@ -114,7 +119,7 @@ export default function PortalEmpresa() {
                 className="h-8 mr-4"
               />
               <div>
-                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Portal da Empresa</h1>
+                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{t('portal.titulo')}</h1>
                 {empresa && (
                   <p className="text-sm text-slate-500 dark:text-slate-400">{empresa.nome}</p>
                 )}
@@ -127,7 +132,7 @@ export default function PortalEmpresa() {
               </div>
               <Button variant="ghost" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
-                Sair
+                {t('portal.sair')}
               </Button>
             </div>
           </div>
@@ -145,7 +150,7 @@ export default function PortalEmpresa() {
                   <UserCheck className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('portal.total')}</p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</p>
                 </div>
               </div>
@@ -159,7 +164,7 @@ export default function PortalEmpresa() {
                   <FileText className="h-6 w-6 text-yellow-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Pendentes</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('portal.pendentes')}</p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.pendentes}</p>
                 </div>
               </div>
@@ -173,7 +178,7 @@ export default function PortalEmpresa() {
                   <UserCheck className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Aprovados</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('portal.aprovados')}</p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.aprovados}</p>
                 </div>
               </div>
@@ -187,7 +192,7 @@ export default function PortalEmpresa() {
                   <UserCheck className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Rejeitados</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('portal.rejeitados')}</p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.rejeitados}</p>
                 </div>
               </div>
@@ -201,31 +206,31 @@ export default function PortalEmpresa() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Plus className="w-5 h-5" />
-                Ações Rápidas
+                {t('portal.acoesRapidas')}
               </CardTitle>
               <CardDescription>
-                Inicie um novo processo ou aceda aos seus credenciamentos existentes.
+                {t('portal.acoesDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button 
+                <Button
                   onClick={() => window.location.href = '/CredenciamentoPublico'}
                   className="h-16 bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <div className="text-center">
                     <UserCheck className="w-6 h-6 mx-auto mb-1" />
-                    <span>Nova Solicitação de Credencial</span>
+                    <span>{t('portal.novaSolicitacao')}</span>
                   </div>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={loadData}
                   className="h-16"
                 >
                   <div className="text-center">
                     <RefreshCw className="w-6 h-6 mx-auto mb-1" />
-                    <span>Atualizar Lista</span>
+                    <span>{t('portal.atualizarLista')}</span>
                   </div>
                 </Button>
               </div>
@@ -238,24 +243,24 @@ export default function PortalEmpresa() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              Credenciamentos da Empresa
+              {t('portal.credenciamentosEmpresa')}
             </CardTitle>
             <CardDescription>
-              Acompanhe o status dos seus pedidos de credenciamento.
+              {t('portal.credenciamentosDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {credenciamentos.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">Nenhum credenciamento encontrado</h3>
-                <p className="text-slate-500 dark:text-slate-400 mb-6">A sua empresa ainda não tem solicitações de credenciamento.</p>
-                <Button 
+                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">{t('portal.semCredenciais')}</h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-6">{t('portal.semCredenciaisDesc')}</p>
+                <Button
                   onClick={() => window.location.href = '/CredenciamentoPublico'}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Criar Primeira Solicitação
+                  {t('portal.criarPrimeiraSolicitacao')}
                 </Button>
               </div>
             ) : (
@@ -272,21 +277,21 @@ export default function PortalEmpresa() {
                             {STATUS_CONFIG[credenciamento.status]?.label}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
-                            {credenciamento.tipo_credencial === 'pessoa' ? 'Pessoa' : 'Viatura'}
+                            {credenciamento.tipo_credencial === 'pessoa' ? t('portal.tipoPessoa') : t('portal.tipoViatura')}
                           </Badge>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                           <div>
-                            <span className="text-slate-600 dark:text-slate-400">Nome/Matrícula:</span>
+                            <span className="text-slate-600 dark:text-slate-400">{t('portal.nomeMatricula')}:</span>
                             <p className="font-medium">{credenciamento.nome_completo || credenciamento.matricula_viatura}</p>
                           </div>
                           <div>
-                            <span className="text-slate-600 dark:text-slate-400">Aeroporto:</span>
+                            <span className="text-slate-600 dark:text-slate-400">{t('portal.aeroporto')}:</span>
                             <p className="font-medium">{getAeroportoNome(credenciamento.aeroporto_id)}</p>
                           </div>
                           <div>
-                            <span className="text-slate-600 dark:text-slate-400">Data:</span>
+                            <span className="text-slate-600 dark:text-slate-400">{t('portal.data')}:</span>
                             <p className="font-medium">
                               {new Date(credenciamento.data_solicitacao).toLocaleDateString('pt-AO')}
                             </p>
@@ -295,7 +300,7 @@ export default function PortalEmpresa() {
                         
                         {credenciamento.justificativa_acesso && (
                           <div className="mt-3 text-sm">
-                            <span className="text-slate-600 dark:text-slate-400">Justificativa:</span>
+                            <span className="text-slate-600 dark:text-slate-400">{t('portal.justificativa')}:</span>
                             <p className="text-slate-700 dark:text-slate-300">{credenciamento.justificativa_acesso}</p>
                           </div>
                         )}

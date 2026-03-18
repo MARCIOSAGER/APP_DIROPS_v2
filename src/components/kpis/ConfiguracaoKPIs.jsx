@@ -8,10 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { TipoKPI } from '@/entities/TipoKPI';
 import AlertModal from '@/components/shared/AlertModal';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 // Componente para o formulário (poderia ser movido para seu próprio ficheiro se complexo)
 const FormTipoKPI = ({ tipoInicial, onSuccess, onCancel }) => {
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
+  const { t } = useI18n();
   const [tipo, setTipo] = useState(tipoInicial || {
     nome: '',
     codigo: '', // 'codigo' is still part of the state as it's needed for update/creation
@@ -57,10 +59,10 @@ const FormTipoKPI = ({ tipoInicial, onSuccess, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg">
-      <h3 className="text-lg font-semibold">{tipo.id ? 'Editar' : 'Novo'} Tipo de KPI</h3>
+      <h3 className="text-lg font-semibold">{tipo.id ? t('kpis.config.editar') : t('kpis.config.novo')} {t('kpis.tiposKPI').replace(/s$/, '')}</h3>
        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('kpis.config.nome')}</label>
                 <input 
                   value={tipo.nome} 
                   onChange={e => setTipo({...tipo, nome: e.target.value})}
@@ -71,7 +73,7 @@ const FormTipoKPI = ({ tipoInicial, onSuccess, onCancel }) => {
             </div>
         </div>
         <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('kpis.config.descricao')}</label>
             <textarea 
               value={tipo.descricao} 
               onChange={e => setTipo({...tipo, descricao: e.target.value})} 
@@ -82,38 +84,38 @@ const FormTipoKPI = ({ tipoInicial, onSuccess, onCancel }) => {
         </div>
         <div className="grid grid-cols-2 gap-4">
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
-                <select 
-                  value={tipo.categoria} 
-                  onChange={e => setTipo({...tipo, categoria: e.target.value})} 
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('tarifas.category')}</label>
+                <select
+                  value={tipo.categoria}
+                  onChange={e => setTipo({...tipo, categoria: e.target.value})}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                    <option value="operacional">Operacional</option>
-                    <option value="qualidade">Qualidade</option>
-                    <option value="seguranca">Segurança</option>
-                    <option value="eficiencia">Eficiência</option>
+                    <option value="operacional">{t('kpis.config.operacional')}</option>
+                    <option value="qualidade">{t('kpis.config.qualidade')}</option>
+                    <option value="seguranca">{t('kpis.config.seguranca')}</option>
+                    <option value="eficiencia">{t('kpis.config.eficiencia')}</option>
                 </select>
             </div>
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Unidade de Medida</label>
-                <select 
-                  value={tipo.unidade_medida} 
-                  onChange={e => setTipo({...tipo, unidade_medida: e.target.value})} 
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('kpis.config.unidade')}</label>
+                <select
+                  value={tipo.unidade_medida}
+                  onChange={e => setTipo({...tipo, unidade_medida: e.target.value})}
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                    <option value="minutos">Minutos</option>
-                    <option value="segundos">Segundos</option>
-                    <option value="horas">Horas</option>
-                    <option value="percentual">Percentual (%)</option>
-                    <option value="quantidade">Quantidade</option>
-                    <option value="taxa">Taxa</option>
-                    <option value="score">Score/Pontuação</option>
+                    <option value="minutos">{t('kpis.config.minutos')}</option>
+                    <option value="segundos">{t('kpis.config.segundos')}</option>
+                    <option value="horas">{t('kpis.config.horas')}</option>
+                    <option value="percentual">{t('kpis.config.percentual')}</option>
+                    <option value="quantidade">{t('kpis.config.quantidade')}</option>
+                    <option value="taxa">{t('kpis.config.taxa')}</option>
+                    <option value="score">{t('kpis.config.score')}</option>
                 </select>
             </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Meta Objetivo</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('kpis.config.meta')}</label>
                 <input 
                   type="number" 
                   value={tipo.meta_objetivo} 
@@ -121,7 +123,7 @@ const FormTipoKPI = ({ tipoInicial, onSuccess, onCancel }) => {
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                   placeholder="Ex: 15"
                 />
-                <p className="text-xs text-slate-500 mt-1">Meta em {tipo.unidade_medida}</p>
+                <p className="text-xs text-slate-500 mt-1">{t('kpis.config.metaEm')} {tipo.unidade_medida}</p>
             </div>
              <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Cor de Identificação</label>
@@ -134,20 +136,20 @@ const FormTipoKPI = ({ tipoInicial, onSuccess, onCancel }) => {
             </div>
         </div>
         <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-            <select 
-              value={tipo.status} 
-              onChange={e => setTipo({...tipo, status: e.target.value})} 
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('kpis.config.status')}</label>
+            <select
+              value={tipo.status}
+              onChange={e => setTipo({...tipo, status: e.target.value})}
               className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-                <option value="ativo">Ativo</option>
-                <option value="inativo">Inativo</option>
+                <option value="ativo">{t('kpis.config.ativo')}</option>
+                <option value="inativo">{t('kpis.config.inativo')}</option>
             </select>
         </div>
       <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>{t('kpis.config.cancelar')}</Button>
         <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
-          {isSubmitting ? 'A guardar...' : (tipo.id ? 'Atualizar' : 'Criar')}
+          {isSubmitting ? t('kpis.config.aGuardar') : (tipo.id ? t('kpis.config.atualizar') : t('kpis.config.criar'))}
         </Button>
       </div>
     </form>
@@ -156,6 +158,7 @@ const FormTipoKPI = ({ tipoInicial, onSuccess, onCancel }) => {
 
 // Componente principal de configuração
 export default function ConfiguracaoKPIs({ isOpen, onClose, onUpdate }) {
+  const { t } = useI18n();
   const [tiposKPI, setTiposKPI] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -213,7 +216,7 @@ export default function ConfiguracaoKPIs({ isOpen, onClose, onUpdate }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="w-6 h-6 text-blue-600" />
-            Configuração de Tipos de KPI
+            {t('kpis.config.configTiposKPI')}
           </DialogTitle>
         </DialogHeader>
 
@@ -226,20 +229,20 @@ export default function ConfiguracaoKPIs({ isOpen, onClose, onUpdate }) {
         ) : (
           <>
             <Button onClick={() => { setEditingTipo(null); setIsFormVisible(true); }} className="mb-4">
-              <Plus className="w-4 h-4 mr-2" /> Novo Tipo de KPI
+              <Plus className="w-4 h-4 mr-2" /> {t('kpis.config.novoTipoKPI')}
             </Button>
-            
+
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold mb-2">Tipos de KPI Existentes</h3>
-              {isLoading ? <p>A carregar...</p> : (
+              <h3 className="text-lg font-semibold mb-2">{t('kpis.config.tiposExistentes')}</h3>
+              {isLoading ? <p>{t('kpis.config.aCarregar')}</p> : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead>Meta</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Ações</TableHead>
+                      <TableHead>{t('kpis.config.nome')}</TableHead>
+                      <TableHead>{t('tarifas.category')}</TableHead>
+                      <TableHead>{t('kpis.meta')}</TableHead>
+                      <TableHead>{t('kpis.config.status')}</TableHead>
+                      <TableHead>{t('tarifas.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -289,8 +292,8 @@ export default function ConfiguracaoKPIs({ isOpen, onClose, onUpdate }) {
             isOpen={deleteInfo.isOpen}
             onClose={() => setDeleteInfo({ isOpen: false, id: null })}
             onConfirm={handleDeleteConfirm}
-            title="Confirmar Exclusão"
-            message="Tem a certeza que deseja excluir este tipo de KPI? Todos os campos e medições associados também podem ser afetados."
+            title={t('kpis.config.confirmarExclusao')}
+            message={t('kpis.config.confirmarExclusaoMsg')}
             type="warning"
             showCancel
         />

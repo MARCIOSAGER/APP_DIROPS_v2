@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,8 +17,10 @@ import { RespostaInspecao } from '@/entities/RespostaInspecao';
 import { UploadFile } from '@/integrations/Core';
 import FormGRF from '../grf/FormGRF';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos, currentUser }) {
+  const { t } = useI18n();
   const [step, setStep] = useState(1); // 1: Dados Gerais, 2: Checklist, 3: Concluído
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -70,26 +72,26 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
 
   const validateStep1 = () => {
     const newErrors = {};
-    if (!dadosGerais.aeroporto_id) newErrors.aeroporto_id = 'Campo obrigatório';
+    if (!dadosGerais.aeroporto_id) newErrors.aeroporto_id = t('formInspecao.campoObrigatorio');
     if (!dadosGerais.data_inspecao) {
-      newErrors.data_inspecao = 'Campo obrigatório';
+      newErrors.data_inspecao = t('formInspecao.campoObrigatorio');
     } else {
       const hoje = new Date().toISOString().split('T')[0];
-      if (dadosGerais.data_inspecao > hoje) newErrors.data_inspecao = 'A data não pode ser no futuro';
+      if (dadosGerais.data_inspecao > hoje) newErrors.data_inspecao = t('formInspecao.dataFuturo');
     }
     if (!dadosGerais.hora_inicio) {
-      newErrors.hora_inicio = 'Campo obrigatório';
+      newErrors.hora_inicio = t('formInspecao.campoObrigatorio');
     } else if (!/^\d{2}:\d{2}$/.test(dadosGerais.hora_inicio)) {
-      newErrors.hora_inicio = 'Formato inválido (HH:MM)';
+      newErrors.hora_inicio = t('formInspecao.formatoInvalido');
     }
-    if (!dadosGerais.inspetor_responsavel?.trim()) newErrors.inspetor_responsavel = 'Campo obrigatório';
+    if (!dadosGerais.inspetor_responsavel?.trim()) newErrors.inspetor_responsavel = t('formInspecao.campoObrigatorio');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleNextStep = async () => {
     if (!validateStep1()) {
-      setError('Por favor, corrija os campos assinalados.');
+      setError(t('formInspecao.corrigirCampos'));
       return;
     }
 
@@ -129,7 +131,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       setStep(2);
     } catch (err) {
       console.error('Erro ao iniciar inspeção:', err);
-      setError('Ocorreu um erro ao iniciar a inspeção. Tente novamente.');
+      setError(t('formInspecao.erroIniciar'));
     } finally {
       setIsLoading(false);
     }
@@ -155,7 +157,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       handleRespostaChange(itemId, 'fotos', newFotos);
     } catch(err) {
       console.error("Erro no upload:", err);
-      setError("Falha no upload do arquivo.");
+      setError(t('formInspecao.erroUpload'));
     } finally {
       setIsLoading(false);
     }
@@ -175,17 +177,17 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       });
       setGrfRegistado(true);
       setShowGRFForm(false);
-      alert('Registo GRF adicionado com sucesso!');
+      alert(t('formInspecao.grfSucesso'));
     } catch (error) {
       console.error('Erro ao registar GRF:', error);
-      alert('Erro ao registar GRF. Tente novamente.');
+      alert(t('formInspecao.grfErro'));
     }
   };
 
   const handleFinalSubmit = async () => {
     // Para inspeções de pista diária, o GRF é OBRIGATÓRIO
     if (isInspecaoPistaDiaria && !grfRegistado) {
-      setError('Para inspeções diárias de pista, é obrigatório registar as condições GRF antes de finalizar.');
+      setError(t('formInspecao.grfObrigatorioFinalizar'));
       return;
     }
 
@@ -194,7 +196,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       ([_, r]) => r.resultado === 'nao_conforme' && !r.observacoes?.trim()
     );
     if (ncSemObservacao.length > 0) {
-      setError(`${ncSemObservacao.length} item(ns) Não Conforme(s) sem observações. Adicione observações a todos os itens NC antes de finalizar.`);
+      setError(`${ncSemObservacao.length} ${t('formInspecao.ncSemObsMsg')}`);
       return;
     }
 
@@ -262,7 +264,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       setStep(3);
     } catch (err) {
       console.error('Erro ao finalizar inspeção:', err);
-      setError('Ocorreu um erro ao finalizar a inspeção. Tente novamente.');
+      setError(t('formInspecao.erroFinalizar'));
     } finally {
       setIsLoading(false);
     }
@@ -279,17 +281,17 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       <div className="space-y-4 pt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Aeroporto *</Label>
+            <Label>{t('formInspecao.aeroporto')}</Label>
             <Select
               options={aeroportoOptions}
               value={dadosGerais.aeroporto_id}
               onValueChange={(value) => handleDadosGeraisChange('aeroporto_id', value)}
-              placeholder="Selecione o aeroporto"
+              placeholder={t('formInspecao.selecionarAeroporto')}
             />
             {errors.aeroporto_id && <p className="text-red-500 text-xs mt-1">{errors.aeroporto_id}</p>}
           </div>
           <div className="space-y-2">
-            <Label>Data da Inspeção *</Label>
+            <Label>{t('formInspecao.dataInspecao')}</Label>
             <Input
               type="date"
               value={dadosGerais.data_inspecao}
@@ -301,7 +303,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Hora de Início *</Label>
+            <Label>{t('formInspecao.horaInicio')}</Label>
             <Input
               type="time"
               value={dadosGerais.hora_inicio}
@@ -311,7 +313,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
             {errors.hora_inicio && <p className="text-red-500 text-xs mt-1">{errors.hora_inicio}</p>}
           </div>
           <div className="space-y-2">
-            <Label>Inspetor Responsável</Label>
+            <Label>{t('formInspecao.inspetorResponsavel')}</Label>
             <Input
               value={dadosGerais.inspetor_responsavel}
               disabled
@@ -331,10 +333,10 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
           <CardHeader>
             <CardTitle className="text-base font-semibold text-red-800 flex items-center gap-2">
               <Plane className="w-5 h-5" />
-              Condições da Pista (GRF) - OBRIGATÓRIO
+              {t('formInspecao.grfObrigatorio')}
             </CardTitle>
             <p className="text-sm text-red-600">
-              Para inspeções diárias de pista, é <strong>obrigatório</strong> registar as condições GRF
+              {t('formInspecao.grfObrigatorioDesc')}
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -342,7 +344,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
               <Alert className="border-green-200 bg-green-50">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-800">
-                  ✅ Condições GRF registadas com sucesso para esta inspeção.
+                  {t('formInspecao.grfRegistadas')}
                 </AlertDescription>
               </Alert>
             ) : (
@@ -350,14 +352,14 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
                 <AlertTriangle className="h-4 w-4 text-red-600" />
                 <AlertDescription className="text-red-800">
                   <div className="space-y-3">
-                    <p className="font-semibold">⚠️ Registo GRF pendente - obrigatório para finalizar</p>
+                    <p className="font-semibold">{t('formInspecao.grfPendente')}</p>
                     <Button
                       type="button"
                       onClick={() => setShowGRFForm(true)}
                       className="bg-red-600 hover:bg-red-700 text-white"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Registar Condições GRF (Obrigatório)
+                      {t('formInspecao.registarGRF')}
                     </Button>
                   </div>
                 </AlertDescription>
@@ -377,31 +379,31 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label className="font-medium">Resultado</Label>
+              <Label className="font-medium">{t('formInspecao.resultado')}</Label>
               <RadioGroup
                 value={respostas[item.id]?.resultado}
                 onValueChange={(value) => handleRespostaChange(item.id, 'resultado', value)}
                 className="flex gap-6 mt-2"
               >
-                <div className="flex items-center space-x-2"><RadioGroupItem value="conforme" id={`c-${item.id}`} /><Label htmlFor={`c-${item.id}`}>Conforme</Label></div>
-                <div className="flex items-center space-x-2"><RadioGroupItem value="nao_conforme" id={`nc-${item.id}`} /><Label htmlFor={`nc-${item.id}`}>Não Conforme</Label></div>
-                <div className="flex items-center space-x-2"><RadioGroupItem value="nao_aplicavel" id={`na-${item.id}`} /><Label htmlFor={`na-${item.id}`}>N/A</Label></div>
+                <div className="flex items-center space-x-2"><RadioGroupItem value="conforme" id={`c-${item.id}`} /><Label htmlFor={`c-${item.id}`}>{t('formInspecao.conforme')}</Label></div>
+                <div className="flex items-center space-x-2"><RadioGroupItem value="nao_conforme" id={`nc-${item.id}`} /><Label htmlFor={`nc-${item.id}`}>{t('formInspecao.naoConforme')}</Label></div>
+                <div className="flex items-center space-x-2"><RadioGroupItem value="nao_aplicavel" id={`na-${item.id}`} /><Label htmlFor={`na-${item.id}`}>{t('formInspecao.na')}</Label></div>
               </RadioGroup>
             </div>
 
             <div>
-              <Label>Observações</Label>
+              <Label>{t('formInspecao.observacoes')}</Label>
               <Textarea value={respostas[item.id]?.observacoes} onChange={(e) => handleRespostaChange(item.id, 'observacoes', e.target.value)} />
             </div>
 
             {respostas[item.id]?.resultado === 'nao_conforme' && (
               <div className="space-y-2">
                 <div className="p-3 border-l-4 border-red-500 bg-red-50 rounded">
-                  <p className="text-sm text-red-700 font-medium">⚠ Uma Solicitação de Serviço (SS) será criada automaticamente na Manutenção ao concluir a inspeção.</p>
+                  <p className="text-sm text-red-700 font-medium">{t('formInspecao.ssAutomatica')}</p>
                 </div>
                 {!respostas[item.id]?.observacoes?.trim() && (
                   <div className="p-2 bg-amber-50 border border-amber-300 rounded">
-                    <p className="text-sm text-amber-700 font-medium">⚠ Observação obrigatória para itens Não Conforme</p>
+                    <p className="text-sm text-amber-700 font-medium">{t('formInspecao.obsObrigatoria')}</p>
                   </div>
                 )}
               </div>
@@ -409,18 +411,18 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
 
             {item.permite_fotos && (
               <div>
-                <Label>Fotos</Label>
+                <Label>{t('formInspecao.fotos')}</Label>
                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-md">
                   <div className="space-y-1 text-center">
                     <UploadCloud className="mx-auto h-12 w-12 text-slate-400" />
                     <div className="flex text-sm text-slate-600">
                       <label htmlFor={`file-upload-${item.id}`} className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                        <span>Carregar um arquivo</span>
+                        <span>{t('formInspecao.carregarArquivo')}</span>
                         <input id={`file-upload-${item.id}`} name={`file-upload-${item.id}`} type="file" className="sr-only" onChange={(e) => handleFileUpload(item.id, e.target.files[0])} />
                       </label>
-                      <p className="pl-1">ou arraste e solte</p>
+                      <p className="pl-1">{t('formInspecao.arrastar')}</p>
                     </div>
-                    <p className="text-xs text-slate-500">PNG, JPG, GIF até 10MB</p>
+                    <p className="text-xs text-slate-500">{t('formInspecao.tamanhoMax')}</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -435,11 +437,11 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       ))}
 
       <div className="space-y-2 pt-4">
-        <Label className="text-lg font-semibold">Resumo Geral da Inspeção</Label>
+        <Label className="text-lg font-semibold">{t('formInspecao.resumoGeral')}</Label>
         <Textarea
           value={resumoGeral}
           onChange={(e) => setResumoGeral(e.target.value)}
-          placeholder="Descreva o resumo geral e conclusões da inspeção..."
+          placeholder={t('formInspecao.resumoPlaceholder')}
           rows={5}
         />
       </div>
@@ -449,9 +451,9 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
   const renderStep3 = () => (
     <div className="flex flex-col items-center justify-center p-8 text-center">
       <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-      <h3 className="text-lg font-medium">Inspeção Concluída com Sucesso!</h3>
-      <p className="text-sm text-slate-500">O relatório foi gerado e está disponível na lista de inspeções.</p>
-      <Button onClick={onClose} className="mt-4">Fechar</Button>
+      <h3 className="text-lg font-medium">{t('formInspecao.sucessoConcluida')}</h3>
+      <p className="text-sm text-slate-500">{t('formInspecao.relatorioDisponivel')}</p>
+      <Button onClick={onClose} className="mt-4">{t('formInspecao.fechar')}</Button>
     </div>
   );
 
@@ -461,9 +463,9 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ClipboardCheck className="w-6 h-6 text-blue-600" />
-            {step === 1 && `Nova Inspeção: ${tipoInspecao?.nome}`}
-            {step === 2 && `Preencher Checklist: ${tipoInspecao?.nome}`}
-            {step === 3 && `Inspeção Concluída`}
+            {step === 1 && `${t('formInspecao.novaInspecao')} ${tipoInspecao?.nome}`}
+            {step === 2 && `${t('formInspecao.preencherChecklist')} ${tipoInspecao?.nome}`}
+            {step === 3 && t('formInspecao.inspecaoConcluida')}
           </DialogTitle>
         </DialogHeader>
 
@@ -481,25 +483,25 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
         <DialogFooter>
           {step === 1 && (
             <>
-              <DialogClose asChild><Button type="button" variant="outline" disabled={isLoading || isSubmitting}>Cancelar</Button></DialogClose>
+              <DialogClose asChild><Button type="button" variant="outline" disabled={isLoading || isSubmitting}>{t('formInspecao.cancelar')}</Button></DialogClose>
               <Button onClick={handleNextStep} disabled={isLoading || isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
-                {isLoading || isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Preencher Checklist'}
+                {isLoading || isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : t('formInspecao.preencherChecklistBtn')}
               </Button>
             </>
           )}
           {step === 2 && (
             <>
-              <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isLoading || isSubmitting}>Voltar</Button>
+              <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isLoading || isSubmitting}>{t('formInspecao.voltar')}</Button>
               <Button
                 onClick={handleFinalSubmit}
                 disabled={isLoading || isSubmitting || (isInspecaoPistaDiaria && !grfRegistado)}
                 className={`bg-blue-600 hover:bg-blue-700 text-white ${isInspecaoPistaDiaria && !grfRegistado ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                {isLoading || isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Concluir Inspeção'}
+                {isLoading || isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : t('formInspecao.concluirInspecao')}
               </Button>
               {isInspecaoPistaDiaria && !grfRegistado && (
                 <p className="text-xs text-red-600 ml-2">
-                  * Registe as condições GRF primeiro
+                  {t('formInspecao.registeGRF')}
                 </p>
               )}
             </>

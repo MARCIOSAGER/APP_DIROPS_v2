@@ -4,13 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Trash2, RotateCcw, AlertTriangle, ClipboardCheck, FileText,
-  Plane, Search, Loader2, CheckCircle, XCircle
+  Trash2, RotateCcw, AlertTriangle, ClipboardCheck, FileText, Search, Loader2, CheckCircle, XCircle
 } from 'lucide-react';
 
 import { Inspecao } from '@/entities/Inspecao';
 import { Proforma } from '@/entities/Proforma';
-import { Voo } from '@/entities/Voo';
 import { ItemChecklist } from '@/entities/ItemChecklist';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';

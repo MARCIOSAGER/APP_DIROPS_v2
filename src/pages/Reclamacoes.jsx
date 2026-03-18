@@ -22,13 +22,10 @@ import {
 
 import { Reclamacao } from '@/entities/Reclamacao';
 import { Aeroporto } from '@/entities/Aeroporto';
-import { HistoricoReclamacao } from '@/entities/HistoricoReclamacao';
-import { ConfiguracaoArea } from '@/entities/ConfiguracaoArea';
 import { User } from '@/entities/User';
 import { downloadAsCSV } from '../components/lib/export';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
-import { base44 } from '@/api/base44Client';
-import { getAeroportosPermitidos, filtrarDadosPorAcesso, isSuperAdmin, getEmpresaLogoByUser } from '@/components/lib/userUtils';
+import { getAeroportosPermitidos, filtrarDadosPorAcesso, getEmpresaLogoByUser } from '@/components/lib/userUtils';
 import { Empresa } from '@/entities/Empresa';
 import { useI18n } from '@/components/lib/i18n';
 
@@ -41,7 +38,7 @@ import ConfiguracaoReclamacoes from '../components/reclamacoes/ConfiguracaoRecla
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
 import { classificarReclamacaoIA } from '@/functions/classificarReclamacaoIA';
-import { createPdfDoc, addHeader, addFooter, addTable, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
+import { createPdfDoc, addHeader, addFooter, addTable, loadImageAsBase64 } from '@/lib/pdfTemplate';
 
 const STATUS_OPTIONS = [
   { value: 'todos', label: 'Todos os Status' },
@@ -796,6 +793,7 @@ export default function Reclamacoes() {
           reclamacao={editingReclamacao}
           aeroportos={aeroportos}
           onSubmit={handleFormSubmit}
+          currentUser={user}
         />
       )}
 

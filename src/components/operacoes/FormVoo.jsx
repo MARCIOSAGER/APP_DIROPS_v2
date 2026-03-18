@@ -304,7 +304,7 @@ export default function FormVoo({
         initialAeroportoOperacao = aeroportosAcesso[0].codigo_icao;
       }
 
-      setFormData((prev) => ({
+      setFormData((_prev) => ({
         tipo_movimento: initialTipoMovimento,
         numero_voo: '',
         data_operacao: new Date().toISOString().split('T')[0],
@@ -655,7 +655,7 @@ export default function FormVoo({
         : registoToSubmit;
 
       // Remove campos internos que não existem na tabela voo (até migration ser executada)
-      const { registo_dep, registo_alterado, ...formDataClean } = formData;
+      const { registo_dep: _registo_dep, registo_alterado: _registo_alterado, ...formDataClean } = formData;
       const vooDataToSubmit = {
         ...formDataClean,
         registo_aeronave: registoFinal,
@@ -903,7 +903,7 @@ export default function FormVoo({
         registo: registoNormalizado
       };
 
-      const novoRegisto = await RegistoAeronave.create(dataToSave);
+      const novoRegisto = await RegistoAeronave.create({ ...dataToSave, empresa_id: currentUser?.empresa_id });
 
       // Notificar administradores
       setTimeout(() => {
@@ -948,10 +948,6 @@ export default function FormVoo({
     }));
   }, [aeroportosOrigemDestino]);
 
-  const companhiaOptions = useMemo(() => {
-    if (!Array.isArray(companhias)) return [];
-    return companhias.map((c) => ({ value: c.codigo_icao, label: `${c.nome} (${c.codigo_icao})` }));
-  }, [companhias]);
 
   // Funções para lazy loading de companhias
   const searchCompanhias = async (searchTerm) => {

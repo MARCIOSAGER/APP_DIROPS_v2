@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ import { VooLigado } from '@/entities/VooLigado';
 import { Proforma } from '@/entities/Proforma';
 
 export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhias, aeroportos }) {
+  const { t } = useI18n();
   const [isSearching, setIsSearching] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -282,7 +284,7 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
 
   const companhiaOptions = companhias.map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }));
   const aeroportoOptions = [
-    { value: '', label: 'Todos os Aeroportos' },
+    { value: '', label: t('gerarRelatorio.todosAeroportos') },
     ...aeroportos.map(a => ({ value: a.id, label: `${a.nome} (${a.codigo_icao})` }))
   ];
 
@@ -292,17 +294,17 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-emerald-600" />
-            Extrato de Facturação
+            {t('gerarRelatorio.titulo')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Search Filters */}
           <div className="bg-slate-50 border rounded-lg p-4 space-y-4 relative z-10">
-            <h3 className="font-semibold text-slate-700 text-sm">Selecionar Companhia e Período</h3>
+            <h3 className="font-semibold text-slate-700 text-sm">{t('gerarRelatorio.selecionarCompanhia')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Companhia <span className="text-red-500">*</span></Label>
+                <Label className="text-xs">{t('gerarRelatorio.companhia')} <span className="text-red-500">*</span></Label>
                 <Select
                   options={companhiaOptions}
                   value={filtro.companhia_id}
@@ -311,16 +313,16 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Aeroporto</Label>
+                <Label className="text-xs">{t('gerarRelatorio.aeroporto')}</Label>
                 <Select
                   options={aeroportoOptions}
                   value={filtro.aeroporto_id}
                   onValueChange={(v) => setFiltro(prev => ({ ...prev, aeroporto_id: v }))}
-                  placeholder="Todos"
+                  placeholder={t('gerarRelatorio.todosAeroportos')}
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Data Início</Label>
+                <Label className="text-xs">{t('gerarRelatorio.dataInicio')}</Label>
                 <Input
                   type="date"
                   value={filtro.data_inicio}
@@ -328,7 +330,7 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Data Fim</Label>
+                <Label className="text-xs">{t('gerarRelatorio.dataFim')}</Label>
                 <Input
                   type="date"
                   value={filtro.data_fim}
@@ -343,9 +345,9 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
               size="sm"
             >
               {isSearching ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Buscando...</>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('gerarRelatorio.buscando')}</>
               ) : (
-                <><Search className="mr-2 h-4 w-4" /> Buscar Voos</>
+                <><Search className="mr-2 h-4 w-4" /> {t('gerarRelatorio.buscarVoos')}</>
               )}
             </Button>
           </div>
@@ -371,8 +373,8 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
               ) : calculos.length === 0 ? (
                 <div className="p-8 text-center text-slate-500">
                   <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
-                  <p className="font-medium">Nenhum voo encontrado</p>
-                  <p className="text-xs mt-1">Não existem voos com tarifas calculadas para esta companhia/período.</p>
+                  <p className="font-medium">{t('gerarRelatorio.nenhumVoo')}</p>
+                  <p className="text-xs mt-1">{t('gerarRelatorio.nenhumVooDesc')}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
@@ -385,12 +387,12 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
                             onCheckedChange={toggleAll}
                           />
                         </TableHead>
-                        <TableHead className="text-xs">Voo</TableHead>
-                        <TableHead className="text-xs">Data</TableHead>
-                        <TableHead className="text-xs">Registo</TableHead>
-                        <TableHead className="text-xs">Aeroporto</TableHead>
-                        <TableHead className="text-xs">Proforma</TableHead>
-                        <TableHead className="text-xs">Permanência</TableHead>
+                        <TableHead className="text-xs">{t('gerarRelatorio.colVoo')}</TableHead>
+                        <TableHead className="text-xs">{t('gerarRelatorio.colData')}</TableHead>
+                        <TableHead className="text-xs">{t('gerarRelatorio.colRegisto')}</TableHead>
+                        <TableHead className="text-xs">{t('gerarRelatorio.colAeroporto')}</TableHead>
+                        <TableHead className="text-xs">{t('gerarRelatorio.colProforma')}</TableHead>
+                        <TableHead className="text-xs">{t('gerarRelatorio.colPermanencia')}</TableHead>
                         <TableHead className="text-xs text-right">USD</TableHead>
                         <TableHead className="text-xs text-right">AOA</TableHead>
                       </TableRow>
@@ -438,29 +440,29 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
               <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                 <h3 className="font-semibold text-emerald-900 mb-3 flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
-                  Resumo — {selectedCalcItems.length} voo(s) selecionado(s)
+                  {t('gerarRelatorio.resumo')} — {selectedCalcItems.length} voo(s)
                 </h3>
                 <div className="flex justify-between items-center">
-                  <span className="text-emerald-600 font-semibold">Total (USD):</span>
+                  <span className="text-emerald-600 font-semibold">{t('gerarRelatorio.totalUSD')}</span>
                   <span className="text-lg font-bold text-emerald-900">
                     ${formatCurrency(totais.usd)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-emerald-600 font-semibold">Total (AOA):</span>
+                  <span className="text-emerald-600 font-semibold">{t('gerarRelatorio.totalAOA')}</span>
                   <span className="text-xl font-bold text-green-700">
                     {formatCurrency(totais.aoa)} Kz
                   </span>
                 </div>
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-emerald-500">Taxa de Câmbio Média:</span>
+                  <span className="text-xs text-emerald-500">{t('gerarRelatorio.taxaCambioMedia')}</span>
                   <Badge variant="outline" className="text-xs">1 USD = {Math.round(taxaCambioMedia)} AOA</Badge>
                 </div>
               </div>
 
               <DialogFooter className="flex-wrap gap-2">
                 <Button type="button" variant="outline" onClick={onClose} disabled={isGenerating}>
-                  Cancelar
+                  {t('gerarRelatorio.cancelar')}
                 </Button>
                 <Button
                   onClick={handlePrepareEmail}
@@ -469,9 +471,9 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
                   className="border-blue-300 text-blue-700 hover:bg-blue-50"
                 >
                   {isGenerating ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Preparando...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('gerarRelatorio.preparando')}</>
                   ) : (
-                    <><Mail className="mr-2 h-4 w-4" /> Enviar por Email</>
+                    <><Mail className="mr-2 h-4 w-4" /> {t('gerarRelatorio.enviarPorEmail')}</>
                   )}
                 </Button>
                 <Button
@@ -480,9 +482,9 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   {isGenerating ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando PDF...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('gerarRelatorio.gerandoPDF')}</>
                   ) : (
-                    <><FileText className="mr-2 h-4 w-4" /> Gerar Relatório PDF</>
+                    <><FileText className="mr-2 h-4 w-4" /> {t('gerarRelatorio.gerarRelatorioPDF')}</>
                   )}
                 </Button>
               </DialogFooter>

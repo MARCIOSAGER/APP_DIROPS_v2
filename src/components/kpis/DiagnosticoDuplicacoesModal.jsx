@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RefreshCw, Trash2, AlertTriangle, CheckCircle, Search, XCircle } from 'lucide-react';
+import { Trash2, AlertTriangle, CheckCircle, Search } from 'lucide-react';
 import { verificarDuplicacoesTipoKPI } from '@/functions/verificarDuplicacoesTipoKPI';
 import { removerDuplicacoesTipoKPI } from '@/functions/removerDuplicacoesTipoKPI';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess }) {
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
   const [diagnostico, setDiagnostico] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -78,10 +79,10 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-orange-600" />
-            Diagnóstico de Duplicações - Tipos de KPI
+            {t('kpis.diag_titulo')}
           </DialogTitle>
           <DialogDescription>
-            Verifique e remova registos duplicados de tipos de KPI
+            {t('kpis.diag_descricao')}
           </DialogDescription>
         </DialogHeader>
 
@@ -89,7 +90,7 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
           <div className="flex gap-2">
             <Button onClick={handleVerificar} disabled={isLoading} className="flex items-center gap-2">
               <Search className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              {isLoading ? 'Verificando...' : 'Verificar Duplicações'}
+              {isLoading ? t('kpis.diag_verificando') : t('kpis.diag_verificar')}
             </Button>
             
             {selectedIds.length > 0 && (
@@ -100,7 +101,7 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
                 className="flex items-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
-                Remover Selecionados ({selectedIds.length})
+                {t('kpis.diag_remover_selecionados')} ({selectedIds.length})
               </Button>
             )}
           </div>
@@ -114,28 +115,28 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
                   <CheckCircle className="h-4 w-4 text-green-600" />
                 )}
                 <AlertDescription className={diagnostico.tem_duplicacoes ? 'text-orange-800' : 'text-green-800'}>
-                  <strong>Total de Tipos de KPI:</strong> {diagnostico.total_tipos_kpi}
+                  <strong>{t('kpis.diag_total_tipos')}:</strong> {diagnostico.total_tipos_kpi}
                   <br />
                   {diagnostico.tem_duplicacoes ? (
                     <>
-                      <strong>Duplicações por Código:</strong> {diagnostico.duplicacoes_por_codigo.length}
+                      <strong>{t('kpis.diag_dup_codigo')}:</strong> {diagnostico.duplicacoes_por_codigo.length}
                       <br />
-                      <strong>Duplicações por Nome:</strong> {diagnostico.duplicacoes_por_nome.length}
+                      <strong>{t('kpis.diag_dup_nome')}:</strong> {diagnostico.duplicacoes_por_nome.length}
                     </>
                   ) : (
-                    'Nenhuma duplicação encontrada! ✅'
+                    t('kpis.diag_sem_duplicacoes')
                   )}
                 </AlertDescription>
               </Alert>
 
               {diagnostico.duplicacoes_por_codigo.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-lg">Duplicações por Código</h3>
+                  <h3 className="font-semibold text-lg">{t('kpis.diag_dup_codigo')}</h3>
                   {diagnostico.duplicacoes_por_codigo.map((dup, idx) => (
                     <div key={idx} className="border rounded-lg p-4 space-y-2 bg-red-50">
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium text-red-900">
-                          Código: {dup.codigo} ({dup.quantidade} registos)
+                          {t('kpis.diag_codigo')}: {dup.codigo} ({dup.quantidade} {t('kpis.diag_registos')})
                         </h4>
                       </div>
                       
@@ -150,7 +151,7 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
                               <p className="font-medium">{reg.nome}</p>
                               <p className="text-xs text-slate-600">ID: {reg.id}</p>
                               <p className="text-xs text-slate-500">
-                                Criado em: {new Date(reg.created_date).toLocaleString('pt-AO')} por {reg.created_by}
+                                {t('kpis.diag_criado_em')}: {new Date(reg.created_date).toLocaleString('pt-AO')} {t('kpis.diag_por')} {reg.created_by}
                               </p>
                             </div>
                           </div>
@@ -163,12 +164,12 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
 
               {diagnostico.duplicacoes_por_nome.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-lg">Duplicações por Nome</h3>
+                  <h3 className="font-semibold text-lg">{t('kpis.diag_dup_nome')}</h3>
                   {diagnostico.duplicacoes_por_nome.map((dup, idx) => (
                     <div key={idx} className="border rounded-lg p-4 space-y-2 bg-yellow-50">
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium text-yellow-900">
-                          Nome: {dup.nome} ({dup.quantidade} registos)
+                          {t('kpis.diag_nome')}: {dup.nome} ({dup.quantidade} {t('kpis.diag_registos')})
                         </h4>
                       </div>
                       
@@ -180,10 +181,10 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
                               onCheckedChange={() => toggleId(reg.id)}
                             />
                             <div className="flex-1">
-                              <p className="font-medium">Código: {reg.codigo}</p>
+                              <p className="font-medium">{t('kpis.diag_codigo')}: {reg.codigo}</p>
                               <p className="text-xs text-slate-600">ID: {reg.id}</p>
                               <p className="text-xs text-slate-500">
-                                Criado em: {new Date(reg.created_date).toLocaleString('pt-AO')} por {reg.created_by}
+                                {t('kpis.diag_criado_em')}: {new Date(reg.created_date).toLocaleString('pt-AO')} {t('kpis.diag_por')} {reg.created_by}
                               </p>
                             </div>
                           </div>
@@ -199,7 +200,7 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
           {!diagnostico && !isLoading && (
             <div className="text-center py-8 text-slate-500">
               <AlertTriangle className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-              <p>Clique em "Verificar Duplicações" para iniciar o diagnóstico</p>
+              <p>{t('kpis.diag_instrucao')}</p>
             </div>
           )}
         </div>

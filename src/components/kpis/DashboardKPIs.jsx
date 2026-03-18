@@ -1,15 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
-import { CheckCircle2, Shield, Users, Briefcase, Package, Plane, Clock, TrendingUp, TrendingDown, Target, Filter, X, FileText } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, Area, AreaChart } from 'recharts';
+import { CheckCircle2, Shield, Users, Briefcase, Package, Plane, TrendingUp, TrendingDown, Target, Filter, X, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import Select from '@/components/ui/select';
 import Combobox from '@/components/ui/combobox';
-import { format } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { useI18n } from '@/components/lib/i18n';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
@@ -23,6 +21,7 @@ const CATEGORY_CONFIG = {
 };
 
 export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExportPDF, isExporting }) {
+  const { t } = useI18n();
   const [filtros, setFiltros] = useState({
     dataInicio: '',
     dataFim: '',
@@ -230,7 +229,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
     );
     
     return [
-      { value: 'todos', label: 'Todos os Aeroportos' },
+      { value: 'todos', label: t('kpis.todosAeroportos') },
       ...aeroportosComMedicoes.map(a => ({ value: a.codigo_icao, label: `${a.nome} (${a.codigo_icao})` }))
     ];
   }, [aeroportos, medicoes]);
@@ -242,8 +241,8 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
     );
     
     return [
-      { value: 'todos', label: 'Todos os KPIs' },
-      ...kpisComMedicoes.map(t => ({ value: t.id, label: t.nome }))
+      { value: 'todos', label: t('kpis.todosKPIs') },
+      ...kpisComMedicoes.map(tipo => ({ value: tipo.id, label: tipo.nome }))
     ];
   }, [tiposKPI, medicoes]);
 
@@ -261,21 +260,21 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Filter className="w-5 h-5 text-slate-500" />
-              Filtros do Dashboard
+              {t('kpis.filtrosDashboard')}
             </CardTitle>
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handleExportPDF}
                 disabled={isExporting || medicoesFiltradas.length === 0}
               >
                 <FileText className="w-4 h-4 mr-2" />
-                {isExporting ? 'Gerando PDF...' : 'Exportar PDF'}
+                {isExporting ? t('kpis.gerandoPDF') : t('kpis.exportarPDF')}
               </Button>
               {hasActiveFilters && (
                 <Button variant="outline" size="sm" onClick={clearFilters} className="text-red-600 border-red-200 hover:bg-red-50">
                   <X className="w-4 h-4 mr-1" />
-                  Limpar Filtros
+                  {t('kpis.limparFiltrosBotao')}
                 </Button>
               )}
             </div>
@@ -284,7 +283,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="filtro-aeroporto">Aeroporto</Label>
+              <Label htmlFor="filtro-aeroporto">{t('kpis.aeroporto')}</Label>
               <Combobox
                 id="filtro-aeroporto"
                 options={aeroportoOptions}
@@ -294,7 +293,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="filtro-tipo-kpi">Tipo de KPI</Label>
+              <Label htmlFor="filtro-tipo-kpi">{t('kpis.tipoKPI')}</Label>
               <Combobox
                 id="filtro-tipo-kpi"
                 options={tipoKPIOptions}
@@ -304,7 +303,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="filtro-data-inicio">Data Início</Label>
+              <Label htmlFor="filtro-data-inicio">{t('kpis.dataInicio')}</Label>
               <Input
                 id="filtro-data-inicio"
                 type="date"
@@ -313,7 +312,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="filtro-data-fim">Data Fim</Label>
+              <Label htmlFor="filtro-data-fim">{t('kpis.dataFim')}</Label>
               <Input
                 id="filtro-data-fim"
                 type="date"
@@ -329,39 +328,39 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Total de Medições</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-600">{t('kpis.totalMedicoesCard')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-600">{dashboardData.totalMedicoes}</div>
-            <p className="text-xs text-slate-500 mt-1">Todas as medições registadas</p>
+            <p className="text-xs text-slate-500 mt-1">{t('kpis.todasMedicoes')}</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-orange-500">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Hoje</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-600">{t('kpis.hojeCard')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-orange-600">{dashboardData.medicoesHoje}</div>
-            <p className="text-xs text-slate-500 mt-1">Medições realizadas hoje</p>
+            <p className="text-xs text-slate-500 mt-1">{t('kpis.medicoesHoje')}</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-green-500">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Dentro da Meta</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-600">{t('kpis.dentroMetaLabel')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-600">{dashboardData.medicoesDentroDaMeta}</div>
             <p className="text-xs text-slate-500 mt-1">
-              {dashboardData.percentualMeta}% do total
+              {dashboardData.percentualMeta}{t('kpis.percTotal')}
             </p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Performance Geral</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-600">{t('kpis.performanceGeral')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
@@ -372,7 +371,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
                 <TrendingDown className="w-6 h-6 text-red-500" />
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-1">Taxa de conformidade</p>
+            <p className="text-xs text-slate-500 mt-1">{t('kpis.taxaConformidade')}</p>
           </CardContent>
         </Card>
       </div>
@@ -383,7 +382,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-blue-600" />
-              Evolução Temporal - {tiposKPI.find(t => t.id === filtros.tipoKPI)?.nome}
+              {t('kpis.evolucaoTemporal')} - {tiposKPI.find(tipo => tipo.id === filtros.tipoKPI)?.nome}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -408,7 +407,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plane className="w-5 h-5 text-blue-600" />
-              Análise do Aeroporto: {dashboardData.analiseAeroportoIndividual.aeroporto.nome}
+              {t('kpis.analiseAeroporto')}: {dashboardData.analiseAeroportoIndividual.aeroporto.nome}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -418,13 +417,13 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
                   <div className="text-2xl font-bold text-blue-600">
                     {dashboardData.analiseAeroportoIndividual.totalMedicoes}
                   </div>
-                  <div className="text-sm text-slate-600">Total de Medições</div>
+                  <div className="text-sm text-slate-600">{t('kpis.totalMedicoes')}</div>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">
                     {dashboardData.analiseAeroportoIndividual.dentroDaMeta}
                   </div>
-                  <div className="text-sm text-slate-600">Dentro da Meta</div>
+                  <div className="text-sm text-slate-600">{t('kpis.dentroMetaLabel')}</div>
                 </div>
               </div>
 
@@ -432,10 +431,10 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50">
                     <tr>
-                      <th className="text-left p-2 font-semibold">KPI</th>
-                      <th className="text-center p-2 font-semibold">Total</th>
-                      <th className="text-center p-2 font-semibold">Média</th>
-                      <th className="text-center p-2 font-semibold">Performance</th>
+                      <th className="text-left p-2 font-semibold">{t('kpis.kpiLabel')}</th>
+                      <th className="text-center p-2 font-semibold">{t('kpis.totalLabel')}</th>
+                      <th className="text-center p-2 font-semibold">{t('kpis.mediaLabel')}</th>
+                      <th className="text-center p-2 font-semibold">{t('kpis.performanceLabel')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -469,7 +468,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="w-5 h-5 text-blue-600" />
-              Top 5 KPIs por Volume de Medições
+              {t('kpis.top5KPIs')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -481,13 +480,13 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
                   <YAxis type="category" dataKey="nome" width={200} fontSize={11} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="dentroDaMeta" name="Dentro da Meta" fill="#10B981" stackId="a" />
-                  <Bar dataKey="foraDaMeta" name="Fora da Meta" fill="#EF4444" stackId="a" />
+                  <Bar dataKey="dentroDaMeta" name={t('kpis.dentroDaMetaBar')} fill="#10B981" stackId="a" />
+                  <Bar dataKey="foraDaMeta" name={t('kpis.foraDaMetaBar')} fill="#EF4444" stackId="a" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-[350px] flex items-center justify-center text-slate-400">
-                Sem dados disponíveis
+                {t('kpis.semDados')}
               </div>
             )}
           </CardContent>
@@ -498,7 +497,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plane className="w-5 h-5 text-blue-600" />
-              Top 5 Aeroportos por Volume
+              {t('kpis.top5Aeroportos')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -510,13 +509,13 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="dentroDaMeta" name="Dentro da Meta" fill="#10B981" />
-                  <Bar dataKey="foraDaMeta" name="Fora da Meta" fill="#EF4444" />
+                  <Bar dataKey="dentroDaMeta" name={t('kpis.dentroDaMetaBar')} fill="#10B981" />
+                  <Bar dataKey="foraDaMeta" name={t('kpis.foraDaMetaBar')} fill="#EF4444" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-slate-400">
-                Sem dados disponíveis
+                {t('kpis.semDados')}
               </div>
             )}
           </CardContent>
@@ -525,7 +524,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
 
       {/* Cards Individuais dos 18 KPIs */}
       <div>
-        <h2 className="text-xl font-bold text-slate-900 mb-4">KPIs Operacionais Individuais</h2>
+        <h2 className="text-xl font-bold text-slate-900 mb-4">{t('kpis.kpisIndividuais')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.values(dashboardData.medicoesPorTipo)
             .sort((a, b) => a.tipo.nome.localeCompare(b.tipo.nome))
@@ -546,29 +545,29 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
                   <CardContent className="space-y-3">
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600">Total Medições:</span>
+                        <span className="text-slate-600">{t('kpis.totalMedicoesCard')}:</span>
                         <span className="font-bold text-lg text-slate-900">{item.total}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600">Dentro da Meta:</span>
+                        <span className="text-slate-600">{t('kpis.dentroMetaLabel')}:</span>
                         <span className="font-bold text-lg text-green-600">{item.dentroDaMeta}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600">Tempo Médio:</span>
+                        <span className="text-slate-600">{t('kpis.mediaLabel')}:</span>
                         <span className="font-semibold text-blue-600">
                           {item.mediaResultado > 0 ? `${item.mediaResultado.toFixed(1)} ${item.tipo.unidade_medida || ''}` : '-'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600">Meta:</span>
+                        <span className="text-slate-600">{t('kpis.meta')}:</span>
                         <span className="font-semibold text-slate-700">
-                          {item.tipo.meta_objetivo !== null && item.tipo.meta_objetivo !== undefined 
-                            ? `${item.tipo.meta_objetivo} ${item.tipo.unidade_medida || ''}` 
+                          {item.tipo.meta_objetivo !== null && item.tipo.meta_objetivo !== undefined
+                            ? `${item.tipo.meta_objetivo} ${item.tipo.unidade_medida || ''}`
                             : 'N/A'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center pt-2">
-                        <span className="text-slate-600">Performance:</span>
+                        <span className="text-slate-600">{t('kpis.performanceLabel')}:</span>
                         <Badge 
                           variant={percentual >= 80 ? 'success' : percentual >= 60 ? 'warning' : 'destructive'}
                           className="text-sm font-bold"
@@ -596,10 +595,10 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
           <div className="text-center py-12 text-slate-500">
             <Target className="w-16 h-16 mx-auto text-slate-300 mb-4" />
             <h3 className="text-lg font-semibold text-slate-700 mb-2">
-              Nenhum KPI encontrado
+              {t('kpis.nenhumKPI')}
             </h3>
             <p className="text-slate-500">
-              Ajuste os filtros para visualizar os dados dos KPIs.
+              {t('kpis.ajusteFiltros')}
             </p>
           </div>
         )}

@@ -16,29 +16,30 @@ import {
   FileText,
   Target,
   Image,
-  Link as LinkIcon,
-  ClipboardCheck
+  Link as LinkIcon
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_CONFIG = {
-  pendente: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, label: 'Pendente' },
-  atribuida: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: User, label: 'Atribuída' },
-  em_execucao: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Wrench, label: 'Em Execução' },
-  aguardando_verificacao: { color: 'bg-orange-100 text-orange-800 border-orange-200', icon: AlertTriangle, label: 'Aguardando Verificação' },
-  concluida: { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: 'Concluída' },
-  rejeitada: { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, label: 'Rejeitada' }
+  pendente: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, labelKey: 'osDetail.statusPendente' },
+  atribuida: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: User, labelKey: 'osDetail.statusAtribuida' },
+  em_execucao: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Wrench, labelKey: 'osDetail.statusEmExecucao' },
+  aguardando_verificacao: { color: 'bg-orange-100 text-orange-800 border-orange-200', icon: AlertTriangle, labelKey: 'osDetail.statusAguardandoVerificacao' },
+  concluida: { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, labelKey: 'osDetail.statusConcluida' },
+  rejeitada: { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, labelKey: 'osDetail.statusRejeitada' }
 };
 
 const PRIORIDADE_CONFIG = {
-  baixa: { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Baixa' },
-  media: { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'Média' },
-  alta: { color: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Alta' },
-  urgente: { color: 'bg-red-100 text-red-800 border-red-200', label: 'Urgente' }
+  baixa: { color: 'bg-gray-100 text-gray-800 border-gray-200', labelKey: 'manutencao.baixa' },
+  media: { color: 'bg-blue-100 text-blue-800 border-blue-200', labelKey: 'manutencao.media' },
+  alta: { color: 'bg-orange-100 text-orange-800 border-orange-200', labelKey: 'manutencao.alta' },
+  urgente: { color: 'bg-red-100 text-red-800 border-red-200', labelKey: 'manutencao.urgente' }
 };
 
 export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeroportos }) {
+  const { t } = useI18n();
   if (!ordem) return null;
 
   const statusConfig = STATUS_CONFIG[ordem.status] || STATUS_CONFIG.pendente;
@@ -107,10 +108,10 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
             <div className="flex gap-2">
               <Badge className={`${statusConfig.color} border`}>
                 <StatusIcon className="w-3 h-3 mr-1" />
-                {statusConfig.label}
+                {t(statusConfig.labelKey)}
               </Badge>
               <Badge className={`${prioridadeConfig.color} border`}>
-                {prioridadeConfig.label}
+                {t(prioridadeConfig.labelKey)}
               </Badge>
             </div>
           </DialogTitle>
@@ -122,10 +123,10 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
             <div className="flex items-center gap-2">
               <Badge className="bg-indigo-100 text-indigo-800 border border-indigo-200">
                 <LinkIcon className="w-3 h-3 mr-1" />
-                SS Vinculada
+                {t('osDetail.ssVinculada')}
               </Badge>
               <span className="text-sm text-slate-600">
-                Esta OS foi criada a partir de uma Solicitação de Serviço
+                {t('osDetail.osCriadaSS')}
               </span>
             </div>
           )}
@@ -135,7 +136,7 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                Informações Básicas
+                {t('osDetail.infoBasicas')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -147,13 +148,13 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">Aeroporto:</span>
+                  <span className="text-slate-600">{t('osDetail.aeroporto')}</span>
                   <span className="font-medium">{getAeroportoNome(ordem.aeroporto_id)}</span>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">Criado em:</span>
+                  <span className="text-slate-600">{t('osDetail.criadoEm')}</span>
                   <span className="font-medium">
                     {formatDate(ordem.created_date)}
                   </span>
@@ -161,14 +162,14 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
 
                 <div className="flex items-center gap-2 text-sm">
                   <Target className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">Categoria:</span>
+                  <span className="text-slate-600">{t('osDetail.categoria')}</span>
                   <span className="font-medium capitalize">{ordem.categoria_manutencao}</span>
                 </div>
 
                 {ordem.prazo_estimado && (
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-600">Prazo:</span>
+                    <span className="text-slate-600">{t('osDetail.prazo')}</span>
                     <span className={`font-medium ${
                       new Date(ordem.prazo_estimado) < new Date() ? 'text-red-600' : 'text-slate-700'
                     }`}>
@@ -184,7 +185,7 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
           {ordem.acao_corretiva_sugerida && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Ação Corretiva Sugerida</CardTitle>
+                <CardTitle className="text-lg">{t('osDetail.acaoCorretivaSugerida')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600">{ordem.acao_corretiva_sugerida}</p>
@@ -193,76 +194,76 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
           )}
 
           {/* Fotos Antes */}
-          {renderPhotoGallery(fotosAntes, 'Fotos Antes', <Image className="w-5 h-5 text-orange-500" />)}
+          {renderPhotoGallery(fotosAntes, t('osDetail.fotosAntes'), <Image className="w-5 h-5 text-orange-500" />)}
 
           {/* Fotos Depois */}
-          {renderPhotoGallery(fotosDepois, 'Fotos Depois', <Image className="w-5 h-5 text-green-500" />)}
+          {renderPhotoGallery(fotosDepois, t('osDetail.fotosDepois'), <Image className="w-5 h-5 text-green-500" />)}
 
           {/* Execução */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Wrench className="w-5 h-5" />
-                Execução
+                {t('osDetail.execucao')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {ordem.responsavel_manutencao && (
                 <div className="flex items-center gap-2 text-sm">
                   <User className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">Responsável:</span>
+                  <span className="text-slate-600">{t('osDetail.responsavel')}</span>
                   <span className="font-medium">{ordem.responsavel_manutencao}</span>
                 </div>
               )}
 
               {ordem.observacoes_atribuicao && (
                 <div>
-                  <h4 className="font-medium text-slate-700 mb-2">Observações da Atribuição:</h4>
+                  <h4 className="font-medium text-slate-700 mb-2">{t('osDetail.obsAtribuicao')}</h4>
                   <p className="text-slate-600 whitespace-pre-wrap">{ordem.observacoes_atribuicao}</p>
                 </div>
               )}
 
               {ordem.observacoes_manutencao && (
                 <div>
-                  <h4 className="font-medium text-slate-700 mb-2">Observações da Manutenção:</h4>
+                  <h4 className="font-medium text-slate-700 mb-2">{t('osDetail.obsManutencao')}</h4>
                   <p className="text-slate-600 whitespace-pre-wrap">{ordem.observacoes_manutencao}</p>
                 </div>
               )}
 
               {ordem.observacoes_conclusao && (
                 <div>
-                  <h4 className="font-medium text-slate-700 mb-2">Observações da Conclusão:</h4>
+                  <h4 className="font-medium text-slate-700 mb-2">{t('osDetail.obsConclusao')}</h4>
                   <p className="text-slate-600 whitespace-pre-wrap">{ordem.observacoes_conclusao}</p>
                 </div>
               )}
 
               {/* Timeline */}
               <div className="space-y-3">
-                <h4 className="font-medium text-slate-700">Timeline:</h4>
+                <h4 className="font-medium text-slate-700">{t('osDetail.timeline')}</h4>
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span>Criada em {formatDate(ordem.created_date)}</span>
+                    <span>{t('osDetail.criadaEm')} {formatDate(ordem.created_date)}</span>
                   </div>
 
                   {ordem.data_atribuicao && (
                     <div className="flex items-center gap-3 text-sm">
                       <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                      <span>Atribuída em {formatDate(ordem.data_atribuicao)}</span>
+                      <span>{t('osDetail.atribuidaEm')} {formatDate(ordem.data_atribuicao)}</span>
                     </div>
                   )}
 
                   {ordem.data_inicio_execucao && (
                     <div className="flex items-center gap-3 text-sm">
                       <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                      <span>Execução iniciada em {formatDate(ordem.data_inicio_execucao)}</span>
+                      <span>{t('osDetail.execucaoIniciada')} {formatDate(ordem.data_inicio_execucao)}</span>
                     </div>
                   )}
 
                   {ordem.data_conclusao && (
                     <div className="flex items-center gap-3 text-sm">
                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span>Concluída em {formatDate(ordem.data_conclusao)}</span>
+                      <span>{t('osDetail.concluidaEm')} {formatDate(ordem.data_conclusao)}</span>
                     </div>
                   )}
 
@@ -270,9 +271,9 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
                     <div className="flex items-center gap-3 text-sm">
                       <div className="w-3 h-3 bg-teal-500 rounded-full"></div>
                       <span>
-                        Verificada em {formatDate(ordem.data_verificacao)}
+                        {t('osDetail.verificadaEm')} {formatDate(ordem.data_verificacao)}
                         {ordem.verificado_por && (
-                          <span className="text-slate-500"> por {ordem.verificado_por}</span>
+                          <span className="text-slate-500"> {t('osDetail.por')} {ordem.verificado_por}</span>
                         )}
                       </span>
                     </div>
@@ -288,14 +289,14 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <DollarSign className="w-5 h-5" />
-                  Custos
+                  {t('osDetail.custos')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {ordem.custos_estimados && (
                     <div>
-                      <span className="text-slate-600">Estimado:</span>
+                      <span className="text-slate-600">{t('osDetail.estimado')}</span>
                       <p className="text-lg font-semibold text-slate-900">
                         {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(ordem.custos_estimados)}
                       </p>
@@ -304,7 +305,7 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
 
                   {ordem.custos_reais && (
                     <div>
-                      <span className="text-slate-600">Real:</span>
+                      <span className="text-slate-600">{t('osDetail.real')}</span>
                       <p className="text-lg font-semibold text-slate-900">
                         {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(ordem.custos_reais)}
                       </p>
@@ -318,7 +319,7 @@ export default function OrdemServicoDetailModal({ isOpen, onClose, ordem, aeropo
 
         <div className="flex justify-end">
           <DialogClose asChild>
-            <Button variant="outline">Fechar</Button>
+            <Button variant="outline">{t('osDetail.fechar')}</Button>
           </DialogClose>
         </div>
       </DialogContent>

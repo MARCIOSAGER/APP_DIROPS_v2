@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Camera, Upload, X, FileText } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 const TIPOS_DOCUMENTO = {
   'general_declaration': 'General Declaration',
@@ -22,6 +23,7 @@ export default function UploadDocumentoVooModal({
   voos,
   tipoDocumento
 }) {
+  const { t } = useI18n();
   const [mode, setMode] = useState(null); // 'camera' ou 'upload'
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -52,7 +54,7 @@ export default function UploadDocumentoVooModal({
       setMode('camera');
     } catch (err) {
       console.error('Erro ao acessar câmera:', err);
-      setError('Não foi possível acessar a câmera. Verifique as permissões.');
+      setError(t('upload.erroCamara'));
     }
   };
 
@@ -95,7 +97,7 @@ export default function UploadDocumentoVooModal({
 
   const handleSubmit = async () => {
     if (!selectedFile) {
-      setError('Por favor, selecione ou capture um arquivo.');
+      setError(t('upload.erroSelecionarArquivo'));
       return;
     }
 
@@ -105,7 +107,7 @@ export default function UploadDocumentoVooModal({
       await onConfirm(selectedFile, tipoDocumento);
       handleClose();
     } catch (err) {
-      setError(err.message || 'Erro ao enviar documento.');
+      setError(err.message || t('upload.erroEnviar'));
     } finally {
       setIsSubmitting(false);
     }
@@ -135,7 +137,7 @@ export default function UploadDocumentoVooModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
-            Upload: {TIPOS_DOCUMENTO[tipoDocumento]}
+            {t('upload.tituloVoo')}: {TIPOS_DOCUMENTO[tipoDocumento]}
           </DialogTitle>
         </DialogHeader>
 
@@ -143,11 +145,11 @@ export default function UploadDocumentoVooModal({
           {/* Info do voo */}
           <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
             <div className="text-sm text-slate-600">
-              <span className="font-semibold">Voo ARR:</span> {arrVoo?.numero_voo || 'N/A'} →{' '}
-              <span className="font-semibold">DEP:</span> {depVoo?.numero_voo || 'N/A'}
+              <span className="font-semibold">{t('upload.vooArr')}</span> {arrVoo?.numero_voo || 'N/A'} →{' '}
+              <span className="font-semibold">{t('upload.vooDep')}</span> {depVoo?.numero_voo || 'N/A'}
             </div>
             <div className="text-xs text-slate-500 mt-1">
-              Registo: {depVoo?.registo_aeronave || 'N/A'}
+              {t('upload.vooRegisto')} {depVoo?.registo_aeronave || 'N/A'}
             </div>
           </div>
 
@@ -167,7 +169,7 @@ export default function UploadDocumentoVooModal({
                 onClick={handleStartCamera}
               >
                 <Camera className="w-8 h-8 text-blue-600" />
-                <span className="font-medium">Tirar Foto</span>
+                <span className="font-medium">{t('upload.tirarFoto')}</span>
               </Button>
 
               <Button
@@ -177,7 +179,7 @@ export default function UploadDocumentoVooModal({
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="w-8 h-8 text-green-600" />
-                <span className="font-medium">Fazer Upload</span>
+                <span className="font-medium">{t('upload.fazerUpload')}</span>
               </Button>
 
               <input
@@ -204,10 +206,10 @@ export default function UploadDocumentoVooModal({
               <div className="flex gap-2 justify-center">
                 <Button onClick={handleCapture} className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Camera className="w-4 h-4 mr-2" />
-                  Capturar
+                  {t('upload.capturar')}
                 </Button>
                 <Button variant="outline" onClick={handleReset}>
-                  Cancelar
+                  {t('upload.cancelarVoo')}
                 </Button>
               </div>
             </div>
@@ -216,7 +218,7 @@ export default function UploadDocumentoVooModal({
           {/* Preview do arquivo */}
           {previewUrl && !isCapturing && (
             <div className="space-y-4">
-              <Label>Preview:</Label>
+              <Label>{t('upload.previewLabel')}</Label>
               <div className="relative border-2 border-dashed border-slate-300 rounded-lg p-4 bg-slate-50">
                 {selectedFile?.type.startsWith('image/') ? (
                   <img
@@ -239,7 +241,7 @@ export default function UploadDocumentoVooModal({
                 </Button>
               </div>
               <div className="text-sm text-slate-600">
-                <span className="font-medium">Arquivo:</span> {selectedFile?.name}
+                <span className="font-medium">{t('upload.arquivoLabel')}</span> {selectedFile?.name}
                 {' '}({(selectedFile?.size / 1024).toFixed(0)} KB)
               </div>
             </div>
@@ -252,10 +254,10 @@ export default function UploadDocumentoVooModal({
         {selectedFile && !isCapturing && (
           <DialogFooter>
             <Button variant="outline" onClick={handleReset} disabled={isSubmitting}>
-              Alterar
+              {t('upload.alterar')}
             </Button>
             <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? 'Enviando...' : 'Confirmar Upload'}
+              {isSubmitting ? t('upload.enviandoVoo') : t('upload.confirmarUpload')}
             </Button>
           </DialogFooter>
         )}

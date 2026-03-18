@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Select from '@/components/ui/select';
-import { Percent, DollarSign } from 'lucide-react';
+import { Percent } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function FormImposto({ isOpen, onClose, onSubmit, imposto, aeroportos }) {

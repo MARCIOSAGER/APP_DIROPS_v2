@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Select from '@/components/ui/select'; // Corrected import: changed from named export to default export
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileText, AlertCircle } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { Reclamacao } from '@/entities/Reclamacao';
 import { HistoricoReclamacao } from '@/entities/HistoricoReclamacao';
@@ -15,7 +16,7 @@ import { UploadFile } from '@/integrations/Core';
 
 const generateProtocolo = () => `REC-${new Date().getFullYear()}${String(Date.now()).slice(-6)}`;
 
-export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos, onSubmit }) {
+export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos, onSubmit, currentUser = null }) {
   const [formData, setFormData] = useState({
     titulo: reclamacao?.titulo || '',
     descricao: reclamacao?.descricao || '',
@@ -28,6 +29,7 @@ export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos
     anexos: reclamacao?.anexos || [],
   });
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useI18n();
   const { guardedSubmit } = useSubmitGuard();
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -49,7 +51,7 @@ export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos
       const urls = results.map(r => r.file_url);
       setFormData(prev => ({ ...prev, anexos: [...prev.anexos, ...urls] }));
     } catch (error) {
-      setMessage('Erro ao carregar ficheiro. Tente novamente.');
+      setMessage(t('recl_form.erro_carregar'));
     } finally {
       setIsUploading(false);
     }
@@ -73,6 +75,7 @@ export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos
         const data_recebimento = new Date().toISOString();
         reclamacaoResult = await Reclamacao.create({
           ...formData,
+          empresa_id: currentUser?.empresa_id,
           protocolo_numero,
           data_recebimento,
           status: 'recebida',
@@ -87,7 +90,7 @@ export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos
       }
       onSubmit(reclamacaoResult);
     } catch (error) {
-      setMessage('Erro ao guardar a reclamação. Verifique os campos e tente novamente.');
+      setMessage(t('recl_form.erro_guardar'));
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -131,54 +134,54 @@ export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-6 h-6 text-blue-600" />
-            {reclamacao ? 'Editar Reclamação' : 'Nova Reclamação'}
+            {reclamacao ? t('recl_form.editar') : t('recl_form.nova')}
           </DialogTitle>
         </DialogHeader>
         {message && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{message}</AlertDescription></Alert>}
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="titulo">Título / Assunto *</Label>
+                <Label htmlFor="titulo">{t('recl_form.titulo')}</Label>
                 <Input id="titulo" value={formData.titulo} onChange={e => handleInputChange('titulo', e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="aeroporto_id">Aeroporto *</Label>
-                <Select 
+                <Label htmlFor="aeroporto_id">{t('recl_form.aeroporto')}</Label>
+                <Select
                   options={aeroportoOptions}
-                  value={formData.aeroporto_id} 
-                  onValueChange={value => handleInputChange('aeroporto_id', value)} 
-                  placeholder="Selecione o aeroporto"
+                  value={formData.aeroporto_id}
+                  onValueChange={value => handleInputChange('aeroporto_id', value)}
+                  placeholder={t('recl_form.selecione_aeroporto')}
                 />
                 {aeroportosDisponiveis.length === 0 && (
-                  <p className="text-sm text-red-600">Nenhum aeroporto disponível.</p>
+                  <p className="text-sm text-red-600">{t('recl_form.nenhum_aeroporto')}</p>
                 )}
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="descricao">Descrição Completa *</Label>
+              <Label htmlFor="descricao">{t('recl_form.descricao')}</Label>
               <Textarea id="descricao" value={formData.descricao} onChange={e => handleInputChange('descricao', e.target.value)} required rows={4} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="canal_entrada">Canal de Entrada *</Label>
-                <Select 
+                <Label htmlFor="canal_entrada">{t('recl_form.canal')}</Label>
+                <Select
                   options={canalOptions}
-                  value={formData.canal_entrada} 
-                  onValueChange={value => handleInputChange('canal_entrada', value)} 
-                  placeholder="Selecione o canal"
+                  value={formData.canal_entrada}
+                  onValueChange={value => handleInputChange('canal_entrada', value)}
+                  placeholder={t('recl_form.selecione_canal')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="categoria_reclamacao">Categoria *</Label>
-                <Select 
+                <Label htmlFor="categoria_reclamacao">{t('recl_form.categoria')}</Label>
+                <Select
                   options={categoriaOptions}
-                  value={formData.categoria_reclamacao} 
-                  onValueChange={value => handleInputChange('categoria_reclamacao', value)} 
-                  placeholder="Selecione a categoria"
+                  value={formData.categoria_reclamacao}
+                  onValueChange={value => handleInputChange('categoria_reclamacao', value)}
+                  placeholder={t('recl_form.selecione_categoria')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="prioridade">Prioridade</Label>
+                <Label htmlFor="prioridade">{t('recl_form.prioridade')}</Label>
                 <Select 
                   options={prioridadeOptions}
                   value={formData.prioridade} 
@@ -188,22 +191,22 @@ export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="reclamante_nome">Nome do Reclamante (Opcional)</Label>
+                    <Label htmlFor="reclamante_nome">{t('recl_form.nome_reclamante')}</Label>
                     <Input id="reclamante_nome" value={formData.reclamante_nome} onChange={e => handleInputChange('reclamante_nome', e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="reclamante_contacto">Contacto do Reclamante (Opcional)</Label>
-                    <Input id="reclamante_contacto" value={formData.reclamante_contacto} onChange={e => handleInputChange('reclamante_contacto', e.target.value)} placeholder="E-mail ou telefone" />
+                    <Label htmlFor="reclamante_contacto">{t('recl_form.contacto_reclamante')}</Label>
+                    <Input id="reclamante_contacto" value={formData.reclamante_contacto} onChange={e => handleInputChange('reclamante_contacto', e.target.value)} placeholder={t('recl_form.contacto_placeholder')} />
                 </div>
             </div>
             <div className="space-y-2">
-                <Label>Anexos</Label>
+                <Label>{t('recl_form.anexos')}</Label>
                 <div className="border p-4 rounded-md space-y-2">
                     <Input id="file-upload" type="file" multiple onChange={handleFileUpload} className="mb-2" />
-                    {isUploading && <p className="text-sm text-slate-500">A carregar ficheiros...</p>}
+                    {isUploading && <p className="text-sm text-slate-500">{t('recl_form.carregando_ficheiros')}</p>}
                     <div className="flex flex-wrap gap-2">
                         {formData.anexos.map((url, i) => (
-                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline">Ficheiro {i+1}</a>
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline">{t('recl_form.ficheiro')} {i+1}</a>
                         ))}
                     </div>
                 </div>
@@ -215,7 +218,7 @@ export default function FormReclamacao({ isOpen, onClose, reclamacao, aeroportos
               type="submit" 
               disabled={isLoading}
             >
-              {isLoading ? 'A guardar...' : 'Guardar Reclamação'}
+              {isLoading ? t('recl_form.guardando') : t('recl_form.guardar')}
             </Button>
           </DialogFooter>
         </form>

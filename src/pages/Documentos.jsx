@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, FileText, Upload, FileDown, BookOpen, BarChart2, FolderUp, Home, ChevronRight, FolderPlus, Grid3x3, List, Download } from 'lucide-react';
+import { RefreshCw, FileText, Upload, FileDown, BookOpen, BarChart2, FolderUp, Home, ChevronRight, FolderPlus, Grid3x3, List } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 import { Documento } from '@/entities/Documento';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
 import { downloadAsCSV } from '../components/lib/export';
-import { getAeroportosPermitidos, filtrarDadosPorAcesso, isSuperAdmin } from '@/components/lib/userUtils';
+import { getAeroportosPermitidos, filtrarDadosPorAcesso } from '@/components/lib/userUtils';
 
 import DocumentosList from '../components/documentos/DocumentosList';
 import FormDocumento from '../components/documentos/FormDocumento';
@@ -194,7 +194,7 @@ export default function Documentos() {
       if (editingDocumento) {
         await Documento.update(editingDocumento.id, data);
       } else {
-        await Documento.create(data);
+        await Documento.create({ ...data, empresa_id: currentUser?.empresa_id });
       }
       setIsFormOpen(false);
       setEditingDocumento(null);
@@ -223,6 +223,7 @@ export default function Documentos() {
     try {
       await Documento.create({
         ...docData,
+        empresa_id: currentUser?.empresa_id,
         categoria: 'outro',
         versao: '1.0',
         data_publicacao: new Date().toISOString().split('T')[0],

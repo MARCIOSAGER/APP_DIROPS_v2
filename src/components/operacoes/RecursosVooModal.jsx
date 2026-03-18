@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Loader2, Wrench, Wind, Zap, DoorOpen, ClipboardList, DollarSign, Flame } from 'lucide-react';
+import { Loader2, Wrench, Wind, Zap, DoorOpen, DollarSign, Flame } from 'lucide-react';
 import { RecursoVoo } from '@/entities/RecursoVoo';
 import { TarifaRecurso } from '@/entities/TarifaRecurso';
 import { TipoServicoGeral } from '@/entities/TipoServicoGeral';
@@ -36,6 +37,7 @@ function calcTempoHoras(inicio, fim) {
 }
 
 export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aeroportos, onResourcesSaved }) {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -279,7 +281,7 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wrench className="w-5 h-5 text-slate-600" />
-            Recursos do Voo
+            {t('recursosVoo.titulo')}
           </DialogTitle>
           {flightInfo && (
             <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
@@ -329,13 +331,13 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
                             checked={utilizado}
                             onCheckedChange={(v) => handleChange(`${k}_utilizado`, v)}
                           />
-                          <Label className="text-sm">{utilizado ? 'Utilizado' : 'Não utilizado (N/A)'}</Label>
+                          <Label className="text-sm">{utilizado ? t('recursosVoo.utilizado') : t('recursosVoo.naoUtilizado')}</Label>
                         </div>
 
                         {utilizado && (
                           <div className={`grid gap-3 ${k === 'checkin' ? 'grid-cols-2 md:grid-cols-5' : 'grid-cols-2 md:grid-cols-3'} bg-slate-50 p-3 rounded-lg border`}>
                             <div className="space-y-1">
-                              <Label className="text-xs">Hora Início</Label>
+                              <Label className="text-xs">{t('recursosVoo.horaInicio')}</Label>
                               <Input
                                 type="time"
                                 value={formData[`${k}_hora_inicio`] || ''}
@@ -344,7 +346,7 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-xs">Hora Fim</Label>
+                              <Label className="text-xs">{t('recursosVoo.horaFim')}</Label>
                               <Input
                                 type="time"
                                 value={formData[`${k}_hora_fim`] || ''}
@@ -356,7 +358,7 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
                             {k === 'checkin' ? (
                               <>
                                 <div className="space-y-1">
-                                  <Label className="text-xs">Posições</Label>
+                                  <Label className="text-xs">{t('recursosVoo.posicoes')}</Label>
                                   <Input
                                     type="text"
                                     value={formData.checkin_posicoes || ''}
@@ -366,7 +368,7 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
                                   />
                                 </div>
                                 <div className="space-y-1">
-                                  <Label className="text-xs">Nº Balcões</Label>
+                                  <Label className="text-xs">{t('recursosVoo.numBalcoes')}</Label>
                                   <Input
                                     type="number"
                                     min="0"
@@ -378,7 +380,7 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
                               </>
                             ) : (
                               <div className="space-y-1">
-                                <Label className="text-xs">Posição Stand</Label>
+                                <Label className="text-xs">{t('recursosVoo.posicaoStand')}</Label>
                                 <Input
                                   type="text"
                                   value={formData[`${k}_posicao_stand`] || ''}
@@ -391,13 +393,13 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
 
                             {/* Calculated values */}
                             <div className="col-span-full flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1 border-t">
-                              <span>Tempo: <strong>{calc.tempo.toFixed(2)}h</strong></span>
+                              <span>{t('recursosVoo.tempo')} <strong>{calc.tempo.toFixed(2)}h</strong></span>
                               {calc.breakdown ? (
                                 <span>1ª hora: <strong>{calc.breakdown.primeiraHora.toFixed(2)}</strong> + {calc.breakdown.horasAdicionais}h × <strong>{calc.breakdown.horaAdicional.toFixed(2)}</strong></span>
                               ) : (
                                 <>
-                                  <span>Tarifa: <strong>{calc.tarifa.toFixed(2)} USD/h</strong></span>
-                                  {k === 'checkin' && <span>Balcões: <strong>{formData.checkin_num_balcoes || 0}</strong></span>}
+                                  <span>{t('recursosVoo.tarifa')} <strong>{calc.tarifa.toFixed(2)} USD/h</strong></span>
+                                  {k === 'checkin' && <span>{t('recursosVoo.balcoes')} <strong>{formData.checkin_num_balcoes || 0}</strong></span>}
                                 </>
                               )}
                               <span className="ml-auto text-green-700 font-semibold">
@@ -417,7 +419,7 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
             <div className="border rounded-lg overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border-b">
                 <Flame className="w-5 h-5 text-red-500" />
-                <span className="font-semibold text-sm text-red-800">Serviços de Bombeiros</span>
+                <span className="font-semibold text-sm text-red-800">{t('recursosVoo.servicosBombeiros')}</span>
                 {totalBombeirosUSD > 0 && (
                   <Badge className="bg-red-100 text-red-800 text-xs ml-auto">
                     {totalBombeirosUSD.toFixed(2)} USD
@@ -462,14 +464,14 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
             <div className="flex items-center justify-between bg-slate-100 rounded-lg p-4 border">
               <div className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-green-600" />
-                <span className="font-semibold text-slate-700">Total Recursos</span>
+                <span className="font-semibold text-slate-700">{t('recursosVoo.totalRecursos')}</span>
               </div>
               <span className="text-xl font-bold text-green-700">{totalUSD.toFixed(2)} USD</span>
             </div>
 
             {!aeroportoCategoria && (
               <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
-                Categoria do aeroporto não encontrada. As tarifas podem não ser calculadas correctamente.
+                {t('recursosVoo.aviso')}
               </p>
             )}
           </div>
@@ -477,13 +479,13 @@ export default function RecursosVooModal({ isOpen, onClose, vooLigado, voos, aer
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
-            Cancelar
+            {t('recursosVoo.cancelar')}
           </Button>
           <Button onClick={handleSave} disabled={isSaving || isLoading} className="bg-blue-600 hover:bg-blue-700 text-white">
             {isSaving ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</>
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('recursosVoo.salvando')}</>
             ) : (
-              <><Wrench className="mr-2 h-4 w-4" /> Salvar Recursos</>
+              <><Wrench className="mr-2 h-4 w-4" /> {t('recursosVoo.salvarRecursos')}</>
             )}
           </Button>
         </DialogFooter>

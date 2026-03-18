@@ -2,15 +2,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Edit, Trash2, Search, FileDown, Filter, X, Upload, Plane, Building } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, FileDown, Filter, X, Upload } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import Select from '@/components/ui/select';
 import Combobox from '@/components/ui/combobox';
 import { RegistoAeronave } from '@/entities/RegistoAeronave';
 import { Voo } from '@/entities/Voo';
-import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 import { User } from '@/entities/User';
 import { downloadAsCSV } from '@/components/lib/export';
 import AlertModal from '@/components/shared/AlertModal';
@@ -18,8 +16,10 @@ import UploadCsvModal from '@/components/shared/UploadCsvModal';
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import { normalizeAircraftRegistration, formatAircraftRegistration } from '@/components/lib/utils';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, isSubmitting }) => {
+  const { t } = useI18n();
   const { guardedSubmit } = useSubmitGuard();
   // Inicializar com dados do registo (se estiver editando)
   const [formData, setFormData] = useState(registo || {
@@ -98,7 +98,7 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label>Matrícula / Registo *</Label>
+        <Label>{t('configRegistos.matricula')}</Label>
         <Input
           value={formData.registo || ''}
           onChange={(e) => handleChange('registo', e.target.value)}
@@ -110,26 +110,26 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
         </p>
       </div>
       <div>
-        <Label>Modelo da Aeronave *</Label>
+        <Label>{t('configRegistos.modeloAeronave')}</Label>
         <Combobox
           options={modeloOptions}
           value={formData.id_modelo_aeronave || ''}
           onValueChange={(value) => handleChange('id_modelo_aeronave', value)}
-          placeholder="Selecione o modelo..." />
+          placeholder={t('configRegistos.selecioneModelo')} />
 
       </div>
       <div>
-        <Label>Companhia Aérea Proprietária *</Label>
+        <Label>{t('configRegistos.companhiaProprietaria')}</Label>
         <Combobox
           options={companhiaOptions}
           value={formData.id_companhia_aerea || ''}
           onValueChange={(value) => handleChange('id_companhia_aerea', value)}
-          placeholder="Selecione a companhia..." />
+          placeholder={t('configRegistos.selecioneCompanhia')} />
 
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label>MTOW (kg) *</Label>
+          <Label>{t('configRegistos.mtowKg')}</Label>
           <Input
             type="number"
             min="1000"
@@ -143,7 +143,7 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
           </p>
         </div>
         <div>
-          <Label>Total de Assentos</Label>
+          <Label>{t('configRegistos.totalAssentos')}</Label>
           <Input
             type="number"
             value={formData.total_assentos || ''}
@@ -153,7 +153,7 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
       </div>
       <div className="grid grid-cols-4 gap-4">
         <div>
-          <Label>Assentos Primeira Classe</Label>
+          <Label>{t('configRegistos.assentosPrimeira')}</Label>
           <Input
             type="number"
             value={formData.num_first || ''}
@@ -161,7 +161,7 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
           />
         </div>
         <div>
-          <Label>Assentos Executiva</Label>
+          <Label>{t('configRegistos.assentosExecutiva')}</Label>
           <Input
             type="number"
             value={formData.num_business || ''}
@@ -169,7 +169,7 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
           />
         </div>
         <div>
-          <Label>Assentos Premium</Label>
+          <Label>{t('configRegistos.assentosPremium')}</Label>
           <Input
             type="number"
             value={formData.num_premium || ''}
@@ -177,7 +177,7 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
           />
         </div>
         <div>
-          <Label>Assentos Económica</Label>
+          <Label>{t('configRegistos.assentosEconomica')}</Label>
           <Input
             type="number"
             value={formData.num_economy || ''}
@@ -186,9 +186,9 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
         </div>
       </div>
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancelar</Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>{t('configRegistos.cancelar')}</Button>
         <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
-          {isSubmitting ? 'Salvando...' : 'Salvar'}
+          {isSubmitting ? t('configRegistos.salvando') : t('configRegistos.salvar')}
         </Button>
       </DialogFooter>
     </form>);
@@ -196,6 +196,7 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
 };
 
 export default function RegistosAeronaveConfig({ registos, modelos, companhias, onReload }) {
+  const { t } = useI18n();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRegisto, setEditingRegisto] = useState(null);
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
@@ -362,7 +363,7 @@ export default function RegistosAeronaveConfig({ registos, modelos, companhias, 
           message: `Registo "${registoNormalizado}" atualizado com sucesso.`
         });
       } else {
-        savedRegisto = await RegistoAeronave.create(dataFromForm);
+        savedRegisto = await RegistoAeronave.create({ ...dataFromForm, empresa_id: currentUser?.empresa_id });
         
         // Enviar notificação por email aos administradores
         try {
@@ -550,21 +551,21 @@ export default function RegistosAeronaveConfig({ registos, modelos, companhias, 
   return (
     <Card>
       <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <CardTitle className="text-xl md:text-2xl font-bold text-slate-800">Registos de Aeronaves</CardTitle>
+        <CardTitle className="text-xl md:text-2xl font-bold text-slate-800">{t('configRegistos.titulo')}</CardTitle>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setIsUploadModalOpen(true)} className="border-slate-300 text-slate-700 hover:bg-slate-100">
             <Upload className="w-4 h-4 mr-2" />
-            Upload CSV
+            {t('configRegistos.importarCSV')}
           </Button>
           <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 text-slate-700 hover:bg-slate-100">
             <FileDown className="w-4 h-4 mr-2" />
-            Exportar CSV ({registosFiltrados.length})
+            {t('configRegistos.exportarCSV')} ({registosFiltrados.length})
           </Button>
           <Button
             onClick={() => {setEditingRegisto(null);setIsFormOpen(true);}}
             className="bg-blue-600 hover:bg-blue-700 text-white">
 
-            <Plus className="w-4 h-4 mr-2" /> Novo Registo
+            <Plus className="w-4 h-4 mr-2" /> {t('configRegistos.novoRegisto')}
           </Button>
         </div>
       </CardHeader>
@@ -574,7 +575,7 @@ export default function RegistosAeronaveConfig({ registos, modelos, companhias, 
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Filter className="w-5 h-5 text-slate-500" />
-                Filtros e Pesquisa
+                {t('configRegistos.filtrosPesquisa')}
               </CardTitle>
               {hasActiveFilters &&
               <Button
@@ -584,7 +585,7 @@ export default function RegistosAeronaveConfig({ registos, modelos, companhias, 
                 className="text-red-600 border-red-200 hover:bg-red-50">
 
                   <X className="w-4 h-4 mr-1" />
-                  Limpar Filtros
+                  {t('configRegistos.limparFiltros')}
                 </Button>
               }
             </div>
@@ -592,12 +593,12 @@ export default function RegistosAeronaveConfig({ registos, modelos, companhias, 
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div>
-                <Label htmlFor="search-matricula">Pesquisar por Matrícula, Modelo ou Companhia</Label>
+                <Label htmlFor="search-matricula">{t('configRegistos.pesquisarLabel')}</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <Input
                     id="search-matricula"
-                    placeholder="Pesquisar..."
+                    placeholder={t('configRegistos.buscar')}
                     value={filtros.busca}
                     onChange={(e) => setFiltros((prev) => ({ ...prev, busca: e.target.value }))}
                     className="pl-9" />
@@ -605,23 +606,23 @@ export default function RegistosAeronaveConfig({ registos, modelos, companhias, 
                 </div>
               </div>
               <div>
-                <Label htmlFor="modelo-filter">Modelo</Label>
+                <Label htmlFor="modelo-filter">{t('configRegistos.modelo')}</Label>
                 <Combobox
                   id="modelo-filter"
                   options={modeloFilterOptions}
                   value={filtros.modelo}
                   onValueChange={(v) => setFiltros((prev) => ({ ...prev, modelo: v }))}
-                  placeholder="Selecione o modelo..." />
+                  placeholder={t('configRegistos.selecioneModelo')} />
 
               </div>
               <div>
-                <Label htmlFor="companhia-filter">Companhia</Label>
+                <Label htmlFor="companhia-filter">{t('configRegistos.companhia')}</Label>
                 <Combobox
                   id="companhia-filter"
                   options={companhiaFilterOptions}
                   value={filtros.companhia}
                   onValueChange={(v) => setFiltros((prev) => ({ ...prev, companhia: v }))}
-                  placeholder="Selecione a companhia..." />
+                  placeholder={t('configRegistos.selecioneCompanhia')} />
 
               </div>
             </div>
@@ -634,35 +635,35 @@ export default function RegistosAeronaveConfig({ registos, modelos, companhias, 
               <TableRow>
                 <SortableTableHeader
                   field="registo"
-                  label="Matrícula"
+                  label={t('configRegistos.registo')}
                   currentSortField={sortField}
                   currentSortDirection={sortDirection}
                   onSort={handleSort} />
 
-                <TableHead>Modelo</TableHead>
-                <TableHead>Companhia</TableHead>
+                <TableHead>{t('configRegistos.modelo')}</TableHead>
+                <TableHead>{t('configRegistos.companhiaCol')}</TableHead>
                 <SortableTableHeader
                   field="mtow_kg"
-                  label="MTOW (kg)"
+                  label={t('configRegistos.mtowKg')}
                   currentSortField={sortField}
                   currentSortDirection={sortDirection}
                   onSort={handleSort} />
 
                 <SortableTableHeader
                   field="total_assentos"
-                  label="Assentos"
+                  label={t('configRegistos.assentos')}
                   currentSortField={sortField}
                   currentSortDirection={sortDirection}
                   onSort={handleSort} />
 
                 <SortableTableHeader
                   field="updated_date"
-                  label="Última Atualização"
+                  label={t('configRegistos.ultimaAtualizacao')}
                   currentSortField={sortField}
                   currentSortDirection={sortDirection}
                   onSort={handleSort} />
 
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="text-right">{t('configRegistos.acoes')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -709,7 +710,7 @@ export default function RegistosAeronaveConfig({ registos, modelos, companhias, 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingRegisto ? 'Editar' : 'Adicionar'} Registo de Aeronave</DialogTitle>
+            <DialogTitle>{editingRegisto ? t('configRegistos.editarRegisto') : t('configRegistos.adicionarRegisto')} </DialogTitle>
           </DialogHeader>
           <FormRegisto
             registo={editingRegisto}

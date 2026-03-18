@@ -9,39 +9,41 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, XCircle, AlertTriangle, UploadCloud, X, Loader2 } from 'lucide-react';
 import { UploadFile } from '@/integrations/Core';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 const ACAO_CONFIG = {
   aceitar: {
     status: 'em_execucao',
     color: 'bg-green-100 text-green-800',
     icon: CheckCircle,
-    label: 'Aceitar e Iniciar Execução',
-    titulo: 'Aceitar Ordem de Serviço'
+    labelKey: 'responderOS.aceitarLabel',
+    tituloKey: 'responderOS.aceitarTitulo'
   },
   rejeitar: {
     status: 'rejeitada',
     color: 'bg-red-100 text-red-800',
     icon: XCircle,
-    label: 'Rejeitar Ordem',
-    titulo: 'Rejeitar Ordem de Serviço'
+    labelKey: 'responderOS.rejeitarLabel',
+    tituloKey: 'responderOS.rejeitarTitulo'
   },
   verificar: {
     status: 'concluida',
     color: 'bg-orange-100 text-orange-800',
     icon: AlertTriangle,
-    label: 'Aprovar e Concluir',
-    titulo: 'Verificar e Aprovar Ordem de Serviço'
+    labelKey: 'responderOS.verificarLabel',
+    tituloKey: 'responderOS.verificarTitulo'
   },
   concluir: {
     status: 'aguardando_verificacao',
     color: 'bg-blue-100 text-blue-800',
     icon: CheckCircle,
-    label: 'Submeter para Verificação',
-    titulo: 'Concluir Execução da Ordem de Serviço'
+    labelKey: 'responderOS.concluirLabel',
+    tituloKey: 'responderOS.concluirTitulo'
   }
 };
 
 export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmit, currentUser }) {
+  const { t } = useI18n();
   const [observacoes, setObservacoes] = useState('');
   const [observacoesConclusao, setObservacoesConclusao] = useState('');
   const [custosReais, setCustosReais] = useState('');
@@ -70,7 +72,7 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
       }
     } catch (err) {
       console.error('Erro ao fazer upload:', err);
-      alert('Erro ao fazer upload de ficheiro.');
+      alert(t('responderOS.erroUpload'));
     } finally {
       setIsUploading(false);
     }
@@ -88,7 +90,7 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
     e.preventDefault();
 
     if (acao === 'rejeitar' && !observacoes.trim()) {
-      alert('Justificativa é obrigatória para rejeição');
+      alert(t('responderOS.justificativaObrigatoria'));
       return;
     }
 
@@ -130,7 +132,7 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
       onClose();
     } catch (error) {
       console.error('Erro ao responder OS:', error);
-      alert('Erro ao processar resposta');
+      alert(t('responderOS.erroProcessar'));
     } finally {
       setIsSubmitting(false);
     }
@@ -145,7 +147,7 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
       <div className="flex items-center gap-2">
         <label className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors text-sm text-slate-600">
           <UploadCloud className="w-4 h-4" />
-          {isUploading ? 'A enviar...' : 'Selecionar ficheiros'}
+          {isUploading ? t('responderOS.aEnviar') : t('responderOS.selecionarFicheiros')}
           <input
             type="file"
             multiple
@@ -186,7 +188,7 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AcaoIcon className="w-5 h-5" />
-            {acaoConfig.titulo} - {ordem.numero_ordem}
+            {t(acaoConfig.tituloKey)} - {ordem.numero_ordem}
           </DialogTitle>
         </DialogHeader>
 
@@ -196,38 +198,38 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
             <AlertDescription>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span><strong>Título:</strong> {ordem.titulo}</span>
+                  <span><strong>{t('responderOS.tituloLabel')}</strong> {ordem.titulo}</span>
                   <Badge className={acaoConfig.color}>
-                    {acaoConfig.label}
+                    {t(acaoConfig.labelKey)}
                   </Badge>
                 </div>
-                <p><strong>Descrição:</strong> {ordem.descricao_problema}</p>
-                <p><strong>Prioridade:</strong> <span className="capitalize">{ordem.prioridade}</span></p>
+                <p><strong>{t('responderOS.descricaoLabel')}</strong> {ordem.descricao_problema}</p>
+                <p><strong>{t('responderOS.prioridadeLabel')}</strong> <span className="capitalize">{ordem.prioridade}</span></p>
                 {ordem.prazo_estimado && (
-                  <p><strong>Prazo:</strong> {new Date(ordem.prazo_estimado).toLocaleDateString('pt-AO')}</p>
+                  <p><strong>{t('responderOS.prazoLabel')}</strong> {new Date(ordem.prazo_estimado).toLocaleDateString('pt-AO')}</p>
                 )}
               </div>
             </AlertDescription>
           </Alert>
 
           {/* Fotos Antes - shown when accepting */}
-          {acao === 'aceitar' && renderFotoUpload('antes', fotosAntes, 'Fotos do Estado Atual (Antes)')}
+          {acao === 'aceitar' && renderFotoUpload('antes', fotosAntes, t('responderOS.fotosAntes'))}
 
           {/* Campo de Observações */}
           <div className="space-y-2">
             <Label htmlFor="observacoes">
-              {acao === 'rejeitar' ? 'Justificativa para Rejeição *' : 'Observações'}
+              {acao === 'rejeitar' ? t('responderOS.justificativaRejeicao') : t('responderOS.observacoes')}
             </Label>
             <Textarea
               id="observacoes"
               placeholder={
                 acao === 'rejeitar'
-                  ? 'Por favor, informe o motivo da rejeição...'
+                  ? t('responderOS.placeholderRejeitar')
                   : acao === 'aceitar'
-                  ? 'Descreva como pretende executar esta ordem...'
+                  ? t('responderOS.placeholderAceitar')
                   : acao === 'verificar'
-                  ? 'Observações sobre a verificação realizada...'
-                  : 'Descreva os trabalhos realizados...'
+                  ? t('responderOS.placeholderVerificar')
+                  : t('responderOS.placeholderConcluir')
               }
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
@@ -239,13 +241,13 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
           {/* Extra fields when concluding */}
           {acao === 'concluir' && (
             <>
-              {renderFotoUpload('depois', fotosDepois, 'Fotos Após Execução (Depois)')}
+              {renderFotoUpload('depois', fotosDepois, t('responderOS.fotosDepois'))}
 
               <div className="space-y-2">
-                <Label htmlFor="observacoes_conclusao">Observações da Conclusão</Label>
+                <Label htmlFor="observacoes_conclusao">{t('responderOS.observacoesConclusao')}</Label>
                 <Textarea
                   id="observacoes_conclusao"
-                  placeholder="Descreva detalhadamente os trabalhos realizados, materiais utilizados, etc."
+                  placeholder={t('responderOS.observacoesConclusaoPlaceholder')}
                   value={observacoesConclusao}
                   onChange={(e) => setObservacoesConclusao(e.target.value)}
                   rows={3}
@@ -253,7 +255,7 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="custos_reais">Custos Reais (AOA)</Label>
+                <Label htmlFor="custos_reais">{t('responderOS.custosReais')}</Label>
                 <Input
                   id="custos_reais"
                   type="number"
@@ -272,7 +274,7 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
             <Alert>
               <CheckCircle className="w-4 h-4" />
               <AlertDescription>
-                Ao aceitar, você se torna responsável por esta ordem de serviço. O status será alterado para "Em Execução".
+                {t('responderOS.alertaAceitar')}
               </AlertDescription>
             </Alert>
           )}
@@ -281,7 +283,7 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
             <Alert>
               <XCircle className="w-4 h-4" />
               <AlertDescription>
-                A ordem será rejeitada e retornará ao status "Pendente" para nova atribuição. Uma justificativa é obrigatória.
+                {t('responderOS.alertaRejeitar')}
               </AlertDescription>
             </Alert>
           )}
@@ -290,7 +292,7 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
             <Alert>
               <AlertTriangle className="w-4 h-4" />
               <AlertDescription>
-                A ordem será verificada, aprovada e marcada como "Concluída". Seu nome será registado como verificador.
+                {t('responderOS.alertaVerificar')}
               </AlertDescription>
             </Alert>
           )}
@@ -299,14 +301,14 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
             <Alert>
               <CheckCircle className="w-4 h-4" />
               <AlertDescription>
-                A ordem será submetida para verificação pelo supervisor. Adicione fotos do resultado e os custos reais, se aplicável.
+                {t('responderOS.alertaConcluir')}
               </AlertDescription>
             </Alert>
           )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
+              {t('responderOS.cancelar')}
             </Button>
             <Button
               type="submit"
@@ -318,7 +320,7 @@ export default function ResponderOSModal({ isOpen, onClose, ordem, acao, onSubmi
                 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
-              {isSubmitting ? 'Processando...' : acaoConfig.label}
+              {isSubmitting ? t('responderOS.processando') : t(acaoConfig.labelKey)}
             </Button>
           </DialogFooter>
         </form>

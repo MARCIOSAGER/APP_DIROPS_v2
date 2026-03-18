@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import Select from '@/components/ui/select';
+import { useI18n } from '@/components/lib/i18n';
 
 const getTipoOperacao = (voo, todosAeroportos) => {
   if (!voo || !todosAeroportos) return 'N/A';
@@ -58,6 +59,7 @@ export default function VoosLigadosTable({
   onSort,
   currentUser
 }) {
+  const { t } = useI18n();
   const [selectedVoos, setSelectedVoos] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -177,10 +179,10 @@ export default function VoosLigadosTable({
   };
 
   const pageSizeOptions = [
-    { value: '10', label: '10 por página' },
-    { value: '25', label: '25 por página' },
-    { value: '50', label: '50 por página' },
-    { value: '100', label: '100 por página' }
+    { value: '10', label: `10 ${t('voosLigados.porPagina')}` },
+    { value: '25', label: `25 ${t('voosLigados.porPagina')}` },
+    { value: '50', label: `50 ${t('voosLigados.porPagina')}` },
+    { value: '100', label: `100 ${t('voosLigados.porPagina')}` }
   ];
 
   const getTableHeight = () => {
@@ -209,10 +211,10 @@ export default function VoosLigadosTable({
             />
 
             <span className="text-sm font-medium text-blue-900">
-              {selectedVoos.size} voo{selectedVoos.size !== 1 ? 's' : ''} selecionado{selectedVoos.size !== 1 ? 's' : ''}
+              {selectedVoos.size} voo{selectedVoos.size !== 1 ? 's' : ''} {t('voosLigados.selecionados')}
               {voosComCalculoValido < selectedVoos.size &&
                 <span className="text-blue-600 ml-2">
-                  ({voosComCalculoValido} com cálculo válido para proforma)
+                  ({voosComCalculoValido} {t('voosLigados.comCalculoValido')})
                 </span>
               }
             </span>
@@ -223,7 +225,7 @@ export default function VoosLigadosTable({
               variant="outline"
               onClick={() => setSelectedVoos(new Set())}
             >
-              Limpar Seleção
+              {t('voosLigados.limparSelecao')}
             </Button>
             <Button
               size="sm"
@@ -232,7 +234,7 @@ export default function VoosLigadosTable({
               onClick={handleRecalcularLote}
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Recalcular ({selectedVoos.size})
+              {t('voosLigados.recalcularSelecionados')} ({selectedVoos.size})
             </Button>
             <Button
               size="sm" className="bg-blue-600 text-slate-50 px-3 text-sm font-medium inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-9 rounded-md hover:bg-blue-700"
@@ -240,7 +242,7 @@ export default function VoosLigadosTable({
               disabled={voosComCalculoValido === 0}
             >
               <FileText className="w-4 h-4 mr-2" />
-              Gerar Proformas ({voosComCalculoValido})
+              {t('voosLigados.gerarProformaSelecionados')} ({voosComCalculoValido})
             </Button>
           </div>
         </div>
@@ -255,8 +257,7 @@ export default function VoosLigadosTable({
                 {duplicataIds.size} vinculação(ões) duplicada(s) detectada(s)
               </p>
               <p className="text-xs text-red-700 mt-1">
-                As linhas com fundo vermelho e borda vermelha são duplicatas.
-                Recomendamos excluir as duplicatas para evitar cobranças incorretas.
+                {t('voosLigados.duplicatasLinhas')}
               </p>
             </div>
           </div>
@@ -276,62 +277,62 @@ export default function VoosLigadosTable({
               </TableHead>
               <SortableTableHeader
                 field="numero_voo"
-                label="Voo (ARR → DEP)"
+                label={t('voosLigados.colVooARRDEP')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               />
               <SortableTableHeader
                 field="horario_arr"
-                label="Horários"
+                label={t('voosLigados.colHorarios')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               />
-              <TableHead className="whitespace-nowrap">Rota & Tipo</TableHead>
+              <TableHead className="whitespace-nowrap">{t('voosLigados.colRotaTipo')}</TableHead>
               <SortableTableHeader
                 field="registo_aeronave"
-                label="Registo"
+                label={t('voosLigados.registo')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               />
               <SortableTableHeader
                 field="companhia_aerea"
-                label="Companhia"
+                label={t('voosLigados.colCompanhia')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               />
               <SortableTableHeader
                 field="tempo_permanencia_min"
-                label="Permanência"
+                label={t('voosLigados.permanencia')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               />
               <SortableTableHeader
                 field="passageiros_total"
-                label="PAX/Carga"
+                label={t('voosLigados.colPaxCarga')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               />
               <SortableTableHeader
                 field="total_tarifa"
-                label="Tarifa Total"
+                label={t('voosLigados.tarifaTotal')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               />
               <SortableTableHeader
                 field="updated_date"
-                label="Atualizado"
+                label={t('voosLigados.atualizadoPor')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               />
-              <TableHead className="text-right w-16">Ações</TableHead>
+              <TableHead className="text-right w-16">{t('voosLigados.acoes')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -381,7 +382,7 @@ export default function VoosLigadosTable({
                         {isDuplicata && (
                           <div className="flex items-center gap-1">
                             <Badge className="bg-red-600 text-white text-[10px] px-1.5 py-0.5 animate-pulse">
-                              ⚠️ DUPLICATA
+                              ⚠️ {t('voosLigados.duplicataBadge')}
                             </Badge>
                           </div>
                         )}
@@ -458,7 +459,9 @@ export default function VoosLigadosTable({
                                 'bg-green-50 text-green-700 border-green-200' :
                                 'bg-purple-50 text-purple-700 border-purple-200'}`
                             }>
-                            {getTipoOperacao(arrVoo, todosAeroportos)}
+                            {getTipoOperacao(arrVoo, todosAeroportos) === 'Internacional'
+                              ? t('voosLigados.internacional')
+                              : t('voosLigados.domestico')}
                           </Badge>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-50 text-slate-600">
                             {depVoo.tipo_voo || 'Regular'}
@@ -471,7 +474,7 @@ export default function VoosLigadosTable({
                       {vooLigado.registo_alterado ? (
                         <div className="flex flex-col gap-0.5">
                           <Badge className="bg-orange-100 text-orange-700 border-orange-300 text-[9px] px-1 w-fit">
-                            TROCA
+                            {t('voosLigados.registoAlterado')}
                           </Badge>
                           <span className="text-slate-400 line-through text-[10px]">{arrVoo?.registo_aeronave}</span>
                           <span className="text-orange-700 font-bold">{vooLigado.registo_dep}</span>
@@ -494,7 +497,7 @@ export default function VoosLigadosTable({
                       </div>
                       {vooLigado.registo_alterado && vooLigado.tempo_estacionamento_min != null && (
                         <div className="text-[10px] text-orange-600 mt-0.5 font-medium">
-                          Estac: {(vooLigado.tempo_estacionamento_min / 60).toFixed(1)}h
+                          {t('voosLigados.estac')} {(vooLigado.tempo_estacionamento_min / 60).toFixed(1)}h
                         </div>
                       )}
                       <div className="text-[10px] text-slate-500 mt-0.5">
@@ -521,7 +524,7 @@ export default function VoosLigadosTable({
                        {calculo ?
                          calculo.tipo_tarifa === "Voo Isento de Tarifas" ?
                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 whitespace-nowrap text-[10px] px-1.5 py-0.5">
-                             Isento de Tarifas
+                             {t('voosLigados.isentoTarifas')}
                            </Badge> :
                            <div className="flex flex-col gap-0.5">
                              <div className="font-bold text-green-700 text-sm whitespace-nowrap">
@@ -531,11 +534,11 @@ export default function VoosLigadosTable({
                                ${(calculo.total_tarifa_usd || 0).toFixed(2)}
                              </div>
                              <div className="text-[10px] text-slate-400">
-                               Câmbio: {calculo.taxa_cambio_usd_aoa} AOA
+                               {t('voosLigados.cambio')} {calculo.taxa_cambio_usd_aoa} AOA
                              </div>
                            </div> :
                          <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200 whitespace-nowrap text-[10px] px-1.5 py-0.5">
-                           Sem Cálculo
+                           {t('voosLigados.semCalculo')}
                          </Badge>
                        }
                      </TableCell>
@@ -566,7 +569,7 @@ export default function VoosLigadosTable({
                           {isDuplicata && (
                             <>
                               <div className="px-2 py-1.5 text-xs text-red-600 font-semibold bg-red-50 border-l-2 border-red-500">
-                                ⚠️ DUPLICATA DETECTADA
+                                ⚠️ {t('voosLigados.duplicataDetectada')}
                               </div>
                               <DropdownMenuSeparator />
                             </>
@@ -576,15 +579,15 @@ export default function VoosLigadosTable({
                             <>
                               <DropdownMenuItem onClick={() => onShowTariffDetails(calculo)}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                Ver Detalhes
+                                {t('voosLigados.verDetalhes')}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => onRecalcularTarifa(vooLigado)}>
                                 <RefreshCw className="mr-2 h-4 w-4" />
-                                Recalcular Tarifas
+                                {t('voosLigados.recalcularTarifas')}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => onAlterarCambio(calculo)}>
                                 <DollarSign className="mr-2 h-4 w-4" />
-                                Alterar Câmbio
+                                {t('voosLigados.alterarCambio')}
                               </DropdownMenuItem>
                               {!isIsento && (
                                 <DropdownMenuItem
@@ -592,24 +595,24 @@ export default function VoosLigadosTable({
                                   className="text-blue-600"
                                 >
                                   <FileText className="mr-2 h-4 w-4" />
-                                  Gerar Proforma
+                                  {t('voosLigados.gerarProforma')}
                                 </DropdownMenuItem>
                               )}
                             </>
                           ) : (
                             <DropdownMenuItem disabled>
-                              Sem tarifas calculadas
+                              {t('voosLigados.semTarifasCalculadas')}
                             </DropdownMenuItem>
                           )}
 
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => onVerDocumentosVoo && onVerDocumentosVoo(vooLigado)}>
                             <FolderOpen className="mr-2 h-4 w-4" />
-                            Documentos
+                            {t('voosLigados.documentos')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => onRecursosVoo && onRecursosVoo(vooLigado)}>
                             <Wrench className="mr-2 h-4 w-4" />
-                            Recursos do Voo
+                            {t('voosLigados.recursosVoo')}
                           </DropdownMenuItem>
 
                           {isAdmin && onExcluirVooLigado && (
@@ -620,7 +623,7 @@ export default function VoosLigadosTable({
                                 className="text-red-600 focus:text-red-600 focus:bg-red-50"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                {isDuplicata ? 'Excluir Duplicata' : 'Excluir Vinculação'}
+                                {isDuplicata ? t('voosLigados.excluirDuplicata') : t('voosLigados.excluirVinculacao')}
                               </DropdownMenuItem>
                             </>
                           )}
@@ -637,8 +640,8 @@ export default function VoosLigadosTable({
         {voosLigados.length === 0 && !isLoading &&
           <div className="text-center py-10 text-slate-500">
             <Clock className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-            <p>Nenhum voo ligado encontrado.</p>
-            <p className="text-sm mt-2">Crie voos de partida vinculados aos voos de chegada para ver a análise aqui.</p>
+            <p>{t('voosLigados.nenhumVooLigado')}</p>
+            <p className="text-sm mt-2">{t('voosLigados.criarVoosDep')}</p>
           </div>
         }
       </div>
@@ -647,7 +650,7 @@ export default function VoosLigadosTable({
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
           <div className="flex items-center gap-2">
             <span className="text-sm text-slate-600">
-              Mostrando {startIndex + 1} a {Math.min(endIndex, voosLigados.length)} de {voosLigados.length} voos ligados
+              {t('voosLigados.mostrando')} {startIndex + 1} {t('voosLigados.a')} {Math.min(endIndex, voosLigados.length)} {t('voosLigados.de')} {voosLigados.length} {t('voosLigados.voosLigados')}
             </span>
           </div>
 
@@ -668,7 +671,7 @@ export default function VoosLigadosTable({
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4" />
-              Anterior
+              {t('voosLigados.anterior')}
             </Button>
 
             <div className="flex items-center gap-1">
@@ -704,7 +707,7 @@ export default function VoosLigadosTable({
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
             >
-              Próxima
+              {t('voosLigados.proxima')}
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

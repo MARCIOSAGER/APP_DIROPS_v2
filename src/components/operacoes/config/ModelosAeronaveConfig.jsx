@@ -11,8 +11,10 @@ import AlertModal from '@/components/shared/AlertModal';
 import { ModeloAeronave } from '@/entities/ModeloAeronave';
 import { User } from '@/entities/User'; // Added User import
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function ModelosAeronaveConfig({ modelos, onReload }) {
+  const { t } = useI18n();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingModelo, setEditingModelo] = useState(null);
   const [busca, setBusca] = useState('');
@@ -237,20 +239,20 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Modelos de Aeronave</CardTitle>
+          <CardTitle>{t('configModelos.titulo')}</CardTitle>
           <Button onClick={() => handleOpenForm()} size="sm" className="bg-blue-600 text-slate-50 px-3 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-blue-500/90 h-9">
             <Plus className="w-4 h-4 mr-2" />
-            Novo Modelo
+            {t('configModelos.novoModelo')}
           </Button>
         </CardHeader>
         <CardContent>
           {/* Filtro de Busca */}
           <div className="mb-4">
-            <Label>Pesquisar</Label>
+            <Label>{t('configModelos.pesquisar')}</Label>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
               <Input
-                placeholder="Modelo, código ICAO, código IATA..."
+                placeholder={t('configModelos.pesquisarPlaceholder')}
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 className="pl-8" />
@@ -265,41 +267,41 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
                 <TableRow>
                   <SortableTableHeader
                     field="modelo"
-                    label="Modelo"
+                    label={t('configModelos.nome')}
                     currentSortField={sortField}
                     currentSortDirection={sortDirection}
                     onSort={handleSort} />
 
                   <SortableTableHeader
                     field="codigo_icao"
-                    label="ICAO"
+                    label={t('configModelos.codigoICAO')}
                     currentSortField={sortField}
                     currentSortDirection={sortDirection}
                     onSort={handleSort} />
 
                   <SortableTableHeader
                     field="codigo_iata"
-                    label="IATA"
+                    label={t('configModelos.codigoIATA')}
                     currentSortField={sortField}
                     currentSortDirection={sortDirection}
                     onSort={handleSort} />
 
                   <SortableTableHeader
                     field="mtow_kg"
-                    label="MTOW (kg)"
+                    label={t('configModelos.mtowKg')}
                     currentSortField={sortField}
                     currentSortDirection={sortDirection}
                     onSort={handleSort} />
 
                   <SortableTableHeader
                     field="envergadura_m"
-                    label="Envergadura (m)"
+                    label={t('configModelos.envergadura')}
                     currentSortField={sortField}
                     currentSortDirection={sortDirection}
                     onSort={handleSort} />
 
-                  <TableHead>Última Atualização</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead>{t('configModelos.ultimaAtualizacao')}</TableHead>
+                  <TableHead className="text-right">{t('configModelos.acoes')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -359,42 +361,42 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingModelo ? 'Editar Modelo' : 'Novo Modelo'}</DialogTitle>
+            <DialogTitle>{editingModelo ? t('configModelos.editarModelo') : t('configModelos.novoModelo')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <Label>Modelo *</Label>
+                <Label>{t('configModelos.nome')} *</Label>
                 <Input value={formData.modelo} onChange={(e) => setFormData({ ...formData, modelo: e.target.value })} required placeholder="Ex: Airbus A320" />
               </div>
               <div>
-                <Label>Código ICAO *</Label>
+                <Label>{t('configModelos.codigoICAO')} *</Label>
                 <Input value={formData.codigo_icao} onChange={(e) => setFormData({ ...formData, codigo_icao: e.target.value })} required placeholder="Ex: A320" />
               </div>
               <div>
-                <Label>Código IATA *</Label>
+                <Label>{t('configModelos.codigoIATA')} *</Label>
                 <Input value={formData.codigo_iata} onChange={(e) => setFormData({ ...formData, codigo_iata: e.target.value })} required placeholder="Ex: 320" />
               </div>
               <div>
-                <Label>MTOW (kg) *</Label>
+                <Label>{t('configModelos.mtowKg')} *</Label>
                 <Input type="number" value={formData.mtow_kg} onChange={(e) => setFormData({ ...formData, mtow_kg: Number(e.target.value) })} required />
               </div>
               <div>
-                <Label>Comprimento (m)</Label>
+                <Label>{t('configModelos.comprimento')}</Label>
                 <Input type="number" step="0.01" value={formData.comprimento_m} onChange={(e) => setFormData({ ...formData, comprimento_m: Number(e.target.value) })} />
               </div>
               <div>
-                <Label>Envergadura (m) *</Label>
+                <Label>{t('configModelos.envergadura')} *</Label>
                 <Input type="number" step="0.01" value={formData.envergadura_m} onChange={(e) => setFormData({ ...formData, envergadura_m: Number(e.target.value) })} required />
               </div>
               <div>
-                <Label>AC Code</Label>
+                <Label>{t('configModelos.acCode')}</Label>
                 <Input value={formData.ac_code} onChange={(e) => setFormData({ ...formData, ac_code: e.target.value })} placeholder="Ex: C" />
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>Cancelar</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? 'Salvando...' : 'Salvar'}</Button>
+              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>{t('configModelos.cancelar')}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? t('configModelos.salvando2') : t('configModelos.salvar')}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

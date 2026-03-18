@@ -7,8 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, DollarSign } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, companhia, aeroporto, voos, voosLigados }) {
+  const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { guardedSubmit } = useSubmitGuard();
   const [vooInfo, setVooInfo] = useState({ numero_voo: 'N/A', data_operacao: 'N/A' });
@@ -79,7 +81,7 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
-            Gerar Nota Proforma
+            {t('gerarFatura.titulo')}
           </DialogTitle>
         </DialogHeader>
 
@@ -88,23 +90,23 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
-              Detalhes do Cálculo
+              {t('gerarFatura.detalhesCalculo')}
             </h3>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-blue-600 font-medium">Voo:</span>
+                <span className="text-blue-600 font-medium">{t('gerarFatura.voo')}</span>
                 <span className="ml-2 font-mono">{vooInfo.numero_voo}</span>
               </div>
               <div>
-                <span className="text-blue-600 font-medium">Aeroporto:</span>
+                <span className="text-blue-600 font-medium">{t('gerarFatura.aeroporto')}</span>
                 <span className="ml-2 font-mono">{aeroporto?.codigo_icao || 'N/A'}</span>
               </div>
               <div>
-                <span className="text-blue-600 font-medium">Companhia:</span>
+                <span className="text-blue-600 font-medium">{t('gerarFatura.companhia')}</span>
                 <span className="ml-2">{companhia?.nome || 'N/A'}</span>
               </div>
               <div>
-                <span className="text-blue-600 font-medium">Data do Cálculo:</span>
+                <span className="text-blue-600 font-medium">{t('gerarFatura.dataCalculo')}</span>
                 <span className="ml-2">
                   {calculo.data_calculo ? new Date(calculo.data_calculo).toLocaleDateString('pt-AO') : 'N/A'}
                 </span>
@@ -113,19 +115,19 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
 
             <div className="mt-4 pt-4 border-t border-blue-200">
               <div className="flex justify-between items-center">
-                <span className="text-blue-600 font-semibold">Valor Total (USD):</span>
+                <span className="text-blue-600 font-semibold">{t('gerarFatura.valorTotalUSD')}</span>
                 <span className="text-lg font-bold text-blue-900">
                   {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'USD' }).format(calculo.total_tarifa_usd || 0)}
                 </span>
               </div>
               <div className="flex justify-between items-center mt-2">
-                <span className="text-blue-600 font-semibold">Valor Total (AOA):</span>
+                <span className="text-blue-600 font-semibold">{t('gerarFatura.valorTotalAOA')}</span>
                 <span className="text-xl font-bold text-green-700">
                   {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(calculo.total_tarifa || 0)}
                 </span>
               </div>
               <div className="flex justify-between items-center mt-1">
-                <span className="text-xs text-blue-500">Taxa de Câmbio:</span>
+                <span className="text-xs text-blue-500">{t('gerarFatura.taxaCambio')}</span>
                 <Badge variant="outline" className="text-xs">
                   1 USD = {calculo.taxa_cambio_usd_aoa} AOA
                 </Badge>
@@ -138,7 +140,7 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="data_emissao">
-                  Data de Emissão <span className="text-red-500">*</span>
+                  {t('gerarFatura.dataEmissao')} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="data_emissao"
@@ -151,7 +153,7 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
 
               <div className="space-y-2">
                 <Label htmlFor="data_vencimento">
-                  Data de Vencimento <span className="text-red-500">*</span>
+                  {t('gerarFatura.dataVencimento')} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="data_vencimento"
@@ -165,10 +167,10 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="observacoes">Observações</Label>
+              <Label htmlFor="observacoes">{t('gerarFatura.observacoes')}</Label>
               <Textarea
                 id="observacoes"
-                placeholder="Observações ou notas adicionais para a proforma..."
+                placeholder={t('gerarFatura.observacoesPlaceholder')}
                 value={formData.observacoes}
                 onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
                 rows={4}
@@ -181,7 +183,7 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
             <p className="text-sm text-yellow-800 flex items-start gap-2">
               <span className="text-yellow-600 font-bold">⚠️</span>
               <span>
-                Ao gerar esta nota proforma, será criado um registo permanente no sistema e um PDF será gerado automaticamente.
+                {t('gerarFatura.aviso')}
               </span>
             </p>
           </div>
@@ -193,9 +195,9 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
               onClick={onClose}
               disabled={isSubmitting}
             >
-              Cancelar
+              {t('gerarFatura.cancelar')}
             </Button>
-            <Button 
+            <Button
               type="submit"
               disabled={isSubmitting}
               className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -203,12 +205,12 @@ export default function GerarFaturaModal({ isOpen, onClose, onConfirm, calculo, 
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Gerando...
+                  {t('gerarFatura.gerando')}
                 </>
               ) : (
                 <>
                   <FileText className="mr-2 h-4 w-4" />
-                  Gerar Proforma
+                  {t('gerarFatura.gerarProforma')}
                 </>
               )}
             </Button>

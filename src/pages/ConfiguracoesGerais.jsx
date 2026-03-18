@@ -10,8 +10,10 @@ import AlertModal from '@/components/shared/AlertModal';
 import SuccessModal from '@/components/shared/SuccessModal';
 import { createPageUrl } from '@/utils';
 import { emailTemplates } from '@/lib/emailTemplates';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function ConfiguracoesGerais() {
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [configId, setConfigId] = useState(null);
@@ -48,8 +50,8 @@ export default function ConfiguracoesGerais() {
         setAlertInfo({
           isOpen: true,
           type: 'error',
-          title: 'Acesso Negado',
-          message: 'Apenas administradores podem aceder a esta pagina.'
+          title: t('configGerais.acessoNegado'),
+          message: t('configGerais.apenasAdmins')
         });
         setTimeout(() => { window.location.href = createPageUrl('Home'); }, 2000);
         return;
@@ -85,8 +87,8 @@ export default function ConfiguracoesGerais() {
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Carregar',
-        message: 'Nao foi possivel carregar as configuracoes: ' + error.message
+        title: t('configGerais.erroCarregar'),
+        message: t('configGerais.erroCarregarMsg') + error.message
       });
     } finally {
       setIsLoading(false);
@@ -99,11 +101,11 @@ export default function ConfiguracoesGerais() {
 
   const handleSaveSmtp = async () => {
     if (!smtpData.smtp_host.trim()) {
-      setAlertInfo({ isOpen: true, type: 'error', title: 'Campo Obrigatorio', message: 'O servidor SMTP e obrigatorio.' });
+      setAlertInfo({ isOpen: true, type: 'error', title: t('configGerais.campoObrigatorio'), message: t('configGerais.smtpObrigatorio') });
       return;
     }
     if (!smtpData.smtp_from_email.trim()) {
-      setAlertInfo({ isOpen: true, type: 'error', title: 'Campo Obrigatorio', message: 'O email de envio e obrigatorio.' });
+      setAlertInfo({ isOpen: true, type: 'error', title: t('configGerais.campoObrigatorio'), message: t('configGerais.emailObrigatorio') });
       return;
     }
 
@@ -138,16 +140,16 @@ export default function ConfiguracoesGerais() {
 
       setSuccessInfo({
         isOpen: true,
-        title: 'Configuracoes Salvas!',
-        message: 'As configuracoes SMTP foram atualizadas com sucesso.'
+        title: t('configGerais.salvoTitulo'),
+        message: t('configGerais.salvoMsg')
       });
     } catch (error) {
       console.error('Erro ao salvar:', error);
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Erro ao Salvar',
-        message: error.message || 'Nao foi possivel salvar as configuracoes.'
+        title: t('configGerais.erroSalvarTitulo'),
+        message: error.message || t('configGerais.erroSalvarMsg')
       });
     } finally {
       setIsSaving(false);
@@ -156,7 +158,7 @@ export default function ConfiguracoesGerais() {
 
   const handleTestSmtp = async () => {
     if (!smtpData.smtp_host || !smtpData.smtp_from_email) {
-      setAlertInfo({ isOpen: true, type: 'error', title: 'Configuracao Incompleta', message: 'Configure o servidor SMTP e email de envio antes de testar.' });
+      setAlertInfo({ isOpen: true, type: 'error', title: t('configGerais.configIncompleta'), message: t('configGerais.configIncompletaMsg') });
       return;
     }
 
@@ -175,8 +177,8 @@ export default function ConfiguracoesGerais() {
       setSmtpTestStatus('success');
       setSuccessInfo({
         isOpen: true,
-        title: 'Email de Teste Enviado!',
-        message: `Email de teste enviado para ${smtpData.smtp_from_email}. Verifique a caixa de entrada.`
+        title: t('configGerais.emailTesteEnviado'),
+        message: `${t('configGerais.emailTesteEnviadoPara')} ${smtpData.smtp_from_email}. ${t('configGerais.verificarCaixa')}`
       });
     } catch (error) {
       console.error('Erro no teste SMTP:', error);
@@ -184,8 +186,8 @@ export default function ConfiguracoesGerais() {
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: 'Falha no Teste',
-        message: 'Para testar o envio de email, e necessario fazer deploy da Edge Function "send-email" no Supabase. Consulte supabase/functions/send-email/index.ts'
+        title: t('configGerais.falhaTesteTitle'),
+        message: t('configGerais.falhaTesteMsg')
       });
     } finally {
       setIsTesting(false);
@@ -197,7 +199,7 @@ export default function ConfiguracoesGerais() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-700 dark:text-slate-300">A carregar configuracoes...</p>
+          <p className="text-slate-700 dark:text-slate-300">{t('configGerais.carregando')}</p>
         </div>
       </div>
     );
@@ -207,8 +209,8 @@ export default function ConfiguracoesGerais() {
     <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Configuracoes Gerais</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">Gerir configuracoes do sistema</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{t('configGerais.titulo')}</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">{t('configGerais.subtitulo')}</p>
         </div>
 
         {/* Tabs */}
@@ -218,14 +220,14 @@ export default function ConfiguracoesGerais() {
             className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'smtp' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <Mail className="w-4 h-4 inline mr-2" />
-            Email (SMTP)
+            {t('configGerais.tabSMTP')}
           </button>
           <button
             onClick={() => setActiveTab('geral')}
             className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'geral' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
             <Settings className="w-4 h-4 inline mr-2" />
-            Geral
+            {t('configGerais.tabGeral')}
           </button>
         </div>
 
@@ -235,39 +237,39 @@ export default function ConfiguracoesGerais() {
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
                 <Mail className="w-5 h-5" />
-                Configuracoes de Email (SMTP)
+                {t('configGerais.smtp.titulo')}
               </CardTitle>
               <CardDescription>
-                Configure o servidor SMTP para envio de emails de notificacao, alertas e recuperacao de senha.
+                {t('configGerais.smtp.descricao')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Server config */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Servidor SMTP <span className="text-red-500">*</span></Label>
+                  <Label>{t('configGerais.smtp.host')} <span className="text-red-500">*</span></Label>
                   <Input
                     value={smtpData.smtp_host}
                     onChange={(e) => handleSmtpChange('smtp_host', e.target.value)}
                     placeholder="smtp.gmail.com"
                   />
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Ex: smtp.gmail.com, smtp.office365.com, mail.dominio.com</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('configGerais.smtp.hostEx')}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Porta</Label>
+                  <Label>{t('configGerais.smtp.porta')}</Label>
                   <Input
                     value={smtpData.smtp_port}
                     onChange={(e) => handleSmtpChange('smtp_port', e.target.value)}
                     placeholder="587"
                   />
-                  <p className="text-xs text-slate-500 dark:text-slate-400">587 (TLS) ou 465 (SSL) - Recomendado: 587</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('configGerais.smtp.portaInfo')}</p>
                 </div>
               </div>
 
               {/* Auth */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Usuario / Email de Login</Label>
+                  <Label>{t('configGerais.smtp.usuario')}</Label>
                   <Input
                     value={smtpData.smtp_user}
                     onChange={(e) => handleSmtpChange('smtp_user', e.target.value)}
@@ -275,13 +277,13 @@ export default function ConfiguracoesGerais() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Senha / App Password</Label>
+                  <Label>{t('configGerais.smtp.senhaApp')}</Label>
                   <div className="relative">
                     <Input
                       type={showSmtpPassword ? 'text' : 'password'}
                       value={smtpData.smtp_password}
                       onChange={(e) => handleSmtpChange('smtp_password', e.target.value)}
-                      placeholder="Senha do SMTP"
+                      placeholder={t('configGerais.smtp.senhaPlaceholder')}
                       className="pr-10"
                     />
                     <button
@@ -292,14 +294,14 @@ export default function ConfiguracoesGerais() {
                       {showSmtpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Para Gmail, use uma "Senha de App" gerada nas configuracoes de seguranca</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('configGerais.smtp.senhaInfo')}</p>
                 </div>
               </div>
 
               {/* From config */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Nome do Remetente</Label>
+                  <Label>{t('configGerais.smtp.nomeRemetente')}</Label>
                   <Input
                     value={smtpData.smtp_from_name}
                     onChange={(e) => handleSmtpChange('smtp_from_name', e.target.value)}
@@ -307,7 +309,7 @@ export default function ConfiguracoesGerais() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Email de Envio <span className="text-red-500">*</span></Label>
+                  <Label>{t('configGerais.smtp.remetente')} <span className="text-red-500">*</span></Label>
                   <Input
                     type="email"
                     value={smtpData.smtp_from_email}
@@ -327,44 +329,44 @@ export default function ConfiguracoesGerais() {
                   className="w-4 h-4 text-blue-600 rounded border-slate-300"
                 />
                 <Label htmlFor="smtp_secure" className="cursor-pointer">
-                  Usar conexao segura (TLS/SSL)
+                  {t('configGerais.smtp.tls')}
                 </Label>
               </div>
 
               {/* Extra email */}
               <div className="space-y-2">
-                <Label>Email padrao para notificacoes do sistema</Label>
+                <Label>{t('configGerais.smtp.emailNotif')}</Label>
                 <Input
                   type="email"
                   value={smtpData.email_notificacoes_padrao}
                   onChange={(e) => handleSmtpChange('email_notificacoes_padrao', e.target.value)}
                   placeholder="admin@sga.co.ao"
                 />
-                <p className="text-xs text-slate-500 dark:text-slate-400">Email que recebera notificacoes administrativas (novos usuarios, alertas, etc.)</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{t('configGerais.smtp.emailNotifInfo')}</p>
               </div>
 
               {/* Actions */}
               <div className="flex flex-wrap gap-3 pt-4 border-t">
                 <Button onClick={handleSaveSmtp} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white">
-                  {isSaving ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> A guardar...</> : <><Save className="w-4 h-4 mr-2" /> Guardar Configuracoes</>}
+                  {isSaving ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> {t('configGerais.smtp.salvando')}</> : <><Save className="w-4 h-4 mr-2" /> {t('configGerais.smtp.salvar')}</>}
                 </Button>
                 <Button variant="outline" onClick={handleTestSmtp} disabled={isTesting}>
-                  {isTesting ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> A testar...</> : <><Mail className="w-4 h-4 mr-2" /> Enviar Email de Teste</>}
+                  {isTesting ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> {t('configGerais.smtp.testando')}</> : <><Mail className="w-4 h-4 mr-2" /> {t('configGerais.smtp.enviarEmailTeste')}</>}
                 </Button>
                 <Button variant="outline" onClick={loadData} disabled={isSaving}>
-                  <RefreshCw className="w-4 h-4 mr-2" /> Recarregar
+                  <RefreshCw className="w-4 h-4 mr-2" /> {t('configGerais.recarregar')}
                 </Button>
               </div>
 
               {/* Test status */}
               {smtpTestStatus === 'success' && (
                 <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-300 text-sm">
-                  <CheckCircle2 className="w-4 h-4" /> Email de teste enviado com sucesso!
+                  <CheckCircle2 className="w-4 h-4" /> {t('configGerais.smtp.emailTesteSucesso')}
                 </div>
               )}
               {smtpTestStatus === 'error' && (
                 <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
-                  <AlertCircle className="w-4 h-4" /> Falha ao enviar email de teste. Verifique as configuracoes.
+                  <AlertCircle className="w-4 h-4" /> {t('configGerais.smtp.emailTesteFalhou')}
                 </div>
               )}
             </CardContent>
@@ -375,13 +377,13 @@ export default function ConfiguracoesGerais() {
         {activeTab === 'smtp' && (
           <Card className="shadow-sm bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
             <CardContent className="pt-6">
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Informacao Importante</h3>
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('configGerais.infoImportante')}</h3>
               <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
-                <li><strong>Gmail:</strong> Use smtp.gmail.com, porta 587, e gere uma "Senha de App" em myaccount.google.com</li>
-                <li><strong>Outlook/Office 365:</strong> Use smtp.office365.com, porta 587</li>
-                <li><strong>Servidor proprio:</strong> Consulte o administrador do seu servidor de email</li>
-                <li>A senha SMTP e armazenada de forma segura no banco de dados</li>
-                <li>O email de teste sera enviado para o endereco configurado como "Email de Envio"</li>
+                <li><strong>Gmail:</strong> {t('configGerais.infoGmail')}</li>
+                <li><strong>Outlook/Office 365:</strong> {t('configGerais.infoOutlook')}</li>
+                <li><strong>{t('configGerais.infoServidorTitle')}:</strong> {t('configGerais.infoServidor')}</li>
+                <li>{t('configGerais.infoSenhaSegura')}</li>
+                <li>{t('configGerais.infoEmailTeste')}</li>
               </ul>
             </CardContent>
           </Card>
@@ -393,16 +395,16 @@ export default function ConfiguracoesGerais() {
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
                 <Settings className="w-5 h-5" />
-                Configuracoes Gerais
+                {t('configGerais.tabGeral')}
               </CardTitle>
               <CardDescription>
-                Outras configuracoes do sistema.
+                {t('configGerais.geralDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                 <Settings className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p>Outras configuracoes serao adicionadas aqui conforme necessario.</p>
+                <p>{t('configGerais.geralVazio')}</p>
               </div>
             </CardContent>
           </Card>

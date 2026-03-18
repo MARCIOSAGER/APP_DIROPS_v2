@@ -4,11 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Brain, Loader2, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Lightbulb } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
-import { format } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function AnalisadorInteligente({ isOpen, onClose, medicoes, tiposKPI, aeroportos }) {
+  const { t } = useI18n();
   const [analise, setAnalise] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -37,14 +36,14 @@ export default function AnalisadorInteligente({ isOpen, onClose, medicoes, tipos
         });
 
       setAnalise({
-        tendencias: ['Análise automática com IA temporariamente desabilitada.'],
+        tendencias: [t('kpis.analise_ia_desabilitada')],
         kpis_criticos: kpisCriticos,
         areas_excelencia: areasExcelencia,
         recomendacoes: [],
-        alertas_urgentes: kpisCriticos.length > 0 ? [`${kpisCriticos.length} KPI(s) abaixo da meta`] : []
+        alertas_urgentes: kpisCriticos.length > 0 ? [`${kpisCriticos.length} ${t('kpis.analise_kpis_abaixo_meta')}`] : []
       });
     } catch (err) {
-      setError('Não foi possível realizar a análise.');
+      setError(t('kpis.analise_erro'));
     } finally {
       setIsLoading(false);
     }
@@ -62,14 +61,14 @@ export default function AnalisadorInteligente({ isOpen, onClose, medicoes, tipos
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Brain className="w-6 h-6 text-purple-600" />
-            Análise Inteligente de KPIs
+            {t('kpis.analise_inteligente')}
           </DialogTitle>
         </DialogHeader>
 
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-12 h-12 animate-spin text-purple-600 mb-4" />
-            <p className="text-slate-600">Analisando {medicoes.length} medições...</p>
+            <p className="text-slate-600">{t('kpis.analise_analisando')} {medicoes.length} {t('kpis.analise_medicoes')}...</p>
           </div>
         )}
 
@@ -78,7 +77,7 @@ export default function AnalisadorInteligente({ isOpen, onClose, medicoes, tipos
             <CardContent className="p-4">
               <p className="text-red-800">{error}</p>
               <Button onClick={analisarDados} className="mt-4">
-                Tentar Novamente
+                {t('kpis.analise_tentar_novamente')}
               </Button>
             </CardContent>
           </Card>
@@ -92,7 +91,7 @@ export default function AnalisadorInteligente({ isOpen, onClose, medicoes, tipos
                 <CardContent className="p-4">
                   <h3 className="font-semibold text-red-900 flex items-center gap-2 mb-3">
                     <AlertTriangle className="w-5 h-5" />
-                    Alertas Urgentes
+                    {t('kpis.analise_alertas_urgentes')}
                   </h3>
                   <ul className="space-y-2">
                     {analise.alertas_urgentes.map((alerta, idx) => (
@@ -111,7 +110,7 @@ export default function AnalisadorInteligente({ isOpen, onClose, medicoes, tipos
               <CardContent className="p-4">
                 <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-3">
                   <TrendingUp className="w-5 h-5 text-blue-600" />
-                  Tendências Identificadas
+                  {t('kpis.analise_tendencias')}
                 </h3>
                 <ul className="space-y-2">
                   {analise.tendencias?.map((tendencia, idx) => (
@@ -130,7 +129,7 @@ export default function AnalisadorInteligente({ isOpen, onClose, medicoes, tipos
                 <CardContent className="p-4">
                   <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-3">
                     <TrendingDown className="w-5 h-5 text-orange-600" />
-                    KPIs Críticos (Requerem Atenção)
+                    {t('kpis.analise_kpis_criticos')}
                   </h3>
                   <div className="space-y-3">
                     {analise.kpis_criticos.map((item, idx) => (
@@ -150,7 +149,7 @@ export default function AnalisadorInteligente({ isOpen, onClose, medicoes, tipos
                 <CardContent className="p-4">
                   <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-3">
                     <CheckCircle className="w-5 h-5 text-green-600" />
-                    Áreas de Excelência
+                    {t('kpis.analise_areas_excelencia')}
                   </h3>
                   <ul className="space-y-2">
                     {analise.areas_excelencia.map((area, idx) => (
@@ -169,7 +168,7 @@ export default function AnalisadorInteligente({ isOpen, onClose, medicoes, tipos
               <CardContent className="p-4">
                 <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-3">
                   <Lightbulb className="w-5 h-5 text-yellow-600" />
-                  Recomendações de Melhoria
+                  {t('kpis.analise_recomendacoes')}
                 </h3>
                 <div className="space-y-3">
                   {analise.recomendacoes?.map((rec, idx) => (
@@ -193,9 +192,9 @@ export default function AnalisadorInteligente({ isOpen, onClose, medicoes, tipos
 
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={analisarDados} disabled={isLoading}>
-                Atualizar Análise
+                {t('kpis.analise_atualizar')}
               </Button>
-              <Button onClick={onClose}>Fechar</Button>
+              <Button onClick={onClose}>{t('kpis.analise_fechar')}</Button>
             </div>
           </div>
         )}

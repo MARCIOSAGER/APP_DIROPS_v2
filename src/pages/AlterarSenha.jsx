@@ -9,8 +9,10 @@ import { Loader2, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { createPageUrl } from '@/utils';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function AlterarSenha() {
+  const { t } = useI18n();
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -54,19 +56,19 @@ export default function AlterarSenha() {
 
   const validatePassword = () => {
     if (!novaSenha || novaSenha.length < 8) {
-      setError('A senha deve ter pelo menos 8 caracteres.');
+      setError(t('senha.min_8'));
       return false;
     }
     if (!/[A-Z]/.test(novaSenha)) {
-      setError('A senha deve conter pelo menos uma letra maiúscula.');
+      setError(t('senha.precisa_maiuscula'));
       return false;
     }
     if (!/[0-9]/.test(novaSenha)) {
-      setError('A senha deve conter pelo menos um número.');
+      setError(t('senha.precisa_numero'));
       return false;
     }
     if (novaSenha !== confirmarSenha) {
-      setError('As senhas não coincidem.');
+      setError(t('senha.nao_coincidem'));
       return false;
     }
     return true;
@@ -102,9 +104,9 @@ export default function AlterarSenha() {
     } catch (error) {
       console.error('Erro ao alterar senha:', error);
       if (error.message?.includes('same_password')) {
-        setError('A nova senha não pode ser igual à senha anterior.');
+        setError(t('senha.mesma_anterior'));
       } else {
-        setError(error.message || 'Não foi possível alterar a senha. Tente novamente.');
+        setError(error.message || t('senha.erro_geral'));
       }
       setIsLoading(false);
     }
@@ -112,10 +114,10 @@ export default function AlterarSenha() {
   };
 
   const passwordRequirements = [
-    { label: 'Mínimo 8 caracteres', met: novaSenha.length >= 8 },
-    { label: 'Pelo menos uma letra maiúscula', met: /[A-Z]/.test(novaSenha) },
-    { label: 'Pelo menos um número', met: /[0-9]/.test(novaSenha) },
-    { label: 'Senhas coincidem', met: novaSenha && novaSenha === confirmarSenha }
+    { label: t('senha.min_chars'), met: novaSenha.length >= 8 },
+    { label: t('senha.maiuscula'), met: /[A-Z]/.test(novaSenha) },
+    { label: t('senha.numero'), met: /[0-9]/.test(novaSenha) },
+    { label: t('senha.coincidem'), met: novaSenha && novaSenha === confirmarSenha }
   ];
 
   if (loadingUser) {
@@ -123,7 +125,7 @@ export default function AlterarSenha() {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 mb-4" />
-          <p className="text-lg text-slate-700 dark:text-slate-300">A carregar...</p>
+          <p className="text-lg text-slate-700 dark:text-slate-300">{t('senha.carregando')}</p>
         </div>
       </div>
     );
@@ -134,8 +136,8 @@ export default function AlterarSenha() {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
           <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">Senha Alterada com Sucesso!</h2>
-          <p className="text-slate-600 dark:text-slate-400">A redirecionar...</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">{t('senha.sucesso')}</h2>
+          <p className="text-slate-600 dark:text-slate-400">{t('senha.redirecionando')}</p>
         </div>
       </div>
     );
@@ -148,15 +150,15 @@ export default function AlterarSenha() {
           <div className="bg-blue-100 dark:bg-blue-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <Lock className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Definir Nova Senha</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{t('senha.titulo')}</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-2">
-            {user ? `Olá ${user.full_name || user.email}! ` : ''}Por favor, defina uma nova senha para a sua conta.
+            {user ? `${t('senha.ola')} ${user.full_name || user.email}! ` : ''}{t('senha.subtitulo')}
           </p>
         </div>
 
         <Card className="shadow-lg border-0">
           <CardHeader>
-            <CardTitle>Criar Senha Segura</CardTitle>
+            <CardTitle>{t('senha.criar_segura')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -167,14 +169,14 @@ export default function AlterarSenha() {
               )}
 
               <div>
-                <Label htmlFor="novaSenha">Nova Senha *</Label>
+                <Label htmlFor="novaSenha">{t('senha.nova')}</Label>
                 <div className="relative">
                   <Input
                     id="novaSenha"
                     type={showPassword ? 'text' : 'password'}
                     value={novaSenha}
                     onChange={(e) => setNovaSenha(e.target.value)}
-                    placeholder="Digite a nova senha"
+                    placeholder={t('senha.nova_placeholder')}
                     required
                     disabled={isLoading}
                   />
@@ -189,14 +191,14 @@ export default function AlterarSenha() {
               </div>
 
               <div>
-                <Label htmlFor="confirmarSenha">Confirmar Senha *</Label>
+                <Label htmlFor="confirmarSenha">{t('senha.confirmar')}</Label>
                 <div className="relative">
                   <Input
                     id="confirmarSenha"
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmarSenha}
                     onChange={(e) => setConfirmarSenha(e.target.value)}
-                    placeholder="Confirme a nova senha"
+                    placeholder={t('senha.confirmar_placeholder')}
                     required
                     disabled={isLoading}
                   />
@@ -211,7 +213,7 @@ export default function AlterarSenha() {
               </div>
 
               <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg space-y-2">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Requisitos da senha:</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('senha.requisitos')}</p>
                 {passwordRequirements.map((req, index) => (
                   <div key={index} className="flex items-center gap-2 text-sm">
                     {req.met ? (
@@ -234,10 +236,10 @@ export default function AlterarSenha() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    A processar...
+                    {t('senha.processando')}
                   </>
                 ) : (
-                  'Confirmar Nova Senha'
+                  t('senha.confirmar_btn')
                 )}
               </Button>
             </form>

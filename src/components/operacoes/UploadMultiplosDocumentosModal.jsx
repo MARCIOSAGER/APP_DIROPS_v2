@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import Select from '@/components/ui/select';
 import { Upload, X, File, CheckCircle, AlertCircle, Camera } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useI18n } from '@/components/lib/i18n';
 
 const DOCUMENT_TYPES = [
   { value: 'general_declaration', label: 'General Declaration' },
@@ -15,6 +16,7 @@ const DOCUMENT_TYPES = [
 ];
 
 export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLigado, onSuccess, voos }) {
+  const { t } = useI18n();
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -168,7 +170,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
       setShowCamera(true);
     } catch (error) {
       console.error('Erro ao acessar câmera:', error);
-      alert('Não foi possível acessar a câmera. Verifique as permissões.');
+      alert(t('upload.erroCamara'));
     }
   };
 
@@ -221,7 +223,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Upload de Documentos - Voo {vooLigado?.numero_voo_arr} → {vooLigado?.numero_voo_dep}</DialogTitle>
+          <DialogTitle>{t('upload.tituloDocs')} - Voo {vooLigado?.numero_voo_arr} → {vooLigado?.numero_voo_dep}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4">
@@ -241,7 +243,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
                   variant="outline"
                   onClick={stopCamera}
                 >
-                  Cancelar
+                  {t('upload.cancelarVoo')}
                 </Button>
                 <Button
                   type="button"
@@ -249,7 +251,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Camera className="mr-2 h-4 w-4" />
-                  Capturar Foto
+                  {t('upload.capturarFoto')}
                 </Button>
               </div>
             </div>
@@ -267,10 +269,10 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
             >
               <Upload className="mx-auto h-12 w-12 text-slate-400 mb-4" />
               <p className="text-lg font-medium text-slate-700 mb-2">
-                Arraste ficheiros aqui ou clique para selecionar
+                {t('upload.arrasteOuClique')}
               </p>
               <p className="text-sm text-slate-500 mb-4">
-                Suporta múltiplos ficheiros (PDF, imagens, etc.)
+                {t('upload.suportaMultiplos')}
               </p>
               <input
                 ref={fileInputRef}
@@ -286,7 +288,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
                 >
-                  Selecionar Ficheiros
+                  {t('upload.selecionarFicheiros')}
                 </Button>
                 <Button
                   type="button"
@@ -295,7 +297,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
                   disabled={uploading}
                 >
                   <Camera className="mr-2 h-4 w-4" />
-                  Tirar Foto
+                  {t('upload.tirarFoto')}
                 </Button>
               </div>
             </div>
@@ -304,7 +306,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
           {files.length > 0 && (
             <div className="space-y-3">
               <h3 className="font-semibold text-slate-800">
-                Ficheiros Selecionados ({files.length})
+                {t('upload.ficheirosSelecionados')} ({files.length})
               </h3>
               
               {files.map((fileItem) => (
@@ -376,7 +378,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
 
                       {fileItem.status === 'error' && (
                         <p className="text-sm text-red-600 mt-2">
-                          Erro: {fileItem.error}
+                          {t('upload.erroUploadLabel')} {fileItem.error}
                         </p>
                       )}
                     </div>
@@ -393,7 +395,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
             onClick={handleClose}
             disabled={uploading}
           >
-            {allUploaded ? 'Fechar' : 'Cancelar'}
+            {allUploaded ? t('upload.fecharDocs') : t('upload.cancelarVoo')}
           </Button>
           {!allUploaded && (
             <Button
@@ -404,10 +406,10 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
               {uploading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                  A Enviar...
+                  {t('upload.enviandoDocs')}
                 </>
               ) : (
-                `Enviar ${files.length} Ficheiro${files.length !== 1 ? 's' : ''}`
+                `${t('upload.enviarFicheiros')} ${files.length} Ficheiro${files.length !== 1 ? 's' : ''}`
               )}
             </Button>
           )}

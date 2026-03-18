@@ -15,14 +15,15 @@ import { ItemAuditoria } from '@/entities/ItemAuditoria';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { useI18n } from '@/components/lib/i18n';
 
-export default function FormProcessoAuditoria({ 
-  isOpen, 
-  onClose, 
-  tipos, 
-  aeroportos, 
-  onSubmit, 
+export default function FormProcessoAuditoria({
+  isOpen,
+  onClose,
+  tipos,
+  aeroportos,
+  onSubmit,
   processoInicial = null,
-  tipoAuditoriaInicial = null
+  tipoAuditoriaInicial = null,
+  currentUser = null
 }) {
   const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
@@ -130,7 +131,7 @@ export default function FormProcessoAuditoria({
         await ProcessoAuditoria.update(processoInicial.id, dataToSubmit);
         novoProcesso = { ...processoInicial, ...dataToSubmit };
       } else {
-        novoProcesso = await ProcessoAuditoria.create(dataToSubmit);
+        novoProcesso = await ProcessoAuditoria.create({ ...dataToSubmit, empresa_id: currentUser?.empresa_id });
       }
 
       setMessage({

@@ -25,7 +25,7 @@ import { downloadAsCSV } from '../components/lib/export';
 import { filtrarDadosPorAcesso } from '@/components/lib/userUtils';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 
-import { createPdfDoc, addHeader, addFooter, addTable, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
+import { createPdfDoc, addHeader, addFooter, addTable, fetchEmpresaLogo } from '@/lib/pdfTemplate';
 import FormGRF from '../components/grf/FormGRF';
 import SendEmailModal from '../components/shared/SendEmailModal';
 import SuccessModal from '../components/shared/SuccessModal';

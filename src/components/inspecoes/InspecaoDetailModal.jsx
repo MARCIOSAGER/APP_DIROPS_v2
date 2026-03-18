@@ -19,21 +19,23 @@ import { pt } from 'date-fns/locale';
 
 import { RespostaInspecao } from '@/entities/RespostaInspecao';
 import { ItemChecklist } from '@/entities/ItemChecklist';
+import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_CONFIG = {
-  em_andamento: { color: 'bg-blue-100 text-blue-800', icon: Clock, label: 'Em Andamento' },
-  concluida: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Concluída' },
-  aprovada: { color: 'bg-emerald-100 text-emerald-800', icon: CheckCircle, label: 'Aprovada' },
-  rejeitada: { color: 'bg-red-100 text-red-800', icon: XCircle, label: 'Rejeitada' }
+  em_andamento: { color: 'bg-blue-100 text-blue-800', icon: Clock, labelKey: 'inspecaoDetail.statusEmAndamento' },
+  concluida: { color: 'bg-green-100 text-green-800', icon: CheckCircle, labelKey: 'inspecaoDetail.statusConcluida' },
+  aprovada: { color: 'bg-emerald-100 text-emerald-800', icon: CheckCircle, labelKey: 'inspecaoDetail.statusAprovada' },
+  rejeitada: { color: 'bg-red-100 text-red-800', icon: XCircle, labelKey: 'inspecaoDetail.statusRejeitada' }
 };
 
 const RESULTADO_CONFIG = {
-  conforme: { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: 'Conforme' },
-  nao_conforme: { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, label: 'Não Conforme' },
-  nao_aplicavel: { color: 'bg-gray-100 text-gray-800 border-gray-200', icon: AlertCircle, label: 'N/A' }
+  conforme: { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, labelKey: 'inspecaoDetail.resultadoConforme' },
+  nao_conforme: { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, labelKey: 'inspecaoDetail.resultadoNaoConforme' },
+  nao_aplicavel: { color: 'bg-gray-100 text-gray-800 border-gray-200', icon: AlertCircle, labelKey: 'inspecaoDetail.resultadoNA' }
 };
 
 export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoInspecao, aeroporto }) {
+  const { t } = useI18n();
   const [respostas, setRespostas] = useState([]);
   const [itensChecklist, setItensChecklist] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,7 +82,7 @@ export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoIns
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-6 h-6 text-blue-600" />
-            Detalhes da Inspeção: {tipoInspecao?.nome}
+            {t('inspecaoDetail.titulo')} {tipoInspecao?.nome}
           </DialogTitle>
         </DialogHeader>
 
@@ -90,44 +92,44 @@ export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoIns
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Target className="w-5 h-5" />
-                Informações Gerais
+                {t('inspecaoDetail.infoGerais')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-slate-500" />
-                  <span className="font-medium">Data:</span>
+                  <span className="font-medium">{t('inspecaoDetail.data')}</span>
                   {format(parseISO(inspecao.data_inspecao), 'dd/MM/yyyy', { locale: pt })}
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-4 h-4 text-slate-500" />
-                  <span className="font-medium">Horário:</span>
+                  <span className="font-medium">{t('inspecaoDetail.horario')}</span>
                   {inspecao.hora_inicio} {inspecao.hora_fim && `- ${inspecao.hora_fim}`}
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-slate-500" />
-                  <span className="font-medium">Aeroporto:</span>
+                  <span className="font-medium">{t('inspecaoDetail.aeroporto')}</span>
                   {aeroporto?.nome}
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <User className="w-4 h-4 text-slate-500" />
-                  <span className="font-medium">Inspetor:</span>
+                  <span className="font-medium">{t('inspecaoDetail.inspetor')}</span>
                   {inspecao.inspetor_responsavel}
                 </div>
               </div>
               
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">Status:</span>
+                <span className="font-medium text-sm">{t('inspecaoDetail.status')}</span>
                 <Badge className={`${statusConfig.color} border`}>
                   <StatusIcon className="w-3 h-3 mr-1" />
-                  {statusConfig.label}
+                  {t(statusConfig.labelKey)}
                 </Badge>
               </div>
 
               {inspecao.condicoes_climaticas && (
                 <div>
-                  <span className="font-medium text-sm">Condições Climáticas:</span>
+                  <span className="font-medium text-sm">{t('inspecaoDetail.condicoesClimaticas')}</span>
                   <p className="text-sm text-slate-600 mt-1">{inspecao.condicoes_climaticas}</p>
                 </div>
               )}
@@ -137,27 +139,27 @@ export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoIns
           {/* Estatísticas */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Estatísticas da Inspeção</CardTitle>
+              <CardTitle className="text-lg">{t('inspecaoDetail.estatisticas')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-3 bg-slate-50 rounded-lg">
                   <div className="text-2xl font-bold text-slate-900">{inspecao.total_itens || 0}</div>
-                  <div className="text-xs text-slate-500">Total de Itens</div>
+                  <div className="text-xs text-slate-500">{t('inspecaoDetail.totalItens')}</div>
                 </div>
                 <div className="text-center p-3 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-700">{inspecao.itens_conformes || 0}</div>
-                  <div className="text-xs text-slate-500">Conformes</div>
+                  <div className="text-xs text-slate-500">{t('inspecaoDetail.conformes')}</div>
                 </div>
                 <div className="text-center p-3 bg-red-50 rounded-lg">
                   <div className="text-2xl font-bold text-red-700">{inspecao.itens_nao_conformes || 0}</div>
-                  <div className="text-xs text-slate-500">Não Conformes</div>
+                  <div className="text-xs text-slate-500">{t('inspecaoDetail.naoConformes')}</div>
                 </div>
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-700">
                     {inspecao.total_itens ? Math.round((inspecao.itens_conformes / inspecao.total_itens) * 100) : 0}%
                   </div>
-                  <div className="text-xs text-slate-500">Conformidade</div>
+                  <div className="text-xs text-slate-500">{t('inspecaoDetail.conformidade')}</div>
                 </div>
               </div>
             </CardContent>
@@ -169,10 +171,10 @@ export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoIns
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 text-red-700">
                   <AlertCircle className="w-5 h-5" />
-                  <span className="font-semibold">REQUER AÇÃO CORRETIVA IMEDIATA</span>
+                  <span className="font-semibold">{t('inspecaoDetail.requerAcao')}</span>
                 </div>
                 <p className="text-sm text-red-600 mt-1">
-                  Esta inspeção identificou não conformidades que requerem ação corretiva imediata.
+                  {t('inspecaoDetail.requerAcaoDesc')}
                 </p>
               </CardContent>
             </Card>
@@ -181,13 +183,13 @@ export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoIns
           {/* Checklist Detalhado */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Checklist Detalhado</CardTitle>
+              <CardTitle className="text-lg">{t('inspecaoDetail.checklistDetalhado')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {isLoading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="text-slate-500 mt-2">A carregar detalhes...</p>
+                  <p className="text-slate-500 mt-2">{t('inspecaoDetail.aCarregar')}</p>
                 </div>
               ) : (
                 itensChecklist.map((item) => {
@@ -209,7 +211,7 @@ export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoIns
                         {resposta && resultadoConfig && (
                           <Badge className={`${resultadoConfig.color} border ml-4`}>
                             <ResultadoIcon className="w-3 h-3 mr-1" />
-                            {resultadoConfig.label}
+                            {t(resultadoConfig.labelKey)}
                           </Badge>
                         )}
                       </div>
@@ -218,7 +220,7 @@ export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoIns
                         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
                           {resposta.observacoes && (
                             <div>
-                              <span className="font-medium text-sm text-slate-700">Observações:</span>
+                              <span className="font-medium text-sm text-slate-700">{t('inspecaoDetail.observacoes')}</span>
                               <p className="text-sm text-slate-600 mt-1">{resposta.observacoes}</p>
                             </div>
                           )}
@@ -227,7 +229,7 @@ export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoIns
                             <div>
                               <span className="font-medium text-sm text-slate-700 flex items-center gap-1">
                                 <Camera className="w-4 h-4" />
-                                Fotos ({resposta.fotos.length}):
+                                {t('inspecaoDetail.fotos')} ({resposta.fotos.length}):
                               </span>
                               <div className="flex flex-wrap gap-2 mt-2">
                                 {resposta.fotos.map((fotoUrl, index) => (
@@ -245,23 +247,23 @@ export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoIns
 
                           {resposta.resultado === 'nao_conforme' && (
                             <div className="bg-red-50 border border-red-200 rounded p-3 space-y-2">
-                              <h5 className="font-medium text-red-800">Plano de Ação Corretiva</h5>
+                              <h5 className="font-medium text-red-800">{t('inspecaoDetail.planoAcao')}</h5>
                               {resposta.acao_corretiva && (
                                 <div>
-                                  <span className="text-sm font-medium text-red-700">Ação:</span>
+                                  <span className="text-sm font-medium text-red-700">{t('inspecaoDetail.acao')}</span>
                                   <p className="text-sm text-red-600">{resposta.acao_corretiva}</p>
                                 </div>
                               )}
                               <div className="grid grid-cols-2 gap-4 text-sm">
                                 {resposta.prazo_correcao && (
                                   <div>
-                                    <span className="font-medium text-red-700">Prazo:</span>
+                                    <span className="font-medium text-red-700">{t('inspecaoDetail.prazo')}</span>
                                     <p className="text-red-600">{format(parseISO(resposta.prazo_correcao), 'dd/MM/yyyy', { locale: pt })}</p>
                                   </div>
                                 )}
                                 {resposta.responsavel_correcao && (
                                   <div>
-                                    <span className="font-medium text-red-700">Responsável:</span>
+                                    <span className="font-medium text-red-700">{t('inspecaoDetail.responsavel')}</span>
                                     <p className="text-red-600">{resposta.responsavel_correcao}</p>
                                   </div>
                                 )}
@@ -281,7 +283,7 @@ export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoIns
           {inspecao.resumo_geral && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Resumo Geral</CardTitle>
+                <CardTitle className="text-lg">{t('inspecaoDetail.resumoGeral')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-slate-700 whitespace-pre-wrap">{inspecao.resumo_geral}</p>

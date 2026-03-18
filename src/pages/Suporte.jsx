@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Send, CheckCircle, Ticket, X } from "lucide-react";
+import { MessageSquare, Send, CheckCircle, Ticket } from "lucide-react";
 import Select from "@/components/ui/select";
 import { enviarTicketSuporte } from "@/functions/enviarTicketSuporte";
 import useSubmitGuard from "@/hooks/useSubmitGuard";

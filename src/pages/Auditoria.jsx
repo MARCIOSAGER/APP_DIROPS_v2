@@ -42,9 +42,8 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
 import { PlanoAcaoCorretiva } from '@/entities/PlanoAcaoCorretiva';
 import { ItemPAC } from '@/entities/ItemPAC'; // New import for ItemPAC
-import { Voo } from '@/entities/Voo';
 
-import { ensureUserProfilesExist, hasUserProfile, getAeroportosPermitidos, filtrarDadosPorAcesso, isSuperAdmin, getEmpresaLogoByUser } from '../components/lib/userUtils';
+import { ensureUserProfilesExist, hasUserProfile, getAeroportosPermitidos, filtrarDadosPorAcesso, getEmpresaLogoByUser } from '../components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { Empresa } from '@/entities/Empresa';
 import { useI18n } from '@/components/lib/i18n';
@@ -1334,9 +1333,10 @@ export default function Auditoria() {
             setEditingProcesso(null);
           }}
           tipos={tiposAuditoria}
-          aeroportos={aeroportosAcesso} // Pass filtered aeroportos
+          aeroportos={aeroportosAcesso}
           onSubmit={handleProcessoFormSubmit}
-          processoInicial={editingProcesso} />
+          processoInicial={editingProcesso}
+          currentUser={currentUser} />
 
         }
 

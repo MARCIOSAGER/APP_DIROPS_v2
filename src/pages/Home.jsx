@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Select from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,7 +10,6 @@ import {
   ShieldAlert,
   TrendingUp,
   TrendingDown,
-  Calendar,
   MapPin,
   Users,
   RefreshCw,
@@ -21,14 +19,12 @@ import {
   AlertCircle,
   ShieldCheck,
   ClipboardCheck,
-  Package,
   Plus,
   Wrench,
   Search,
   Activity } from
 "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
@@ -39,7 +35,6 @@ const ReceitasChart = React.lazy(() => import("../components/dashboard/ReceitasC
 const SafetyAlerts = React.lazy(() => import("../components/dashboard/SafetyAlerts"));
 
 import { Voo } from "@/entities/Voo";
-import { VooLigado } from "@/entities/VooLigado";
 import { CalculoTarifa } from "@/entities/CalculoTarifa";
 import { OcorrenciaSafety } from "@/entities/OcorrenciaSafety";
 import { OrdemServico } from "@/entities/OrdemServico";
@@ -47,7 +42,7 @@ import { Aeroporto } from "@/entities/Aeroporto";
 import { Inspecao } from "@/entities/Inspecao";
 import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
-import { hasUserProfile, ensureUserProfilesExist, getAeroportosPermitidos, filtrarDadosPorAcesso, filtrarDadosPorAeroportoId, isSuperAdmin, getEmailsEmpresa, filtrarDadosPorCriador } from '@/components/lib/userUtils';
+import { hasUserProfile, ensureUserProfilesExist, getAeroportosPermitidos } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
 

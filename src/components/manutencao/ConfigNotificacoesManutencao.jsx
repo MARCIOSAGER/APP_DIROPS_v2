@@ -6,41 +6,42 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Mail, Plus, X, Save, Loader2, CheckCircle, Users, Bell,
-  FileText, Wrench, UserCheck, AlertTriangle
+  FileText, UserCheck, AlertTriangle
 } from 'lucide-react';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
+import { useI18n } from '@/components/lib/i18n';
 
 const CONFIG_KEY_PREFIX = 'manutencao_notificacoes';
 
 const NOTIFICATION_TYPES = [
   {
     key: 'nova_ss',
-    label: 'Nova Solicitação de Serviço (SS)',
-    description: 'Quando uma nova SS é criada (manual, inspeção ou auditoria)',
+    labelKey: 'configNotif.novaSS',
+    descriptionKey: 'configNotif.novaSSDesc',
     icon: FileText,
     color: 'text-blue-600',
     bg: 'bg-blue-50'
   },
   {
     key: 'ss_aprovada',
-    label: 'SS Aprovada (OS Criada)',
-    description: 'Quando uma SS é aprovada e uma OS é gerada',
+    labelKey: 'configNotif.ssAprovada',
+    descriptionKey: 'configNotif.ssAprovadaDesc',
     icon: CheckCircle,
     color: 'text-green-600',
     bg: 'bg-green-50'
   },
   {
     key: 'ss_rejeitada',
-    label: 'SS Rejeitada',
-    description: 'Quando uma SS é rejeitada (enviado ao solicitante + responsáveis)',
+    labelKey: 'configNotif.ssRejeitada',
+    descriptionKey: 'configNotif.ssRejeitadaDesc',
     icon: AlertTriangle,
     color: 'text-red-600',
     bg: 'bg-red-50'
   },
   {
     key: 'os_atribuida',
-    label: 'OS Atribuída',
-    description: 'Quando uma OS é atribuída a um técnico (enviado ao técnico + responsáveis)',
+    labelKey: 'configNotif.osAtribuida',
+    descriptionKey: 'configNotif.osAtribuidaDesc',
     icon: UserCheck,
     color: 'text-orange-600',
     bg: 'bg-orange-50'
@@ -48,6 +49,7 @@ const NOTIFICATION_TYPES = [
 ];
 
 export default function ConfigNotificacoesManutencao({ currentUser, availableUsers }) {
+  const { t } = useI18n();
   const [config, setConfig] = useState({});
   const [configId, setConfigId] = useState(null);
   const [newEmails, setNewEmails] = useState({});
@@ -87,7 +89,7 @@ export default function ConfigNotificacoesManutencao({ currentUser, availableUse
 
     const current = config[typeKey] || [];
     if (current.includes(email)) {
-      setMessage({ type: 'error', text: 'Este email já está na lista.' });
+      setMessage({ type: 'error', text: t('configNotif.emailDuplicado') });
       return;
     }
 
@@ -134,11 +136,11 @@ export default function ConfigNotificacoesManutencao({ currentUser, availableUse
         setConfigId(created.id);
       }
 
-      setMessage({ type: 'success', text: 'Configuração salva com sucesso.' });
+      setMessage({ type: 'success', text: t('configNotif.configSalva') });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
       console.error('Erro ao salvar configuração:', error);
-      setMessage({ type: 'error', text: 'Erro ao salvar configuração.' });
+      setMessage({ type: 'error', text: t('configNotif.erroSalvar') });
     } finally {
       setIsSaving(false);
     }
@@ -155,7 +157,7 @@ export default function ConfigNotificacoesManutencao({ currentUser, availableUse
     return (
       <div className="text-center py-12">
         <Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-400 mb-3" />
-        <p className="text-slate-500">A carregar configurações...</p>
+        <p className="text-slate-500">{t('configNotif.aCarregar')}</p>
       </div>
     );
   }
@@ -166,10 +168,10 @@ export default function ConfigNotificacoesManutencao({ currentUser, availableUse
         <div>
           <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
             <Bell className="w-5 h-5 text-blue-600" />
-            Responsáveis por Notificações
+            {t('configNotif.responsaveisNotif')}
           </h3>
           <p className="text-sm text-slate-500 mt-1">
-            Configure quem recebe emails automáticos para cada tipo de evento na manutenção.
+            {t('configNotif.descricao')}
           </p>
         </div>
         <Button
@@ -178,9 +180,9 @@ export default function ConfigNotificacoesManutencao({ currentUser, availableUse
           className="bg-blue-600 hover:bg-blue-700 text-white"
         >
           {isSaving ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> A salvar...</>
+            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('configNotif.aSalvar')}</>
           ) : (
-            <><Save className="w-4 h-4 mr-2" /> Salvar Configuração</>
+            <><Save className="w-4 h-4 mr-2" /> {t('configNotif.salvarConfig')}</>
           )}
         </Button>
       </div>
@@ -207,11 +209,11 @@ export default function ConfigNotificacoesManutencao({ currentUser, availableUse
                     <Icon className={`w-4 h-4 ${type.color}`} />
                   </div>
                   <div>
-                    <span className="text-slate-900">{type.label}</span>
-                    <p className="text-xs text-slate-500 font-normal mt-0.5">{type.description}</p>
+                    <span className="text-slate-900">{t(type.labelKey)}</span>
+                    <p className="text-xs text-slate-500 font-normal mt-0.5">{t(type.descriptionKey)}</p>
                   </div>
                   <Badge variant="outline" className="ml-auto">
-                    {emails.length} {emails.length === 1 ? 'destinatário' : 'destinatários'}
+                    {emails.length} {emails.length === 1 ? t('configNotif.destinatario') : t('configNotif.destinatarios')}
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -252,7 +254,7 @@ export default function ConfigNotificacoesManutencao({ currentUser, availableUse
                     className="flex-shrink-0"
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    Adicionar
+                    {t('configNotif.adicionar')}
                   </Button>
                 </div>
 
@@ -261,7 +263,7 @@ export default function ConfigNotificacoesManutencao({ currentUser, availableUse
                   <div>
                     <Label className="text-xs text-slate-500 flex items-center gap-1 mb-1.5">
                       <Users className="w-3 h-3" />
-                      Adicionar utilizador da empresa:
+                      {t('configNotif.adicionarUtilizador')}
                     </Label>
                     <div className="flex flex-wrap gap-1">
                       {filteredUsers
@@ -293,11 +295,11 @@ export default function ConfigNotificacoesManutencao({ currentUser, availableUse
       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
         <Mail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
         <div className="text-sm text-blue-800">
-          <p className="font-medium mb-1">Como funciona?</p>
+          <p className="font-medium mb-1">{t('configNotif.comoFunciona')}</p>
           <ul className="list-disc list-inside space-y-0.5 text-blue-700">
-            <li>Se não houver responsáveis configurados, os emails são enviados a todos os administradores e infraestrutura da empresa.</li>
-            <li>O solicitante da SS recebe sempre a notificação de aprovação/rejeição, independentemente desta configuração.</li>
-            <li>O técnico atribuído à OS recebe sempre o email de atribuição.</li>
+            <li>{t('configNotif.info1')}</li>
+            <li>{t('configNotif.info2')}</li>
+            <li>{t('configNotif.info3')}</li>
           </ul>
         </div>
       </div>

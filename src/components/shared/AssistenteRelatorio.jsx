@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { FileText, Loader2, Copy, Check } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 
 export default function AssistenteRelatorio({ isOpen, onClose, dados, contexto, tipo }) {
   const [relatorio, setRelatorio] = useState('');
