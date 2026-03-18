@@ -2547,6 +2547,7 @@ export default function Operacoes() {
           }}
           vooLigado={uploadMultiplosModalData}
           voos={voos}
+          currentUser={currentUser}
           onSuccess={(uploadedFiles) => {
             setIsUploadMultiplosModalOpen(false);
             setUploadMultiplosModalData(null);

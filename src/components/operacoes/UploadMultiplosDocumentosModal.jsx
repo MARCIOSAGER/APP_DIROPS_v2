@@ -15,7 +15,7 @@ const DOCUMENT_TYPES = [
   { value: 'outro', label: 'Outro Documento' }
 ];
 
-export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLigado, onSuccess, voos }) {
+export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLigado, onSuccess, voos, currentUser = null }) {
   const { t } = useI18n();
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -115,6 +115,7 @@ export default function UploadMultiplosDocumentosModal({ isOpen, onClose, vooLig
             const documentoData = {
               titulo: `${tiposNome[fileItem.documentType]} - ${arrVoo.numero_voo} → ${depVoo.numero_voo}`,
               categoria: 'outro',
+              empresa_id: currentUser?.empresa_id,
               aeroporto: arrVoo.aeroporto_operacao,
               voo_ligado_id: vooLigado.id,
               arquivo_url: uploadResult.file_url,

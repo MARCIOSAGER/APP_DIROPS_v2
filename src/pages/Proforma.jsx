@@ -316,6 +316,7 @@ export default function ProformaPage() {
       await Promise.all(items.map(item =>
         ProformaItem.create({
           proforma_id: novaProforma.id,
+          empresa_id: empId || null,
           calculo_tarifa_id: item.calculo_tarifa_id,
           voo_ligado_id: item.voo_ligado_id,
           voo_id: item.voo_id,
