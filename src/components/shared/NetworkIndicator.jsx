@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useI18n } from '@/components/lib/i18n';
 
 // Ping the Worker proxy — reflects actual REST query latency for users
-const PING_URL = 'https://api.marciosager.com/rest/v1/';
+const PING_URL = 'https://api.marciosager.com/rest/v1/aeroporto?limit=1&select=id';
 const PING_INTERVAL = 10000; // 10 seconds
 const PING_SAMPLES = 5; // median of last 5 pings — more stable than average
 
