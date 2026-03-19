@@ -183,10 +183,10 @@ export default function DashboardInterno() {
 
     try {
       setLoadingStatus(t('common.loading'));
-      // Race against a 20s timeout to prevent infinite loading
+      // Race against a 45s timeout to prevent infinite loading
       await Promise.race([
         loadData(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 20000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 45000))
       ]);
 
     } catch (error) {
