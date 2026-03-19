@@ -28,6 +28,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
+import MonitoramentoSuperAdmin from '@/components/suporte/MonitoramentoSuperAdmin';
+
 // Lazy load dos componentes de gráficos para melhor performance
 const MovimentosChart = React.lazy(() => import("../components/dashboard/MovimentosChart"));
 const PontualidadeChart = React.lazy(() => import("../components/dashboard/PontualidadeChart"));
@@ -439,6 +441,8 @@ export default function DashboardInterno() {
             {t('home.atualizar')}
           </Button>
         </div>
+
+        <MonitoramentoSuperAdmin />
 
         {isLoading ?
         <div className="text-center py-12">

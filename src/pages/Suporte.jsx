@@ -9,8 +9,6 @@ import Select from "@/components/ui/select";
 import { enviarTicketSuporte } from "@/functions/enviarTicketSuporte";
 import useSubmitGuard from "@/hooks/useSubmitGuard";
 import { useI18n } from '@/components/lib/i18n';
-import MonitoramentoSuperAdmin from '@/components/suporte/MonitoramentoSuperAdmin';
-
 const categorias = [
   { value: "", label: "Selecione (opcional)" },
   { value: "bug", label: "Bug / Erro no sistema" },
@@ -68,8 +66,6 @@ export default function Suporte() {
           </p>
         </div>
       </div>
-
-      <MonitoramentoSuperAdmin />
 
       {sucesso ? (
         <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950">
