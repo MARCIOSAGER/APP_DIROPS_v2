@@ -340,7 +340,7 @@ export default function Operacoes() {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, effectiveEmpresaId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sincronizar dados estáticos com os caches (useStaticData hooks)
   useEffect(() => {
