@@ -45,36 +45,25 @@ export default function SolicitacaoPerfil() {
   });
 
   useEffect(() => {
-    // Se o contexto de auth já tem perfil ativo, redirecionar imediatamente
-    if (authUser && authUser.status === 'ativo' && Array.isArray(authUser.perfis) && authUser.perfis.length > 0) {
-      window.location.href = createPageUrl('Home');
-      return;
-    }
     loadInitialData();
-  }, [authUser]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadInitialData = async () => {
     setIsLoading(true);
     try {
-      // Carregar utilizador atual
-      const currentUser = await User.me();
-      setUser(currentUser);
-
-      // Se utilizador já tem perfil ativo, redirecionar para o Dashboard
-      if (currentUser.status === 'ativo' && Array.isArray(currentUser.perfis) && currentUser.perfis.length > 0) {
+      // Se o contexto de auth já tem perfil ativo, redirecionar imediatamente sem queries
+      if (authUser && authUser.status === 'ativo' && Array.isArray(authUser.perfis) && authUser.perfis.length > 0) {
         window.location.href = createPageUrl('Home');
         return;
       }
 
-      // Verificar se já existe uma solicitação pendente
-      const solicitacoesExistentes = await SolicitacaoAcesso.filter({
-        user_id: currentUser.id,
-        status: 'pendente'
-      });
+      // Carregar utilizador atual
+      const currentUser = await User.me();
+      setUser(currentUser);
 
-      // Se já existe uma solicitação pendente, redirecionar para aguardar aprovação
-      if (solicitacoesExistentes && solicitacoesExistentes.length > 0) {
-        window.location.href = createPageUrl('AguardandoAprovacao');
+      // Confirmar redirect após fetch do perfil
+      if (currentUser.status === 'ativo' && Array.isArray(currentUser.perfis) && currentUser.perfis.length > 0) {
+        window.location.href = createPageUrl('Home');
         return;
       }
 
@@ -317,7 +306,15 @@ export default function SolicitacaoPerfil() {
         {error && (
           <Alert variant="destructive" className="mb-6 shadow-sm">
             <AlertCircle className="h-5 w-5" />
-            <AlertDescription className="ml-2">{error}</AlertDescription>
+            <AlertDescription className="ml-2">
+              {error}
+              <button
+                onClick={() => window.location.href = createPageUrl('Home')}
+                className="ml-3 underline font-semibold"
+              >
+                Ir para o Dashboard
+              </button>
+            </AlertDescription>
           </Alert>
         )}
 
