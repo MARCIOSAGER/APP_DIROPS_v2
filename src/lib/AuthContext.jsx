@@ -18,8 +18,8 @@ export const AuthProvider = ({ children }) => {
         .eq('auth_id', authUser.id)
         .single();
 
-      // Auto-create profile for new users (first login)
-      if (error?.code === 'PGRST116' || !profile) {
+      if (error?.code === 'PGRST116') {
+        // Genuine new user — auto-create profile (first login)
         console.debug('[AUTH] No profile found, creating one for:', authUser.email);
         const { data: newProfile, error: createError } = await supabase
           .from('users')
@@ -39,8 +39,12 @@ export const AuthProvider = ({ children }) => {
         } else {
           console.warn('[AUTH] Failed to create profile:', createError.message);
         }
-      } else if (error) {
-        console.warn('[AUTH] Profile query error:', error.message);
+      } else if (error || !profile) {
+        // Other error (network, RLS, etc.) — don't auto-create, show retry
+        console.warn('[AUTH] Profile query failed (non-404):', error?.message || 'no profile returned');
+        setUser({ id: authUser.id, email: authUser.email, _profileLoadFailed: true });
+        setIsAuthenticated(true);
+        return;
       }
 
       const userData = {
