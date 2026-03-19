@@ -290,7 +290,7 @@ export default function SolicitacaoPerfil() {
           </div>
           <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">{t('solic.titulo')}</h1>
           <p className="text-lg text-slate-600 dark:text-slate-400">
-            {t('solic.ola')} <span className="font-semibold text-blue-600 dark:text-blue-400">{user?.full_name?.split(' ')[0] || 'msager'}</span>! {t('solic.complete')}
+            {user?.full_name ? <>{t('solic.ola')} <span className="font-semibold text-blue-600 dark:text-blue-400">{user.full_name.split(' ')[0]}</span>! {t('solic.complete')}</> : t('solic.complete')}
           </p>
         </div>
 
