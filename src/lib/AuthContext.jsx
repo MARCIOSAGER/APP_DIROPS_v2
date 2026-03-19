@@ -57,7 +57,8 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
     } catch (err) {
       console.error('[AUTH] Failed to load profile:', err);
-      setUser({ id: authUser.id, email: authUser.email });
+      // Mark profileLoadFailed so ValidacaoAcesso doesn't redirect to SolicitacaoPerfil
+      setUser({ id: authUser.id, email: authUser.email, _profileLoadFailed: true });
       setIsAuthenticated(true);
     }
   }, []);
