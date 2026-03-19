@@ -86,16 +86,6 @@ Deno.serve(async (req) => {
       return new Response("Unauthorized", { status: 401, headers: corsHeaders });
     }
 
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
-
-    if (profile?.role !== "superadmin") {
-      return new Response("Forbidden", { status: 403, headers: corsHeaders });
-    }
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const week = new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000);
