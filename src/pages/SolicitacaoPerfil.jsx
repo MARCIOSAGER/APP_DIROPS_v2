@@ -19,9 +19,11 @@ import { createPageUrl } from '@/utils';
 import { sendNotificationEmail } from '@/functions/sendNotificationEmail';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function SolicitacaoPerfil() {
   const { t } = useI18n();
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState(null);
   const [empresas, setEmpresas] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -43,8 +45,13 @@ export default function SolicitacaoPerfil() {
   });
 
   useEffect(() => {
+    // Se o contexto de auth já tem perfil ativo, redirecionar imediatamente
+    if (authUser && authUser.status === 'ativo' && Array.isArray(authUser.perfis) && authUser.perfis.length > 0) {
+      window.location.href = createPageUrl('Home');
+      return;
+    }
     loadInitialData();
-  }, []);
+  }, [authUser]);
 
   const loadInitialData = async () => {
     setIsLoading(true);
@@ -52,7 +59,7 @@ export default function SolicitacaoPerfil() {
       // Carregar utilizador atual
       const currentUser = await User.me();
       setUser(currentUser);
-      
+
       // Se utilizador já tem perfil ativo, redirecionar para o Dashboard
       if (currentUser.status === 'ativo' && Array.isArray(currentUser.perfis) && currentUser.perfis.length > 0) {
         window.location.href = createPageUrl('Home');
