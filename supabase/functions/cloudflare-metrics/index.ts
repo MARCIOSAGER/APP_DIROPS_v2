@@ -74,17 +74,22 @@ Deno.serve(async (req) => {
       return new Response("Unauthorized", { status: 401, headers: corsHeaders });
     }
 
+    // Verify user with their own JWT
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    if (authError || !user) {
+      return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+    }
+
+    // Admin client for DB queries (bypasses RLS)
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    if (authError || !user) {
-      return new Response("Unauthorized", { status: 401, headers: corsHeaders });
-    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
