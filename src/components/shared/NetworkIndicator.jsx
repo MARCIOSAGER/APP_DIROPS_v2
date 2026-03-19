@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useI18n } from '@/components/lib/i18n';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+// Ping the Worker proxy — reflects actual REST query latency for users
+const PING_URL = 'https://api.marciosager.com/rest/v1/';
 const PING_INTERVAL = 10000; // 10 seconds
 const PING_SAMPLES = 5; // median of last 5 pings — more stable than average
 
@@ -55,7 +56,7 @@ export default function NetworkIndicator() {
 
     try {
       const start = performance.now();
-      await fetch(`${SUPABASE_URL}/rest/v1/`, {
+      await fetch(PING_URL, {
         method: 'HEAD',
         headers: { 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
         cache: 'no-store',

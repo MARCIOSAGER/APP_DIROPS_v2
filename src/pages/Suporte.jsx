@@ -9,6 +9,9 @@ import Select from "@/components/ui/select";
 import { enviarTicketSuporte } from "@/functions/enviarTicketSuporte";
 import useSubmitGuard from "@/hooks/useSubmitGuard";
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
+import { isSuperAdmin } from '@/components/lib/userUtils';
+import MonitoramentoSuperAdmin from '@/components/suporte/MonitoramentoSuperAdmin';
 
 const categorias = [
   { value: "", label: "Selecione (opcional)" },
@@ -21,6 +24,8 @@ const categorias = [
 
 export default function Suporte() {
   const { t } = useI18n();
+  const { user } = useAuth();
+  const superAdmin = isSuperAdmin(user);
   const [assunto, setAssunto] = useState("");
   const [categoria, setCategoria] = useState("");
   const [mensagem, setMensagem] = useState("");
@@ -67,6 +72,8 @@ export default function Suporte() {
           </p>
         </div>
       </div>
+
+      {superAdmin && <MonitoramentoSuperAdmin />}
 
       {sucesso ? (
         <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950">
