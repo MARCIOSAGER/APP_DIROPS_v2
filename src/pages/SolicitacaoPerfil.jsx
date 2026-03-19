@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, UserCog, Info, AlertCircle, X, Search } from 'lucide-react';
+import { Loader2, UserCog, Info, AlertCircle, X, Search, LogOut } from 'lucide-react';
 import Select from '@/components/ui/select';
 import Combobox from '@/components/ui/combobox';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,7 @@ import { useAuth } from '@/lib/AuthContext';
 
 export default function SolicitacaoPerfil() {
   const { t } = useI18n();
-  const { user: authUser } = useAuth();
+  const { user: authUser, logout } = useAuth();
   const [user, setUser] = useState(null);
   const [empresas, setEmpresas] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -285,6 +285,18 @@ export default function SolicitacaoPerfil() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-blue-950 py-8 px-4">
+      {/* Logout button top-right */}
+      <div className="fixed top-4 right-4 z-50">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => logout()}
+          className="flex items-center gap-2 bg-white/90 dark:bg-slate-800/90 shadow-md"
+        >
+          <LogOut className="h-4 w-4" />
+          Sair
+        </Button>
+      </div>
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <div className="bg-blue-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -306,13 +318,20 @@ export default function SolicitacaoPerfil() {
         {error && (
           <Alert variant="destructive" className="mb-6 shadow-sm">
             <AlertCircle className="h-5 w-5" />
-            <AlertDescription className="ml-2">
-              {error}
+            <AlertDescription className="ml-2 flex flex-wrap items-center gap-3">
+              <span>{error}</span>
               <button
                 onClick={() => window.location.href = createPageUrl('Home')}
-                className="ml-3 underline font-semibold"
+                className="underline font-semibold"
               >
                 Ir para o Dashboard
+              </button>
+              <button
+                onClick={() => logout()}
+                className="underline font-semibold flex items-center gap-1"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Fazer logout
               </button>
             </AlertDescription>
           </Alert>

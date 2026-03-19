@@ -26,7 +26,8 @@ export const User = {
       .single();
 
     // If profile doesn't exist yet, create it (first login)
-    if (profileError?.code === 'PGRST116' || !profile) {
+    // ONLY on PGRST116 (row not found) — not on network/RLS errors
+    if (profileError?.code === 'PGRST116') {
       const { data: newProfile, error: createError } = await supabase
         .from('users')
         .insert({
