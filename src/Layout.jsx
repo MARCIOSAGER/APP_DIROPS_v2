@@ -253,9 +253,12 @@ function LayoutContent({ children, currentPageName }) {
     if (isLoadingAuth) return;
 
     if (!unprotectedPages.includes(currentPageName)) {
-      if (authUser) {
+      if (authUser && !authUser._profileLoadFailed) {
         const userWithProfiles = ensureUserProfilesExist({ ...authUser });
         setUser(userWithProfiles);
+      } else if (authUser?._profileLoadFailed) {
+        // Profile failed to load — keep isLoadingUser=true to block access checks
+        return;
       } else {
         setUser(null);
       }

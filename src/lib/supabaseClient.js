@@ -6,8 +6,9 @@ const proxyUrl = 'https://api.marciosager.com';
 
 // Route only REST API calls through Cloudflare Worker proxy (lower latency for Angola)
 // Auth and Storage go directly to Supabase to avoid OAuth/cookie conflicts
+// IMPORTANT: users table bypasses proxy — auth-critical, must never be cached
 const customFetch = (url, options) => {
-  if (typeof url === 'string' && url.includes('/rest/v1/')) {
+  if (typeof url === 'string' && url.includes('/rest/v1/') && !url.includes('/rest/v1/users')) {
     return fetch(url.replace(supabaseUrl, proxyUrl), options);
   }
   return fetch(url, options);

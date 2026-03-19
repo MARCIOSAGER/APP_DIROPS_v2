@@ -37,7 +37,11 @@ export const AuthProvider = ({ children }) => {
         if (!createError) {
           profile = newProfile;
         } else {
+          // Auto-create also failed (e.g. user already exists but RLS blocked SELECT)
           console.warn('[AUTH] Failed to create profile:', createError.message);
+          setUser({ id: authUser.id, email: authUser.email, _profileLoadFailed: true });
+          setIsAuthenticated(true);
+          return;
         }
       } else if (error || !profile) {
         // Other error (network, RLS, etc.) — don't auto-create, show retry
