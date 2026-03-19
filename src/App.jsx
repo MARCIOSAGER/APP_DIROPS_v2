@@ -41,7 +41,14 @@ class ErrorBoundary extends React.Component {
       const now = Date.now();
       if (!lastReload || now - parseInt(lastReload) > 30000) {
         sessionStorage.setItem('chunk_reload_at', String(now));
-        window.location.reload();
+        // Unregister stale SW before reloading so the new SW activates cleanly
+        if (navigator.serviceWorker) {
+          navigator.serviceWorker.getRegistrations().then(regs => {
+            Promise.all(regs.map(r => r.unregister())).then(() => window.location.reload());
+          }).catch(() => window.location.reload());
+        } else {
+          window.location.reload();
+        }
       }
     }
   }

@@ -15,7 +15,13 @@ window.addEventListener('unhandledrejection', (event) => {
     // Only reload once per 30s to avoid infinite loop
     if (!lastReload || now - parseInt(lastReload) > 30000) {
       sessionStorage.setItem('chunk_reload_at', String(now));
-      window.location.reload();
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          Promise.all(regs.map(r => r.unregister())).then(() => window.location.reload());
+        }).catch(() => window.location.reload());
+      } else {
+        window.location.reload();
+      }
     }
   }
 

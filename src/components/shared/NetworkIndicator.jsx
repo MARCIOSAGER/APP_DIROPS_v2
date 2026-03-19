@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useI18n } from '@/components/lib/i18n';
-import { supabase } from '@/lib/supabaseClient';
 
-// Ping via Supabase client — uses same proxy (api.marciosager.com) + headers as the app
+// Direct HEAD ping to Supabase REST root — no RLS, no auth required
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const PING_INTERVAL = 10000; // 10 seconds
 const PING_SAMPLES = 5; // median of last 5 pings — more stable than average
 
-function getSignalInfo(latency, t) {
+function getSignalInfo(latency, measuring, t) {
+  if (measuring) return { label: '...', color: 'text-slate-400', barColor: 'bg-slate-300', bars: 0 };
   if (latency === null) return { label: t('shared.network.offline'), color: 'text-red-500', barColor: 'bg-red-500', bars: 0 };
   if (latency < 150) return { label: t('shared.network.forte'), color: 'text-green-600', barColor: 'bg-green-500', bars: 4 };
   if (latency < 300) return { label: t('shared.network.bom'), color: 'text-green-500', barColor: 'bg-green-400', bars: 3 };
@@ -38,16 +40,21 @@ function SignalBars({ bars, barColor }) {
 export default function NetworkIndicator() {
   const [latency, setLatency] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isPinging, setIsPinging] = useState(true); // true until first ping completes
   const intervalRef = useRef(null);
   const samplesRef = useRef([]);
   const { t } = useI18n();
 
   const ping = useCallback(async () => {
+    setIsPinging(true);
     try {
       const start = performance.now();
-      // Use users table (bypasses Cloudflare proxy, direct to Supabase — most reliable ping)
-      const { error } = await supabase.from('users').select('id').limit(1);
-      if (error) throw error;
+      // HEAD request to Supabase REST root — no RLS, no auth, pure connectivity check
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+        method: 'HEAD',
+        headers: { apikey: SUPABASE_ANON_KEY },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const ms = Math.round(performance.now() - start);
 
       samplesRef.current.push(ms);
@@ -61,6 +68,8 @@ export default function NetworkIndicator() {
     } catch {
       setLatency(null);
       setIsOnline(false);
+    } finally {
+      setIsPinging(false);
     }
   }, []);
 
@@ -81,7 +90,7 @@ export default function NetworkIndicator() {
     };
   }, [ping]);
 
-  const signal = isOnline ? getSignalInfo(latency, t) : getSignalInfo(null, t);
+  const signal = isOnline ? getSignalInfo(latency, isPinging, t) : getSignalInfo(null, false, t);
 
   return (
     <div
