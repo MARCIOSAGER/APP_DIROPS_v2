@@ -4,15 +4,9 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const proxyUrl = 'https://api.marciosager.com';
 
-// Route only REST API calls through Cloudflare Worker proxy (lower latency for Angola)
-// Auth and Storage go directly to Supabase to avoid OAuth/cookie conflicts
-// IMPORTANT: users table bypasses proxy — auth-critical, must never be cached
-const customFetch = (url, options) => {
-  if (typeof url === 'string' && url.includes('/rest/v1/') && !url.includes('/rest/v1/users')) {
-    return fetch(url.replace(supabaseUrl, proxyUrl), options);
-  }
-  return fetch(url, options);
-};
+// Cloudflare Worker proxy disabled — was returning 202 for specific tables (treated as error by client)
+// TODO: investigate why api.marciosager.com returns 202 for regra_permissao, aeroporto, etc.
+const customFetch = (url, options) => fetch(url, options);
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

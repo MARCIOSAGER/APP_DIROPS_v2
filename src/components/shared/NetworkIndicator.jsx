@@ -45,7 +45,8 @@ export default function NetworkIndicator() {
   const ping = useCallback(async () => {
     try {
       const start = performance.now();
-      const { error } = await supabase.from('aeroporto').select('id').limit(1);
+      // Use users table (bypasses Cloudflare proxy, direct to Supabase — most reliable ping)
+      const { error } = await supabase.from('users').select('id').limit(1);
       if (error) throw error;
       const ms = Math.round(performance.now() - start);
 
