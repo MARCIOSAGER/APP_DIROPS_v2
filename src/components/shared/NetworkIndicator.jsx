@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useI18n } from '@/components/lib/i18n';
+import { supabase } from '@/lib/supabaseClient';
 
-// Ping the Worker proxy — reflects actual REST query latency for users
-const PING_URL = 'https://api.marciosager.com/rest/v1/aeroporto?limit=1&select=id';
+// Ping via Supabase client — uses same proxy (api.marciosager.com) + headers as the app
 const PING_INTERVAL = 10000; // 10 seconds
 const PING_SAMPLES = 5; // median of last 5 pings — more stable than average
 
@@ -40,28 +40,13 @@ export default function NetworkIndicator() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const intervalRef = useRef(null);
   const samplesRef = useRef([]);
-  const controllerRef = useRef(null);
   const { t } = useI18n();
 
   const ping = useCallback(async () => {
-    if (!navigator.onLine) {
-      setLatency(null);
-      setIsOnline(false);
-      return;
-    }
-
-    // Abort any previous in-flight ping
-    if (controllerRef.current) controllerRef.current.abort();
-    controllerRef.current = new AbortController();
-
     try {
       const start = performance.now();
-      await fetch(PING_URL, {
-        method: 'HEAD',
-        headers: { 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
-        cache: 'no-store',
-        signal: controllerRef.current.signal,
-      });
+      const { error } = await supabase.from('aeroporto').select('id').limit(1);
+      if (error) throw error;
       const ms = Math.round(performance.now() - start);
 
       samplesRef.current.push(ms);
@@ -72,8 +57,7 @@ export default function NetworkIndicator() {
       // Use median — ignores outliers (cold starts, spikes)
       setLatency(median(samplesRef.current));
       setIsOnline(true);
-    } catch (err) {
-      if (err.name === 'AbortError') return;
+    } catch {
       setLatency(null);
       setIsOnline(false);
     }
@@ -91,7 +75,6 @@ export default function NetworkIndicator() {
 
     return () => {
       clearInterval(intervalRef.current);
-      if (controllerRef.current) controllerRef.current.abort();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
