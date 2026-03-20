@@ -2212,8 +2212,30 @@ export default function Operacoes() {
                         />
                       </div>
                       
-                      <div className="flex items-end">
-                        <Button variant="outline" onClick={clearFilters} className="w-full text-xs sm:text-sm">
+                      <div className="flex items-end gap-2 sm:col-span-2">
+                        <Button
+                          onClick={() => {
+                            // Trigger server-side filter manually
+                            if (filtros.dataInicio || filtros.dataFim) {
+                              setIsFiltering(true);
+                              const query = { deleted_at: { $is: null } };
+                              if (filtros.dataInicio) query.data_operacao = { ...query.data_operacao, $gte: filtros.dataInicio };
+                              if (filtros.dataFim) query.data_operacao = { ...query.data_operacao, $lte: filtros.dataFim };
+                              const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+                              if (empId) query.empresa_id = empId;
+                              Voo.filter(query, '-data_operacao').then(data => {
+                                setVoos(data);
+                              }).catch(err => console.error(err)).finally(() => setIsFiltering(false));
+                            } else {
+                              loadData();
+                            }
+                          }}
+                          disabled={isFiltering}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 text-xs sm:text-sm"
+                        >
+                          {isFiltering ? <><RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-2 animate-spin" /> Buscando...</> : <><Filter className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> Buscar</>}
+                        </Button>
+                        <Button variant="outline" onClick={clearFilters} className="flex-1 text-xs sm:text-sm">
                           <X className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> {t('operacoes.limpar')}
                         </Button>
                       </div>

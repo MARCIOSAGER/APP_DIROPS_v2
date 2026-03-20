@@ -617,28 +617,28 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                 <p className="text-xs mt-1">{t('dashFat.nenhumVooDesc')}</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table className="text-[11px]">
+              <div className="overflow-x-auto -mx-6">
+                <Table className="text-[11px] min-w-[1400px]">
                   <TableHeader className="bg-slate-50 sticky top-0 z-10">
                     <TableRow>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">{t('dashFat.colRegisto')}</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">PMD(t)</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">{t('dashFat.colTipo')}</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">{t('dashFat.colVoo')}</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">{t('dashFat.colAterragem')}</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2">{t('dashFat.colDescolagem')}</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">TX Aterr.</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">Estac.(h)</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">Estac.($)</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">Emb.(pax)</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">Emb.($)</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5">{t('dashFat.colRegisto')}</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-right">PMD(t)</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5">{t('dashFat.colTipo')}</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5">{t('dashFat.colVoo')}</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5">{t('dashFat.colAterragem')}</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5">{t('dashFat.colDescolagem')}</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-right">TX Aterr.</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-right">Estac.(h)</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-right">Estac.($)</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-right">Emb.(pax)</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-right">Emb.($)</TableHead>
                       {dynamicCols.outras.map(k => (
-                        <TableHead key={k} className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">{k}</TableHead>
+                        <TableHead key={k} className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-right">{k}</TableHead>
                       ))}
                       {dynamicCols.recursos.map(k => (
                         <React.Fragment key={k}>
-                          <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">{k}(h)</TableHead>
-                          <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">{k}($)</TableHead>
+                          <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-right">{k}(h)</TableHead>
+                          <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-right">{k}($)</TableHead>
                         </React.Fragment>
                       ))}
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">IVA</TableHead>
@@ -649,53 +649,53 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                     {rows.map(r => (
                       <TableRow key={r.id} className="hover:bg-slate-50">
                         <TableCell className="font-mono px-2 whitespace-nowrap">{r.registo}</TableCell>
-                        <TableCell className="px-2 text-right">{fmtNum(r.mtowTon, 0)}</TableCell>
-                        <TableCell className="px-2">
+                        <TableCell className="px-1.5 text-right">{fmtNum(r.mtowTon, 0)}</TableCell>
+                        <TableCell className="px-1.5">
                           <Badge variant="outline" className={`text-[9px] px-1 ${r.tipoCode === 'INT' ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-700'}`}>
                             {r.tipoCode}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-mono px-2 whitespace-nowrap">{r.vooLabel}</TableCell>
-                        <TableCell className="px-2 whitespace-nowrap">{r.aterragem}</TableCell>
-                        <TableCell className="px-2 whitespace-nowrap">{r.descolagem}</TableCell>
-                        <TableCell className="px-2 text-right font-medium">{fmtNum(r.txAterr)}</TableCell>
-                        <TableCell className="px-2 text-right">{fmtNum(r.estacH, 1)}</TableCell>
-                        <TableCell className="px-2 text-right font-medium">{fmtNum(r.estacUsd)}</TableCell>
-                        <TableCell className="px-2 text-right">{r.paxCount || '—'}</TableCell>
-                        <TableCell className="px-2 text-right font-medium">{fmtNum(r.paxUsd)}</TableCell>
+                        <TableCell className="px-1.5 whitespace-nowrap">{r.aterragem}</TableCell>
+                        <TableCell className="px-1.5 whitespace-nowrap">{r.descolagem}</TableCell>
+                        <TableCell className="px-1.5 text-right font-medium">{fmtNum(r.txAterr)}</TableCell>
+                        <TableCell className="px-1.5 text-right">{fmtNum(r.estacH, 1)}</TableCell>
+                        <TableCell className="px-1.5 text-right font-medium">{fmtNum(r.estacUsd)}</TableCell>
+                        <TableCell className="px-1.5 text-right">{r.paxCount || '—'}</TableCell>
+                        <TableCell className="px-1.5 text-right font-medium">{fmtNum(r.paxUsd)}</TableCell>
                         {dynamicCols.outras.map(k => (
                           <TableCell key={k} className="px-2 text-right">{r.outrasTarifas[k] ? fmtNum(r.outrasTarifas[k]) : '—'}</TableCell>
                         ))}
                         {dynamicCols.recursos.map(k => (
                           <React.Fragment key={k}>
-                            <TableCell className="px-2 text-right">{r.recursos[k] ? fmtNum(r.recursos[k].horas, 1) : '—'}</TableCell>
-                            <TableCell className="px-2 text-right font-medium">{r.recursos[k] ? fmtNum(r.recursos[k].usd) : '—'}</TableCell>
+                            <TableCell className="px-1.5 text-right">{r.recursos[k] ? fmtNum(r.recursos[k].horas, 1) : '—'}</TableCell>
+                            <TableCell className="px-1.5 text-right font-medium">{r.recursos[k] ? fmtNum(r.recursos[k].usd) : '—'}</TableCell>
                           </React.Fragment>
                         ))}
-                        <TableCell className="px-2 text-right">{fmtNum(r.ivaTotal)}</TableCell>
-                        <TableCell className="px-2 text-right font-bold text-emerald-700 bg-emerald-50">{fmtNum(r.totalUsd)}</TableCell>
+                        <TableCell className="px-1.5 text-right">{fmtNum(r.ivaTotal)}</TableCell>
+                        <TableCell className="px-1.5 text-right font-bold text-emerald-700 bg-emerald-50">{fmtNum(r.totalUsd)}</TableCell>
                       </TableRow>
                     ))}
                     {/* Totals row */}
                     {totals && (
                       <TableRow className="bg-slate-100 font-bold border-t-2">
                         <TableCell colSpan={6} className="px-2 text-right text-xs">{t('dashFat.totais')}</TableCell>
-                        <TableCell className="px-2 text-right">{fmtNum(totals.txAterr)}</TableCell>
-                        <TableCell className="px-2" />
-                        <TableCell className="px-2 text-right">{fmtNum(totals.estacUsd)}</TableCell>
-                        <TableCell className="px-2" />
-                        <TableCell className="px-2 text-right">{fmtNum(totals.paxUsd)}</TableCell>
+                        <TableCell className="px-1.5 text-right">{fmtNum(totals.txAterr)}</TableCell>
+                        <TableCell className="px-1.5" />
+                        <TableCell className="px-1.5 text-right">{fmtNum(totals.estacUsd)}</TableCell>
+                        <TableCell className="px-1.5" />
+                        <TableCell className="px-1.5 text-right">{fmtNum(totals.paxUsd)}</TableCell>
                         {dynamicCols.outras.map(k => (
                           <TableCell key={k} className="px-2 text-right">{fmtNum(totals.outras[k])}</TableCell>
                         ))}
                         {dynamicCols.recursos.map(k => (
                           <React.Fragment key={k}>
-                            <TableCell className="px-2" />
-                            <TableCell className="px-2 text-right">{fmtNum(totals.recursos[k])}</TableCell>
+                            <TableCell className="px-1.5" />
+                            <TableCell className="px-1.5 text-right">{fmtNum(totals.recursos[k])}</TableCell>
                           </React.Fragment>
                         ))}
-                        <TableCell className="px-2 text-right">{fmtNum(totals.ivaTotal)}</TableCell>
-                        <TableCell className="px-2 text-right text-emerald-700 bg-emerald-100 text-sm">${fmtNum(totals.totalUsd)}</TableCell>
+                        <TableCell className="px-1.5 text-right">{fmtNum(totals.ivaTotal)}</TableCell>
+                        <TableCell className="px-1.5 text-right text-emerald-700 bg-emerald-100 text-sm">${fmtNum(totals.totalUsd)}</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
