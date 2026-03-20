@@ -1310,7 +1310,19 @@ export default function Operacoes() {
     }
   };
 
-  const handleShowTariffDetails = (calculo) => {
+  const handleShowTariffDetails = async (calculo) => {
+    // Lightweight calculo from fetchCalculoMap may lack details — fetch full record
+    if (!calculo.detalhes_calculo && calculo.voo_ligado_id) {
+      try {
+        const full = await CalculoTarifa.filter({ voo_ligado_id: { $eq: calculo.voo_ligado_id } });
+        if (full.length > 0) {
+          setTariffDetailsData(full[0]);
+          return;
+        }
+      } catch (e) {
+        console.error('Error fetching full calculo:', e);
+      }
+    }
     setTariffDetailsData(calculo);
   };
 

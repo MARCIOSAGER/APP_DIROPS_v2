@@ -857,17 +857,34 @@ def create_resources(rows, pairs, dry_run=False):
         gpu_used = bool(gpu_on)
         checkin_used = bool(checkin_on)
 
+        def calc_hours(t_on, t_off):
+            """Calculate hours between two HH:MM time strings."""
+            if not t_on or not t_off:
+                return 0
+            try:
+                h1, m1 = map(int, t_on.split(":"))
+                h2, m2 = map(int, t_off.split(":"))
+                mins = (h2 * 60 + m2) - (h1 * 60 + m1)
+                if mins < 0:
+                    mins += 24 * 60  # cross-midnight
+                return round(mins / 60.0, 2)
+            except Exception:
+                return 0
+
         resources.append({
             "voo_ligado_id": voo_ligado_id,
             "pbb_utilizado": pbb_used,
             "pbb_hora_inicio": combine_datetime(date_str, manga_on),
             "pbb_hora_fim": combine_datetime(date_str, manga_off),
+            "pbb_tempo_horas": calc_hours(manga_on, manga_off),
             "pca_utilizado": pca_used,
             "pca_hora_inicio": combine_datetime(date_str, pca_on),
             "pca_hora_fim": combine_datetime(date_str, pca_off),
+            "pca_tempo_horas": calc_hours(pca_on, pca_off),
             "gpu_utilizado": gpu_used,
             "gpu_hora_inicio": combine_datetime(date_str, gpu_on),
             "gpu_hora_fim": combine_datetime(date_str, gpu_off),
+            "gpu_tempo_horas": calc_hours(gpu_on, gpu_off),
             "checkin_utilizado": checkin_used,
             "checkin_hora_inicio": combine_datetime(date_str, checkin_on),
             "checkin_hora_fim": combine_datetime(date_str, checkin_off),
@@ -891,12 +908,15 @@ def create_resources(rows, pairs, dry_run=False):
                 f"{res['pbb_utilizado']}, "
                 f"{sql_escape(res['pbb_hora_inicio'])}, "
                 f"{sql_escape(res['pbb_hora_fim'])}, "
+                f"{res['pbb_tempo_horas']}, "
                 f"{res['pca_utilizado']}, "
                 f"{sql_escape(res['pca_hora_inicio'])}, "
                 f"{sql_escape(res['pca_hora_fim'])}, "
+                f"{res['pca_tempo_horas']}, "
                 f"{res['gpu_utilizado']}, "
                 f"{sql_escape(res['gpu_hora_inicio'])}, "
                 f"{sql_escape(res['gpu_hora_fim'])}, "
+                f"{res['gpu_tempo_horas']}, "
                 f"{res['checkin_utilizado']}, "
                 f"{sql_escape(res['checkin_hora_inicio'])}, "
                 f"{sql_escape(res['checkin_hora_fim'])}, "
@@ -907,9 +927,9 @@ def create_resources(rows, pairs, dry_run=False):
         sql = (
             "INSERT INTO recurso_voo "
             "(id, voo_ligado_id, "
-            "pbb_utilizado, pbb_hora_inicio, pbb_hora_fim, "
-            "pca_utilizado, pca_hora_inicio, pca_hora_fim, "
-            "gpu_utilizado, gpu_hora_inicio, gpu_hora_fim, "
+            "pbb_utilizado, pbb_hora_inicio, pbb_hora_fim, pbb_tempo_horas, "
+            "pca_utilizado, pca_hora_inicio, pca_hora_fim, pca_tempo_horas, "
+            "gpu_utilizado, gpu_hora_inicio, gpu_hora_fim, gpu_tempo_horas, "
             "checkin_utilizado, checkin_hora_inicio, checkin_hora_fim, "
             "checkin_posicoes, "
             "created_date, updated_date) VALUES "

@@ -394,7 +394,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
     const data = rows.map(r => {
       const row = {
         'Registo': r.registo,
-        'PMD(t)': Number(r.mtowTon.toFixed(3)),
+        'PMD(t)': Math.round(r.mtowTon),
         'Tipo': r.tipoCode,
         'Voo (A/D)': r.vooLabel,
         'Aterragem': r.aterragem,
@@ -649,7 +649,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                     {rows.map(r => (
                       <TableRow key={r.id} className="hover:bg-slate-50">
                         <TableCell className="font-mono px-2 whitespace-nowrap">{r.registo}</TableCell>
-                        <TableCell className="px-2 text-right">{fmtNum(r.mtowTon, 3)}</TableCell>
+                        <TableCell className="px-2 text-right">{fmtNum(r.mtowTon, 0)}</TableCell>
                         <TableCell className="px-2">
                           <Badge variant="outline" className={`text-[9px] px-1 ${r.tipoCode === 'INT' ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-700'}`}>
                             {r.tipoCode}

@@ -444,7 +444,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
               </tr>
               <tr style="border-bottom: 1px solid #e2e8f0;">
                 <td style="padding: 8px; font-weight: bold; color: #475569;">Percentagem:</td>
-                <td style="padding: 8px; color: #64748b;">${imposto.valor_configurado}%</td>
+                <td style="padding: 8px; color: #64748b;">${imposto.percentagem || imposto.valor_configurado}%</td>
               </tr>
               ${imposto.formula ? `
               <tr style="border-bottom: 1px solid #e2e8f0;">
@@ -735,7 +735,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
                     ['Tipo de Voo', detalhes.pouso.tipoVoo || 'N/A'],
                     ['MTOW (Toneladas)', detalhes.pouso.mtowTonnes ? formatToneladas(detalhes.pouso.mtowTonnes) : 'N/A'],
                     ['Escalão de Peso', getFaixaPesoToneladas(detalhes.pouso)],
-                    ['Operações', detalhes.pouso.operacoes || 'N/A'],
+                    ['Operações', detalhes.pouso.operacoes || '2 (ARR + DEP)'],
                     ['Valor USD', formatUSD(detalhes.pouso.valor)],
                     ['Valor AOA', formatCurrency(tariffCalculation.tarifa_pouso)],
                   ].map(([label, value]) => (
@@ -842,7 +842,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
                   <React.Fragment key={index}>
                     {renderDetailSection(`${t('tarifasModal.impostoLabel')} - ${imposto.tipo}`, [
                       ['Tipo', imposto.tipo],
-                      ['Percentagem', `${imposto.valor_configurado}%`],
+                      ['Percentagem', `${imposto.percentagem || imposto.valor_configurado}%`],
                       ['Valor USD', formatUSD(imposto.valor_usd)],
                       ['Valor AOA', formatCurrency(imposto.valor_aoa)],
                     ], true, imposto.formula)}
