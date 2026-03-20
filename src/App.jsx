@@ -27,6 +27,12 @@ class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
+    // Clear chunk reload cooldown after 15s of successful render
+    // so future chunk errors can trigger auto-reload again
+    this._cooldownTimer = setTimeout(() => sessionStorage.removeItem('chunk_reload_at'), 15000);
+  }
+  componentWillUnmount() {
+    clearTimeout(this._cooldownTimer);
   }
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
@@ -49,13 +55,17 @@ class ErrorBoundary extends React.Component {
         } else {
           window.location.reload();
         }
+      } else {
+        // Cooldown active — offer manual reload button instead of infinite spinner
+        this.setState({ isChunkErrorBlocked: true });
       }
     }
   }
   render() {
     if (this.state.hasError) {
-      const isChunkError = this.state.error?.message?.includes('Failed to fetch dynamically imported module');
-      if (isChunkError) {
+      const isChunkError = this.state.error?.message?.includes('Failed to fetch dynamically imported module')
+        || this.state.error?.message?.includes('Importing a module script failed');
+      if (isChunkError && !this.state.isChunkErrorBlocked) {
         // Show loading spinner while auto-reloading
         return (
           <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
@@ -71,7 +81,7 @@ class ErrorBoundary extends React.Component {
           <div className="text-center p-8 max-w-md">
             <h2 className="text-xl font-bold text-red-600 mb-4">Erro na Aplicação</h2>
             <p className="text-slate-600 mb-2">{this.state.error?.message || 'Ocorreu um erro inesperado.'}</p>
-            <button onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
+            <button onClick={() => { sessionStorage.removeItem('chunk_reload_at'); window.location.reload(); }}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
               Tentar novamente
             </button>
