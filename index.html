@@ -9,7 +9,7 @@
     <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.flightradar24.com https://data-cloud.flightradar24.com; frame-src 'self' https://app.powerbi.com; object-src 'none'; base-uri 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.flightradar24.com https://data-cloud.flightradar24.com https://cloudflareinsights.com; frame-src 'self' https://app.powerbi.com; object-src 'none'; base-uri 'self';" />
     <title>DIROPS | Sistema de Gestao Aeroportuaria</title>
     <meta name="description" content="DIROPS - Sistema de Gestao Aeroportuaria. Controle de voos, tarifas, seguranca, auditorias e credenciamentos." />
 
@@ -42,5 +42,8 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <!-- Cloudflare Web Analytics -->
+    <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "3e6a8ec47c09410b94f8a288bf3caa49"}'></script>
+    <!-- End Cloudflare Web Analytics -->
   </body>
 </html>
