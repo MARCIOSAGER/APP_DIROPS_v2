@@ -28,6 +28,7 @@ const Lixeira = lazy(() => import('./pages/Lixeira'));
 const LogAuditoria = lazy(() => import('./pages/LogAuditoria'));
 const LogAuditoriaDetalhes = lazy(() => import('./pages/LogAuditoriaDetalhes'));
 const Manutencao = lazy(() => import('./pages/Manutencao'));
+const Monitoramento = lazy(() => import('./pages/Monitoramento'));
 const Operacoes = lazy(() => import('./pages/Operacoes'));
 const PaginaInicial = lazy(() => import('./pages/PaginaInicial'));
 const PoliticaPrivacidade = lazy(() => import('./pages/PoliticaPrivacidade'));
@@ -73,6 +74,7 @@ export const PAGES = {
     "LogAuditoria": LogAuditoria,
     "LogAuditoriaDetalhes": LogAuditoriaDetalhes,
     "Manutencao": Manutencao,
+    "Monitoramento": Monitoramento,
     "Operacoes": Operacoes,
     "PaginaInicial": PaginaInicial,
     "PortalEmpresa": PortalEmpresa,

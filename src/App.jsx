@@ -15,6 +15,7 @@ import Login from '@/pages/Login';
 import CookieConsent from '@/components/shared/CookieConsent';
 import { I18nProvider } from '@/components/lib/i18n';
 import AppUpdateBanner from '@/components/shared/AppUpdateBanner';
+import { initWebVitals } from '@/lib/webVitals';
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-screen">
@@ -104,7 +105,11 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 const PublicPages = ['CredenciamentoPublico', 'FormularioReclamacaoPublico', 'portalservicos', 'AlterarSenha', 'PoliticaPrivacidade', 'TermosServico'];
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, authError, isAuthenticated, navigateToLogin } = useAuth();
+  const { isLoadingAuth, authError, isAuthenticated, navigateToLogin, user } = useAuth();
+
+  React.useEffect(() => {
+    if (isAuthenticated && user?.id) initWebVitals(user);
+  }, [isAuthenticated, user?.id]);
 
   if (isLoadingAuth) {
     return (

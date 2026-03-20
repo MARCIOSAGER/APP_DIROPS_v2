@@ -31,7 +31,7 @@ const TourGuiado = React.lazy(() => import('@/components/shared/TourGuiado'));
 
 // Mapeamento padrão de permissões (fallback se não houver regras na BD)
 const PERFIL_PERMISSIONS_DEFAULT = {
-  administrador: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte'],
+  administrador: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte', 'Monitoramento'],
   gestor_empresa: ['Credenciamento', 'GuiaUtilizador', 'Suporte'],
   operacoes: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte'],
   infraestrutura: ['Home', 'Reclamacoes', 'Inspecoes', 'Manutencao', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
@@ -65,6 +65,7 @@ function getNavigationItems(t) {
     { title: t('nav.historico_acesso'), url: createPageUrl("HistoricoAcessoDocumentos"), icon: FileSearch, color: "text-slate-600", pageKey: "HistoricoAcessoDocumentos" },
     { title: t('nav.lixeira'), url: createPageUrl("Lixeira"), icon: Trash2, color: "text-slate-500", pageKey: "Lixeira" },
     { title: t('nav.api_keys'), url: createPageUrl("GestaoAPIKeys"), icon: Key, color: "text-amber-600", pageKey: "GestaoAPIKeys" },
+    { title: 'Monitoramento', url: createPageUrl("Monitoramento"), icon: Activity, color: "text-blue-600", pageKey: "Monitoramento" },
     { title: t('nav.log_auditoria'), url: createPageUrl("LogAuditoria"), icon: Shield, color: "text-slate-500", pageKey: "LogAuditoria" },
     { title: t('nav.guia_utilizador'), url: createPageUrl("GuiaUtilizador"), icon: BookMarked, color: "text-blue-500", pageKey: "GuiaUtilizador" },
     { title: t('nav.suporte'), url: createPageUrl("Suporte"), icon: MessageSquare, color: "text-purple-500", pageKey: "Suporte" },
@@ -170,7 +171,7 @@ const getFirstAccessiblePage = (user, permissions, t) => {
 };
 
 // Root pages – no back button shown on these
-const rootPages = ['Home', 'Operacoes', 'Safety', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria'];
+const rootPages = ['Home', 'Operacoes', 'Safety', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'Monitoramento'];
 
 function LayoutContent({ children, currentPageName }) {
   const location = useLocation();

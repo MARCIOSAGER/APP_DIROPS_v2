@@ -41,6 +41,11 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     tracesSampleRate: 1.0,
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
+    tracePropagationTargets: [
+      'localhost',
+      /^https:\/\/glernwcsuwcyzwsnelad\.supabase\.co/,
+      /^https:\/\/app\.marciosager\.com/,
+    ],
   });
 }
 
