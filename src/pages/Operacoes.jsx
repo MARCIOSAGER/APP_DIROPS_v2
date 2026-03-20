@@ -1249,10 +1249,10 @@ export default function Operacoes() {
           outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas,
           calculosTarifaFrescos
         ] = await Promise.all([
-          Voo.list('-data_operacao', 1000), (effectiveEmpresaIdRef.current || currentUser?.empresa_id) ? Aeroporto.filter({ empresa_id: effectiveEmpresaIdRef.current || currentUser?.empresa_id }) : Aeroporto.list(), RegistoAeronave.list(),
+          Voo.list('-data_operacao'), (effectiveEmpresaIdRef.current || currentUser?.empresa_id) ? Aeroporto.filter({ empresa_id: effectiveEmpresaIdRef.current || currentUser?.empresa_id }) : Aeroporto.list(), RegistoAeronave.list(),
           TarifaPouso.list(), TarifaPermanencia.list(), OutraTarifa.list(),
           Imposto.list(), ConfiguracaoSistema.list(),
-          CalculoTarifa.list('-data_calculo', 1000)
+          CalculoTarifa.list('-data_calculo')
         ]);
         // Filtrar tarifas por empresa
         const tarifasPousoFiltradas = filterTarifasByEmpresa(tarifasPousoAtualizadas, effectiveEmpresaId);

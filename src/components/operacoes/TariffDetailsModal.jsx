@@ -645,11 +645,13 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
         </div>
       `;
 
-      const response = await sendEmailDirect({
-        to: emailData.to,
-        subject: emailData.subject,
-        body: emailBody
-      });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Tempo limite excedido (30s). Verifique a configuração SMTP.')), 30000)
+      );
+      await Promise.race([
+        sendEmailDirect({ to: emailData.to, subject: emailData.subject, html: emailBody, body: emailBody }),
+        timeoutPromise
+      ]);
 
       setIsEmailModalOpen(false);
       setSuccessInfo({

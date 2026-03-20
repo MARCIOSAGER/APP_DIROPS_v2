@@ -76,17 +76,21 @@ Deno.serve(async (req) => {
     }
 
     // Create transporter
+    const smtpPort = parseInt(String(smtp.smtp_port || "587"));
     const transporter = nodemailer.createTransport({
       host: smtp.smtp_host,
-      port: parseInt(smtp.smtp_port || "587"),
-      secure: smtp.smtp_port === "465",
+      port: smtpPort,
+      secure: smtp.smtp_secure === true || smtpPort === 465,
       auth: (smtp.smtp_user && smtp.smtp_password) ? {
         user: smtp.smtp_user,
         pass: smtp.smtp_password,
       } : undefined,
       tls: {
-        rejectUnauthorized: true,
+        rejectUnauthorized: false,
       },
+      connectionTimeout: 15000,
+      socketTimeout: 20000,
+      greetingTimeout: 10000,
     });
 
     // Send email
