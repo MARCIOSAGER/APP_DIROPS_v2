@@ -28,6 +28,23 @@ import { FormRegisto } from './config/RegistosAeronaveConfig';
 // Intervalo de tolerância para considerar voos duplicados (em minutos)
 const DUPLICATE_TOLERANCE_MINUTES = 15;
 
+// Cache de companhias (módulo-level, carregado uma vez)
+let _companhiasCache = null;
+let _companhiasCacheLoading = null;
+async function loadCompanhiasCache() {
+  if (_companhiasCache) return _companhiasCache;
+  if (_companhiasCacheLoading) return _companhiasCacheLoading;
+  _companhiasCacheLoading = CompanhiaAerea.list().then(data => {
+    _companhiasCache = Array.isArray(data) ? data : [];
+    _companhiasCacheLoading = null;
+    return _companhiasCache;
+  }).catch(() => {
+    _companhiasCacheLoading = null;
+    return [];
+  });
+  return _companhiasCacheLoading;
+}
+
 export default function FormVoo({
   isOpen,
   onClose,
@@ -131,24 +148,27 @@ export default function FormVoo({
   }, [checkMilitaryConsistency]);
 
   // Aeroportos que o usuário tem acesso (empresa-based)
+  // O prop "aeroportos" já vem filtrado por empresa/acesso do Operacoes.jsx
   const aeroportosAcesso = useMemo(() => {
     if (!currentUser || !Array.isArray(aeroportos)) {
       return [];
     }
 
     const permitidos = getAeroportosPermitidos(currentUser, aeroportos);
-    // Para admin/superadmin: filtrar SGA, mas incluir o aeroporto do voo em edição
+    // Para admin/superadmin: preferir SGA, mas usar todos os permitidos se nenhum tem isSGA
     if (isSuperAdmin(currentUser) || (currentUser.role === 'admin' || (currentUser.perfis && currentUser.perfis.includes('administrador')))) {
       const sgaAeroportos = permitidos.filter((a) => a.isSGA === true);
+      // Se não há aeroportos com isSGA, usar todos os permitidos (já filtrados por empresa)
+      const baseList = sgaAeroportos.length > 0 ? sgaAeroportos : permitidos;
       // Se editando, garantir que o aeroporto do voo está incluído
       if (vooInicial?.aeroporto_operacao) {
-        const jaInclui = sgaAeroportos.some(a => a.codigo_icao === vooInicial.aeroporto_operacao);
+        const jaInclui = baseList.some(a => a.codigo_icao === vooInicial.aeroporto_operacao);
         if (!jaInclui) {
           const aeroVoo = permitidos.find(a => a.codigo_icao === vooInicial.aeroporto_operacao);
-          if (aeroVoo) sgaAeroportos.push(aeroVoo);
+          if (aeroVoo) baseList.push(aeroVoo);
         }
       }
-      return sgaAeroportos;
+      return baseList;
     }
     return permitidos;
   }, [aeroportos, currentUser, vooInicial]);
@@ -232,6 +252,11 @@ export default function FormVoo({
     checkDuplicateVoo();
   }, [checkDuplicateVoo, formData.registo_aeronave, formData.data_operacao, formData.tipo_movimento, formData.aeroporto_operacao, formData.horario_previsto, formData.horario_real]);
 
+
+  // Pre-warm companhias cache when form opens
+  useEffect(() => {
+    if (isOpen) loadCompanhiasCache();
+  }, [isOpen]);
 
   // Load data when editing or reset for new flight
   useEffect(() => {
@@ -949,27 +974,22 @@ export default function FormVoo({
   const searchCompanhias = async (searchTerm) => {
     try {
       if (!searchTerm || searchTerm.length < 2) return [];
-      
-      const results = await CompanhiaAerea.list();
-      
-      if (!Array.isArray(results)) {
-        console.warn('CompanhiaAerea.list() não retornou array:', results);
-        return [];
-      }
-      
+
+      const allCompanhias = await loadCompanhiasCache();
+
       const searchLower = searchTerm.toLowerCase();
-      return results
-        .filter(c => 
+      return allCompanhias
+        .filter(c =>
           c && (
-            c.nome?.toLowerCase().includes(searchLower) || 
+            c.nome?.toLowerCase().includes(searchLower) ||
             c.codigo_icao?.toLowerCase().includes(searchLower) ||
             c.codigo_iata?.toLowerCase().includes(searchLower)
           )
         )
         .slice(0, 50)
-        .map(c => ({ 
-          value: c.codigo_icao || '', 
-          label: `${c.nome || 'Sem nome'} (${c.codigo_icao || 'N/A'})` 
+        .map(c => ({
+          value: c.codigo_icao || '',
+          label: `${c.nome || 'Sem nome'} (${c.codigo_icao || 'N/A'})`
         }));
     } catch (err) {
       console.error('Erro ao pesquisar companhias:', err);
@@ -979,32 +999,20 @@ export default function FormVoo({
 
   const getCompanhiaInicial = async (codigoIcao) => {
     if (!codigoIcao) return null;
-    
+
     try {
-      // Primeiro tentar encontrar no cache local
-      if (Array.isArray(companhias)) {
-        const companhia = companhias.find(c => c && c.codigo_icao === codigoIcao);
-        if (companhia) {
-          return { 
-            value: companhia.codigo_icao, 
-            label: `${companhia.nome || 'Sem nome'} (${companhia.codigo_icao})` 
-          };
-        }
-      }
-      
-      // Se não encontrar, buscar no banco
-      const results = await CompanhiaAerea.filter({ codigo_icao: codigoIcao });
-      if (Array.isArray(results) && results.length > 0) {
-        const c = results[0];
-        return { 
-          value: c.codigo_icao || codigoIcao, 
-          label: `${c.nome || 'Sem nome'} (${c.codigo_icao || codigoIcao})` 
+      const allCompanhias = await loadCompanhiasCache();
+      const companhia = allCompanhias.find(c => c && c.codigo_icao === codigoIcao);
+      if (companhia) {
+        return {
+          value: companhia.codigo_icao,
+          label: `${companhia.nome || 'Sem nome'} (${companhia.codigo_icao})`
         };
       }
     } catch (err) {
       console.error('Erro ao carregar companhia inicial:', err);
     }
-    
+
     return null;
   };
 
@@ -1057,14 +1065,17 @@ export default function FormVoo({
   const searchRegistos = async (searchTerm) => {
     try {
       if (!formData.companhia_aerea) return [];
-      
-      const companhiaSelecionada = companhias.find((c) => c.codigo_icao === formData.companhia_aerea);
+
+      // Find company in cache first, fallback to prop
+      const allCompanhias = await loadCompanhiasCache();
+      const companhiaSelecionada = allCompanhias.find(c => c.codigo_icao === formData.companhia_aerea)
+        || companhias.find(c => c.codigo_icao === formData.companhia_aerea);
       if (!companhiaSelecionada) return [];
 
       const results = await RegistoAeronave.filter({ id_companhia_aerea: companhiaSelecionada.id });
-      const searchLower = searchTerm.toLowerCase();
+      const searchLower = (searchTerm || '').toLowerCase();
       return results
-        .filter(r => r.registo?.toLowerCase().includes(searchLower))
+        .filter(r => !searchLower || r.registo?.toLowerCase().includes(searchLower))
         .slice(0, 50)
         .map(r => ({ value: r.registo, label: r.registo }));
     } catch (err) {

@@ -22,6 +22,7 @@ const GestaoNotificacoes = lazy(() => import('./pages/GestaoNotificacoes'));
 const GuiaUtilizador = lazy(() => import('./pages/GuiaUtilizador'));
 const HistoricoAcessoDocumentos = lazy(() => import('./pages/HistoricoAcessoDocumentos'));
 const Home = lazy(() => import('./pages/Home'));
+const ImportacaoAiaan = lazy(() => import('./pages/ImportacaoAiaan'));
 const Inspecoes = lazy(() => import('./pages/Inspecoes'));
 const KPIsOperacionais = lazy(() => import('./pages/KPIsOperacionais'));
 const Lixeira = lazy(() => import('./pages/Lixeira'));
@@ -68,6 +69,7 @@ export const PAGES = {
     "GuiaUtilizador": GuiaUtilizador,
     "HistoricoAcessoDocumentos": HistoricoAcessoDocumentos,
     "Home": Home,
+    "ImportacaoAiaan": ImportacaoAiaan,
     "Inspecoes": Inspecoes,
     "KPIsOperacionais": KPIsOperacionais,
     "Lixeira": Lixeira,

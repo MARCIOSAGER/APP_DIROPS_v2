@@ -1,0 +1,24 @@
+# Disable gateway-level JWT verification for all functions.
+# Each function handles its own auth (checking Authorization header).
+# This prevents the gateway from returning 401 without CORS headers.
+
+[get-dashboard-stats]
+verify_jwt = false
+
+[cloudflare-metrics]
+verify_jwt = false
+
+[send-email]
+verify_jwt = false
+
+[send-notification-email]
+verify_jwt = false
+
+[chatbot-ia]
+verify_jwt = false
+
+[data-api]
+verify_jwt = false
+
+[admin-user]
+verify_jwt = false

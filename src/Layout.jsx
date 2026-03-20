@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, ChevronDown, BarChart3, ArrowLeft, BookMarked, Sparkles, Building2, Layers, Trash2, Key, Moon, Sun
+  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, ChevronDown, BarChart3, ArrowLeft, BookMarked, Sparkles, Building2, Layers, Trash2, Key, Moon, Sun, FileSpreadsheet
 } from "lucide-react";
 import BottomTabs from '@/components/shared/BottomTabs';
 import { useI18n } from '@/components/lib/i18n';
@@ -31,7 +31,7 @@ const TourGuiado = React.lazy(() => import('@/components/shared/TourGuiado'));
 
 // Mapeamento padrão de permissões (fallback se não houver regras na BD)
 const PERFIL_PERMISSIONS_DEFAULT = {
-  administrador: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte', 'Monitoramento'],
+  administrador: ['Home', 'Operacoes', 'ImportacaoAiaan', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte', 'Monitoramento'],
   gestor_empresa: ['Credenciamento', 'GuiaUtilizador', 'Suporte'],
   operacoes: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte'],
   infraestrutura: ['Home', 'Reclamacoes', 'Inspecoes', 'Manutencao', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
@@ -43,6 +43,7 @@ function getNavigationItems(t) {
   return [
     { title: t('nav.dashboard'), url: createPageUrl("Home"), icon: Home, color: "text-blue-600", pageKey: "Home" },
     { title: t('nav.operacoes'), url: createPageUrl("Operacoes"), icon: Plane, color: "text-green-600", pageKey: "Operacoes" },
+    { title: 'Importação AIAAN', url: createPageUrl("ImportacaoAiaan"), icon: FileSpreadsheet, color: "text-amber-600", pageKey: "ImportacaoAiaan" },
     { title: t('nav.fundo_maneio'), url: createPageUrl("FundoManeio"), icon: DollarSign, color: "text-emerald-600", pageKey: "FundoManeio" },
     { title: t('nav.config_tarifas'), url: createPageUrl("ConfiguracaoTarifas"), icon: Settings2, color: "text-blue-600", pageKey: "ConfiguracaoTarifas" },
     { title: t('nav.proformas'), url: createPageUrl("Proforma"), icon: FileText, color: "text-blue-600", pageKey: "Proforma" },
@@ -171,7 +172,7 @@ const getFirstAccessiblePage = (user, permissions, t) => {
 };
 
 // Root pages – no back button shown on these
-const rootPages = ['Home', 'Operacoes', 'Safety', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'Monitoramento'];
+const rootPages = ['Home', 'Operacoes', 'ImportacaoAiaan', 'Safety', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'Monitoramento'];
 
 function LayoutContent({ children, currentPageName }) {
   const location = useLocation();

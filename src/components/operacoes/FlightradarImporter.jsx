@@ -66,7 +66,8 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
   const [searchStartTime, setSearchStartTime] = useState(null);
 
   // Filtrar apenas aeroportos SGA por padrão
-  const aeroportosFiltrados = aeroportos.filter(a => a.isSGA === true);
+  const sgaAeroportos = aeroportos.filter(a => a.isSGA === true);
+  const aeroportosFiltrados = sgaAeroportos.length > 0 ? sgaAeroportos : aeroportos;
 
   const handleDragEnd = (result) => {
     if (!result.destination) return;

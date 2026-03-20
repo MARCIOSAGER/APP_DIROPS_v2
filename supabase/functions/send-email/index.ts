@@ -10,7 +10,8 @@ function getCorsHeaders(req: Request) {
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, sentry-trace, baggage",
   };
 }
 
@@ -77,6 +78,8 @@ Deno.serve(async (req) => {
 
     // Create transporter
     const smtpPort = parseInt(String(smtp.smtp_port || "587"));
+    console.log(`SMTP config: ${smtp.smtp_host}:${smtpPort} secure=${smtp.smtp_secure === true || smtpPort === 465} user=${smtp.smtp_user ? 'set' : 'none'}`);
+
     const transporter = nodemailer.createTransport({
       host: smtp.smtp_host,
       port: smtpPort,
@@ -88,13 +91,14 @@ Deno.serve(async (req) => {
       tls: {
         rejectUnauthorized: false,
       },
-      connectionTimeout: 15000,
-      socketTimeout: 20000,
-      greetingTimeout: 10000,
+      connectionTimeout: 10000,
+      socketTimeout: 10000,
+      greetingTimeout: 5000,
     });
 
-    // Send email
-    const info = await transporter.sendMail({
+    // Send email with hard timeout (nodemailer timeouts may not work in Deno)
+    const SEND_TIMEOUT = 25000; // 25s hard limit
+    const sendPromise = transporter.sendMail({
       from: smtp.smtp_from_name
         ? `"${smtp.smtp_from_name}" <${smtp.smtp_from_email}>`
         : smtp.smtp_from_email,
@@ -111,6 +115,15 @@ Deno.serve(async (req) => {
         })),
       } : {}),
     });
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        transporter.close();
+        reject(new Error(`SMTP timeout: conexao com ${smtp.smtp_host}:${smtpPort} excedeu ${SEND_TIMEOUT / 1000}s. Tente novamente.`));
+      }, SEND_TIMEOUT);
+    });
+
+    const info = await Promise.race([sendPromise, timeoutPromise]) as any;
 
     console.log("Email sent:", info.messageId);
 

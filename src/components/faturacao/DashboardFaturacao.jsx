@@ -93,8 +93,8 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
     const loadCompanhiasComTarifas = async () => {
       try {
         const [allCalcs, allVoos] = await Promise.all([
-          CalculoTarifa.list('-data_calculo', 1000),
-          Voo.list('-data_operacao', 1000),
+          CalculoTarifa.list('-data_calculo'),
+          Voo.filter({ deleted_at: { $is: null } }, '-data_operacao'),
         ]);
         // Get companhia UUIDs from calculos
         const calcCompIds = new Set(allCalcs.map(c => c.companhia_id).filter(Boolean));
@@ -102,7 +102,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
         const vooIdsComCalc = new Set(allCalcs.map(c => c.voo_id).filter(Boolean));
         // Get ICAO codes from voos that have calculos
         const icaoCodes = new Set();
-        allVoos.filter(v => !v.deleted && vooIdsComCalc.has(v.id)).forEach(v => {
+        allVoos.filter(v => vooIdsComCalc.has(v.id)).forEach(v => {
           if (v.companhia_aerea) icaoCodes.add(v.companhia_aerea);
         });
         // Match companhias by UUID or ICAO code
@@ -132,13 +132,13 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
 
     try {
       const [allCalcData, voosData, vlData, proformasData] = await Promise.all([
-        CalculoTarifa.list('-data_calculo', 1000),
-        Voo.list('-data_operacao', 1000),
-        VooLigado.list('-created_date', 1000),
+        CalculoTarifa.list('-data_calculo'),
+        Voo.filter({ deleted_at: { $is: null } }, '-data_operacao'),
+        VooLigado.list('-created_date'),
         Proforma.list(),
       ]);
 
-      const activeVoos = voosData.filter(v => !v.deleted);
+      const activeVoos = voosData;
       const vooMap = new Map(activeVoos.map(v => [v.id, v]));
 
       const allowedAeroIds = new Set(aeroportos.map(a => a.id));
@@ -467,7 +467,6 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
   };
 
   const companhiaOptions = companhias
-    .filter(c => companhiasComTarifas.has(c.id))
     .map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }));
   const aeroportoOptions = [
     { value: '', label: t('dashFat.todosAeroportos') },

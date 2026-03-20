@@ -233,7 +233,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
       let detalhesPouso = '';
       if (detalhes.pouso && typeof detalhes.pouso === 'object' && !detalhes.pouso.erro) {
         detalhesPouso = `
-          <h3 style="color: #2563eb; margin-top: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">Detalhes - Tarifa de Pouso</h3>
+          <h3 style="color: #2563eb; margin-top: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">Detalhes - Tarifa de Aterragem e Descolagem</h3>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
             <tr style="border-bottom: 1px solid #e2e8f0;">
               <td style="padding: 8px; font-weight: bold; color: #475569;">Tipo de Voo:</td>
@@ -582,7 +582,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
               <td style="padding: 10px; font-weight: bold; text-align: right;">Valor (AOA)</td>
             </tr>
             <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 10px;">Tarifa de Pouso</td>
+              <td style="padding: 10px;">Tarifa de Aterragem e Descolagem</td>
               <td style="padding: 10px; text-align: right;">${formatCurrency(tariffCalculation.tarifa_pouso)}</td>
             </tr>
             <tr style="border-bottom: 1px solid #e2e8f0;">
@@ -646,7 +646,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
       `;
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Tempo limite excedido (30s). Verifique a configuração SMTP.')), 30000)
+        setTimeout(() => reject(new Error('Tempo limite excedido (45s). Verifique a configuração SMTP ou tente novamente.')), 45000)
       );
       await Promise.race([
         sendEmailDirect({ to: emailData.to, subject: emailData.subject, html: emailBody, body: emailBody }),
@@ -993,10 +993,10 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
                 const infoGeraisItems = infoGerais.map(([label, value]) => ({ label, value: String(value) }));
                 y = addKeyValuePairs(doc, y, infoGeraisItems, { twoColumns: true });
 
-                // Tarifa de Pouso
+                // Tarifa de Aterragem e Descolagem
                 if (detalhes.pouso) {
                   y = checkPageBreak(doc, y, 30);
-                  y = addSectionTitle(doc, y, 'Tarifa de Pouso');
+                  y = addSectionTitle(doc, y, 'Tarifa de Aterragem e Descolagem');
                   y = addKeyValuePairs(doc, y, [
                     { label: 'Tipo', value: detalhes.pouso.tipoVoo || 'N/A' },
                     { label: 'MTOW', value: formatToneladas(detalhes.pouso.mtowTonnes) },

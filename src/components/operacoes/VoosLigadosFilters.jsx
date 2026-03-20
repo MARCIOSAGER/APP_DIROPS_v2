@@ -116,7 +116,7 @@ export default function VoosLigadosFilters({ filtros, onFilterChange, onClearFil
           <div className="lg:col-span-2">
             <Label htmlFor="filtro-aeroportos-ligados">{t('voosLigados.aeroportosSGA')}</Label>
             <AeroportoMultiSelect
-              aeroportos={aeroportos.filter(a => a.isSGA === true)}
+              aeroportos={aeroportos.filter(a => a.isSGA === true).length > 0 ? aeroportos.filter(a => a.isSGA === true) : aeroportos}
               values={Array.isArray(filtros.aeroportos) ? filtros.aeroportos : []}
               onValuesChange={(v) => onFilterChange('aeroportos', v)}
               placeholder={t('voosLigados.selecionarAeroportos')}
