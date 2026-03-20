@@ -494,7 +494,11 @@ export default function Operacoes() {
   }, [filtrosLigados.dataInicio, filtrosLigados.dataFim, currentUser]);
 
   const voosLigadosValidos = useMemo(() => {
+    // Deduplicate by id (pagination can return overlapping rows)
+    const seen = new Set();
     return voosLigados.filter(vooLigado => {
+      if (seen.has(vooLigado.id)) return false;
+      seen.add(vooLigado.id);
       const vooArrExiste = voos.some(v => v.id === vooLigado.id_voo_arr);
       const vooDepExiste = voos.some(v => v.id === vooLigado.id_voo_dep);
       return vooArrExiste && vooDepExiste;

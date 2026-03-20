@@ -134,6 +134,12 @@ function toast({ ...props }) {
     },
   });
 
+  // Auto-dismiss after 5 seconds (unless duration is explicitly set)
+  const duration = props.duration || 5000;
+  if (duration > 0) {
+    setTimeout(() => dismiss(), duration);
+  }
+
   return {
     id,
     dismiss,
