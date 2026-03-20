@@ -469,6 +469,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
   };
 
   const companhiaOptions = companhias
+    .filter(c => companhiasComTarifas.has(c.id))
     .map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }));
   const aeroportoOptions = [
     { value: '', label: t('dashFat.todosAeroportos') },
