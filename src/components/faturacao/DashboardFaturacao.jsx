@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Select from '@/components/ui/select';
 import SendEmailModal from '@/components/shared/SendEmailModal';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabaseClient';
 import { CalculoTarifa } from '@/entities/CalculoTarifa';
 import { Voo } from '@/entities/Voo';
 import { VooLigado } from '@/entities/VooLigado';
@@ -88,33 +89,23 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
     data_fim: '',
   });
 
-  // Load distinct companhia IDs that have tariff calculations
+  // Load distinct companhia IDs that have tariff calculations (lightweight query)
   useEffect(() => {
     const loadCompanhiasComTarifas = async () => {
       try {
-        const [allCalcs, allVoos] = await Promise.all([
-          CalculoTarifa.list('-data_calculo'),
-          Voo.filter({ deleted_at: { $is: null } }, '-data_operacao'),
-        ]);
-        // Get companhia UUIDs from calculos
-        const calcCompIds = new Set(allCalcs.map(c => c.companhia_id).filter(Boolean));
-        // Get voo_ids that have calculos
-        const vooIdsComCalc = new Set(allCalcs.map(c => c.voo_id).filter(Boolean));
-        // Get ICAO codes from voos that have calculos
-        const icaoCodes = new Set();
-        allVoos.filter(v => vooIdsComCalc.has(v.id)).forEach(v => {
-          if (v.companhia_aerea) icaoCodes.add(v.companhia_aerea);
-        });
-        // Match companhias by UUID or ICAO code
-        const matchedIds = new Set();
-        companhias.forEach(c => {
-          if (calcCompIds.has(c.id) || icaoCodes.has(c.codigo_icao)) {
-            matchedIds.add(c.id);
-          }
-        });
-        setCompanhiasComTarifas(matchedIds);
+        // Single lightweight query: just get distinct companhia_ids from calculo_tarifa
+        const { data, error } = await supabase
+          .from('calculo_tarifa')
+          .select('companhia_id')
+          .not('companhia_id', 'is', null);
+        if (error) throw error;
+
+        const calcCompIds = new Set((data || []).map(c => c.companhia_id));
+        setCompanhiasComTarifas(calcCompIds);
       } catch (error) {
         console.error('Erro ao carregar companhias:', error);
+        // Fallback: show all companhias
+        setCompanhiasComTarifas(new Set(companhias.map(c => c.id)));
       } finally {
         setIsLoadingCompanhias(false);
       }
@@ -618,8 +609,8 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                 <p className="text-xs mt-1">{t('dashFat.nenhumVooDesc')}</p>
               </div>
             ) : (
-              <div className="overflow-x-auto -mx-6">
-                <Table className="text-[11px] min-w-[1400px]">
+              <div className="overflow-x-auto">
+                <Table className="text-[11px] w-max">
                   <TableHeader className="bg-slate-50 sticky top-0 z-10">
                     <TableRow>
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5">{t('dashFat.colRegisto')}</TableHead>
