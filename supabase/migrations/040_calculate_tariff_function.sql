@@ -767,8 +767,10 @@ BEGIN
         FROM imposto
         WHERE status = 'ativo'
           AND (aeroporto_id IS NULL OR aeroporto_id = v_aero.id)
-          AND data_inicio_vigencia::DATE <= COALESCE(v_dep.data_operacao::DATE, CURRENT_DATE)
-          AND (data_fim_vigencia IS NULL OR data_fim_vigencia::DATE >= COALESCE(v_dep.data_operacao::DATE, CURRENT_DATE))
+          AND CASE WHEN data_inicio_vigencia IS NOT NULL AND data_inicio_vigencia != '' THEN data_inicio_vigencia::DATE ELSE '2000-01-01'::DATE END
+              <= CASE WHEN v_dep.data_operacao IS NOT NULL AND v_dep.data_operacao != '' THEN v_dep.data_operacao::DATE ELSE CURRENT_DATE END
+          AND (data_fim_vigencia IS NULL OR data_fim_vigencia = '' OR
+              data_fim_vigencia::DATE >= CASE WHEN v_dep.data_operacao IS NOT NULL AND v_dep.data_operacao != '' THEN v_dep.data_operacao::DATE ELSE CURRENT_DATE END)
     LOOP
         DECLARE
             v_pct     NUMERIC;

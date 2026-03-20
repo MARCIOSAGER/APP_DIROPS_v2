@@ -10,6 +10,7 @@ import Select from '@/components/ui/select';
 import Combobox from '@/components/ui/combobox';
 import { Badge } from '@/components/ui/badge';
 
+import { supabase } from '@/lib/supabaseClient';
 import { Voo } from '@/entities/Voo';
 import { VooLigado } from '@/entities/VooLigado';
 import { Aeroporto } from '@/entities/Aeroporto';
@@ -214,7 +215,7 @@ export default function Operacoes() {
       ] = await Promise.allSettled([
         Voo.filter(vooFilters, '-data_operacao', 1000),
         VooLigado.filter(vlFilters, '-created_date', 1000),
-        CalculoTarifa.filter(empId ? { empresa_id: empId } : {}, '-data_calculo', 1000),
+        CalculoTarifa.filter(empId ? { empresa_id: empId } : {}, '-data_calculo'),
         TarifaPouso.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
         TarifaPermanencia.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
         OutraTarifa.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
@@ -276,7 +277,8 @@ export default function Operacoes() {
         promises.push(VooLigado.list('-created_date', 1000).then(data => ({ type: 'voosLigados', data })));
       }
       if (dataTypes.includes('calculosTarifa')) {
-        promises.push(CalculoTarifa.list('-data_calculo', 1000).then(data => ({ type: 'calculosTarifa', data })));
+        const empIdCalc = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+        promises.push(CalculoTarifa.filter(empIdCalc ? { empresa_id: empIdCalc } : {}, '-data_calculo').then(data => ({ type: 'calculosTarifa', data })));
       }
       if (dataTypes.includes('companhias')) {
         promises.push(CompanhiaAerea.list().then(data => ({ type: 'companhias', data })));
@@ -512,109 +514,26 @@ export default function Operacoes() {
     setIsFormOpen(true);
   };
 
-  const _recalculateSingleTariff = useCallback(async (vooLigado, freshData = null) => {
+  // Server-side tariff calculation via PostgreSQL stored procedure
+  // Single SQL call instead of 5+ API requests per voo
+  const _recalculateSingleTariff = useCallback(async (vooLigado) => {
     try {
-      let vooArr, vooDep, aeroportosAtualizados, aeronavesAtualizadas,
-          tarifasPousoAtualizadas, tarifasPermanenciaAtualizadas,
-          outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas;
+      const { data, error } = await supabase.rpc('calculate_tariff', {
+        p_voo_ligado_id: vooLigado.id
+      });
 
-      if (freshData) {
-        const { voosAtualizados } = freshData;
-        ({ aeroportosAtualizados, aeronavesAtualizadas,
-           tarifasPousoAtualizadas, tarifasPermanenciaAtualizadas,
-           outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas } = freshData);
-        vooArr = voosAtualizados.find(v => v.id === vooLigado.id_voo_arr);
-        vooDep = voosAtualizados.find(v => v.id === vooLigado.id_voo_dep);
-      } else {
-        // Buscar apenas os 2 voos específicos + dados de config (usar state quando possível)
-        const [freshVooArr, freshVooDep] = await Promise.all([
-          Voo.filter({ id: { $eq: vooLigado.id_voo_arr } }).then(r => r[0]),
-          Voo.filter({ id: { $eq: vooLigado.id_voo_dep } }).then(r => r[0])
-        ]);
-        vooArr = freshVooArr;
-        vooDep = freshVooDep;
-
-        // Usar dados de config já em state (são estáticos/raramente mudam)
-        // Só buscar do banco se o state estiver vazio
-        const empresaIdFiltroFallback = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-        aeroportosAtualizados = todosAeroportos.length > 0 ? todosAeroportos : await (empresaIdFiltroFallback ? Aeroporto.filter({ empresa_id: empresaIdFiltroFallback }) : Aeroporto.list());
-        aeronavesAtualizadas = aeronaves.length > 0 ? aeronaves : await RegistoAeronave.list();
-        tarifasPousoAtualizadas = tarifasPouso.length > 0 ? tarifasPouso : filterTarifasByEmpresa(await TarifaPouso.list(), effectiveEmpresaId);
-        tarifasPermanenciaAtualizadas = tarifasPermanencia.length > 0 ? tarifasPermanencia : filterTarifasByEmpresa(await TarifaPermanencia.list(), effectiveEmpresaId);
-        outrasTarifasAtualizadas = outrasTarifas.length > 0 ? outrasTarifas : filterTarifasByEmpresa(await OutraTarifa.list(), effectiveEmpresaId);
-        impostosAtualizadosRecalc = impostos.length > 0 ? impostos : await Imposto.list();
-        configAtualizadas = configuracaoSistema ? [configuracaoSistema] : await ConfiguracaoSistema.list();
-      }
-
-      if (!vooArr || !vooDep) {
-        console.error('❌ Voos não encontrados:', {
-          vooArrId: vooLigado.id_voo_arr,
-          vooDepId: vooLigado.id_voo_dep,
-          vooArrEncontrado: !!vooArr,
-          vooDepEncontrado: !!vooDep
-        });
-        throw new Error('Dados de voo incompletos para recálculo.');
-      }
-
-      const aeroportoOperacao = aeroportosAtualizados.find(a => a.codigo_icao === vooArr.aeroporto_operacao);
-
-      if (!aeroportoOperacao) {
-        console.error('❌ Aeroporto não encontrado:', vooArr.aeroporto_operacao);
-        console.error('   Aeroportos disponíveis:', aeroportosAtualizados.map(a => a.codigo_icao).join(', '));
-        throw new Error(`Aeroporto "${vooArr.aeroporto_operacao}" não encontrado.`);
-      }
-
-      const configAtualizada = configAtualizadas && configAtualizadas.length > 0 
-        ? configAtualizadas[0] 
-        : { taxa_cambio_usd_aoa: 850 };
-
-      const currentConfiguracao = {
-        aeroportos: aeroportosAtualizados,
-        aeronaves: aeronavesAtualizadas,
-        tarifasPouso: tarifasPousoAtualizadas,
-        tarifasPermanencia: tarifasPermanenciaAtualizadas,
-        outrasTarifas: outrasTarifasAtualizadas,
-        taxaCambio: configAtualizada?.taxa_cambio_usd_aoa || 850
-      };
-
-      const calculatedTariffs = await calculateAllTariffs(
-        vooLigado,
-        vooArr,
-        vooDep,
-        aeroportoOperacao,
-        currentConfiguracao,
-        impostosAtualizadosRecalc
-      );
-
-      if (!calculatedTariffs) {
-        console.error('❌ CRÍTICO: calculateAllTariffs retornou null');
-        throw new Error('Função calculateAllTariffs retornou null - verifique logs anteriores para detalhes.');
-      }
-
-      const calculoComVooLigado = {
-        ...calculatedTariffs,
-        voo_ligado_id: vooLigado.id,
-        empresa_id: vooLigado.empresa_id || vooDep.empresa_id
-      };
-
-      // Use freshData.calculosTarifa if available, otherwise use state, only fetch as last resort
-      const calculosAtualizados = freshData?.calculosTarifa || calculosTarifa;
-      const existingCalculo = calculosAtualizados.find(ct => ct.voo_ligado_id === vooLigado.id || ct.voo_id === vooDep.id);
-
-      if (existingCalculo) {
-        await CalculoTarifa.update(existingCalculo.id, calculoComVooLigado);
-      } else {
-        await CalculoTarifa.create(calculoComVooLigado);
+      if (error) {
+        console.error('❌ Erro no cálculo SQL:', error.message);
+        throw new Error(error.message);
       }
 
       return true;
     } catch (error) {
       console.error('❌ ========== ERRO NO RECÁLCULO ==========');
       console.error('   Erro completo:', error);
-      console.error('   Stack:', error?.stack);
       throw error;
     }
-  }, [calculosTarifa, todosAeroportos, aeronaves, tarifasPouso, tarifasPermanencia, outrasTarifas, impostos, configuracaoSistema]);
+  }, []);
 
   // Calcular estacionamento quando há troca de aeronave
   // Procura a chegada mais recente da aeronave DEP no mesmo aeroporto
@@ -1242,30 +1161,7 @@ export default function Operacoes() {
         let errorCount = 0;
         const errors = [];
 
-        // Carregar dados frescos UMA VEZ antes do loop
-        const [
-          voosAtualizados, aeroportosAtualizados, aeronavesAtualizadas,
-          tarifasPousoAtualizadas, tarifasPermanenciaAtualizadas,
-          outrasTarifasAtualizadas, impostosAtualizadosRecalc, configAtualizadas,
-          calculosTarifaFrescos
-        ] = await Promise.all([
-          Voo.list('-data_operacao'), (effectiveEmpresaIdRef.current || currentUser?.empresa_id) ? Aeroporto.filter({ empresa_id: effectiveEmpresaIdRef.current || currentUser?.empresa_id }) : Aeroporto.list(), RegistoAeronave.list(),
-          TarifaPouso.list(), TarifaPermanencia.list(), OutraTarifa.list(),
-          Imposto.list(), ConfiguracaoSistema.list(),
-          CalculoTarifa.list('-data_calculo')
-        ]);
-        // Filtrar tarifas por empresa
-        const tarifasPousoFiltradas = filterTarifasByEmpresa(tarifasPousoAtualizadas, effectiveEmpresaId);
-        const tarifasPermanenciaFiltradas = filterTarifasByEmpresa(tarifasPermanenciaAtualizadas, effectiveEmpresaId);
-        const outrasTarifasFiltradas = filterTarifasByEmpresa(outrasTarifasAtualizadas, effectiveEmpresaId);
-        const freshData = {
-          voosAtualizados, aeroportosAtualizados, aeronavesAtualizadas,
-          tarifasPousoAtualizadas: tarifasPousoFiltradas, tarifasPermanenciaAtualizadas: tarifasPermanenciaFiltradas,
-          outrasTarifasAtualizadas: outrasTarifasFiltradas, impostosAtualizadosRecalc, configAtualizadas,
-          calculosTarifa: calculosTarifaFrescos
-        };
-
-        // Processar em batches
+        // Processar em batches (cada cálculo é 1 RPC call server-side)
         for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
           const start = batchIndex * BATCH_SIZE;
           const end = Math.min(start + BATCH_SIZE, targets.length);
@@ -1302,7 +1198,7 @@ export default function Operacoes() {
             }));
 
             try {
-              await _recalculateSingleTariff(vl, freshData);
+              await _recalculateSingleTariff(vl);
               
               try {
                 const batchUpdates = [];
