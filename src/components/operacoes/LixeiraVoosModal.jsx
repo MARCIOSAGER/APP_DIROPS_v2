@@ -349,7 +349,7 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
                   </TableHeader>
                   <TableBody>
                     {voosNaLixeira.map((voo) => {
-                      const companhia = companhias.find(c => c.codigo_icao === voo.companhia_aerea);
+                      const companhia = companhias.find(c => c.codigo_icao === voo.companhia_aerea || c.codigo_iata === voo.companhia_aerea);
                       const aeroportoOp = aeroportos.find(a => a.codigo_icao === voo.aeroporto_operacao);
                       const aeroportoOriDest = aeroportos.find(a => a.codigo_icao === voo.aeroporto_origem_destino);
 

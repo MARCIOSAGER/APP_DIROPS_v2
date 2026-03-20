@@ -62,6 +62,26 @@ const formatCurrency = (value, currency = 'AOA') => {
   return new Intl.NumberFormat('pt-AO', { style: 'currency', currency: currency }).format(value || 0);
 };
 
+// Helper: fetch lightweight calculo map (paginated, bypasses PostgREST 1000 row limit)
+async function fetchCalculoMap(empresaId) {
+  const PAGE = 500;
+  let all = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from('calculo_tarifa')
+      .select('voo_id,voo_ligado_id,total_tarifa_usd,total_tarifa,tipo_tarifa,taxa_cambio_usd_aoa')
+      .eq('empresa_id', empresaId)
+      .range(from, from + PAGE - 1);
+    if (error) { console.error('Calculo map error:', error); break; }
+    if (!data || data.length === 0) break;
+    all = all.concat(data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
 // Helper: filtra tarifas por empresa_id
 function filterTarifasByEmpresa(tarifas, empresaId) {
   if (!empresaId) return tarifas;
@@ -217,10 +237,7 @@ export default function Operacoes() {
         Voo.filter(vooFilters, '-data_operacao', 1000),
         VooLigado.filter(vlFilters, '-created_date'),
         empId
-          ? supabase.rpc('get_calculo_map', { p_empresa_id: empId }).then(({ data, error }) => {
-              if (error) { console.error('RPC error:', error); return []; }
-              return data || [];
-            })
+          ? fetchCalculoMap(empId)
           : Promise.resolve([]),
         TarifaPouso.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
         TarifaPermanencia.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
@@ -232,16 +249,8 @@ export default function Operacoes() {
       const voosData = voosResult.status === 'fulfilled' ? voosResult.value : [];
       const voosLigadosData = voosLigadosResult.status === 'fulfilled' ? voosLigadosResult.value : [];
 
-      // Convert RPC calculo map to the format UI expects (keyed by voo_dep_id)
-      const calculosMap = calculosMapResult.status === 'fulfilled' ? calculosMapResult.value : [];
-      const calculosTarifaData = calculosMap.map(cm => ({
-        voo_id: cm.voo_dep_id,
-        voo_ligado_id: cm.voo_ligado_id,
-        total_tarifa_usd: cm.total_tarifa_usd,
-        total_tarifa: cm.total_tarifa,
-        tipo_tarifa: cm.tipo_tarifa,
-        taxa_cambio_usd_aoa: cm.taxa_cambio,
-      }));
+      // Calculo map — direct table query returns exact column names, no mapping needed
+      const calculosTarifaData = calculosMapResult.status === 'fulfilled' ? calculosMapResult.value : [];
       const tarifasPousoData = tarifasPousoResult.status === 'fulfilled' ? tarifasPousoResult.value : [];
       const tarifasPermanenciaData = tarifasPermanenciaResult.status === 'fulfilled' ? tarifasPermanenciaResult.value : [];
       const outrasTarifasData = outrasTarifasResult.status === 'fulfilled' ? outrasTarifasResult.value : [];
@@ -447,8 +456,42 @@ export default function Operacoes() {
     return () => clearTimeout(timer);
   }, [filtros.dataInicio, filtros.dataFim, currentUser]);
 
-  // Voos Ligados date filtering is done client-side in voosLigadosFiltrados useMemo
-  // No server-side reload needed — data already loaded in loadData
+  // Voos Ligados: server-side reload when user clicks "Buscar"
+  const handleBuscarLigados = useCallback(async () => {
+    setIsFilteringLigados(true);
+    try {
+      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+
+      // 1. Reload voos with date range (server-side)
+      const vooQuery = { deleted_at: { $is: null } };
+      if (empId) vooQuery.empresa_id = empId;
+      if (filtrosLigados.dataInicio) {
+        vooQuery.data_operacao = { ...vooQuery.data_operacao, $gte: filtrosLigados.dataInicio };
+      }
+      if (filtrosLigados.dataFim) {
+        vooQuery.data_operacao = { ...vooQuery.data_operacao, $lte: filtrosLigados.dataFim };
+      }
+
+      const voosData = await Voo.filter(vooQuery, '-data_operacao');
+      setVoos(voosData);
+
+      // 2. Reload voo_ligados + calculos
+      const vlFilters = empId ? { empresa_id: empId } : {};
+      const [vlData, calculosData] = await Promise.all([
+        VooLigado.filter(vlFilters, '-created_date'),
+        empId
+          ? fetchCalculoMap(empId)
+          : Promise.resolve([]),
+      ]);
+
+      setVoosLigados(vlData);
+      setCalculosTarifa(calculosData);
+    } catch (error) {
+      console.error('❌ Erro ao buscar voos ligados:', error);
+    } finally {
+      setIsFilteringLigados(false);
+    }
+  }, [filtrosLigados.dataInicio, filtrosLigados.dataFim, currentUser]);
 
   const voosLigadosValidos = useMemo(() => {
     return voosLigados.filter(vooLigado => {
@@ -1509,7 +1552,7 @@ export default function Operacoes() {
     }
 
     const dataToExport = voosFiltrados.map(v => {
-      const companhia = companhias.find(c => c.codigo_icao === v.companhia_aerea);
+      const companhia = companhias.find(c => c.codigo_icao === v.companhia_aerea || c.codigo_iata === v.companhia_aerea);
       const aeroportoOp = todosAeroportos.find(a => a.codigo_icao === v.aeroporto_operacao);
       const aeroportoOriDest = todosAeroportos.find(a => a.codigo_icao === v.aeroporto_origem_destino);
       
@@ -1572,7 +1615,7 @@ export default function Operacoes() {
       const tipoOperacao = isInternational ? 'Internacional' : 'Doméstico';
 
       const tempoPermanenciaHoras = (vl.tempo_permanencia_min / 60).toFixed(2);
-      const companhia = companhias.find(c => c.codigo_icao === depVoo?.companhia_aerea);
+      const companhia = companhias.find(c => c.codigo_icao === depVoo?.companhia_aerea || c.codigo_iata === depVoo?.companhia_aerea);
       const aeroportoOp = todosAeroportos.find(a => a.codigo_icao === arrVoo?.aeroporto_operacao);
 
       return {
@@ -1685,7 +1728,7 @@ export default function Operacoes() {
       dataInicio: '',
       dataFim: '',
       companhia: 'todos',
-      aeroporto: 'todos',
+      aeroportos: [],
       tipoVoo: 'todos',
       statusCalculo: 'todos',
       permanenciaMin: '',
@@ -1707,10 +1750,13 @@ export default function Operacoes() {
       let companhiaMatch = true;
       if (filtros.companhia !== 'todos') {
         if (filtros.companhia === 'outro') {
-          const knownCompanyCodes = new Set(companhias.map(c => c.codigo_icao));
+          const knownCompanyCodes = new Set();
+          companhias.forEach(c => { if (c.codigo_icao) knownCompanyCodes.add(c.codigo_icao); if (c.codigo_iata) knownCompanyCodes.add(c.codigo_iata); });
           companhiaMatch = voo.companhia_aerea && !knownCompanyCodes.has(voo.companhia_aerea);
         } else {
-          companhiaMatch = voo.companhia_aerea === filtros.companhia;
+          const comp = companhias.find(c => c.codigo_icao === filtros.companhia);
+          companhiaMatch = voo.companhia_aerea === filtros.companhia ||
+            (comp && (comp.codigo_iata === voo.companhia_aerea || comp.codigo_icao === voo.companhia_aerea));
         }
       }
 
@@ -1792,8 +1838,11 @@ export default function Operacoes() {
       const dataMatch = (!filtrosLigados.dataInicio || arrVoo.data_operacao >= filtrosLigados.dataInicio) &&
                        (!filtrosLigados.dataFim || arrVoo.data_operacao <= filtrosLigados.dataFim);
 
-      const companhiaMatch = filtrosLigados.companhia === 'todos' ||
-                            depVoo.companhia_aerea === filtrosLigados.companhia;
+      const companhiaFiltro = filtrosLigados.companhia;
+      const companhiaMatch = companhiaFiltro === 'todos' ||
+                            depVoo.companhia_aerea === companhiaFiltro ||
+                            companhias.some(c => (c.codigo_icao === companhiaFiltro || c.codigo_iata === companhiaFiltro) &&
+                              (c.codigo_icao === depVoo.companhia_aerea || c.codigo_iata === depVoo.companhia_aerea));
 
       const aeroportoMatch = !filtrosLigados.aeroportos || 
                             filtrosLigados.aeroportos.length === 0 ||
@@ -2217,6 +2266,8 @@ export default function Operacoes() {
                    filtros={filtrosLigados}
                    onFilterChange={handleFilterChangeLigados}
                    onClearFilters={clearFiltersLigados}
+                   onBuscar={handleBuscarLigados}
+                   isSearching={isFilteringLigados}
                    companhias={companhias}
                    aeroportos={todosAeroportos}
                  />
@@ -2367,7 +2418,7 @@ export default function Operacoes() {
       {gerarProformaCalculo && (() => {
         const vooDoCalculo = voos.find(v => v.id === gerarProformaCalculo.voo_id);
         const companhiaDoVoo = vooDoCalculo
-          ? companhias.find(c => c.codigo_icao === vooDoCalculo.companhia_aerea)
+          ? companhias.find(c => c.codigo_icao === vooDoCalculo.companhia_aerea || c.codigo_iata === vooDoCalculo.companhia_aerea)
           : null;
 
         if (!companhiaDoVoo) {

@@ -261,7 +261,7 @@ BEGIN
             total_tarifa_usd, total_tarifa,
             periodo_noturno, detalhes_calculo, empresa_id
         ) VALUES (
-            v_dep.id, p_voo_ligado_id, (SELECT id FROM companhia_aerea WHERE codigo_icao = v_arr.companhia_aerea LIMIT 1), v_aero.id, v_categoria,
+            v_dep.id, p_voo_ligado_id, (SELECT id FROM companhia_aerea WHERE codigo_icao = v_arr.companhia_aerea OR codigo_iata = v_arr.companhia_aerea LIMIT 1), v_aero.id, v_categoria,
             v_mtow_kg, v_taxa_cambio, v_tempo_horas,
             NOW(), 'Voo Isento de Tarifas', COALESCE(v_arr.numero_voo, v_dep.numero_voo),
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -284,60 +284,11 @@ BEGIN
     v_carga_kg        := COALESCE(v_dep.carga_kg, 0);
 
     -- =========================================================
-    -- STEP 7: LANDING TARIFF (cumulative brackets)
+    -- STEP 7: LANDING TARIFF (cumulative brackets, deduplicated)
+    -- DISTINCT ON ensures empresa-specific rows take priority
+    -- over global rows for the same bracket range.
     -- =========================================================
     v_escaloes := '[]'::JSONB;
-
-    FOR v_bracket IN
-        SELECT *
-        FROM tarifa_pouso
-        WHERE categoria_aeroporto = v_categoria
-          AND status = 'ativa'
-          AND (empresa_id = v_empresa_id OR empresa_id IS NULL)
-        ORDER BY
-            -- prefer empresa-specific rows
-            CASE WHEN empresa_id = v_empresa_id THEN 0 ELSE 1 END,
-            faixa_min ASC
-    LOOP
-        -- Skip if aircraft weight doesn't reach this bracket
-        IF v_mtow_kg <= v_bracket.faixa_min THEN
-            CONTINUE;
-        END IF;
-
-        v_upper_bound   := LEAST(v_mtow_kg, v_bracket.faixa_max);
-        v_weight_tonnes := CEIL((v_upper_bound - v_bracket.faixa_min) / 1000.0)::INTEGER;
-
-        DECLARE
-            v_rate NUMERIC;
-            v_bracket_val NUMERIC;
-        BEGIN
-            IF v_is_international THEN
-                v_rate := COALESCE(v_bracket.tarifa_internacional, 0);
-            ELSE
-                v_rate := COALESCE(v_bracket.tarifa_domestica, 0);
-            END IF;
-
-            v_bracket_val := round2(v_rate * v_weight_tonnes);
-            v_pouso_usd   := v_pouso_usd + v_bracket_val;
-
-            v_escaloes := v_escaloes || jsonb_build_object(
-                'faixa', format('%s-%st', CEIL(v_bracket.faixa_min / 1000.0)::INTEGER, CEIL(v_bracket.faixa_max / 1000.0)::INTEGER),
-                'tarifa', v_rate,
-                'peso_no_escalao', v_weight_tonnes,
-                'valor', v_bracket_val
-            );
-        END;
-    END LOOP;
-
-    -- To avoid double-counting when both empresa-specific and global rows exist
-    -- for the same bracket range, we recalculate using only empresa-specific first,
-    -- falling back to global. This is handled by the ORDER BY + DISTINCT ON approach:
-    -- Actually, the simple loop above may include duplicates if both empresa and NULL exist.
-    -- Let's redo with a cleaner approach using a CTE-style dedup.
-
-    -- RESET and recalculate with deduplication
-    v_pouso_usd := 0;
-    v_escaloes  := '[]'::JSONB;
 
     FOR v_bracket IN
         SELECT DISTINCT ON (faixa_min, faixa_max) *
@@ -690,27 +641,137 @@ BEGIN
 
     -- =========================================================
     -- STEP 12: RESOURCES (recurso_voo)
+    -- Auto-calculates values from tarifa_recurso when
+    -- utilizado=true but valor_usd=0 (not manually set).
+    -- PBB uses primeira_hora + hora_adicional pricing.
+    -- GPU/PCA use valor_usd per hour (flat if no hours).
     -- =========================================================
     v_recursos_det := '[]'::JSONB;
 
     FOR v_rec IN
         SELECT * FROM recurso_voo WHERE voo_ligado_id = p_voo_ligado_id
     LOOP
-        IF COALESCE(v_rec.pca_utilizado, FALSE) AND COALESCE(v_rec.pca_valor_usd, 0) > 0 THEN
-            v_recursos_usd := v_recursos_usd + v_rec.pca_valor_usd;
-            v_recursos_det := v_recursos_det || jsonb_build_object('tipo', 'PCA', 'valor_usd', v_rec.pca_valor_usd);
+        -- PCA
+        IF COALESCE(v_rec.pca_utilizado, FALSE) THEN
+            DECLARE
+                v_pca_val NUMERIC := COALESCE(v_rec.pca_valor_usd, 0);
+                v_pca_horas NUMERIC := COALESCE(v_rec.pca_tempo_horas, 0);
+                v_tr RECORD;
+            BEGIN
+                IF v_pca_val <= 0 THEN
+                    SELECT * INTO v_tr FROM tarifa_recurso
+                    WHERE tipo = 'pca' AND status = 'ativa'
+                      AND categoria_aeroporto = v_categoria
+                      AND (empresa_id = v_empresa_id OR empresa_id IS NULL)
+                    ORDER BY CASE WHEN empresa_id = v_empresa_id THEN 0 ELSE 1 END LIMIT 1;
+                    IF FOUND THEN
+                        IF v_pca_horas > 0 THEN
+                            v_pca_val := round2(COALESCE(v_tr.valor_usd, 0) * v_pca_horas);
+                        ELSE
+                            v_pca_val := round2(COALESCE(v_tr.valor_usd, 0));
+                        END IF;
+                    END IF;
+                END IF;
+                IF v_pca_val > 0 THEN
+                    v_recursos_usd := v_recursos_usd + v_pca_val;
+                    v_recursos_det := v_recursos_det || jsonb_build_object(
+                        'tipo', 'PCA', 'tempo_horas', v_pca_horas, 'valor_usd', v_pca_val);
+                END IF;
+            END;
         END IF;
-        IF COALESCE(v_rec.gpu_utilizado, FALSE) AND COALESCE(v_rec.gpu_valor_usd, 0) > 0 THEN
-            v_recursos_usd := v_recursos_usd + v_rec.gpu_valor_usd;
-            v_recursos_det := v_recursos_det || jsonb_build_object('tipo', 'GPU', 'valor_usd', v_rec.gpu_valor_usd);
+
+        -- GPU
+        IF COALESCE(v_rec.gpu_utilizado, FALSE) THEN
+            DECLARE
+                v_gpu_val NUMERIC := COALESCE(v_rec.gpu_valor_usd, 0);
+                v_gpu_horas NUMERIC := COALESCE(v_rec.gpu_tempo_horas, 0);
+                v_tr RECORD;
+            BEGIN
+                IF v_gpu_val <= 0 THEN
+                    SELECT * INTO v_tr FROM tarifa_recurso
+                    WHERE tipo = 'gpu' AND status = 'ativa'
+                      AND categoria_aeroporto = v_categoria
+                      AND (empresa_id = v_empresa_id OR empresa_id IS NULL)
+                    ORDER BY CASE WHEN empresa_id = v_empresa_id THEN 0 ELSE 1 END LIMIT 1;
+                    IF FOUND THEN
+                        IF v_gpu_horas > 0 THEN
+                            v_gpu_val := round2(COALESCE(v_tr.valor_usd, 0) * v_gpu_horas);
+                        ELSE
+                            v_gpu_val := round2(COALESCE(v_tr.valor_usd, 0));
+                        END IF;
+                    END IF;
+                END IF;
+                IF v_gpu_val > 0 THEN
+                    v_recursos_usd := v_recursos_usd + v_gpu_val;
+                    v_recursos_det := v_recursos_det || jsonb_build_object(
+                        'tipo', 'GPU', 'tempo_horas', v_gpu_horas, 'valor_usd', v_gpu_val);
+                END IF;
+            END;
         END IF;
-        IF COALESCE(v_rec.pbb_utilizado, FALSE) AND COALESCE(v_rec.pbb_valor_usd, 0) > 0 THEN
-            v_recursos_usd := v_recursos_usd + v_rec.pbb_valor_usd;
-            v_recursos_det := v_recursos_det || jsonb_build_object('tipo', 'PBB', 'valor_usd', v_rec.pbb_valor_usd);
+
+        -- PBB (primeira_hora + hora_adicional pricing)
+        IF COALESCE(v_rec.pbb_utilizado, FALSE) THEN
+            DECLARE
+                v_pbb_val NUMERIC := COALESCE(v_rec.pbb_valor_usd, 0);
+                v_pbb_horas NUMERIC := COALESCE(v_rec.pbb_tempo_horas, 0);
+                v_tr RECORD;
+            BEGIN
+                IF v_pbb_val <= 0 THEN
+                    SELECT * INTO v_tr FROM tarifa_recurso
+                    WHERE tipo = 'pbb' AND status = 'ativa'
+                      AND categoria_aeroporto = v_categoria
+                      AND (empresa_id = v_empresa_id OR empresa_id IS NULL)
+                    ORDER BY CASE WHEN empresa_id = v_empresa_id THEN 0 ELSE 1 END LIMIT 1;
+                    IF FOUND THEN
+                        IF COALESCE(v_tr.primeira_hora, 0) > 0 THEN
+                            -- PBB tiered: primeira_hora + hora_adicional * (horas-1)
+                            IF v_pbb_horas <= 1 THEN
+                                v_pbb_val := round2(v_tr.primeira_hora);
+                            ELSE
+                                v_pbb_val := round2(v_tr.primeira_hora + COALESCE(v_tr.hora_adicional, 0) * (CEIL(v_pbb_horas) - 1));
+                            END IF;
+                        ELSIF v_pbb_horas > 0 THEN
+                            v_pbb_val := round2(COALESCE(v_tr.valor_usd, 0) * v_pbb_horas);
+                        ELSE
+                            v_pbb_val := round2(COALESCE(v_tr.valor_usd, 0));
+                        END IF;
+                    END IF;
+                END IF;
+                IF v_pbb_val > 0 THEN
+                    v_recursos_usd := v_recursos_usd + v_pbb_val;
+                    v_recursos_det := v_recursos_det || jsonb_build_object(
+                        'tipo', 'PBB', 'tempo_horas', v_pbb_horas, 'valor_usd', v_pbb_val);
+                END IF;
+            END;
         END IF;
-        IF COALESCE(v_rec.checkin_utilizado, FALSE) AND COALESCE(v_rec.checkin_valor_usd, 0) > 0 THEN
-            v_recursos_usd := v_recursos_usd + v_rec.checkin_valor_usd;
-            v_recursos_det := v_recursos_det || jsonb_build_object('tipo', 'Check-in', 'valor_usd', v_rec.checkin_valor_usd);
+
+        -- Check-in
+        IF COALESCE(v_rec.checkin_utilizado, FALSE) THEN
+            DECLARE
+                v_chk_val NUMERIC := COALESCE(v_rec.checkin_valor_usd, 0);
+                v_chk_horas NUMERIC := COALESCE(v_rec.checkin_tempo_horas, 0);
+                v_tr RECORD;
+            BEGIN
+                IF v_chk_val <= 0 THEN
+                    SELECT * INTO v_tr FROM tarifa_recurso
+                    WHERE tipo = 'checkin' AND status = 'ativa'
+                      AND categoria_aeroporto = v_categoria
+                      AND (empresa_id = v_empresa_id OR empresa_id IS NULL)
+                    ORDER BY CASE WHEN empresa_id = v_empresa_id THEN 0 ELSE 1 END LIMIT 1;
+                    IF FOUND THEN
+                        IF v_chk_horas > 0 THEN
+                            v_chk_val := round2(COALESCE(v_tr.valor_usd, 0) * v_chk_horas);
+                        ELSE
+                            v_chk_val := round2(COALESCE(v_tr.valor_usd, 0));
+                        END IF;
+                    END IF;
+                END IF;
+                IF v_chk_val > 0 THEN
+                    v_recursos_usd := v_recursos_usd + v_chk_val;
+                    v_recursos_det := v_recursos_det || jsonb_build_object(
+                        'tipo', 'Check-in', 'tempo_horas', v_chk_horas, 'valor_usd', v_chk_val);
+                END IF;
+            END;
         END IF;
     END LOOP;
 
@@ -830,7 +891,7 @@ BEGIN
     ) VALUES (
         v_dep.id,
         p_voo_ligado_id,
-        (SELECT id FROM companhia_aerea WHERE codigo_icao = v_arr.companhia_aerea LIMIT 1),
+        (SELECT id FROM companhia_aerea WHERE codigo_icao = v_arr.companhia_aerea OR codigo_iata = v_arr.companhia_aerea LIMIT 1),
         v_aero.id,
         v_categoria,
         v_mtow_kg,
@@ -936,6 +997,39 @@ BEGIN
     RETURN v_count;
 END;
 $$;
+
+
+-- ============================================================
+-- 4. get_calculo_map(p_empresa_id UUID)
+--    Returns a lightweight map of all calculo_tarifa records
+--    for a given empresa. Used by the UI to display tariff
+--    totals without fetching full records.
+-- ============================================================
+CREATE OR REPLACE FUNCTION get_calculo_map(p_empresa_id UUID)
+RETURNS TABLE (
+    voo_dep_id     UUID,
+    voo_ligado_id  UUID,
+    total_tarifa_usd NUMERIC,
+    total_tarifa   NUMERIC,
+    tipo_tarifa    TEXT,
+    taxa_cambio    NUMERIC
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+AS $$
+    SELECT
+        ct.voo_id       AS voo_dep_id,
+        ct.voo_ligado_id,
+        ct.total_tarifa_usd,
+        ct.total_tarifa,
+        ct.tipo_tarifa,
+        ct.taxa_cambio_usd_aoa AS taxa_cambio
+    FROM calculo_tarifa ct
+    WHERE ct.empresa_id = p_empresa_id;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_calculo_map(UUID) TO authenticated;
 
 
 -- ============================================================

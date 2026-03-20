@@ -3,12 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, Loader2 } from 'lucide-react';
 import Combobox from '@/components/ui/combobox';
 import AeroportoMultiSelect from '@/components/ui/aeroporto-multi-select';
 import { useI18n } from '@/components/lib/i18n';
 
-export default function VoosLigadosFilters({ filtros, onFilterChange, onClearFilters, companhias, aeroportos }) {
+export default function VoosLigadosFilters({ filtros, onFilterChange, onClearFilters, onBuscar, isSearching, companhias, aeroportos }) {
   const { t } = useI18n();
 
   const hasActiveFilters =
@@ -187,6 +187,23 @@ export default function VoosLigadosFilters({ filtros, onFilterChange, onClearFil
               onChange={(e) => onFilterChange('permanenciaMax', e.target.value)}
             />
           </div>
+
+          {/* Botão Buscar */}
+          {onBuscar && (
+            <div className="flex items-end">
+              <Button
+                onClick={onBuscar}
+                disabled={isSearching}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+              >
+                {isSearching ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Buscando...</>
+                ) : (
+                  <><Search className="mr-2 h-4 w-4" /> Buscar</>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

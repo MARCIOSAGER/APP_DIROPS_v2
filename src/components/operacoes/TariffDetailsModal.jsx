@@ -83,7 +83,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
   const detalhes = tariffCalculation.detalhes_calculo || {};
 
   // Buscar companhia pelo código
-  const companhia = companhias.find(c => c.codigo_icao === vooDep?.companhia_aerea);
+  const companhia = companhias.find(c => c.codigo_icao === vooDep?.companhia_aerea || c.codigo_iata === vooDep?.companhia_aerea);
   const nomeCompanhia = companhia ? companhia.nome : vooDep?.companhia_aerea || 'N/A';
 
   // Determinar tipo de voo (Doméstico/Internacional)

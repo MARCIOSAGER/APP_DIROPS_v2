@@ -23,7 +23,7 @@ export async function exportTariffDetailsPdf({ calculoId }) {
   if (!voo) throw new Error('Voo não encontrado');
 
   const aeroporto = (aeroportosRes.data || []).find(a => a.id === calculo.aeroporto_id);
-  const companhia = (companhiasRes.data || []).find(c => c.codigo_icao === voo.companhia_aerea);
+  const companhia = (companhiasRes.data || []).find(c => c.codigo_icao === voo.companhia_aerea || c.codigo_iata === voo.companhia_aerea);
 
   // Get current user for footer and logo
   const { data: { user } } = await supabase.auth.getUser();

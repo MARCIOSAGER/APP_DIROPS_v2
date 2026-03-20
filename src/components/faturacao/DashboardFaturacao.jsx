@@ -146,12 +146,14 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
 
       const companhiaSelecionada = companhias.find(c => c.id === filtro.companhia_id);
       const companhiaIcao = companhiaSelecionada?.codigo_icao;
+      const companhiaIata = companhiaSelecionada?.codigo_iata;
 
       let filteredCalcs = allCalcData.filter(calc => {
         const voo = vooMap.get(calc.voo_id);
         if (!voo) return false;
         return calc.companhia_id === filtro.companhia_id ||
-          (companhiaIcao && voo.companhia_aerea === companhiaIcao);
+          (companhiaIcao && voo.companhia_aerea === companhiaIcao) ||
+          (companhiaIata && voo.companhia_aerea === companhiaIata);
       });
 
       // Filter by aeroporto
