@@ -203,10 +203,11 @@ export default function Operacoes() {
       if (empId) vooFilters.empresa_id = empId;
       const vlFilters = empId ? { empresa_id: empId } : {};
 
+      // Load data: Voos + VooLigados via entity (paginated), CalculosTarifa via lightweight RPC
       const [
         voosResult,
         voosLigadosResult,
-        calculosTarifaResult,
+        calculosMapResult,
         tarifasPousoResult,
         tarifasPermanenciaResult,
         outrasTarifasResult,
@@ -214,8 +215,13 @@ export default function Operacoes() {
         configResult
       ] = await Promise.allSettled([
         Voo.filter(vooFilters, '-data_operacao', 1000),
-        VooLigado.filter(vlFilters, '-created_date', 1000),
-        CalculoTarifa.filter(empId ? { empresa_id: empId } : {}, '-data_calculo'),
+        VooLigado.filter(vlFilters, '-created_date'),
+        empId
+          ? supabase.rpc('get_calculo_map', { p_empresa_id: empId }).then(({ data, error }) => {
+              if (error) { console.error('RPC error:', error); return []; }
+              return data || [];
+            })
+          : Promise.resolve([]),
         TarifaPouso.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
         TarifaPermanencia.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
         OutraTarifa.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
@@ -225,7 +231,17 @@ export default function Operacoes() {
 
       const voosData = voosResult.status === 'fulfilled' ? voosResult.value : [];
       const voosLigadosData = voosLigadosResult.status === 'fulfilled' ? voosLigadosResult.value : [];
-      const calculosTarifaData = calculosTarifaResult.status === 'fulfilled' ? calculosTarifaResult.value : [];
+
+      // Convert RPC calculo map to the format UI expects (keyed by voo_dep_id)
+      const calculosMap = calculosMapResult.status === 'fulfilled' ? calculosMapResult.value : [];
+      const calculosTarifaData = calculosMap.map(cm => ({
+        voo_id: cm.voo_dep_id,
+        voo_ligado_id: cm.voo_ligado_id,
+        total_tarifa_usd: cm.total_tarifa_usd,
+        total_tarifa: cm.total_tarifa,
+        tipo_tarifa: cm.tipo_tarifa,
+        taxa_cambio_usd_aoa: cm.taxa_cambio,
+      }));
       const tarifasPousoData = tarifasPousoResult.status === 'fulfilled' ? tarifasPousoResult.value : [];
       const tarifasPermanenciaData = tarifasPermanenciaResult.status === 'fulfilled' ? tarifasPermanenciaResult.value : [];
       const outrasTarifasData = outrasTarifasResult.status === 'fulfilled' ? outrasTarifasResult.value : [];
@@ -431,73 +447,8 @@ export default function Operacoes() {
     return () => clearTimeout(timer);
   }, [filtros.dataInicio, filtros.dataFim, currentUser]);
 
-  // Filtragem por data para Voos Ligados (server-side)
-  useEffect(() => {
-    const handleServerSideFilterLigados = async () => {
-      if (!filtrosLigados.dataInicio && !filtrosLigados.dataFim) {
-        setIsFilteringLigados(false);
-        return;
-      }
-
-      setIsFilteringLigados(true);
-      try {
-        const query = {};
-        if (filtrosLigados.dataInicio) {
-          query.data_operacao = { ...query.data_operacao, $gte: filtrosLigados.dataInicio };
-        }
-        if (filtrosLigados.dataFim) {
-          query.data_operacao = { ...query.data_operacao, $lte: filtrosLigados.dataFim };
-        }
-
-        // Buscar em lotes com paginação (API limita a 1000 por chamada)
-        let allVoos = [];
-        let skip = 0;
-        const BATCH_SIZE = 1000;
-        let hasMore = true;
-
-        while (hasMore) {
-          const batch = await Voo.filter(query, '-data_operacao', BATCH_SIZE, skip);
-
-          if (batch && batch.length > 0) {
-            allVoos = [...allVoos, ...batch];
-
-            if (batch.length < BATCH_SIZE) {
-              hasMore = false;
-            } else {
-              skip += BATCH_SIZE;
-            }
-          } else {
-            hasMore = false;
-          }
-        }
-
-        const voosFiltered = allVoos;
-
-        const voosLigadosFiltered = await VooLigado.list();
-
-        // Filtrar voosLigados válidos após buscar voos atualizados
-        const validLinkedFlights = voosLigadosFiltered.filter(vl => {
-          return voosFiltered.some(v => v.id === vl.id_voo_arr) && voosFiltered.some(v => v.id === vl.id_voo_dep);
-        });
-
-        setVoos(voosFiltered);
-        setVoosLigados(voosLigadosFiltered);
-      } catch (error) {
-        console.error('❌ Erro ao filtrar voos ligados por data:', error);
-        setAlertInfo({
-          isOpen: true,
-          type: 'error',
-          title: t('operacoes.erro_filtrar'),
-          message: t('operacoes.erro_filtrar_ligados_msg')
-        });
-      } finally {
-        setIsFilteringLigados(false);
-      }
-    };
-
-    const timer = setTimeout(handleServerSideFilterLigados, 500);
-    return () => clearTimeout(timer);
-  }, [filtrosLigados.dataInicio, filtrosLigados.dataFim]);
+  // Voos Ligados date filtering is done client-side in voosLigadosFiltrados useMemo
+  // No server-side reload needed — data already loaded in loadData
 
   const voosLigadosValidos = useMemo(() => {
     return voosLigados.filter(vooLigado => {
@@ -1606,7 +1557,7 @@ export default function Operacoes() {
     const dataToExport = voosLigadosFiltrados.map(vl => {
       const arrVoo = voos.find(v => v.id === vl.id_voo_arr);
       const depVoo = voos.find(v => v.id === vl.id_voo_dep);
-      const calculo = calculosTarifa.find(ct => ct.voo_id === depVoo?.id);
+      const calculo = calculosTarifa.find(ct => ct.voo_ligado_id === vl.id || ct.voo_id === depVoo?.id);
 
       // Determinar tipo de operação
       const aeroportoOrigem = todosAeroportos.find(a => a.codigo_icao === arrVoo?.aeroporto_origem_destino);
@@ -1851,7 +1802,7 @@ export default function Operacoes() {
       const tipoVooMatch = filtrosLigados.tipoVoo === 'todos' ||
                           depVoo.tipo_voo === filtrosLigados.tipoVoo;
 
-      const calculo = calculosTarifa.find(ct => ct.voo_id === depVoo.id);
+      const calculo = calculosTarifa.find(ct => ct.voo_ligado_id === vl.id || ct.voo_id === depVoo?.id);
       let statusCalculoMatch = true;
       if (filtrosLigados.statusCalculo !== 'todos') {
         if (filtrosLigados.statusCalculo === 'com_calculo') {
@@ -1914,8 +1865,8 @@ export default function Operacoes() {
           bValue = b.tempo_permanencia_min || 0;
           break;
         case 'total_tarifa':
-          const calculoA = calculosTarifa.find(ct => ct.voo_id === depVooA?.id);
-          const calculoB = calculosTarifa.find(ct => ct.voo_id === depVooB?.id);
+          const calculoA = calculosTarifa.find(ct => ct.voo_ligado_id === a.id || ct.voo_id === depVooA?.id);
+          const calculoB = calculosTarifa.find(ct => ct.voo_ligado_id === b.id || ct.voo_id === depVooB?.id);
           aValue = calculoA?.total_tarifa || 0;
           bValue = calculoB?.total_tarifa || 0;
           break;

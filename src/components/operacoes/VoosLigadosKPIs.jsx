@@ -18,7 +18,7 @@ export default function VoosLigadosKPIs({ voosLigados, voos, calculosTarifa }) {
   // USAR A MESMA LÓGICA DO RODAPÉ: Iterar sobre voosLigados e somar as tarifas
   const totalTarifas = voosLigados.reduce((sum, vl) => {
     const depVoo = voos.find(v => v.id === vl.id_voo_dep);
-    const calculo = calculosTarifa.find(ct => ct.voo_id === depVoo?.id);
+    const calculo = calculosTarifa.find(ct => ct.voo_ligado_id === vl.id || ct.voo_id === depVoo?.id);
     // Somar apenas voos com tarifa válida (não isentos)
     if (calculo && calculo.tipo_tarifa !== 'Voo Isento de Tarifas') {
       return sum + (calculo.total_tarifa || 0);
@@ -29,20 +29,20 @@ export default function VoosLigadosKPIs({ voosLigados, voos, calculosTarifa }) {
   // Voos isentos
   const voosIsentos = voosLigados.filter(vl => {
     const depVoo = voos.find(v => v.id === vl.id_voo_dep);
-    const calculo = calculosTarifa.find(ct => ct.voo_id === depVoo?.id);
+    const calculo = calculosTarifa.find(ct => ct.voo_ligado_id === vl.id || ct.voo_id === depVoo?.id);
     return calculo && calculo.tipo_tarifa === 'Voo Isento de Tarifas';
   }).length;
 
   // Voos com cálculo (incluindo isentos)
   const voosComCalculo = voosLigados.filter(vl => {
     const depVoo = voos.find(v => v.id === vl.id_voo_dep);
-    return depVoo && calculosTarifa.some(ct => ct.voo_id === depVoo.id);
+    return depVoo && calculosTarifa.some(ct => ct.voo_ligado_id === vl.id || ct.voo_id === depVoo?.id);
   }).length;
 
   // Voos sem cálculo
   const voosSemCalculo = voosLigados.filter(vl => {
     const depVoo = voos.find(v => v.id === vl.id_voo_dep);
-    return depVoo && !calculosTarifa.some(ct => ct.voo_id === depVoo.id);
+    return depVoo && !calculosTarifa.some(ct => ct.voo_ligado_id === vl.id || ct.voo_id === depVoo?.id);
   }).length;
 
   // Calcular médias de PAX e Carga

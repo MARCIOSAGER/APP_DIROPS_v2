@@ -126,10 +126,10 @@ export default function VoosLigadosTable({
     map((vooLigadoId) => {
       const vl = voosLigados.find((v) => v.id === vooLigadoId);
       const depVoo = voos.find((v) => v.id === vl?.id_voo_dep);
-      const calculo = calculosTarifa.find((ct) => ct.voo_id === depVoo?.id);
+      const calculo = calculosTarifa.find((ct) => ct.voo_ligado_id === vl?.id || ct.voo_id === depVoo?.id);
       return { vooLigado: vl, calculo };
     }).
-    filter((item) => item.calculo && item.calculo.tipo_tarifa !== 'Voo Isento de Tarifas');
+    filter((item) => item.vooLigado && item.calculo && item.calculo.tipo_tarifa !== 'Voo Isento de Tarifas');
 
     if (selectedCalculos.length === 0) {
       alert('Nenhum voo selecionado possui cálculo válido para gerar proforma. Voos isentos não podem ter proforma.');
@@ -149,15 +149,14 @@ export default function VoosLigadosTable({
     const vl = voosLigados.find((v) => v.id === vooLigadoId);
     if (!vl) return false;
     const depVoo = voos.find((v) => v.id === vl.id_voo_dep);
-    const calculo = calculosTarifa.find((ct) => ct.voo_id === depVoo?.id);
+    const calculo = calculosTarifa.find((ct) => ct.voo_ligado_id === vl.id || ct.voo_id === depVoo?.id);
     return calculo && calculo.tipo_tarifa !== 'Voo Isento de Tarifas';
   }).length;
 
   const hasValidSelection = selectedVoos.size > 0;
 
   const voosComCalculo = voosLigados.filter(vl => {
-    const depVoo = voos.find(v => v.id === vl.id_voo_dep);
-    return depVoo && calculosTarifa.some(ct => ct.voo_id === depVoo.id);
+    return calculosTarifa.some(ct => ct.voo_ligado_id === vl.id);
   }).length;
 
   const totalPages = Math.ceil(voosLigados.length / pageSize);
@@ -349,7 +348,7 @@ export default function VoosLigadosTable({
               currentVoosLigados.map((vooLigado) => {
                 const arrVoo = voos.find((v) => v.id === vooLigado.id_voo_arr);
                 const depVoo = voos.find((v) => v.id === vooLigado.id_voo_dep);
-                const calculo = calculosTarifa.find((ct) => ct.voo_id === depVoo?.id);
+                const calculo = calculosTarifa.find((ct) => ct.voo_ligado_id === vooLigado.id || ct.voo_id === depVoo?.id);
 
                 if (!arrVoo || !depVoo) return null;
 
