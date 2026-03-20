@@ -5,29 +5,30 @@ import { tariffCache } from './tariffCache';
  */
 export function calculateTarifaPouso(
   mtow_kg,
-  mtow_tonnes_rounded,
+  _mtow_tonnes_rounded,
   categoria_aeroporto,
   tarifasPouso,
   isInternational
 ) {
   const index = tariffCache.buildTarifaPosusoIndex(tarifasPouso);
-  const categoryTarifas = index[categoria_aeroporto] || [];
+  const categoryTarifas = (index[categoria_aeroporto] || []).slice().sort((a, b) => a.faixa_min - b.faixa_min);
 
-  const tarifaConfig = categoryTarifas.find(
-    t => mtow_kg >= t.faixa_min && mtow_kg <= t.faixa_max
-  );
+  if (categoryTarifas.length === 0) return { usd: 0, config: null };
 
-  if (!tarifaConfig) {
-    return { usd: 0, config: null };
+  // Cálculo cumulativo: cada escalão aplica a sua taxa apenas ao peso dentro do escalão
+  let total = 0;
+  for (const bracket of categoryTarifas) {
+    if (mtow_kg <= bracket.faixa_min) break;
+    const rate = isInternational ? bracket.tarifa_internacional : bracket.tarifa_domestica;
+    const upperBound = Math.min(mtow_kg, bracket.faixa_max);
+    const weightInBracket_tonnes = Math.ceil((upperBound - bracket.faixa_min) / 1000);
+    total += rate * weightInBracket_tonnes;
   }
 
-  const tarifaPorTonelada = isInternational
-    ? tarifaConfig.tarifa_internacional
-    : tarifaConfig.tarifa_domestica;
-
+  const lastBracket = categoryTarifas.filter(t => mtow_kg > t.faixa_min).pop() || null;
   return {
-    usd: parseFloat((tarifaPorTonelada * mtow_tonnes_rounded).toFixed(2)),
-    config: tarifaConfig
+    usd: parseFloat(total.toFixed(2)),
+    config: lastBracket
   };
 }
 

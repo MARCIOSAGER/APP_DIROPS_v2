@@ -719,19 +719,74 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
           <div className="space-y-6 py-4">
             {renderDetailSection(t('tarifasModal.infoGerais'), infoGerais)}
 
-            {/* TARIFA DE POUSO */}
-            {detalhes.pouso && typeof detalhes.pouso === 'object' && !detalhes.pouso.erro && renderDetailSection(t('tarifas.tarifaPouso'), [
-              ['Tipo de Voo', detalhes.pouso.tipoVoo || 'N/A'],
-              ['Faixa de Peso', getFaixaPesoToneladas(detalhes.pouso)],
-              ['Tarifa Aplicada', detalhes.pouso.tarifaAplicada ? formatUSD(detalhes.pouso.tarifaAplicada) + '/tonelada' : 'N/A'],
-              ['MTOW (Toneladas)', detalhes.pouso.mtowTonnes ? formatToneladas(detalhes.pouso.mtowTonnes) : 'N/A'],
-              ['Operações', detalhes.pouso.operacoes || 'N/A'],
-              ['Valor USD', formatUSD(detalhes.pouso.valor)],
-              ['Valor AOA', formatCurrency(tariffCalculation.tarifa_pouso)],
-            ], true, detalhes.pouso.formula)}
+            {/* TARIFA DE ATERRAGEM E DESCOLAGEM */}
+            {detalhes.pouso && typeof detalhes.pouso === 'object' && !detalhes.pouso.erro && (
+              <div className="space-y-3 pb-4 border-b border-slate-200">
+                <h3 className="text-base font-semibold text-blue-700 flex items-center gap-2">
+                  Tarifa de Aterragem e Descolagem
+                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                    {getCategoriaLabel(categoriaAeroporto)}
+                  </Badge>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  {[
+                    ['Tipo de Voo', detalhes.pouso.tipoVoo || 'N/A'],
+                    ['MTOW (Toneladas)', detalhes.pouso.mtowTonnes ? formatToneladas(detalhes.pouso.mtowTonnes) : 'N/A'],
+                    ['Escalão de Peso', getFaixaPesoToneladas(detalhes.pouso)],
+                    ['Operações', detalhes.pouso.operacoes || 'N/A'],
+                    ['Valor USD', formatUSD(detalhes.pouso.valor)],
+                    ['Valor AOA', formatCurrency(tariffCalculation.tarifa_pouso)],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex">
+                      <span className="font-medium text-slate-700 w-40 flex-shrink-0">{label}</span>
+                      <span className="text-slate-600 flex-grow">{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Tabela de escalões cumulativos */}
+                {detalhes.pouso.escaloes?.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Cálculo por Escalão (Cumulativo)</p>
+                    <table className="w-full text-xs border border-slate-200 rounded overflow-hidden">
+                      <thead className="bg-slate-100">
+                        <tr>
+                          <th className="text-left px-3 py-1.5 text-slate-600">Escalão</th>
+                          <th className="text-right px-3 py-1.5 text-slate-600">Taxa (USD/ton)</th>
+                          <th className="text-right px-3 py-1.5 text-slate-600">Peso no Escalão</th>
+                          <th className="text-right px-3 py-1.5 text-slate-600">Subtotal USD</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detalhes.pouso.escaloes.map((e, i) => (
+                          <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                            <td className="px-3 py-1.5 text-slate-700">{e.faixa}</td>
+                            <td className="px-3 py-1.5 text-right text-slate-700">${e.tarifa}</td>
+                            <td className="px-3 py-1.5 text-right text-slate-700">{e.peso_no_escalao}t</td>
+                            <td className="px-3 py-1.5 text-right font-medium text-slate-800">${e.valor?.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                        <tr className="bg-blue-50 border-t border-blue-200">
+                          <td colSpan={3} className="px-3 py-1.5 font-semibold text-blue-800">Total</td>
+                          <td className="px-3 py-1.5 text-right font-bold text-blue-800">{formatUSD(detalhes.pouso.valor)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Fórmula (fallback para cálculos antigos sem escaloes) */}
+                {!detalhes.pouso.escaloes?.length && detalhes.pouso.formula && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded">
+                    <span className="font-medium text-amber-900 text-sm">Fórmula: </span>
+                    <span className="text-amber-800 text-sm font-mono">{detalhes.pouso.formula}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* TARIFA DE ESTACIONAMENTO */}
-            {detalhes.permanencia && typeof detalhes.permanencia === 'object' && !detalhes.permanencia.erro && tariffCalculation.tarifa_permanencia > 0 && renderDetailSection(t('tarifas.tarifaPermanencia'), [
+            {detalhes.permanencia && typeof detalhes.permanencia === 'object' && !detalhes.permanencia.erro && tariffCalculation.tarifa_permanencia > 0 && renderDetailSection('Tarifa de Estacionamento', [
               ['Tipo', detalhes.permanencia.tipo || 'N/A'],
               ['Tarifa Base USD', detalhes.permanencia.tarifaBase ? formatUSD(detalhes.permanencia.tarifaBase) + '/tonelada/hora' : 'N/A'],
               ['MTOW (Toneladas)', detalhes.permanencia.mtowTonnes ? formatToneladas(detalhes.permanencia.mtowTonnes) : 'N/A'],

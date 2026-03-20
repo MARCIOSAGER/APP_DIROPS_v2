@@ -216,30 +216,46 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
     // Continuar com o cálculo normal para voos não isentos
     results.tipo_tarifa = "Tarifas Aeroportuárias";
 
-    // ==================== TARIFA DE POUSO (COBRADA APENAS UMA VEZ - NA DEP) ====================
-    const tarifaPousoConfig = tarifasPouso.find(t =>
-      mtow_kg >= t.faixa_min && mtow_kg <= t.faixa_max && 
-      t.categoria_aeroporto === categoria_aeroporto && 
-      t.status === 'ativa'
-    );
+    // ==================== TARIFA DE POUSO (CUMULATIVA — um escalão de cada vez) ====================
+    const bracketsSorted = tarifasPouso
+      .filter(t => t.categoria_aeroporto === categoria_aeroporto && t.status === 'ativa')
+      .sort((a, b) => a.faixa_min - b.faixa_min);
 
-    if (tarifaPousoConfig) {
-      const tarifaPorTonelada = isInternational ? tarifaPousoConfig.tarifa_internacional : tarifaPousoConfig.tarifa_domestica;
-      const mtow_tonnes = mtow_tonnes_rounded;
-      
-      results.tarifa_pouso_usd = tarifaPorTonelada * mtow_tonnes;
+    let totalPouso = 0;
+    const escalaoDetails = [];
 
+    for (const bracket of bracketsSorted) {
+      if (mtow_kg <= bracket.faixa_min) break;
+      const rate = isInternational ? bracket.tarifa_internacional : bracket.tarifa_domestica;
+      const upperBound = Math.min(mtow_kg, bracket.faixa_max);
+      const weightInBracket_tonnes = roundUpToNearestTonne(upperBound - bracket.faixa_min);
+      const bracketValue = parseFloat((rate * weightInBracket_tonnes).toFixed(2));
+      totalPouso += bracketValue;
+      escalaoDetails.push({
+        faixa: `${Math.ceil(bracket.faixa_min / 1000)}-${Math.ceil(bracket.faixa_max / 1000)}t`,
+        tarifa: rate,
+        peso_no_escalao: weightInBracket_tonnes,
+        valor: bracketValue
+      });
+    }
+
+    // Último escalão em que a aeronave se enquadra (para compatibilidade com a UI)
+    const lastBracket = bracketsSorted.filter(t => mtow_kg > t.faixa_min).pop();
+
+    if (escalaoDetails.length > 0) {
+      results.tarifa_pouso_usd = parseFloat(totalPouso.toFixed(2));
       results.detalhes_calculo.pouso = {
         tipoVoo: tipoOperacao,
-        tarifaAplicada: tarifaPorTonelada,
+        tarifaAplicada: lastBracket ? (isInternational ? lastBracket.tarifa_internacional : lastBracket.tarifa_domestica) : 0,
         mtowKg: mtow_kg,
-        mtowTonnes: mtow_tonnes.toFixed(3),
-        faixa_min_kg: tarifaPousoConfig.faixa_min,
-        faixa_max_kg: tarifaPousoConfig.faixa_max,
-        faixa_min_ton: Math.ceil(tarifaPousoConfig.faixa_min / 1000),
-        faixa_max_ton: Math.ceil(tarifaPousoConfig.faixa_max / 1000),
+        mtowTonnes: mtow_tonnes_rounded,
+        faixa_min_kg: lastBracket?.faixa_min,
+        faixa_max_kg: lastBracket?.faixa_max,
+        faixa_min_ton: lastBracket ? Math.ceil(lastBracket.faixa_min / 1000) : null,
+        faixa_max_ton: lastBracket ? Math.ceil(lastBracket.faixa_max / 1000) : null,
+        escaloes: escalaoDetails,
         operacoes: '1 (DEP apenas)',
-        formula: `${tarifaPorTonelada} USD/ton × ${mtow_tonnes.toFixed(3)} ton × 1 operação`,
+        formula: escalaoDetails.map(e => `${e.tarifa} USD/ton × ${e.peso_no_escalao}t (${e.faixa})`).join(' + '),
         valor: results.tarifa_pouso_usd,
         categoria_aeroporto: categoria_aeroporto
       };
@@ -463,26 +479,32 @@ export async function calculateAllTariffs(vooLigado, vooArr, vooDep, aeroportoOp
       );
 
       if (tarifaIluminacaoConfig) {
-        const illuminationAmountDollars = tarifaIluminacaoConfig.valor;
-        
+        // Contar operações nocturnas separadamente (ARR + DEP são operações independentes)
+        const operacoesNoturnas = (arrNoturno ? 1 : 0) + (depNoturno ? 1 : 0);
+        const operacoesParaCobrar = operacoesNoturnas > 0 ? operacoesNoturnas : (requerIluminacaoExtra ? 1 : 0);
+        const illuminationAmountDollars = parseFloat((tarifaIluminacaoConfig.valor * operacoesParaCobrar).toFixed(2));
+
         let motivoIluminacao = '';
         if (requerIluminacaoExtra) {
           motivoIluminacao = 'Iluminação extra requerida (dia escuro/neblina) - Sinal.Luz Xtra';
         } else if (arrNoturno || depNoturno) {
           motivoIluminacao = `Período noturno (18h00 - 06h00 local). ARR: ${vooArr.horario_real || vooArr.horario_previsto}, DEP: ${vooDep.horario_real || vooDep.horario_previsto}`;
         }
-        
+
         results.detalhes_calculo.iluminacao = {
           tipoVoo: tipoOperacao,
           arrNoturno: arrNoturno,
           depNoturno: depNoturno,
           iluminacaoExtra: requerIluminacaoExtra,
-          tarifaPorOperacao: illuminationAmountDollars,
+          operacoesNoturnas: operacoesParaCobrar,
+          tarifaPorOperacao: tarifaIluminacaoConfig.valor,
           descricao_tarifa: tarifaIluminacaoConfig.descricao || 'Iluminação (Período Noturno)',
           tipo_operacao_tarifa: tarifaIluminacaoConfig.tipo_operacao,
           valorFixo: tarifaIluminacaoConfig.valor,
           unidade: tarifaIluminacaoConfig.unidade,
-          formula: `${tarifaIluminacaoConfig.valor} USD (taxa fixa)`,
+          formula: operacoesParaCobrar > 1
+            ? `${tarifaIluminacaoConfig.valor} USD × ${operacoesParaCobrar} operações`
+            : `${tarifaIluminacaoConfig.valor} USD (taxa fixa)`,
           periodo: "18:00 - 06:00 local",
           observacao: motivoIluminacao,
           valor: illuminationAmountDollars,
