@@ -47,14 +47,11 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
+          // Supabase REST API: NetworkOnly — no caching to avoid stale data / timeout issues
+          // (Angola connectivity can be slow; a 5s SW timeout causes fallback to empty cache = errors)
           {
             urlPattern: /^https:\/\/glernwcsuwcyzwsnelad\.supabase\.co\/rest\/v1\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-api',
-              expiration: { maxEntries: 50, maxAgeSeconds: 300 },
-              networkTimeoutSeconds: 5
-            }
+            handler: 'NetworkOnly',
           },
           {
             urlPattern: /^https:\/\/glernwcsuwcyzwsnelad\.supabase\.co\/storage\/.*/i,
