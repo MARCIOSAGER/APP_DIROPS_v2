@@ -55,8 +55,8 @@ function splitInto6hBlocks(startDate, endDate) {
   while (current < end) {
     const blockEnd = new Date(Math.min(current.getTime() + 6 * 3600 * 1000, end.getTime()));
     blocks.push({
-      from: current.toISOString(),
-      to: blockEnd.toISOString(),
+      from: current.toISOString().replace('.000Z', 'Z').replace('Z', ''),
+      to: blockEnd.toISOString().replace('.000Z', 'Z').replace('Z', ''),
     });
     current = new Date(blockEnd.getTime() + 1000);
   }
