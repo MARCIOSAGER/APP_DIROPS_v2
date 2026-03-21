@@ -263,7 +263,7 @@ export default function TesteFlightradar24() {
             </div>
             {extraFilters}
             <div className="flex items-end">
-              <Button onClick={onSearch} disabled={loading} className="w-full bg-sky-600 hover:bg-sky-700">
+              <Button onClick={onSearch} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700">
                 {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <BtnIcon className="w-4 h-4 mr-2" />}
                 {buttonLabel}
               </Button>
@@ -461,9 +461,14 @@ export default function TesteFlightradar24() {
   // ═══════════════════════════════════════════════════════════
 
   const fetchFR24API = useCallback(async () => {
-    const apiKey = import.meta.env.VITE_FR24_API_KEY;
+    // Try env first, then fetch from api_config table
+    let apiKey = import.meta.env.VITE_FR24_API_KEY;
     if (!apiKey) {
-      showAlert('error', 'VITE_FR24_API_KEY não configurada no .env');
+      const { data: configData } = await supabase.from('api_config').select('valor').eq('chave', 'FR24_API_KEY').single();
+      apiKey = configData?.valor;
+    }
+    if (!apiKey) {
+      showAlert('error', 'FR24 API Key não configurada. Adicione na tabela api_config.');
       return;
     }
 
