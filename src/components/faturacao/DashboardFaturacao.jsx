@@ -122,77 +122,61 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
     setHasSearched(true);
 
     try {
-      // 1. Filter calculos server-side by companhia + aeroporto
-      const calcFilter = {};
-      if (filtro.companhia_id && filtro.companhia_id !== '_todas') {
-        calcFilter.companhia_id = filtro.companhia_id;
+      // 1. Server-side filtered query: companhia + aeroporto + date range in ONE call
+      const rpcParams = {};
+      if (filtro.companhia_id && filtro.companhia_id !== '_todas') rpcParams.p_companhia_id = filtro.companhia_id;
+      if (filtro.aeroporto_id) rpcParams.p_aeroporto_id = filtro.aeroporto_id;
+      if (filtro.data_inicio) rpcParams.p_data_inicio = filtro.data_inicio;
+      if (filtro.data_fim) rpcParams.p_data_fim = filtro.data_fim;
+
+      // If no aeroporto selected, filter by allowed aeroportos
+      if (!filtro.aeroporto_id && aeroportos.length > 0 && aeroportos.length < 30) {
+        // Use first aeroporto as default filter for performance
+        rpcParams.p_aeroporto_id = aeroportos[0]?.id;
       }
-      if (filtro.aeroporto_id) calcFilter.aeroporto_id = filtro.aeroporto_id;
 
-      // 2. Load calculos, voo_ligados (by empresa), and proformas in parallel
-      // Get empresa_id from the selected companhia's calculos
-      const compEmpresa = companhias.find(c => c.id === filtro.companhia_id);
+      // Paginated RPC call (may return > 1000 rows)
+      const PAGE = 1000;
+      let filteredCalcs = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase.rpc('get_calculos_por_periodo', rpcParams).range(from, from + PAGE - 1);
+        if (error) { console.error('RPC error:', error); break; }
+        if (!data || data.length === 0) break;
+        filteredCalcs = filteredCalcs.concat(data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
 
-      const [allCalcData, vlData, proformasData] = await Promise.all([
-        CalculoTarifa.filter(calcFilter, '-data_calculo'),
-        VooLigado.list('-created_date'),
-        Proforma.list(),
-      ]);
+      // 2. Load voo_ligados and voos for display (only for filtered calculos)
+      const vlIds = [...new Set(filteredCalcs.map(c => c.voo_ligado_id).filter(Boolean))];
+      const vooIds = new Set(filteredCalcs.map(c => c.voo_id).filter(Boolean));
 
-      // Only positive values
-      let filteredCalcs = allCalcData.filter(c => (c.total_tarifa_usd || 0) > 0);
+      // Load voo_ligados in batches
+      let vlData = [];
+      for (let i = 0; i < vlIds.length; i += 200) {
+        const batch = vlIds.slice(i, i + 200);
+        const batchData = await VooLigado.filter({ id: { $in: batch } });
+        vlData = vlData.concat(batchData);
+      }
 
-      // 3. Build voo_ligado map for quick lookup
-      const vlMap = new Map(vlData.map(vl => [vl.id, vl]));
-
-      // 4. Collect ALL voo IDs needed (dep from calculos + arr/dep from voo_ligados)
-      const allVooIds = new Set();
-      filteredCalcs.forEach(c => {
-        if (c.voo_id) allVooIds.add(c.voo_id);
-        const vl = vlMap.get(c.voo_ligado_id);
-        if (vl) {
-          if (vl.id_voo_arr) allVooIds.add(vl.id_voo_arr);
-          if (vl.id_voo_dep) allVooIds.add(vl.id_voo_dep);
-        }
+      // Collect arr voo IDs from voo_ligados
+      vlData.forEach(vl => {
+        if (vl.id_voo_arr) vooIds.add(vl.id_voo_arr);
+        if (vl.id_voo_dep) vooIds.add(vl.id_voo_dep);
       });
 
-      // 5. Load voos in batches of 200 IDs (avoid URI too long)
-      const vooIdArray = Array.from(allVooIds);
-      const BATCH = 200;
+      // Load voos in batches
+      const vooIdArray = Array.from(vooIds);
       let voosData = [];
-      for (let i = 0; i < vooIdArray.length; i += BATCH) {
-        const batch = vooIdArray.slice(i, i + BATCH);
+      for (let i = 0; i < vooIdArray.length; i += 200) {
+        const batch = vooIdArray.slice(i, i + 200);
         const batchData = await Voo.filter({ id: { $in: batch } });
         voosData = voosData.concat(batchData);
       }
 
-      const vooMap = new Map(voosData.map(v => [v.id, v]));
-
-      // Filter by date range (using voo data)
-      if (filtro.data_inicio || filtro.data_fim) {
-        filteredCalcs = filteredCalcs.filter(calc => {
-          const voo = vooMap.get(calc.voo_id);
-          if (!voo) return false;
-          if (filtro.data_inicio && voo.data_operacao < filtro.data_inicio) return false;
-          if (filtro.data_fim && voo.data_operacao > filtro.data_fim) return false;
-          return true;
-        });
-      }
-
-      // Filter by aeroporto (when no specific aeroporto selected, filter by allowed)
-      if (!filtro.aeroporto_id && aeroportos.length > 0) {
-        const allowedAeroIds = new Set(aeroportos.map(a => a.id));
-        filteredCalcs = filteredCalcs.filter(c => allowedAeroIds.has(c.aeroporto_id));
-      }
-
-      // Sort by date
-      filteredCalcs.sort((a, b) => {
-        const vooA = vooMap.get(a.voo_id);
-        const vooB = vooMap.get(b.voo_id);
-        return (vooA?.data_operacao || '').localeCompare(vooB?.data_operacao || '');
-      });
-
       // Build proforma map
+      const proformasData = await Proforma.list();
       const pfMap = new Map();
       proformasData.forEach(p => {
         if (p.calculo_tarifa_id && p.status !== 'cancelada' && p.numero_proforma) {
@@ -391,11 +375,20 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       const { gerarRelatorioFaturacaoPdf } = await import('@/functions/gerarProformaPdfSimples');
       const companhia = companhias.find(c => c.id === filtro.companhia_id);
       const aeroporto = filtro.aeroporto_id ? aeroportos.find(a => a.id === filtro.aeroporto_id) : null;
-      await gerarRelatorioFaturacaoPdf({
+      const pdfParams = {
         calculos, companhia, aeroporto,
         periodo_inicio: filtro.data_inicio, periodo_fim: filtro.data_fim,
         voos, voosLigados, proformasMap,
-      });
+      };
+      // Grouped mode: pass groups for "Todas as Companhias"
+      if (isTodasCompanhias && rowsByCompanhia) {
+        pdfParams.groupedByCompanhia = rowsByCompanhia.map(g => ({
+          nome: g.nome,
+          companhia: companhias.find(c => c.nome === g.nome),
+          calculos: g.rows.map(r => r.calc),
+        }));
+      }
+      await gerarRelatorioFaturacaoPdf(pdfParams);
       toast({ title: t('dashFat.pdfGerado'), description: t('dashFat.pdfGeradoDesc') });
     } catch (error) {
       console.error('Erro PDF:', error);
@@ -448,12 +441,20 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       const { gerarRelatorioFaturacaoPdf } = await import('@/functions/gerarProformaPdfSimples');
       const companhia = companhias.find(c => c.id === filtro.companhia_id);
       const aeroporto = filtro.aeroporto_id ? aeroportos.find(a => a.id === filtro.aeroporto_id) : null;
-      const result = await gerarRelatorioFaturacaoPdf({
+      const emailPdfParams = {
         calculos, companhia, aeroporto,
         periodo_inicio: filtro.data_inicio, periodo_fim: filtro.data_fim,
         voos, voosLigados, proformasMap,
         returnBase64: true,
-      });
+      };
+      if (isTodasCompanhias && rowsByCompanhia) {
+        emailPdfParams.groupedByCompanhia = rowsByCompanhia.map(g => ({
+          nome: g.nome,
+          companhia: companhias.find(c => c.nome === g.nome),
+          calculos: g.rows.map(r => r.calc),
+        }));
+      }
+      const result = await gerarRelatorioFaturacaoPdf(emailPdfParams);
       setPdfForEmail(result);
       setIsEmailModalOpen(true);
     } catch (error) {

@@ -18,7 +18,9 @@ import {
   DollarSign,
   RefreshCw,
   Layers,
-  BarChart3 } from
+  BarChart3,
+  TrendingUp,
+  Receipt } from
 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +50,7 @@ import EditarFaturaModal from '../components/faturacao/EditarFaturaModal';
 import GerarProformaConsolidadaModal from '../components/faturacao/GerarProformaConsolidadaModal';
 import GerarRelatorioFaturacaoModal from '../components/faturacao/GerarRelatorioFaturacaoModal';
 import DashboardFaturacao from '../components/faturacao/DashboardFaturacao';
+import DashboardFinanceiro from '../components/faturacao/DashboardFinanceiro';
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
 import CancelarProformaModal from '../components/shared/CancelarProformaModal';
@@ -489,16 +492,25 @@ export default function ProformaPage() {
             {t('proforma.tab_proformas')}
           </button>
           <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'dashboard' ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            onClick={() => setActiveTab('extrato')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'extrato' ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
           >
-            <BarChart3 className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-            {t('proforma.tab_dashboard')}
+            <Receipt className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+            Extrato
+          </button>
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'dashboard' ? 'border-purple-600 text-purple-700 dark:text-purple-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          >
+            <TrendingUp className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+            Dashboard
           </button>
         </div>
 
-        {activeTab === 'dashboard' ? (
+        {activeTab === 'extrato' ? (
           <DashboardFaturacao companhias={companhias} aeroportos={aeroportos} />
+        ) : activeTab === 'dashboard' ? (
+          <DashboardFinanceiro companhias={companhias} aeroportos={aeroportos} />
         ) : (<>
 
         {/* KPIs */}

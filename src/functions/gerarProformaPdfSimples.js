@@ -621,6 +621,7 @@ function getOutraTarifaShortLabel(key) {
 export async function gerarRelatorioFaturacaoPdf({
   calculos, companhia, aeroporto, periodo_inicio, periodo_fim,
   voos, voosLigados, proformasMap,
+  groupedByCompanhia, // optional: array of { nome, calculos: rawCalcArray[] } for "Todas as Companhias"
 }) {
   const { fetchEmpresaLogo } = await import('@/lib/pdfTemplate');
 
@@ -697,6 +698,37 @@ export async function gerarRelatorioFaturacaoPdf({
     observacoes: null,
   };
 
+  // Build groups for grouped mode (Todas as Companhias)
+  let groupsParam = undefined;
+  if (groupedByCompanhia && groupedByCompanhia.length > 0) {
+    groupsParam = groupedByCompanhia.map(g => {
+      const groupItems = g.calculos.map(calc => {
+        const itemVoo = voosMap.get(calc.voo_id);
+        const itemVL = vlMap.get(calc.voo_ligado_id);
+        const depVoo = itemVL ? voosMap.get(itemVL.id_voo_dep) : null;
+        const arrVoo = itemVL ? voosMap.get(itemVL.id_voo_arr) : null;
+        const itemAero = calc.aeroporto_id
+          ? (allAeroportos || []).find(a => a.id === calc.aeroporto_id || a.codigo_icao === calc.aeroporto_id)
+          : null;
+        return {
+          calculo_tarifa_id: calc.id,
+          voo_id: calc.voo_id,
+          voo_ligado_id: calc.voo_ligado_id,
+          valor_usd: calc.total_tarifa_usd || 0,
+          valor_aoa: calc.total_tarifa || 0,
+          calculo: calc,
+          voo: depVoo || itemVoo,
+          vooArr: arrVoo,
+          vooDep: depVoo,
+          vooLigado: itemVL,
+          aeroporto: itemAero,
+          numero_proforma: proformasMap?.get(calc.id) || null,
+        };
+      });
+      return { nome: g.nome, calculos: groupItems };
+    });
+  }
+
   // Generate landscape PDF using the existing generator
   const result = await generateExtratoLandscape({
     proforma: syntheticProforma,
@@ -708,10 +740,11 @@ export async function gerarRelatorioFaturacaoPdf({
     formatUSD,
     fmtNum,
     fmtDate,
+    groups: groupsParam,
   });
 
   const doc = result._doc;
-  const compNome = companhia?.codigo_icao || 'COMP';
+  const compNome = groupedByCompanhia ? 'TODAS' : (companhia?.codigo_icao || 'COMP');
   const dataStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
   const filename = `Extrato_Facturacao_${compNome}_${periodo_inicio || ''}_${periodo_fim || ''}_${dataStr}.pdf`;
 
@@ -730,6 +763,7 @@ export async function gerarRelatorioFaturacaoPdf({
 async function generateExtratoLandscape({
   proforma, companhia, aeroporto, consolidatedItems,
   logoBase64, formatCurrency, formatUSD, fmtNum, fmtDate,
+  groups, // optional: array of { nome, calculos: consolidatedItems[] } for grouped mode
 }) {
   const { createPdfDoc, addHeader, addFooter, addTable, addKeyValuePairs, addSectionTitle, addInfoBox, checkPageBreak, PDF } = await import('@/lib/pdfTemplate');
 
@@ -756,7 +790,7 @@ async function generateExtratoLandscape({
 
   // Compact info line
   const infoItems = [
-    { label: 'Companhia', value: companhia?.nome || '-' },
+    { label: 'Companhia', value: groups ? 'Todas as Companhias' : (companhia?.nome || '-') },
   ];
   if (proforma.periodo_inicio || proforma.periodo_fim) {
     infoItems.push({ label: 'Período', value: `${fmtDateFull(proforma.periodo_inicio)} a ${fmtDateFull(proforma.periodo_fim)}` });
@@ -764,12 +798,21 @@ async function generateExtratoLandscape({
   if (aeroporto) {
     infoItems.push({ label: 'Aeroporto', value: aeroporto?.nome ? `${aeroporto.nome} (${aeroporto.codigo_icao})` : aeroporto?.codigo_icao || '-' });
   }
-  infoItems.push({ label: 'Voos', value: `${consolidatedItems.length}` });
+  const totalVoos = groups ? groups.reduce((s, g) => s + g.calculos.length, 0) : consolidatedItems.length;
+  infoItems.push({ label: 'Voos', value: `${totalVoos}` });
+  if (groups) {
+    infoItems.push({ label: 'Companhias', value: `${groups.length}` });
+  }
   y = addInfoBox(doc, y, infoItems);
 
   // ─── Scan items to determine dynamic columns (same logic as consolidated) ───
+  // In grouped mode, scan all items across all groups
+  const allItemsForScan = groups
+    ? groups.flatMap(g => g.calculos)
+    : consolidatedItems;
+
   const outrasTarifaTypes = new Map();
-  consolidatedItems.forEach(item => {
+  allItemsForScan.forEach(item => {
     const det = item.calculo?.detalhes_calculo || {};
     if (det.iluminacao?.valor > 0) outrasTarifaTypes.set('iluminacao', 'Ilumin.');
     (det.outras || []).forEach(o => {
@@ -785,7 +828,7 @@ async function generateExtratoLandscape({
   });
 
   const resourceTypes = new Map();
-  consolidatedItems.forEach(item => {
+  allItemsForScan.forEach(item => {
     const recursos = item.calculo?.detalhes_calculo?.recursos?.itens || [];
     recursos.forEach(r => {
       const key = normalizeResourceKey(r.tipo);
@@ -805,6 +848,7 @@ async function generateExtratoLandscape({
   const tableWidth = 297 - m.left - m.right;
 
   const fixedCols = [
+    { label: 'Nº', width: 8, align: 'center' },
     { label: 'Registo', width: 16 },
     { label: 'PMD(t)', width: 13, align: 'right' },
     { label: 'Tipo', width: 10 },
@@ -832,7 +876,7 @@ async function generateExtratoLandscape({
   });
 
   let ivaPercent = '';
-  for (const item of consolidatedItems) {
+  for (const item of allItemsForScan) {
     const impostos = item.calculo?.detalhes_calculo?.impostos;
     if (impostos?.length > 0 && impostos[0].valor_configurado) {
       ivaPercent = ` ${impostos[0].valor_configurado}%`;
@@ -853,145 +897,252 @@ async function generateExtratoLandscape({
     allCols.forEach(col => { col.width = col.width * scale; });
   }
 
-  // ─── Build rows ───
-  const totals = { pouso: 0, estac_h: 0, estac: 0, passag_pax: 0, passag: 0, iva: 0, total: 0 };
-  const outrasTarifaTotals = {};
-  sortedOutrasTarifaKeys.forEach(key => { outrasTarifaTotals[key] = 0; });
-  const resourceTotals = {};
-  sortedResourceKeys.forEach(key => {
-    resourceTotals[`${key}_h`] = 0;
-    resourceTotals[`${key}_v`] = 0;
-  });
-
-  const rows = consolidatedItems.map(item => {
-    const c = item.calculo;
-    const det = c?.detalhes_calculo || {};
-    const arrVoo = item.vooArr;
-    const depVoo = item.vooDep || item.voo;
-
-    const registo = arrVoo?.registo_aeronave || depVoo?.registo_aeronave || '-';
-    const mtowKg = det.pouso?.mtowKg || c?.mtow_kg || arrVoo?.peso_maximo_descolagem || 0;
-    const mtowT = mtowKg > 0 ? (mtowKg / 1000) : 0;
-
-    const tipoRaw = det.passageiros?.tipoVoo || arrVoo?.tipo_voo || depVoo?.tipo_voo || '';
-    const tipo = tipoRaw.toLowerCase().includes('dom') ? 'DOM'
-      : tipoRaw.toLowerCase().includes('int') ? 'INT'
-      : tipoRaw ? tipoRaw.substring(0, 3).toUpperCase() : '';
-
-    const arrNum = arrVoo?.numero_voo || '';
-    const depNum = depVoo?.numero_voo || '';
-    const vooStr = arrNum && depNum && arrNum !== depNum
-      ? `${arrNum}/${depNum}`
-      : arrNum || depNum || '-';
-
-    const arrDate = arrVoo?.data_operacao || '';
-    const arrTime = arrVoo?.horario_real || arrVoo?.horario_previsto || '';
-    const arrStr = arrDate ? `${fmtDate(arrDate)} ${arrTime}` : '';
-
-    const depDate = depVoo?.data_operacao || '';
-    const depTime = depVoo?.horario_real || depVoo?.horario_previsto || '';
-    const depStr = depDate ? `${fmtDate(depDate)} ${depTime}` : '';
-
-    const pouso = c?.tarifa_pouso_usd || 0;
-    const estacHoras = c?.tempo_permanencia_horas || det.permanencia?.tempoEstacionamento || 0;
-    const estacVal = c?.tarifa_permanencia_usd || 0;
-    const passagPax = det.passageiros?.totalPassageirosCobranca || det.passageiros?.passageirosDep || 0;
-    const passag = c?.tarifa_passageiros_usd || 0;
-
-    const outrasTarifaMap = {};
-    if (det.iluminacao?.valor > 0) outrasTarifaMap['iluminacao'] = det.iluminacao.valor;
-    (det.outras || []).forEach(o => {
-      if ((o.valor || 0) > 0 && o.tipo) outrasTarifaMap[o.tipo] = (outrasTarifaMap[o.tipo] || 0) + o.valor;
-    });
-
-    let iva = 0;
-    if (det.impostos) det.impostos.forEach(imp => { iva += imp.valor_usd || 0; });
-
-    const totalVal = c?.total_tarifa_usd || item.valor_usd || 0;
-
-    totals.pouso += pouso;
-    totals.estac_h += estacHoras;
-    totals.estac += estacVal;
-    totals.passag_pax += passagPax;
-    totals.passag += passag;
-    totals.iva += iva;
-    totals.total += totalVal;
-
-    const recursos = det.recursos?.itens || [];
-    const resourceMap = {};
-    recursos.forEach(r => {
-      const key = normalizeResourceKey(r.tipo);
-      if (key !== 'combustivel' && key !== 'checkin') {
-        resourceMap[key] = { h: r.tempo_horas || 0, v: r.valor_usd || 0 };
-      }
-    });
-
-    const row = [
-      registo,
-      mtowT > 0 ? fmtNum(mtowT, 1) : '',
-      tipo,
-      vooStr,
-      arrStr,
-      depStr,
-    ];
-
-    row.push(pouso > 0 ? fmtNum(pouso) : '');
-    row.push(estacHoras > 0 ? fmtNum(estacHoras, 1) : '');
-    row.push(estacVal > 0 ? fmtNum(estacVal) : '');
-    row.push(passagPax > 0 ? fmtNum(passagPax, 0) : '');
-    row.push(passag > 0 ? fmtNum(passag) : '');
-
-    sortedOutrasTarifaKeys.forEach(key => {
-      const val = outrasTarifaMap[key] || 0;
-      row.push(val > 0 ? fmtNum(val) : '');
-      outrasTarifaTotals[key] += val;
-    });
-
+  // ─── Helper: build rows + totals from a list of items ───
+  function buildRowsWithTotals(items, totalLabel = 'TOTAIS') {
+    const t = { pouso: 0, estac_h: 0, estac: 0, passag_pax: 0, passag: 0, iva: 0, total: 0 };
+    const oTotals = {};
+    sortedOutrasTarifaKeys.forEach(key => { oTotals[key] = 0; });
+    const rTotals = {};
     sortedResourceKeys.forEach(key => {
-      const r = resourceMap[key];
-      const hVal = r?.h || 0;
-      const vVal = r?.v || 0;
-      row.push(hVal > 0 ? fmtNum(hVal, 2) : '');
-      row.push(vVal > 0 ? fmtNum(vVal) : '');
-      resourceTotals[`${key}_h`] += hVal;
-      resourceTotals[`${key}_v`] += vVal;
+      rTotals[`${key}_h`] = 0;
+      rTotals[`${key}_v`] = 0;
     });
 
-    row.push(iva > 0 ? fmtNum(iva) : '');
-    row.push(fmtNum(totalVal));
+    const rows = items.map((item, index) => {
+      const c = item.calculo;
+      const det = c?.detalhes_calculo || {};
+      const arrVoo = item.vooArr;
+      const depVoo = item.vooDep || item.voo;
 
-    return row;
-  });
+      const registo = arrVoo?.registo_aeronave || depVoo?.registo_aeronave || '-';
+      const mtowKg = det.pouso?.mtowKg || c?.mtow_kg || arrVoo?.peso_maximo_descolagem || 0;
+      const mtowT = mtowKg > 0 ? (mtowKg / 1000) : 0;
 
-  // Totals row
-  const emptyBeforeTariffs = 6;
-  const totalRow = Array(emptyBeforeTariffs).fill('');
-  totalRow[0] = 'TOTAIS';
-  totalRow.push(fmtNum(totals.pouso));
-  totalRow.push(''); // estac hours
-  totalRow.push(fmtNum(totals.estac));
-  totalRow.push(fmtNum(totals.passag_pax, 0)); // total pax
-  totalRow.push(fmtNum(totals.passag));
-  sortedOutrasTarifaKeys.forEach(key => {
-    totalRow.push(fmtNum(outrasTarifaTotals[key]));
-  });
-  sortedResourceKeys.forEach(key => {
-    totalRow.push('');
-    totalRow.push(fmtNum(resourceTotals[`${key}_v`]));
-  });
-  totalRow.push(fmtNum(totals.iva));
-  totalRow.push(fmtNum(totals.total));
-  rows.push(totalRow);
+      const tipoRaw = det.passageiros?.tipoVoo || arrVoo?.tipo_voo || depVoo?.tipo_voo || '';
+      const tipo = tipoRaw.toLowerCase().includes('dom') ? 'DOM'
+        : tipoRaw.toLowerCase().includes('int') ? 'INT'
+        : tipoRaw ? tipoRaw.substring(0, 3).toUpperCase() : '';
 
-  // Draw table
-  y = addSectionTitle(doc, y, 'Discriminação por Voo (valores em USD)');
-  y = addTable(doc, y, {
-    columns: allCols,
-    rows,
-    rowHeight: 5,
-    fontSize: 6,
-    headerOpts,
-  });
+      const arrNum = arrVoo?.numero_voo || '';
+      const depNum = depVoo?.numero_voo || '';
+      const vooStr = arrNum && depNum && arrNum !== depNum
+        ? `${arrNum}/${depNum}`
+        : arrNum || depNum || '-';
+
+      const arrDate = arrVoo?.data_operacao || '';
+      const arrTime = arrVoo?.horario_real || arrVoo?.horario_previsto || '';
+      const arrStr = arrDate ? `${fmtDate(arrDate)} ${arrTime}` : '';
+
+      const depDate = depVoo?.data_operacao || '';
+      const depTime = depVoo?.horario_real || depVoo?.horario_previsto || '';
+      const depStr = depDate ? `${fmtDate(depDate)} ${depTime}` : '';
+
+      const pouso = c?.tarifa_pouso_usd || 0;
+      const estacHoras = c?.tempo_permanencia_horas || det.permanencia?.tempoEstacionamento || 0;
+      const estacVal = c?.tarifa_permanencia_usd || 0;
+      const passagPax = det.passageiros?.totalPassageirosCobranca || det.passageiros?.passageirosDep || 0;
+      const passag = c?.tarifa_passageiros_usd || 0;
+
+      const outrasTarifaMap = {};
+      if (det.iluminacao?.valor > 0) outrasTarifaMap['iluminacao'] = det.iluminacao.valor;
+      (det.outras || []).forEach(o => {
+        if ((o.valor || 0) > 0 && o.tipo) outrasTarifaMap[o.tipo] = (outrasTarifaMap[o.tipo] || 0) + o.valor;
+      });
+
+      let iva = 0;
+      if (det.impostos) det.impostos.forEach(imp => { iva += imp.valor_usd || 0; });
+
+      const totalVal = c?.total_tarifa_usd || item.valor_usd || 0;
+
+      t.pouso += pouso;
+      t.estac_h += estacHoras;
+      t.estac += estacVal;
+      t.passag_pax += passagPax;
+      t.passag += passag;
+      t.iva += iva;
+      t.total += totalVal;
+
+      const recursos = det.recursos?.itens || [];
+      const resourceMap = {};
+      recursos.forEach(r => {
+        const key = normalizeResourceKey(r.tipo);
+        if (key !== 'combustivel' && key !== 'checkin') {
+          resourceMap[key] = { h: r.tempo_horas || 0, v: r.valor_usd || 0 };
+        }
+      });
+
+      const row = [
+        String(index + 1),
+        registo,
+        mtowT > 0 ? fmtNum(mtowT, 1) : '',
+        tipo,
+        vooStr,
+        arrStr,
+        depStr,
+      ];
+
+      row.push(pouso > 0 ? fmtNum(pouso) : '');
+      row.push(estacHoras > 0 ? fmtNum(estacHoras, 1) : '');
+      row.push(estacVal > 0 ? fmtNum(estacVal) : '');
+      row.push(passagPax > 0 ? fmtNum(passagPax, 0) : '');
+      row.push(passag > 0 ? fmtNum(passag) : '');
+
+      sortedOutrasTarifaKeys.forEach(key => {
+        const val = outrasTarifaMap[key] || 0;
+        row.push(val > 0 ? fmtNum(val) : '');
+        oTotals[key] += val;
+      });
+
+      sortedResourceKeys.forEach(key => {
+        const r = resourceMap[key];
+        const hVal = r?.h || 0;
+        const vVal = r?.v || 0;
+        row.push(hVal > 0 ? fmtNum(hVal, 2) : '');
+        row.push(vVal > 0 ? fmtNum(vVal) : '');
+        rTotals[`${key}_h`] += hVal;
+        rTotals[`${key}_v`] += vVal;
+      });
+
+      row.push(iva > 0 ? fmtNum(iva) : '');
+      row.push(fmtNum(totalVal));
+
+      return row;
+    });
+
+    // Totals row (7 = Nº + 6 fixed info columns)
+    const emptyBeforeTariffs = 7;
+    const totalRow = Array(emptyBeforeTariffs).fill('');
+    totalRow[0] = totalLabel;
+    totalRow.push(fmtNum(t.pouso));
+    totalRow.push(''); // estac hours
+    totalRow.push(fmtNum(t.estac));
+    totalRow.push(fmtNum(t.passag_pax, 0)); // total pax
+    totalRow.push(fmtNum(t.passag));
+    sortedOutrasTarifaKeys.forEach(key => {
+      totalRow.push(fmtNum(oTotals[key]));
+    });
+    sortedResourceKeys.forEach(key => {
+      totalRow.push('');
+      totalRow.push(fmtNum(rTotals[`${key}_v`]));
+    });
+    totalRow.push(fmtNum(t.iva));
+    totalRow.push(fmtNum(t.total));
+    rows.push(totalRow);
+
+    return { rows, totals: t, outrasTarifaTotals: oTotals, resourceTotals: rTotals };
+  }
+
+  // ─── Render table(s) ───
+  if (groups && groups.length > 0) {
+    // Grouped mode: one section per companhia
+    const grandTotals = { pouso: 0, estac_h: 0, estac: 0, passag_pax: 0, passag: 0, iva: 0, total: 0 };
+    const grandOutrasTarifaTotals = {};
+    sortedOutrasTarifaKeys.forEach(key => { grandOutrasTarifaTotals[key] = 0; });
+    const grandResourceTotals = {};
+    sortedResourceKeys.forEach(key => {
+      grandResourceTotals[`${key}_h`] = 0;
+      grandResourceTotals[`${key}_v`] = 0;
+    });
+
+    const perGroupTotals = []; // store per-group totals for summary
+
+    for (let gi = 0; gi < groups.length; gi++) {
+      const group = groups[gi];
+      if (gi > 0) {
+        doc.addPage();
+        y = addHeader(doc, headerOpts);
+      }
+
+      y = addSectionTitle(doc, y, `${group.nome} — Discriminação por Voo (valores em USD)`);
+      const { rows, totals: gTotals, outrasTarifaTotals: gOT, resourceTotals: gRT } = buildRowsWithTotals(group.calculos, 'SUBTOTAL');
+
+      perGroupTotals.push({ nome: group.nome, count: group.calculos.length, totals: gTotals, outrasTarifaTotals: gOT, resourceTotals: gRT });
+
+      y = addTable(doc, y, {
+        columns: allCols,
+        rows,
+        rowHeight: 5,
+        fontSize: 6,
+        headerOpts,
+      });
+
+      // Accumulate grand totals
+      grandTotals.pouso += gTotals.pouso;
+      grandTotals.estac_h += gTotals.estac_h;
+      grandTotals.estac += gTotals.estac;
+      grandTotals.passag_pax += gTotals.passag_pax;
+      grandTotals.passag += gTotals.passag;
+      grandTotals.iva += gTotals.iva;
+      grandTotals.total += gTotals.total;
+      sortedOutrasTarifaKeys.forEach(key => { grandOutrasTarifaTotals[key] += gOT[key]; });
+      sortedResourceKeys.forEach(key => {
+        grandResourceTotals[`${key}_h`] += gRT[`${key}_h`];
+        grandResourceTotals[`${key}_v`] += gRT[`${key}_v`];
+      });
+    }
+
+    // Grand total summary on new page
+    doc.addPage();
+    y = addHeader(doc, headerOpts);
+    y = addSectionTitle(doc, y, 'TOTAL GERAL — Todas as Companhias (valores em USD)');
+
+    // Build grand total row
+    const emptyBeforeTariffs = 7;
+    const grandTotalRow = Array(emptyBeforeTariffs).fill('');
+    grandTotalRow[0] = 'TOTAL GERAL';
+    grandTotalRow.push(fmtNum(grandTotals.pouso));
+    grandTotalRow.push('');
+    grandTotalRow.push(fmtNum(grandTotals.estac));
+    grandTotalRow.push(fmtNum(grandTotals.passag_pax, 0));
+    grandTotalRow.push(fmtNum(grandTotals.passag));
+    sortedOutrasTarifaKeys.forEach(key => {
+      grandTotalRow.push(fmtNum(grandOutrasTarifaTotals[key]));
+    });
+    sortedResourceKeys.forEach(key => {
+      grandTotalRow.push('');
+      grandTotalRow.push(fmtNum(grandResourceTotals[`${key}_v`]));
+    });
+    grandTotalRow.push(fmtNum(grandTotals.iva));
+    grandTotalRow.push(fmtNum(grandTotals.total));
+
+    // Per-companhia summary rows (using stored totals, no recomputation)
+    const summaryRows = perGroupTotals.map(pg => {
+      const sRow = Array(emptyBeforeTariffs).fill('');
+      sRow[0] = pg.nome;
+      sRow[1] = `${pg.count} voos`;
+      sRow.push(fmtNum(pg.totals.pouso));
+      sRow.push('');
+      sRow.push(fmtNum(pg.totals.estac));
+      sRow.push(fmtNum(pg.totals.passag_pax, 0));
+      sRow.push(fmtNum(pg.totals.passag));
+      sortedOutrasTarifaKeys.forEach(key => { sRow.push(''); });
+      sortedResourceKeys.forEach(key => { sRow.push(''); sRow.push(''); });
+      sRow.push(fmtNum(pg.totals.iva));
+      sRow.push(fmtNum(pg.totals.total));
+      return sRow;
+    });
+    summaryRows.push(grandTotalRow);
+
+    y = addTable(doc, y, {
+      columns: allCols,
+      rows: summaryRows,
+      rowHeight: 5,
+      fontSize: 6,
+      headerOpts,
+    });
+  } else {
+    // Single mode (original behavior)
+    const { rows } = buildRowsWithTotals(consolidatedItems);
+
+    y = addSectionTitle(doc, y, 'Discriminação por Voo (valores em USD)');
+    y = addTable(doc, y, {
+      columns: allCols,
+      rows,
+      rowHeight: 5,
+      fontSize: 6,
+      headerOpts,
+    });
+  }
 
   addFooter(doc, { generatedBy: 'Sistema' });
 
