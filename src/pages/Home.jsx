@@ -49,6 +49,7 @@ import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
 
 import { getDashboardStats } from '@/functions/getDashboardStats';
+import { supabase } from '@/lib/supabaseClient';
 
 const formatCurrency = (value) =>
 new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(value || 0);
@@ -296,6 +297,29 @@ export default function DashboardInterno() {
   }, [dashboardStats, previousPeriodStats, calcTrend]);
 
   // Top 10 Companhias (for single-airport enterprises like ATO)
+  const [receitaPorCompanhia, setReceitaPorCompanhia] = useState(new Map());
+
+  // Load revenue server-side when period/aeroporto changes
+  useEffect(() => {
+    const loadReceita = async () => {
+      if (!currentUser || aeroportos.length > 1) return; // Only for single-airport (ATO)
+      const empresaId = effectiveEmpresaId || currentUser.empresa_id;
+      if (!empresaId) return;
+      try {
+        const { data } = await supabase.rpc('get_receita_por_companhia', {
+          p_empresa_id: empresaId,
+          p_dias: parseInt(selectedPeriodo) || 30,
+        });
+        const map = new Map();
+        (data || []).forEach(r => map.set(r.companhia_code, { usd: r.total_usd, voos: r.voos_count }));
+        setReceitaPorCompanhia(map);
+      } catch (e) {
+        console.error('Erro receita:', e);
+      }
+    };
+    loadReceita();
+  }, [currentUser, effectiveEmpresaId, selectedPeriodo, aeroportos.length]);
+
   const top10Companhias = useMemo(() => {
     const compMap = new Map();
     filteredVoos.forEach(v => {
@@ -312,17 +336,16 @@ export default function DashboardInterno() {
       }
       c.carga += (v.carga_kg || 0);
     });
-    // Add revenue from calculosTarifa
-    calculosTarifa.forEach(ct => {
-      const voo = filteredVoos.find(v => v.id === ct.voo_id);
-      if (voo && compMap.has(voo.companhia_aerea)) {
-        compMap.get(voo.companhia_aerea).receita += (ct.total_tarifa_usd || 0);
+    // Add server-side revenue
+    receitaPorCompanhia.forEach((rev, code) => {
+      if (compMap.has(code)) {
+        compMap.get(code).receita = rev.usd;
       }
     });
     return Array.from(compMap.values())
       .sort((a, b) => b.totalMovimentos - a.totalMovimentos)
       .slice(0, 10);
-  }, [filteredVoos, calculosTarifa]);
+  }, [filteredVoos, receitaPorCompanhia]);
 
   const showCompanhiasInsteadOfAeroportos = aeroportos.length <= 1;
 
