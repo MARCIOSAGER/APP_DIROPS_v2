@@ -123,7 +123,10 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
 
     try {
       // 1. Filter calculos server-side by companhia + aeroporto
-      const calcFilter = { companhia_id: filtro.companhia_id };
+      const calcFilter = {};
+      if (filtro.companhia_id && filtro.companhia_id !== '_todas') {
+        calcFilter.companhia_id = filtro.companhia_id;
+      }
       if (filtro.aeroporto_id) calcFilter.aeroporto_id = filtro.aeroporto_id;
 
       // 2. Load calculos, voo_ligados (by empresa), and proformas in parallel
@@ -208,6 +211,8 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       setIsSearching(false);
     }
   };
+
+  const isTodasCompanhias = filtro.companhia_id === '_todas';
 
   // Build enriched rows
   const rows = useMemo(() => {
@@ -310,9 +315,23 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
         totalAoa: calc.total_tarifa || 0,
         proforma: proformasMap.get(calc.id) || null,
         dataOp: voo?.data_operacao || vooDep?.data_operacao || '',
+        companhia_id: calc.companhia_id,
+        companhiaNomeRow: companhias.find(c => c.id === calc.companhia_id)?.nome || vooDep?.companhia_aerea || '—',
       };
     });
-  }, [calculos, voos, voosLigados, proformasMap]);
+  }, [calculos, voos, voosLigados, proformasMap, companhias]);
+
+  // Group rows by companhia (for "Todas" mode)
+  const rowsByCompanhia = useMemo(() => {
+    if (!isTodasCompanhias) return null;
+    const groups = new Map();
+    rows.forEach(r => {
+      const key = r.companhia_id || '_sem';
+      if (!groups.has(key)) groups.set(key, { nome: r.companhiaNomeRow, rows: [] });
+      groups.get(key).rows.push(r);
+    });
+    return Array.from(groups.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [rows, isTodasCompanhias]);
 
   // Discover dynamic columns
   const dynamicCols = useMemo(() => {
@@ -389,8 +408,9 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
   // XLSX export
   const handleExportXlsx = () => {
     if (rows.length === 0) return;
-    const data = rows.map(r => {
+    const data = rows.map((r, idx) => {
       const row = {
+        'Nº': idx + 1,
         'Registo': r.registo,
         'PMD(t)': Math.round(r.mtowTon),
         'Tipo': r.tipoCode,
@@ -466,15 +486,18 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
     }
   };
 
-  const companhiaOptions = companhias
-    .filter(c => companhiasComTarifas.has(c.id))
-    .map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }));
+  const companhiaOptions = [
+    { value: '_todas', label: '— Todas as Companhias —' },
+    ...companhias
+      .filter(c => companhiasComTarifas.has(c.id))
+      .map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` })),
+  ];
   const aeroportoOptions = [
     { value: '', label: t('dashFat.todosAeroportos') },
     ...aeroportos.map(a => ({ value: a.id, label: `${a.nome} (${a.codigo_icao})` })),
   ];
 
-  const companhiaNome = companhias.find(c => c.id === filtro.companhia_id)?.nome || '';
+  const companhiaNome = filtro.companhia_id === '_todas' ? 'Todas as Companhias' : (companhias.find(c => c.id === filtro.companhia_id)?.nome || '');
 
   return (
     <div className="space-y-6">
@@ -593,33 +616,50 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
         </div>
       )}
 
-      {/* Table */}
-      {hasSearched && (
-        <Card>
+      {/* Table(s) */}
+      {hasSearched && (isSearching ? (
+        <Card><CardContent className="p-4"><div className="space-y-2">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div></CardContent></Card>
+      ) : rows.length === 0 ? (
+        <Card><CardContent className="p-8 text-center text-slate-500">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
+          <p className="font-medium">{t('dashFat.nenhumVoo')}</p>
+          <p className="text-xs mt-1">{t('dashFat.nenhumVooDesc')}</p>
+        </CardContent></Card>
+      ) : (
+        <>
+          {/* Render grouped tables (one per companhia) or single table */}
+          {(rowsByCompanhia || [{ nome: companhiaNome, rows }]).map((group, gi) => {
+            // Calculate totals for this group
+            const groupTotals = { txAterr: 0, estacUsd: 0, paxUsd: 0, ivaTotal: 0, totalUsd: 0, outras: {}, recursos: {} };
+            dynamicCols.outras.forEach(k => groupTotals.outras[k] = 0);
+            dynamicCols.recursos.forEach(k => groupTotals.recursos[k] = 0);
+            group.rows.forEach(r => {
+              groupTotals.txAterr += r.txAterr;
+              groupTotals.estacUsd += r.estacUsd;
+              groupTotals.paxUsd += r.paxUsd;
+              groupTotals.ivaTotal += r.ivaTotal;
+              groupTotals.totalUsd += r.totalUsd;
+              dynamicCols.outras.forEach(k => groupTotals.outras[k] += (r.outrasTarifas[k] || 0));
+              dynamicCols.recursos.forEach(k => groupTotals.recursos[k] += (r.recursos[k]?.usd || 0));
+            });
+            const fixedCols = 8; // Nº + Registo + PMD + Tipo + Voo + Aterr + Desc + TxAterr
+
+            return (
+        <Card key={gi} className="mb-4">
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
               <CardTitle className="text-base">
-                {t('dashFat.extratoFaturacao')} {companhiaNome && `— ${companhiaNome}`}
+                {t('dashFat.extratoFaturacao')} — {group.nome}
               </CardTitle>
-              <Badge variant="outline">{rows.length} {t('dashFat.voosCount')}</Badge>
+              <Badge variant="outline">{group.rows.length} {t('dashFat.voosCount')}</Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {isSearching ? (
-              <div className="p-4 space-y-2">
-                {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
-              </div>
-            ) : rows.length === 0 ? (
-              <div className="p-8 text-center text-slate-500">
-                <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
-                <p className="font-medium">{t('dashFat.nenhumVoo')}</p>
-                <p className="text-xs mt-1">{t('dashFat.nenhumVooDesc')}</p>
-              </div>
-            ) : (
               <div className="overflow-x-auto">
                 <Table className="text-[11px] w-max">
                   <TableHeader className="bg-slate-50 sticky top-0 z-10">
                     <TableRow>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-center w-8">Nº</TableHead>
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5">{t('dashFat.colRegisto')}</TableHead>
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-right">PMD(t)</TableHead>
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5">{t('dashFat.colTipo')}</TableHead>
@@ -645,8 +685,9 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rows.map(r => (
+                    {group.rows.map((r, idx) => (
                       <TableRow key={r.id} className="hover:bg-slate-50">
+                        <TableCell className="px-1.5 text-center text-slate-400">{idx + 1}</TableCell>
                         <TableCell className="font-mono px-2 whitespace-nowrap">{r.registo}</TableCell>
                         <TableCell className="px-1.5 text-right">{fmtNum(r.mtowTon, 0)}</TableCell>
                         <TableCell className="px-1.5">
@@ -675,35 +716,50 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                         <TableCell className="px-1.5 text-right font-bold text-emerald-700 bg-emerald-50 sticky right-0 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">{fmtNum(r.totalUsd)}</TableCell>
                       </TableRow>
                     ))}
-                    {/* Totals row */}
-                    {totals && (
-                      <TableRow className="bg-slate-100 font-bold border-t-2">
-                        <TableCell colSpan={6} className="px-2 text-right text-xs">{t('dashFat.totais')}</TableCell>
-                        <TableCell className="px-1.5 text-right">{fmtNum(totals.txAterr)}</TableCell>
+                    {/* Subtotals row */}
+                    <TableRow className="bg-slate-100 font-bold border-t-2">
+                        <TableCell colSpan={fixedCols} className="px-2 text-right text-xs">{t('dashFat.totais')}</TableCell>
                         <TableCell className="px-1.5" />
-                        <TableCell className="px-1.5 text-right">{fmtNum(totals.estacUsd)}</TableCell>
+                        <TableCell className="px-1.5 text-right">{fmtNum(groupTotals.estacUsd)}</TableCell>
                         <TableCell className="px-1.5" />
-                        <TableCell className="px-1.5 text-right">{fmtNum(totals.paxUsd)}</TableCell>
+                        <TableCell className="px-1.5 text-right">{fmtNum(groupTotals.paxUsd)}</TableCell>
                         {dynamicCols.outras.map(k => (
-                          <TableCell key={k} className="px-2 text-right">{fmtNum(totals.outras[k])}</TableCell>
+                          <TableCell key={k} className="px-2 text-right">{fmtNum(groupTotals.outras[k])}</TableCell>
                         ))}
                         {dynamicCols.recursos.map(k => (
                           <React.Fragment key={k}>
                             <TableCell className="px-1.5" />
-                            <TableCell className="px-1.5 text-right">{fmtNum(totals.recursos[k])}</TableCell>
+                            <TableCell className="px-1.5 text-right">{fmtNum(groupTotals.recursos[k])}</TableCell>
                           </React.Fragment>
                         ))}
-                        <TableCell className="px-1.5 text-right">{fmtNum(totals.ivaTotal)}</TableCell>
-                        <TableCell className="px-1.5 text-right text-emerald-700 bg-emerald-100 text-sm sticky right-0 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">${fmtNum(totals.totalUsd)}</TableCell>
+                        <TableCell className="px-1.5 text-right">{fmtNum(groupTotals.ivaTotal)}</TableCell>
+                        <TableCell className="px-1.5 text-right text-emerald-700 bg-emerald-100 text-sm sticky right-0 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">${fmtNum(groupTotals.totalUsd)}</TableCell>
                       </TableRow>
-                    )}
                   </TableBody>
                 </Table>
               </div>
-            )}
           </CardContent>
         </Card>
-      )}
+            );
+          })}
+
+          {/* Grand total for "Todas" mode */}
+          {isTodasCompanhias && rowsByCompanhia && rowsByCompanhia.length > 1 && (
+            <Card className="border-emerald-300 bg-emerald-50">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-emerald-800 text-lg">TOTAL GERAL</span>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-emerald-700">${fmtNum(totals?.totalUsd)}</p>
+                    <p className="text-sm text-emerald-600">{fmtNum(totals?.totalUsd * (rows[0]?.calc?.taxa_cambio_usd_aoa || 900))} Kz</p>
+                    <p className="text-xs text-slate-500">{rows.length} voos de {rowsByCompanhia.length} companhias</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ))}
 
       {/* Email Modal */}
       <SendEmailModal
