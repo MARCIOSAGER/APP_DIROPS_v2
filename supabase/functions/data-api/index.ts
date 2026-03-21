@@ -216,11 +216,118 @@ Deno.serve(async (req) => {
     const offset = parseInt(body.offset) || 0;
     const fields = body.fields || null; // null = all allowed fields
 
+    // 7a. Special endpoint: extrato (consolidated billing extract)
+    if (entityName === "extrato") {
+      const rpcParams: Record<string, any> = {};
+      if (filters.aeroporto_id) rpcParams.p_aeroporto_id = filters.aeroporto_id;
+      if (filters.companhia_id) rpcParams.p_companhia_id = filters.companhia_id;
+      if (filters.data_inicio) rpcParams.p_data_inicio = filters.data_inicio;
+      if (filters.data_fim) rpcParams.p_data_fim = filters.data_fim;
+
+      // Get calculos via RPC (already filtered by data_operacao + complete ARR+DEP)
+      const { data: calculos, error: rpcError } = await supabase
+        .rpc("get_calculos_por_periodo", rpcParams)
+        .limit(limit);
+
+      if (rpcError) {
+        responseStatus = 500;
+        errorMsg = `Erro no extrato: ${rpcError.message}`;
+        throw new Error(errorMsg);
+      }
+
+      // Filter by empresa_id from API key
+      const empresaCalcs = (calculos || []).filter((c: any) => c.empresa_id === keyRecord.empresa_id);
+
+      // Get voo + voo_ligado data for each calculo
+      const vooIds = [...new Set(empresaCalcs.map((c: any) => c.voo_id).filter(Boolean))];
+      const vlIds = [...new Set(empresaCalcs.map((c: any) => c.voo_ligado_id).filter(Boolean))];
+
+      const [voosRes, vlRes, compRes] = await Promise.all([
+        vooIds.length > 0
+          ? supabase.from("voo").select("id,numero_voo,data_operacao,horario_real,horario_previsto,tipo_movimento,aeroporto_operacao,aeroporto_origem_destino,registo_aeronave,companhia_aerea,passageiros_local,passageiros_transito_transbordo,carga_kg,tipo_voo").in("id", vooIds)
+          : { data: [] },
+        vlIds.length > 0
+          ? supabase.from("voo_ligado").select("id,id_voo_arr,id_voo_dep,tempo_permanencia_min").in("id", vlIds)
+          : { data: [] },
+        supabase.from("companhia_aerea").select("id,nome,codigo_icao,codigo_iata"),
+      ]);
+
+      const vooMap = new Map((voosRes.data || []).map((v: any) => [v.id, v]));
+      const vlMap = new Map((vlRes.data || []).map((vl: any) => [vl.id, vl]));
+      const compMap = new Map((compRes.data || []).map((c: any) => [c.id, c]));
+
+      // Build enriched extrato rows
+      const extratoRows = empresaCalcs.map((calc: any) => {
+        const vl = vlMap.get(calc.voo_ligado_id);
+        const vooArr = vl ? vooMap.get(vl.id_voo_arr) : null;
+        const vooDep = vl ? vooMap.get(vl.id_voo_dep) : null;
+        const comp = compMap.get(calc.companhia_id);
+        const det = calc.detalhes_calculo || {};
+
+        return {
+          numero_voo_arr: vooArr?.numero_voo || null,
+          numero_voo_dep: vooDep?.numero_voo || null,
+          data_arr: vooArr?.data_operacao || null,
+          data_dep: vooDep?.data_operacao || null,
+          horario_arr: vooArr?.horario_real || vooArr?.horario_previsto || null,
+          horario_dep: vooDep?.horario_real || vooDep?.horario_previsto || null,
+          registo: vooArr?.registo_aeronave || vooDep?.registo_aeronave || null,
+          companhia_icao: comp?.codigo_icao || vooDep?.companhia_aerea || null,
+          companhia_nome: comp?.nome || null,
+          tipo_operacao: det.pouso?.tipoVoo || null,
+          tipo_voo: vooDep?.tipo_voo || null,
+          aeroporto_operacao: vooArr?.aeroporto_operacao || null,
+          origem: vooArr?.aeroporto_origem_destino || null,
+          destino: vooDep?.aeroporto_origem_destino || null,
+          mtow_kg: calc.mtow_kg,
+          tempo_permanencia_horas: calc.tempo_permanencia_horas,
+          passageiros: vooDep?.passageiros_local || 0,
+          carga_kg: vooDep?.carga_kg || 0,
+          tarifa_pouso_usd: calc.tarifa_pouso_usd,
+          tarifa_permanencia_usd: calc.tarifa_permanencia_usd,
+          tarifa_passageiros_usd: calc.tarifa_passageiros_usd,
+          tarifa_carga_usd: calc.tarifa_carga_usd,
+          outras_tarifas_usd: calc.outras_tarifas_usd,
+          tarifa_recursos_usd: calc.tarifa_recursos_usd,
+          total_tarifa_usd: calc.total_tarifa_usd,
+          total_tarifa_aoa: calc.total_tarifa,
+          taxa_cambio: calc.taxa_cambio_usd_aoa,
+          periodo_noturno: calc.periodo_noturno,
+        };
+      });
+
+      rowsReturned = extratoRows.length;
+      responseStatus = 200;
+
+      // Log access
+      supabase.from("api_key").update({ last_used_at: new Date().toISOString() })
+        .eq("id", keyRecord.id).then(() => {}).catch(() => {});
+
+      const elapsed = Date.now() - requestStart;
+      supabase.from("api_access_log").insert({
+        api_key_id: keyRecord.id,
+        entity: "extrato",
+        filters_used: filters,
+        rows_returned: rowsReturned,
+        response_status: responseStatus,
+        response_time_ms: elapsed,
+        ip_address: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown",
+      }).then(() => {}).catch(() => {});
+
+      return new Response(
+        JSON.stringify({
+          data: extratoRows,
+          meta: { total: extratoRows.length, limit, offset: 0, entity: "extrato" },
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // 7. Validate entity
     const entityConfig = ALLOWED_ENTITIES[entityName];
     if (!entityConfig) {
       responseStatus = 400;
-      errorMsg = `Entidade '${entityName}' não disponível. Entidades permitidas: ${Object.keys(ALLOWED_ENTITIES).join(", ")}`;
+      errorMsg = `Entidade '${entityName}' não disponível. Entidades permitidas: ${Object.keys(ALLOWED_ENTITIES).join(", ")}, extrato`;
       throw new Error(errorMsg);
     }
 
