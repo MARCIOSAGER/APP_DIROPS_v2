@@ -467,11 +467,22 @@ export default function TesteFlightradar24() {
     setApiProgress('Buscando via Edge Function (server-side)...');
 
     try {
-      const { data, error } = await supabase.functions.invoke('fr24-proxy', {
-        body: { airportIcao, startDate, endDate },
+      const response = await fetch('https://glernwcsuwcyzwsnelad.supabase.co/functions/v1/fr24-proxy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsZXJud2NzdXdjeXp3c25lbGFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2NDI5MjAsImV4cCI6MjA1MzIxODkyMH0.oGFHKO65MKXFhqHLkRND_7oc7nnWQ4xjqMlzfIh_N7g',
+        },
+        body: JSON.stringify({ airportIcao, startDate, endDate }),
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Edge Function ${response.status}: ${errText}`);
+      }
+
+      const data = await response.json();
       if (data?.error) throw new Error(data.error);
 
       const flights = (data?.flights || []).map(f => {
