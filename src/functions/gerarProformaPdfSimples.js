@@ -1009,8 +1009,8 @@ async function generateExtratoLandscape({
       return row;
     });
 
-    // Totals row: Nº(empty) + Registo(empty) + PMD(empty) + Tipo(empty) + Voo(empty) + Aterragem(LABEL) + Descolagem(empty) = 7 fixed
-    const totalRow = ['', '', '', '', '', totalLabel, ''];
+    // Totals row: Nº(empty) + Registo(empty) + PMD(empty) + Tipo(empty) + Voo(empty) + Aterragem(empty) + Descolagem(LABEL) = 7 fixed
+    const totalRow = ['', '', '', '', '', '', totalLabel];
     totalRow.push(fmtNum(t.pouso));        // TX Aterr
     totalRow.push(fmtNum(t.estac_h, 1));   // Estac(h)
     totalRow.push(fmtNum(t.estac));        // Estac($)
@@ -1032,7 +1032,7 @@ async function generateExtratoLandscape({
 
   // ─── Render table(s) ───
   if (groups && groups.length > 0) {
-    // Grouped mode: one section per companhia
+    // Grouped mode: first pre-compute all group totals for the summary page
     const grandTotals = { pouso: 0, estac_h: 0, estac: 0, passag_pax: 0, passag: 0, iva: 0, total: 0 };
     const grandOutrasTarifaTotals = {};
     sortedOutrasTarifaKeys.forEach(key => { grandOutrasTarifaTotals[key] = 0; });
@@ -1042,29 +1042,9 @@ async function generateExtratoLandscape({
       grandResourceTotals[`${key}_v`] = 0;
     });
 
-    const perGroupTotals = []; // store per-group totals for summary
-
-    for (let gi = 0; gi < groups.length; gi++) {
-      const group = groups[gi];
-      if (gi > 0) {
-        doc.addPage();
-        y = addHeader(doc, headerOpts);
-      }
-
-      y = addSectionTitle(doc, y, `${group.nome} — Discriminação por Voo (valores em USD)`);
+    // Pre-build all groups to collect totals
+    const perGroupData = groups.map(group => {
       const { rows, totals: gTotals, outrasTarifaTotals: gOT, resourceTotals: gRT } = buildRowsWithTotals(group.calculos, 'SUBTOTAL');
-
-      perGroupTotals.push({ nome: group.nome, count: group.calculos.length, totals: gTotals, outrasTarifaTotals: gOT, resourceTotals: gRT });
-
-      y = addTable(doc, y, {
-        columns: allCols,
-        rows,
-        rowHeight: 5,
-        fontSize: 6,
-        headerOpts,
-      });
-
-      // Accumulate grand totals
       grandTotals.pouso += gTotals.pouso;
       grandTotals.estac_h += gTotals.estac_h;
       grandTotals.estac += gTotals.estac;
@@ -1077,55 +1057,88 @@ async function generateExtratoLandscape({
         grandResourceTotals[`${key}_h`] += gRT[`${key}_h`];
         grandResourceTotals[`${key}_v`] += gRT[`${key}_v`];
       });
-    }
+      return { nome: group.nome, count: group.calculos.length, rows, totals: gTotals, outrasTarifaTotals: gOT, resourceTotals: gRT };
+    });
 
-    // Grand total summary on new page
-    doc.addPage();
-    y = addHeader(doc, headerOpts);
+    // ─── TOTAL GERAL summary page (FIRST, before per-companhia detail tables) ───
     y = addSectionTitle(doc, y, 'TOTAL GERAL — Todas as Companhias (valores em USD)');
 
-    // Build grand total row
-    const grandTotalRow = ['', '', '', '', '', 'TOTAL GERAL', ''];
-    grandTotalRow.push(fmtNum(grandTotals.pouso));
-    grandTotalRow.push(fmtNum(grandTotals.estac_h, 1));
-    grandTotalRow.push(fmtNum(grandTotals.estac));
-    grandTotalRow.push(fmtNum(grandTotals.passag_pax, 0));
-    grandTotalRow.push(fmtNum(grandTotals.passag));
-    sortedOutrasTarifaKeys.forEach(key => {
-      grandTotalRow.push(fmtNum(grandOutrasTarifaTotals[key]));
-    });
-    sortedResourceKeys.forEach(key => {
-      grandTotalRow.push(fmtNum(grandResourceTotals[`${key}_h`], 1));
-      grandTotalRow.push(fmtNum(grandResourceTotals[`${key}_v`]));
-    });
-    grandTotalRow.push(fmtNum(grandTotals.iva));
-    grandTotalRow.push(fmtNum(grandTotals.total));
+    // Simplified summary columns
+    const summaryCols = [
+      { label: 'Companhia', width: 60 },
+      { label: 'Voos', width: 15, align: 'right' },
+      { label: 'TX Aterr.', width: 18, align: 'right' },
+      { label: 'Estac.', width: 18, align: 'right' },
+      { label: 'Emb.', width: 18, align: 'right' },
+      { label: 'Outras', width: 18, align: 'right' },
+      { label: 'Recursos', width: 18, align: 'right' },
+      { label: `IVA${ivaPercent}`, width: 18, align: 'right' },
+      { label: 'TOTAL', width: 22, align: 'right' },
+    ];
 
-    // Per-companhia summary rows (using stored totals, no recomputation)
-    const summaryRows = perGroupTotals.map(pg => {
-      const sRow = Array(emptyBeforeTariffs).fill('');
-      sRow[0] = pg.nome;
-      sRow[1] = `${pg.count} voos`;
-      sRow.push(fmtNum(pg.totals.pouso));
-      sRow.push(fmtNum(pg.totals.estac_h, 1));
-      sRow.push(fmtNum(pg.totals.estac));
-      sRow.push(fmtNum(pg.totals.passag_pax, 0));
-      sRow.push(fmtNum(pg.totals.passag));
-      sortedOutrasTarifaKeys.forEach(key => { sRow.push(fmtNum(pg.outrasTarifaTotals[key] || 0)); });
-      sortedResourceKeys.forEach(key => { sRow.push(fmtNum(pg.resourceTotals[`${key}_h`] || 0, 1)); sRow.push(fmtNum(pg.resourceTotals[`${key}_v`] || 0)); });
-      sRow.push(fmtNum(pg.totals.iva));
-      sRow.push(fmtNum(pg.totals.total));
-      return sRow;
+    // Scale summary columns to fit tableWidth
+    const summaryTotalWidth = summaryCols.reduce((s, c) => s + c.width, 0);
+    if (summaryTotalWidth !== tableWidth) {
+      const sScale = tableWidth / summaryTotalWidth;
+      summaryCols.forEach(col => { col.width = col.width * sScale; });
+    }
+
+    // Build summary rows: one per companhia
+    const summaryRows = perGroupData.map(pg => {
+      const outrasTotal = sortedOutrasTarifaKeys.reduce((s, key) => s + (pg.outrasTarifaTotals[key] || 0), 0);
+      const recursosTotal = sortedResourceKeys.reduce((s, key) => s + (pg.resourceTotals[`${key}_v`] || 0), 0);
+      return [
+        pg.nome,
+        String(pg.count),
+        fmtNum(pg.totals.pouso),
+        fmtNum(pg.totals.estac),
+        fmtNum(pg.totals.passag),
+        outrasTotal > 0 ? fmtNum(outrasTotal) : '',
+        recursosTotal > 0 ? fmtNum(recursosTotal) : '',
+        fmtNum(pg.totals.iva),
+        fmtNum(pg.totals.total),
+      ];
     });
-    summaryRows.push(grandTotalRow);
+
+    // Grand total row
+    const outrasGrandTotal = sortedOutrasTarifaKeys.reduce((s, key) => s + (grandOutrasTarifaTotals[key] || 0), 0);
+    const recursosGrandTotal = sortedResourceKeys.reduce((s, key) => s + (grandResourceTotals[`${key}_v`] || 0), 0);
+    summaryRows.push([
+      'TOTAL GERAL',
+      String(totalVoos),
+      fmtNum(grandTotals.pouso),
+      fmtNum(grandTotals.estac),
+      fmtNum(grandTotals.passag),
+      outrasGrandTotal > 0 ? fmtNum(outrasGrandTotal) : '',
+      recursosGrandTotal > 0 ? fmtNum(recursosGrandTotal) : '',
+      fmtNum(grandTotals.iva),
+      fmtNum(grandTotals.total),
+    ]);
 
     y = addTable(doc, y, {
-      columns: allCols,
+      columns: summaryCols,
       rows: summaryRows,
-      rowHeight: 5,
-      fontSize: 6,
+      rowHeight: 6,
+      fontSize: 7,
       headerOpts,
     });
+
+    // ─── Per-companhia detail tables (each on new page) ───
+    for (let gi = 0; gi < perGroupData.length; gi++) {
+      const pgd = perGroupData[gi];
+      doc.addPage();
+      y = addHeader(doc, headerOpts);
+
+      y = addSectionTitle(doc, y, `${pgd.nome} — Discriminação por Voo (valores em USD)`);
+
+      y = addTable(doc, y, {
+        columns: allCols,
+        rows: pgd.rows,
+        rowHeight: 5,
+        fontSize: 6,
+        headerOpts,
+      });
+    }
   } else {
     // Single mode (original behavior)
     const { rows } = buildRowsWithTotals(consolidatedItems);
