@@ -462,6 +462,12 @@ export default function Operacoes() {
         data = await Voo.filter(query, '-data_operacao');
       }
       setVoos(data);
+      // Reload voosLigados so statusVinculacao filter works correctly
+      const empIdVl = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      if (empIdVl) {
+        const vlData = await VooLigado.filter({ empresa_id: empId }, '-created_date');
+        setVoosLigados(vlData);
+      }
     } catch (error) {
       console.error('Erro ao filtrar voos:', error);
       setAlertInfo({
