@@ -222,7 +222,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
 
       const numArr = vooArr?.numero_voo || calc.numero_voo || '';
       const numDep = vooDep?.numero_voo || voo?.numero_voo || '';
-      const vooLabel = numArr && numDep && numArr !== numDep
+      const vooLabel = numArr && numDep
         ? `${numArr}/${numDep}`
         : numDep || numArr || '—';
 
