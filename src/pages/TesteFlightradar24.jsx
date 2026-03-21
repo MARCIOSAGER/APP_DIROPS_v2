@@ -475,25 +475,40 @@ export default function TesteFlightradar24() {
         if (abortRef.current) break;
         setApiProgress(`Buscando bloco ${i + 1}/${blocks.length}...`);
 
-        const { data, error: fnError } = await supabase.functions.invoke('fr24-proxy', {
-          body: { airportIcao, dateFrom: blocks[i].from, dateTo: blocks[i].to },
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const session = (await supabase.auth.getSession()).data.session;
+
+        const resp = await fetch(`${supabaseUrl}/functions/v1/fr24-proxy`, {
+          method: 'POST',
+          mode: 'cors',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${session?.access_token || supabaseKey}`,
+          },
+          body: JSON.stringify({ airportIcao, dateFrom: blocks[i].from, dateTo: blocks[i].to }),
         });
 
-        if (!fnError && data?.flights) {
-          data.flights.forEach(f => {
-            const landedDate = f.datetime_landed ? f.datetime_landed.substring(0, 10) : (f.datetime_takeoff ? f.datetime_takeoff.substring(0, 10) : startDate);
-            allResults.push({
-              fr24_id: f.fr24_id,
-              numero_voo: f.flight || f.callsign || '',
-              data_voo: landedDate,
-              airport_icao: airportIcao,
-              status: 'pendente',
-              raw_data: f,
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data?.flights) {
+            data.flights.forEach(f => {
+              const landedDate = f.datetime_landed ? f.datetime_landed.substring(0, 10) : (f.datetime_takeoff ? f.datetime_takeoff.substring(0, 10) : startDate);
+              allResults.push({
+                fr24_id: f.fr24_id,
+                numero_voo: f.flight || f.callsign || '',
+                data_voo: landedDate,
+                airport_icao: airportIcao,
+                status: 'pendente',
+                raw_data: f,
+              });
             });
-          });
+          }
         } else {
+          const errText = await resp.text().catch(() => '');
           errors++;
-          console.error('FR24 block error:', fnError, data?.error);
+          console.error(`FR24 block ${i+1} error: ${resp.status}`, errText);
         }
 
         // Rate limit: wait 7s between calls
