@@ -122,72 +122,71 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
     setHasSearched(true);
 
     try {
-      const [allCalcData, voosData, vlData, proformasData] = await Promise.all([
-        CalculoTarifa.list('-data_calculo'),
-        Voo.filter({ deleted_at: { $is: null } }, '-data_operacao'),
+      // 1. Filter calculos server-side by companhia + aeroporto
+      const calcFilter = { companhia_id: filtro.companhia_id };
+      if (filtro.aeroporto_id) calcFilter.aeroporto_id = filtro.aeroporto_id;
+
+      // 2. Load calculos, voo_ligados (by empresa), and proformas in parallel
+      // Get empresa_id from the selected companhia's calculos
+      const compEmpresa = companhias.find(c => c.id === filtro.companhia_id);
+
+      const [allCalcData, vlData, proformasData] = await Promise.all([
+        CalculoTarifa.filter(calcFilter, '-data_calculo'),
         VooLigado.list('-created_date'),
         Proforma.list(),
       ]);
 
-      const activeVoos = voosData;
-      const vooMap = new Map(activeVoos.map(v => [v.id, v]));
+      // Only positive values
+      let filteredCalcs = allCalcData.filter(c => (c.total_tarifa_usd || 0) > 0);
 
-      const allowedAeroIds = new Set(aeroportos.map(a => a.id));
-      const allowedAeroIcaos = new Set(aeroportos.map(a => a.codigo_icao).filter(Boolean));
+      // 3. Build voo_ligado map for quick lookup
+      const vlMap = new Map(vlData.map(vl => [vl.id, vl]));
 
-      const companhiaSelecionada = companhias.find(c => c.id === filtro.companhia_id);
-      const companhiaIcao = companhiaSelecionada?.codigo_icao;
-      const companhiaIata = companhiaSelecionada?.codigo_iata;
-
-      let filteredCalcs = allCalcData.filter(calc => {
-        const voo = vooMap.get(calc.voo_id);
-        if (!voo) return false;
-        return calc.companhia_id === filtro.companhia_id ||
-          (companhiaIcao && voo.companhia_aerea === companhiaIcao) ||
-          (companhiaIata && voo.companhia_aerea === companhiaIata);
+      // 4. Collect ALL voo IDs needed (dep from calculos + arr/dep from voo_ligados)
+      const allVooIds = new Set();
+      filteredCalcs.forEach(c => {
+        if (c.voo_id) allVooIds.add(c.voo_id);
+        const vl = vlMap.get(c.voo_ligado_id);
+        if (vl) {
+          if (vl.id_voo_arr) allVooIds.add(vl.id_voo_arr);
+          if (vl.id_voo_dep) allVooIds.add(vl.id_voo_dep);
+        }
       });
 
-      // Filter by aeroporto
-      if (filtro.aeroporto_id) {
-        const selectedAero = aeroportos.find(a => a.id === filtro.aeroporto_id);
-        const selectedIcao = selectedAero?.codigo_icao;
-        filteredCalcs = filteredCalcs.filter(c => {
-          if (c.aeroporto_id === filtro.aeroporto_id) return true;
-          if (selectedIcao && c.aeroporto_id === selectedIcao) return true;
-          const voo = vooMap.get(c.voo_id);
-          return voo && selectedIcao && voo.aeroporto_operacao === selectedIcao;
-        });
-      } else if (aeroportos.length > 0) {
-        filteredCalcs = filteredCalcs.filter(c => {
-          if (allowedAeroIds.has(c.aeroporto_id)) return true;
-          if (allowedAeroIcaos.has(c.aeroporto_id)) return true;
-          const voo = vooMap.get(c.voo_id);
-          return voo && allowedAeroIcaos.has(voo.aeroporto_operacao);
-        });
+      // 5. Load voos in batches of 200 IDs (avoid URI too long)
+      const vooIdArray = Array.from(allVooIds);
+      const BATCH = 200;
+      let voosData = [];
+      for (let i = 0; i < vooIdArray.length; i += BATCH) {
+        const batch = vooIdArray.slice(i, i + BATCH);
+        const batchData = await Voo.filter({ id: { $in: batch } });
+        voosData = voosData.concat(batchData);
       }
 
-      // Filter by date range
+      const vooMap = new Map(voosData.map(v => [v.id, v]));
+
+      // Filter by date range (using voo data)
       if (filtro.data_inicio || filtro.data_fim) {
         filteredCalcs = filteredCalcs.filter(calc => {
           const voo = vooMap.get(calc.voo_id);
           if (!voo) return false;
-          const dataOp = voo.data_operacao;
-          if (filtro.data_inicio && dataOp < filtro.data_inicio) return false;
-          if (filtro.data_fim && dataOp > filtro.data_fim) return false;
+          if (filtro.data_inicio && voo.data_operacao < filtro.data_inicio) return false;
+          if (filtro.data_fim && voo.data_operacao > filtro.data_fim) return false;
           return true;
         });
       }
 
-      // Only positive values
-      filteredCalcs = filteredCalcs.filter(c => (c.total_tarifa_usd || 0) > 0);
+      // Filter by aeroporto (when no specific aeroporto selected, filter by allowed)
+      if (!filtro.aeroporto_id && aeroportos.length > 0) {
+        const allowedAeroIds = new Set(aeroportos.map(a => a.id));
+        filteredCalcs = filteredCalcs.filter(c => allowedAeroIds.has(c.aeroporto_id));
+      }
 
       // Sort by date
       filteredCalcs.sort((a, b) => {
         const vooA = vooMap.get(a.voo_id);
         const vooB = vooMap.get(b.voo_id);
-        const dA = vooA?.data_operacao || '';
-        const dB = vooB?.data_operacao || '';
-        return dA.localeCompare(dB);
+        return (vooA?.data_operacao || '').localeCompare(vooB?.data_operacao || '');
       });
 
       // Build proforma map
@@ -199,7 +198,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       });
 
       setCalculos(filteredCalcs);
-      setVoos(activeVoos);
+      setVoos(voosData);
       setVoosLigados(vlData);
       setProformasMap(pfMap);
     } catch (error) {
@@ -213,11 +212,17 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
   // Build enriched rows
   const rows = useMemo(() => {
     const vooMap = new Map(voos.map(v => [v.id, v]));
-    return calculos.map(calc => {
+    const vlMap = new Map(voosLigados.map(vl => [vl.id, vl]));
+    return calculos.filter(calc => {
+      // Only show calculos with complete ARR+DEP pair
+      const vl = vlMap.get(calc.voo_ligado_id);
+      if (!vl) return false;
+      return vooMap.has(vl.id_voo_arr) && vooMap.has(vl.id_voo_dep);
+    }).map(calc => {
       const det = calc.detalhes_calculo || {};
-      const vl = voosLigados.find(v => v.id === calc.voo_ligado_id);
-      const vooArr = vl ? vooMap.get(vl.id_voo_arr) : null;
-      const vooDep = vl ? vooMap.get(vl.id_voo_dep) : null;
+      const vl = vlMap.get(calc.voo_ligado_id);
+      const vooArr = vooMap.get(vl.id_voo_arr);
+      const vooDep = vooMap.get(vl.id_voo_dep);
       const voo = vooMap.get(calc.voo_id);
 
       const registo = voo?.registo_aeronave || vooDep?.registo_aeronave || vooArr?.registo_aeronave || '—';
@@ -226,16 +231,18 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       const tipoVoo = det.passageiros?.tipoVoo || det.pouso?.tipoVoo || '—';
       const tipoCode = tipoVoo.toLowerCase().includes('dom') ? 'DOM' : tipoVoo.toLowerCase().includes('int') ? 'INT' : '—';
 
-      const numArr = vooArr?.numero_voo || '';
+      const numArr = vooArr?.numero_voo || calc.numero_voo || '';
       const numDep = vooDep?.numero_voo || voo?.numero_voo || '';
-      const vooLabel = [numArr, numDep].filter(Boolean).join('/') || '—';
+      const vooLabel = numArr && numDep && numArr !== numDep
+        ? `${numArr}/${numDep}`
+        : numDep || numArr || '—';
 
       const aterragem = vooArr
         ? fmtDateTime(vooArr.data_operacao, vooArr.horario_real || vooArr.horario_previsto)
-        : (voo?.horario_real ? fmtDateTime(voo.data_operacao, voo.horario_real) : '—');
+        : '—';
       const descolagem = vooDep
         ? fmtDateTime(vooDep.data_operacao, vooDep.horario_real || vooDep.horario_previsto)
-        : (voo?.horario_real ? fmtDateTime(voo.data_operacao, voo.horario_real) : '—');
+        : (voo ? fmtDateTime(voo.data_operacao, voo.horario_real || voo.horario_previsto) : '—');
 
       const txAterr = calc.tarifa_pouso_usd || 0;
       const estacH = calc.tempo_permanencia_horas || det.permanencia?.tempoPermanencia || 0;
@@ -634,7 +641,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                         </React.Fragment>
                       ))}
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">IVA</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right bg-emerald-50">TOTAL</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right bg-emerald-50 sticky right-0 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">TOTAL</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -665,7 +672,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                           </React.Fragment>
                         ))}
                         <TableCell className="px-1.5 text-right">{fmtNum(r.ivaTotal)}</TableCell>
-                        <TableCell className="px-1.5 text-right font-bold text-emerald-700 bg-emerald-50">{fmtNum(r.totalUsd)}</TableCell>
+                        <TableCell className="px-1.5 text-right font-bold text-emerald-700 bg-emerald-50 sticky right-0 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">{fmtNum(r.totalUsd)}</TableCell>
                       </TableRow>
                     ))}
                     {/* Totals row */}
@@ -687,7 +694,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                           </React.Fragment>
                         ))}
                         <TableCell className="px-1.5 text-right">{fmtNum(totals.ivaTotal)}</TableCell>
-                        <TableCell className="px-1.5 text-right text-emerald-700 bg-emerald-100 text-sm">${fmtNum(totals.totalUsd)}</TableCell>
+                        <TableCell className="px-1.5 text-right text-emerald-700 bg-emerald-100 text-sm sticky right-0 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">${fmtNum(totals.totalUsd)}</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
