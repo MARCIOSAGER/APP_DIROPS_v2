@@ -69,6 +69,20 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
         from += PAGE;
       }
 
+      // Load voo dates for monthly chart (batches of 50 to avoid URI too long)
+      const vooIds = [...new Set(allCalcs.map(c => c.voo_id).filter(Boolean))];
+      const vooDateMap = new Map();
+      for (let i = 0; i < vooIds.length; i += 50) {
+        const batch = vooIds.slice(i, i + 50);
+        const { data: vooData } = await supabase
+          .from('voo')
+          .select('id,data_operacao')
+          .in('id', batch);
+        if (vooData) vooData.forEach(v => vooDateMap.set(v.id, v.data_operacao));
+      }
+      // Attach data_operacao to each calculo
+      allCalcs.forEach(c => { c._data_operacao = vooDateMap.get(c.voo_id) || ''; });
+
       setCalculos(allCalcs);
     } catch (error) {
       console.error('Erro:', error);
@@ -89,14 +103,15 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
   const kpis = useMemo(() => {
     if (calculos.length === 0) return null;
     const totalUsd = calculos.reduce((s, c) => s + (c.total_tarifa_usd || 0), 0);
-    const totalAoa = calculos.reduce((s, c) => s + (c.total_tarifa || 0), 0);
-    const totalPouso = calculos.reduce((s, c) => s + (c.tarifa_pouso_usd || 0), 0);
-    const totalPerm = calculos.reduce((s, c) => s + (c.tarifa_permanencia_usd || 0), 0);
-    const totalPax = calculos.reduce((s, c) => s + (c.tarifa_passageiros_usd || 0), 0);
+    // Compute IVA from detalhes_calculo
+    let totalIva = 0;
+    calculos.forEach(c => {
+      const impostos = c.detalhes_calculo?.impostos;
+      if (impostos) impostos.forEach(imp => { totalIva += imp.valor_usd || 0; });
+    });
+    const subtotal = totalUsd - totalIva;
     const avgPerVoo = totalUsd / calculos.length;
-    const cambioSum = calculos.reduce((s, c) => s + (c.taxa_cambio_usd_aoa || 0), 0);
-    const avgCambio = cambioSum / calculos.length;
-    return { totalUsd, totalAoa, count: calculos.length, avgPerVoo, totalPouso, totalPerm, totalPax, avgCambio };
+    return { totalUsd, subtotal, totalIva, count: calculos.length, avgPerVoo };
   }, [calculos]);
 
   // 1. Receita por Companhia (Top 10)
@@ -281,7 +296,7 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
       {kpis && (
         <>
           {/* KPIs */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             <Card><CardContent className="p-3">
               <div className="flex items-center gap-2">
                 <div className="bg-blue-50 p-2 rounded-lg"><Plane className="w-4 h-4 text-blue-600" /></div>
@@ -291,8 +306,22 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
 
             <Card><CardContent className="p-3">
               <div className="flex items-center gap-2">
+                <div className="bg-slate-100 p-2 rounded-lg"><DollarSign className="w-4 h-4 text-slate-600" /></div>
+                <div><p className="text-[11px] text-slate-500">Subtotal (sem IVA)</p><p className="text-sm font-bold text-slate-700">${fmtNum(kpis.subtotal)}</p></div>
+              </div>
+            </CardContent></Card>
+
+            <Card><CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="bg-amber-50 p-2 rounded-lg"><DollarSign className="w-4 h-4 text-amber-600" /></div>
+                <div><p className="text-[11px] text-slate-500">IVA</p><p className="text-sm font-bold text-amber-700">${fmtNum(kpis.totalIva)}</p></div>
+              </div>
+            </CardContent></Card>
+
+            <Card><CardContent className="p-3">
+              <div className="flex items-center gap-2">
                 <div className="bg-green-50 p-2 rounded-lg"><DollarSign className="w-4 h-4 text-green-600" /></div>
-                <div><p className="text-[11px] text-slate-500">Receita Total (USD)</p><p className="text-sm font-bold text-green-700">${fmtNum(kpis.totalUsd)}</p></div>
+                <div><p className="text-[11px] text-slate-500">Total (USD)</p><p className="text-sm font-bold text-green-700">${fmtNum(kpis.totalUsd)}</p></div>
               </div>
             </CardContent></Card>
 
@@ -365,25 +394,27 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
             </Card>
           </div>
 
-          {/* Row 2: Distribuição Tarifa + INT vs DOM */}
+          {/* Row 2: Receita por Tarifa (BarChart) + INT vs DOM */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* 3. Distribuição por Tipo de Tarifa */}
+            {/* 3. Receita por Tipo de Tarifa (BarChart horizontal) */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <PieChartIcon className="w-4 h-4 text-amber-600" />
-                  Distribuição por Tipo de Tarifa
+                  <BarChart3 className="w-4 h-4 text-amber-600" />
+                  Receita por Tipo de Tarifa (USD)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie data={distribuicaoTarifa} dataKey="valor" nameKey="nome" cx="50%" cy="50%" outerRadius={100} label={({ nome, percent }) => `${nome} ${(percent * 100).toFixed(0)}%`} fontSize={10}>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={distribuicaoTarifa} layout="vertical" margin={{ left: 10, right: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" tickFormatter={fmtCompact} fontSize={10} />
+                    <YAxis type="category" dataKey="nome" width={100} fontSize={10} />
+                    <Tooltip formatter={(v) => [`$${fmtNum(v)}`, 'Receita']} />
+                    <Bar dataKey="valor" radius={[0, 4, 4, 0]} label={{ position: 'right', fontSize: 9, formatter: fmtCompact }}>
                       {distribuicaoTarifa.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={(v) => [`$${fmtNum(v)}`, 'Valor']} />
-                    <Legend fontSize={10} />
-                  </PieChart>
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -398,9 +429,9 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
-                      <Pie data={intVsDom.data} dataKey="valor" nameKey="nome" cx="50%" cy="50%" outerRadius={80} label={({ nome, percent }) => `${(percent * 100).toFixed(0)}%`} fontSize={11}>
+                      <Pie data={intVsDom.data} dataKey="valor" nameKey="nome" cx="50%" cy="50%" outerRadius={80} label={({ percent }) => `${(percent * 100).toFixed(0)}%`} fontSize={11}>
                         <Cell fill="#7c3aed" />
                         <Cell fill="#0891b2" />
                       </Pie>
@@ -425,9 +456,9 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
             </Card>
           </div>
 
-          {/* Row 3: Voos por Companhia + Top 10 Voos */}
+          {/* Row 3: Top 10 Receita + Top 10 Voos (lado a lado) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* 4. Quantidade de Voos por Companhia */}
+            {/* 4. Voos por Companhia */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">

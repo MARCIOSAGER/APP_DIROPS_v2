@@ -1009,15 +1009,13 @@ async function generateExtratoLandscape({
       return row;
     });
 
-    // Totals row (7 = Nº + 6 fixed info columns)
-    const emptyBeforeTariffs = 7;
-    const totalRow = Array(emptyBeforeTariffs).fill('');
-    totalRow[0] = totalLabel;
-    totalRow.push(fmtNum(t.pouso));
-    totalRow.push(''); // estac hours
-    totalRow.push(fmtNum(t.estac));
-    totalRow.push(fmtNum(t.passag_pax, 0)); // total pax
-    totalRow.push(fmtNum(t.passag));
+    // Totals row: Nº(empty) + Registo(empty) + PMD(empty) + Tipo(empty) + Voo(empty) + Aterragem(LABEL) + Descolagem(empty) = 7 fixed
+    const totalRow = ['', '', '', '', '', totalLabel, ''];
+    totalRow.push(fmtNum(t.pouso));        // TX Aterr
+    totalRow.push(fmtNum(t.estac_h, 1));   // Estac(h)
+    totalRow.push(fmtNum(t.estac));        // Estac($)
+    totalRow.push(fmtNum(t.passag_pax, 0)); // Emb(pax)
+    totalRow.push(fmtNum(t.passag));       // Emb($)
     sortedOutrasTarifaKeys.forEach(key => {
       totalRow.push(fmtNum(oTotals[key]));
     });
@@ -1087,11 +1085,9 @@ async function generateExtratoLandscape({
     y = addSectionTitle(doc, y, 'TOTAL GERAL — Todas as Companhias (valores em USD)');
 
     // Build grand total row
-    const emptyBeforeTariffs = 7;
-    const grandTotalRow = Array(emptyBeforeTariffs).fill('');
-    grandTotalRow[0] = 'TOTAL GERAL';
+    const grandTotalRow = ['', '', '', '', '', 'TOTAL GERAL', ''];
     grandTotalRow.push(fmtNum(grandTotals.pouso));
-    grandTotalRow.push('');
+    grandTotalRow.push(fmtNum(grandTotals.estac_h, 1));
     grandTotalRow.push(fmtNum(grandTotals.estac));
     grandTotalRow.push(fmtNum(grandTotals.passag_pax, 0));
     grandTotalRow.push(fmtNum(grandTotals.passag));
@@ -1099,7 +1095,7 @@ async function generateExtratoLandscape({
       grandTotalRow.push(fmtNum(grandOutrasTarifaTotals[key]));
     });
     sortedResourceKeys.forEach(key => {
-      grandTotalRow.push('');
+      grandTotalRow.push(fmtNum(grandResourceTotals[`${key}_h`], 1));
       grandTotalRow.push(fmtNum(grandResourceTotals[`${key}_v`]));
     });
     grandTotalRow.push(fmtNum(grandTotals.iva));
@@ -1111,12 +1107,12 @@ async function generateExtratoLandscape({
       sRow[0] = pg.nome;
       sRow[1] = `${pg.count} voos`;
       sRow.push(fmtNum(pg.totals.pouso));
-      sRow.push('');
+      sRow.push(fmtNum(pg.totals.estac_h, 1));
       sRow.push(fmtNum(pg.totals.estac));
       sRow.push(fmtNum(pg.totals.passag_pax, 0));
       sRow.push(fmtNum(pg.totals.passag));
-      sortedOutrasTarifaKeys.forEach(key => { sRow.push(''); });
-      sortedResourceKeys.forEach(key => { sRow.push(''); sRow.push(''); });
+      sortedOutrasTarifaKeys.forEach(key => { sRow.push(fmtNum(pg.outrasTarifaTotals[key] || 0)); });
+      sortedResourceKeys.forEach(key => { sRow.push(fmtNum(pg.resourceTotals[`${key}_h`] || 0, 1)); sRow.push(fmtNum(pg.resourceTotals[`${key}_v`] || 0)); });
       sRow.push(fmtNum(pg.totals.iva));
       sRow.push(fmtNum(pg.totals.total));
       return sRow;

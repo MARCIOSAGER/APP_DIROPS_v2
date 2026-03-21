@@ -392,7 +392,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       toast({ title: t('dashFat.pdfGerado'), description: t('dashFat.pdfGeradoDesc') });
     } catch (error) {
       console.error('Erro PDF:', error);
-      toast({ title: t('shared.erro'), description: t('dashFat.erroPdf'), variant: 'destructive' });
+      toast({ title: t('shared.erro'), description: `Erro ao gerar PDF: ${error.message}`, variant: 'destructive' });
     } finally {
       setIsGeneratingPdf(false);
     }
