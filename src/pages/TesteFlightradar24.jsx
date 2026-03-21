@@ -156,7 +156,7 @@ function FlightTable({ flights, airportIcao, showActions, onCreateVoo, onIgnore,
                       <div className="flex gap-1">
                         <Button
                           size="sm"
-                          className="h-6 text-xs bg-emerald-600 hover:bg-emerald-700"
+                          className="h-6 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                           onClick={() => onCreateVoo(f)}
                           disabled={creating}
                         >
@@ -263,7 +263,7 @@ export default function TesteFlightradar24() {
             </div>
             {extraFilters}
             <div className="flex items-end">
-              <Button onClick={onSearch} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700">
+              <Button onClick={onSearch} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
                 {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <BtnIcon className="w-4 h-4 mr-2" />}
                 {buttonLabel}
               </Button>
@@ -828,7 +828,7 @@ export default function TesteFlightradar24() {
               <Button
                 onClick={createAllPending}
                 disabled={bulkCreating}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 {bulkCreating
                   ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -901,7 +901,7 @@ export default function TesteFlightradar24() {
                 <Button
                   onClick={saveToCache}
                   disabled={savingCache}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   {savingCache
                     ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1033,7 +1033,7 @@ export default function TesteFlightradar24() {
                               {row.compareStatus === 'FALTA' && (
                                 <Button
                                   size="sm"
-                                  className="h-6 text-xs bg-emerald-600 hover:bg-emerald-700"
+                                  className="h-6 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                                   onClick={() => createVooFromCompare(row)}
                                   disabled={working}
                                 >
