@@ -83,10 +83,11 @@ export default function GestaoAPIKeys() {
   const [logSearch, setLogSearch] = useState('');
   const [logStatusFilter, setLogStatusFilter] = useState('todos');
 
+  // Access is controlled by regra_permissao (Layout already checks paginas_permitidas)
+  // If the user reached this page, they have permission via GerirPermissoes
   const canAccess = useMemo(() => {
     if (!currentUser?.perfis) return false;
-    if (isSuperAdmin(currentUser)) return true;
-    return currentUser.perfis.some(p => ['administrador'].includes(p));
+    return true; // Layout already enforces access via regra_permissao
   }, [currentUser]);
 
   useEffect(() => { loadData(); }, [effectiveEmpresaId]);
