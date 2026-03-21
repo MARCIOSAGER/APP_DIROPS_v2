@@ -481,8 +481,9 @@ export default function TesteFlightradar24() {
           p_date_to: blocks[i].to,
         });
 
-        if (!rpcError && rpcResult?.data) {
-          rpcResult.data.forEach(f => {
+        const fr24Flights = rpcResult?.data || [];
+        if (!rpcError && fr24Flights.length > 0) {
+          fr24Flights.forEach(f => {
             const landedDate = f.datetime_landed ? f.datetime_landed.substring(0, 10) : (f.datetime_takeoff ? f.datetime_takeoff.substring(0, 10) : startDate);
             allResults.push({
               fr24_id: f.fr24_id,
@@ -494,8 +495,8 @@ export default function TesteFlightradar24() {
             });
           });
           // Auto-save to cache
-          if (rpcResult.data.length > 0) {
-            const records = rpcResult.data.map(f => ({
+          if (fr24Flights.length > 0) {
+            const records = fr24Flights.map(f => ({
               data_voo: (f.datetime_landed || f.datetime_takeoff || '').substring(0, 10) || startDate,
               numero_voo: f.flight || '',
               fr24_id: f.fr24_id,
