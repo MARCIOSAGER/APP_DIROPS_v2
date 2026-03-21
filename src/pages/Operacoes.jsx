@@ -392,69 +392,57 @@ export default function Operacoes() {
     if (modelosCache.length > 0) setModelosAeronave(modelosCache);
   }, [modelosCache]);
 
-  // Filtragem por data (server-side) quando os filtros de data mudam
-  useEffect(() => {
-    const handleServerSideFilter = async () => {
-      if (!filtros.dataInicio && !filtros.dataFim) {
-        // Se não há filtros de data, recarregar com os 100 últimos voos
-        setIsFiltering(false);
-        return;
+  // Server-side filter: build query from all filtros and reload voos
+  const handleBuscarVoos = useCallback(async () => {
+    setIsFiltering(true);
+    try {
+      const query = { deleted_at: { $is: null } };
+      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      if (empId) query.empresa_id = empId;
+
+      // Date range
+      if (filtros.dataInicio) query.data_operacao = { ...query.data_operacao, $gte: filtros.dataInicio };
+      if (filtros.dataFim) query.data_operacao = { ...query.data_operacao, $lte: filtros.dataFim };
+
+      // Exact-match filters
+      if (filtros.tipoMovimento !== 'todos') query.tipo_movimento = filtros.tipoMovimento;
+      if (filtros.status !== 'todos') query.status = filtros.status;
+      if (filtros.tipoVoo !== 'todos') query.tipo_voo = filtros.tipoVoo;
+      if (filtros.aeroporto !== 'todos') query.aeroporto_operacao = filtros.aeroporto;
+
+      // Search by numero_voo (ilike) — registo_aeronave fallback handled client-side
+      if (filtros.busca) query.numero_voo = { $ilike: `%${filtros.busca}%` };
+
+      // Companhia: server-side filter by ICAO + IATA codes via $in
+      if (filtros.companhia !== 'todos' && filtros.companhia !== 'outro') {
+        const comp = companhias.find(c => c.codigo_icao === filtros.companhia);
+        const codes = [filtros.companhia];
+        if (comp?.codigo_iata && comp.codigo_iata !== filtros.companhia) codes.push(comp.codigo_iata);
+        query.companhia_aerea = { $in: codes };
       }
 
-      setIsFiltering(true);
-      try {
-        const query = { deleted_at: { $eq: null } };
-        if (filtros.dataInicio) {
-          query.data_operacao = { ...query.data_operacao, $gte: filtros.dataInicio };
-        }
-        if (filtros.dataFim) {
-          query.data_operacao = { ...query.data_operacao, $lte: filtros.dataFim };
-        }
+      // Passageiros range
+      if (filtros.passageirosMin) query.passageiros_total = { ...query.passageiros_total, $gte: parseInt(filtros.passageirosMin) };
+      if (filtros.passageirosMax) query.passageiros_total = { ...query.passageiros_total, $lte: parseInt(filtros.passageirosMax) };
 
-        // Buscar em lotes com paginação
-        let allVoos = [];
-        let skip = 0;
-        const BATCH_SIZE = 1000;
-        let hasMore = true;
+      // Carga range
+      if (filtros.cargaMin) query.carga_kg = { ...query.carga_kg, $gte: parseFloat(filtros.cargaMin) };
+      if (filtros.cargaMax) query.carga_kg = { ...query.carga_kg, $lte: parseFloat(filtros.cargaMax) };
 
-        while (hasMore) {
-          const batch = await Voo.filter(query, '-data_operacao', BATCH_SIZE, skip);
-
-          if (batch && batch.length > 0) {
-            allVoos = [...allVoos, ...batch];
-
-            if (batch.length < BATCH_SIZE) {
-              hasMore = false;
-            } else {
-              skip += BATCH_SIZE;
-            }
-          } else {
-            hasMore = false;
-          }
-        }
-
-        // Filtrar por empresa_id direto
-        const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-        const filteredVoos = empId ? allVoos.filter(v => v.empresa_id === empId) : allVoos;
-
-        setVoos(filteredVoos);
-      } catch (error) {
-        console.error('❌ Erro ao filtrar voos por data:', error);
-        setAlertInfo({
-          isOpen: true,
-          type: 'error',
-          title: t('operacoes.erro_filtrar'),
-          message: t('operacoes.erro_filtrar_msg')
-        });
-      } finally {
-        setIsFiltering(false);
-      }
-    };
-
-    // Debounce de 500ms para evitar múltiplas chamadas ao servidor
-    const timer = setTimeout(handleServerSideFilter, 500);
-    return () => clearTimeout(timer);
-  }, [filtros.dataInicio, filtros.dataFim, currentUser]);
+      const data = await Voo.filter(query, '-data_operacao');
+      setVoos(data);
+    } catch (error) {
+      console.error('Erro ao filtrar voos:', error);
+      setAlertInfo({
+        isOpen: true,
+        type: 'error',
+        title: t('operacoes.erro_filtrar'),
+        message: t('operacoes.erro_filtrar_msg')
+      });
+    } finally {
+      setIsFiltering(false);
+    }
+  }, [filtros, currentUser, companhias, t]);
 
   // Voos Ligados: server-side reload when user clicks "Buscar"
   const handleBuscarLigados = useCallback(async () => {
@@ -1756,73 +1744,45 @@ export default function Operacoes() {
   };
 
   const voosFiltrados = useMemo(() => {
-    const filtered = voos.filter(voo => {
-      const dataMatch = (!filtros.dataInicio || voo.data_operacao >= filtros.dataInicio) &&
-                       (!filtros.dataFim || voo.data_operacao <= filtros.dataFim);
-      const tipoMatch = filtros.tipoMovimento === 'todos' || voo.tipo_movimento === filtros.tipoMovimento;
-      const statusMatch = filtros.status === 'todos' || voo.status === filtros.status;
+    // Most filters are now applied server-side via handleBuscarVoos.
+    // Only client-side: statusVinculacao (requires voo_ligado join), companhia IATA fallback,
+    // companhia "outro", and busca registo_aeronave fallback.
+    let filtered = voos;
 
+    // Companhia "outro": exclude known companies (cannot be done server-side)
+    if (filtros.companhia === 'outro') {
+      const knownCompanyCodes = new Set();
+      companhias.forEach(c => { if (c.codigo_icao) knownCompanyCodes.add(c.codigo_icao); if (c.codigo_iata) knownCompanyCodes.add(c.codigo_iata); });
+      filtered = filtered.filter(voo => voo.companhia_aerea && !knownCompanyCodes.has(voo.companhia_aerea));
+    }
 
-      let companhiaMatch = true;
-      if (filtros.companhia !== 'todos') {
-        if (filtros.companhia === 'outro') {
-          const knownCompanyCodes = new Set();
-          companhias.forEach(c => { if (c.codigo_icao) knownCompanyCodes.add(c.codigo_icao); if (c.codigo_iata) knownCompanyCodes.add(c.codigo_iata); });
-          companhiaMatch = voo.companhia_aerea && !knownCompanyCodes.has(voo.companhia_aerea);
-        } else {
-          const comp = companhias.find(c => c.codigo_icao === filtros.companhia);
-          companhiaMatch = voo.companhia_aerea === filtros.companhia ||
-            (comp && (comp.codigo_iata === voo.companhia_aerea || comp.codigo_icao === voo.companhia_aerea));
-        }
-      }
+    // Busca: server-side filters numero_voo via $ilike; client-side also matches registo_aeronave
+    if (filtros.busca) {
+      const buscaLower = filtros.busca.toLowerCase();
+      filtered = filtered.filter(voo =>
+        voo.numero_voo?.toLowerCase().includes(buscaLower) ||
+        voo.registo_aeronave?.toLowerCase().includes(buscaLower)
+      );
+    }
 
-      const aeroportoMatch = filtros.aeroporto === 'todos' || voo.aeroporto_operacao === filtros.aeroporto;
-      const tipoVooMatch = filtros.tipoVoo === 'todos' || voo.tipo_voo === filtros.tipoVoo;
-
-      const buscaMatch = !filtros.busca ||
-                         voo.numero_voo?.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-                         voo.registo_aeronave?.toLowerCase().includes(filtros.busca.toLowerCase());
-
-      // Filtro de passageiros
-      const passageirosMin = filtros.passageirosMin ? parseInt(filtros.passageirosMin) : null;
-      const passageirosMax = filtros.passageirosMax ? parseInt(filtros.passageirosMax) : null;
-      const passageirosTotal = voo.passageiros_total || 0;
-      const passageirosMatch = 
-        (passageirosMin === null || passageirosTotal >= passageirosMin) &&
-        (passageirosMax === null || passageirosTotal <= passageirosMax);
-
-      // Filtro de carga
-      const cargaMin = filtros.cargaMin ? parseFloat(filtros.cargaMin) : null;
-      const cargaMax = filtros.cargaMax ? parseFloat(filtros.cargaMax) : null;
-      const cargaKg = voo.carga_kg || 0;
-      const cargaMatch = 
-        (cargaMin === null || cargaKg >= cargaMin) &&
-        (cargaMax === null || cargaKg <= cargaMax);
-
-      // Filtro de vinculação
-      let vinculacaoMatch = true;
-      if (filtros.statusVinculacao !== 'todos') {
+    // StatusVinculacao: requires voo_ligado relationship check, cannot be done server-side
+    if (filtros.statusVinculacao !== 'todos') {
+      filtered = filtered.filter(voo => {
         const isLinked = voosLigados.some((vl) => {
           const isLinkedToThisVoo = vl.id_voo_arr === voo.id || vl.id_voo_dep === voo.id;
           if (!isLinkedToThisVoo) return false;
-          
           const vooArrExiste = voos.some(v => v.id === vl.id_voo_arr);
           const vooDepExiste = voos.some(v => v.id === vl.id_voo_dep);
-          
           return vooArrExiste && vooDepExiste;
         });
 
-        if (filtros.statusVinculacao === 'ligado') {
-          vinculacaoMatch = isLinked;
-        } else if (filtros.statusVinculacao === 'sem_link') {
-          vinculacaoMatch = !isLinked && voo.status !== 'Cancelado';
-        }
-      }
+        if (filtros.statusVinculacao === 'ligado') return isLinked;
+        if (filtros.statusVinculacao === 'sem_link') return !isLinked && voo.status !== 'Cancelado';
+        return true;
+      });
+    }
 
-      return dataMatch && tipoMatch && statusMatch && companhiaMatch && aeroportoMatch && 
-             tipoVooMatch && buscaMatch && passageirosMatch && cargaMatch && vinculacaoMatch;
-    });
-
+    // Sort
     const sorted = [...filtered].sort((a, b) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
@@ -2214,22 +2174,7 @@ export default function Operacoes() {
                       
                       <div className="flex items-end gap-2 sm:col-span-2">
                         <Button
-                          onClick={() => {
-                            // Trigger server-side filter manually
-                            if (filtros.dataInicio || filtros.dataFim) {
-                              setIsFiltering(true);
-                              const query = { deleted_at: { $is: null } };
-                              if (filtros.dataInicio) query.data_operacao = { ...query.data_operacao, $gte: filtros.dataInicio };
-                              if (filtros.dataFim) query.data_operacao = { ...query.data_operacao, $lte: filtros.dataFim };
-                              const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-                              if (empId) query.empresa_id = empId;
-                              Voo.filter(query, '-data_operacao').then(data => {
-                                setVoos(data);
-                              }).catch(err => console.error(err)).finally(() => setIsFiltering(false));
-                            } else {
-                              loadData();
-                            }
-                          }}
+                          onClick={handleBuscarVoos}
                           disabled={isFiltering}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 text-xs sm:text-sm"
                         >

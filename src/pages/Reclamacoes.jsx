@@ -17,7 +17,8 @@ import {
   Search,
   Mail,
   Settings,
-  Sparkles
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 
 import { Reclamacao } from '@/entities/Reclamacao';
@@ -90,6 +91,7 @@ export default function Reclamacoes() {
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'error', title: '', message: '' }); // New state for general alerts
   const [user, setUser] = useState(null); // New state for current user
   const [empresas, setEmpresas] = useState([]);
+  const [isBuscando, setIsBuscando] = useState(false);
 
   const [filtros, setFiltros] = useState({
     busca: '',
@@ -101,16 +103,42 @@ export default function Reclamacoes() {
     dataFim: ''
   });
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (serverFilters) => {
     setIsLoading(true);
     try {
       const currentUser = await User.me();
       setUser(currentUser);
 
-      // Server-side filter by empresa_id when applicable
+      // Build server-side query
       const empId = currentUser.empresa_id;
-      const reclamacaoPromise = empId
-        ? Reclamacao.filter({ empresa_id: empId }, '-data_recebimento')
+      const query = {};
+      if (empId) query.empresa_id = empId;
+
+      // Apply server-side filters when provided
+      if (serverFilters) {
+        if (serverFilters.status && serverFilters.status !== 'todos') {
+          query.status = serverFilters.status;
+        }
+        if (serverFilters.areaResponsavel && serverFilters.areaResponsavel !== 'todos') {
+          query.area_responsavel = serverFilters.areaResponsavel;
+        }
+        if (serverFilters.aeroporto && serverFilters.aeroporto !== 'todos') {
+          query.aeroporto_id = serverFilters.aeroporto;
+        }
+        if (serverFilters.prioridade && serverFilters.prioridade !== 'todos') {
+          query.prioridade = serverFilters.prioridade;
+        }
+        if (serverFilters.dataInicio) {
+          query.data_recebimento = { ...query.data_recebimento, $gte: serverFilters.dataInicio };
+        }
+        if (serverFilters.dataFim) {
+          query.data_recebimento = { ...query.data_recebimento, $lte: serverFilters.dataFim };
+        }
+      }
+
+      const hasFilters = Object.keys(query).length > 0;
+      const reclamacaoPromise = hasFilters
+        ? Reclamacao.filter(query, '-data_recebimento')
         : Reclamacao.list('-data_recebimento');
 
       const [reclamacoesData, aeroportosData, empresasData] = await Promise.all([
@@ -158,25 +186,26 @@ export default function Reclamacoes() {
     }
   }, []);
 
+  const handleBuscar = useCallback(async () => {
+    setIsBuscando(true);
+    try {
+      await loadData(filtros);
+    } finally {
+      setIsBuscando(false);
+    }
+  }, [loadData, filtros]);
+
+  // Client-side: only text search (busca) since it needs OR across multiple columns
   const filteredReclamacoes = useMemo(() => {
-    return reclamacoes.filter(reclamacao => {
-      const buscaMatch = !filtros.busca ||
-        reclamacao.titulo.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-        reclamacao.protocolo_numero.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-        reclamacao.descricao.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-        (reclamacao.reclamante_nome && reclamacao.reclamante_nome.toLowerCase().includes(filtros.busca.toLowerCase()));
-
-      const statusMatch = filtros.status === 'todos' || reclamacao.status === filtros.status;
-      const areaMatch = filtros.areaResponsavel === 'todos' || reclamacao.area_responsavel === filtros.areaResponsavel;
-      const aeroportoMatch = filtros.aeroporto === 'todos' || reclamacao.aeroporto_id === filtros.aeroporto;
-      const prioridadeMatch = filtros.prioridade === 'todos' || reclamacao.prioridade === filtros.prioridade;
-
-      const dataMatch = (!filtros.dataInicio || reclamacao.data_recebimento >= filtros.dataInicio) &&
-                       (!filtros.dataFim || reclamacao.data_recebimento <= filtros.dataFim);
-
-      return buscaMatch && statusMatch && areaMatch && aeroportoMatch && prioridadeMatch && dataMatch;
-    });
-  }, [reclamacoes, filtros]);
+    if (!filtros.busca) return reclamacoes;
+    const termo = filtros.busca.toLowerCase();
+    return reclamacoes.filter(reclamacao =>
+      reclamacao.titulo?.toLowerCase().includes(termo) ||
+      reclamacao.protocolo_numero?.toLowerCase().includes(termo) ||
+      reclamacao.descricao?.toLowerCase().includes(termo) ||
+      reclamacao.reclamante_nome?.toLowerCase().includes(termo)
+    );
+  }, [reclamacoes, filtros.busca]);
 
   const handleSelectAll = useCallback((isSelected) => {
     if (isSelected) {
@@ -530,11 +559,9 @@ export default function Reclamacoes() {
       dataInicio: '',
       dataFim: ''
     });
-  }, []);
-
-  const hasActiveFilters = useMemo(() => Object.values(filtros).some(value =>
-    value !== '' && value !== 'todos'
-  ), [filtros]);
+    setIsBuscando(true);
+    loadData().finally(() => setIsBuscando(false));
+  }, [loadData]);
 
   const aeroportoOptions = useMemo(() => {
     const permitidos = getAeroportosPermitidos(user, aeroportos, user?.empresa_id);
@@ -654,23 +681,10 @@ export default function Reclamacoes() {
               {/* Filtros */}
               <Card className="border-0 shadow-sm">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-                      {t('reclamacoes.filtrosPesquisa')}
-                    </CardTitle>
-                    {hasActiveFilters && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={clearAllFilters}
-                        className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
-                      >
-                        <X className="w-4 h-4 mr-1" />
-                        {t('reclamacoes.limparFiltros')}
-                      </Button>
-                    )}
-                  </div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                    {t('reclamacoes.filtrosPesquisa')}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -747,6 +761,18 @@ export default function Reclamacoes() {
                         onChange={(e) => setFiltros(prev => ({...prev, dataFim: e.target.value}))}
                       />
                     </div>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      onClick={handleBuscar}
+                      disabled={isBuscando}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 text-xs sm:text-sm"
+                    >
+                      {isBuscando ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Buscando...</> : <><Filter className="w-4 h-4 mr-2" /> Buscar</>}
+                    </Button>
+                    <Button variant="outline" onClick={clearAllFilters} className="flex-1 text-xs sm:text-sm">
+                      <X className="w-4 h-4 mr-2" /> {t('reclamacoes.limparFiltros')}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

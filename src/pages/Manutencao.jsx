@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, FileDown, Filter, ClipboardList, Wrench, Settings } from 'lucide-react';
+import { Plus, RefreshCw, FileDown, Filter, ClipboardList, Wrench, Settings, Search, Loader2, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Select from '@/components/ui/select';
@@ -313,16 +313,35 @@ export default function Manutencao() {
     }
   };
 
-  // --- Filtered lists ---
-  const filteredOrdens = useMemo(() => {
-    return ordensDeServico.filter(os => {
-      const searchMatch = filtrosOS.busca === '' || os.numero_ordem?.toLowerCase().includes(filtrosOS.busca.toLowerCase()) || os.titulo?.toLowerCase().includes(filtrosOS.busca.toLowerCase());
-      return searchMatch && (filtrosOS.status === 'todos' || os.status === filtrosOS.status)
-        && (filtrosOS.prioridade === 'todos' || os.prioridade === filtrosOS.prioridade)
-        && (filtrosOS.aeroporto === 'todos' || os.aeroporto_id === filtrosOS.aeroporto)
-        && (filtrosOS.categoria === 'todos' || os.categoria_manutencao === filtrosOS.categoria);
-    });
-  }, [ordensDeServico, filtrosOS]);
+  const [isSearchingOS, setIsSearchingOS] = useState(false);
+
+  const handleBuscarOS = async () => {
+    setIsSearchingOS(true);
+    try {
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
+      const query = {};
+      if (empId) query.empresa_id = empId;
+      if (filtrosOS.status !== 'todos') query.status = filtrosOS.status;
+      if (filtrosOS.prioridade !== 'todos') query.prioridade = filtrosOS.prioridade;
+      if (filtrosOS.aeroporto !== 'todos') query.aeroporto_id = filtrosOS.aeroporto;
+      if (filtrosOS.categoria !== 'todos') query.categoria_manutencao = filtrosOS.categoria;
+      if (filtrosOS.busca) query.titulo = { $ilike: `%${filtrosOS.busca}%` };
+
+      const data = await OrdemServico.filter(
+        Object.keys(query).length > 0 ? query : {},
+        '-data_abertura'
+      );
+      const aeroportosAngola = aeroportos.filter(a => a.pais === 'AO');
+      setOrdensDeServico(filtrarDadosPorAeroportoId(currentUser, data, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId));
+    } catch (error) {
+      console.error('Erro ao buscar:', error);
+    } finally {
+      setIsSearchingOS(false);
+    }
+  };
+
+  // Server-side filtered — no client-side filtering needed
+  const filteredOrdens = ordensDeServico;
 
   // --- SS Stats ---
   const ssStats = useMemo(() => ({
@@ -452,6 +471,14 @@ export default function Manutencao() {
                   <div>
                     <Label>{t('manutencao.aeroporto')}</Label>
                     <Select options={aeroportoOptions} value={filtrosOS.aeroporto} onValueChange={v => setFiltrosOS(prev => ({ ...prev, aeroporto: v }))} />
+                  </div>
+                  <div className="flex items-end gap-2 mt-2">
+                    <Button onClick={handleBuscarOS} disabled={isSearchingOS} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                      {isSearchingOS ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Buscando...</> : <><Search className="w-4 h-4 mr-2" /> Buscar</>}
+                    </Button>
+                    <Button variant="outline" onClick={() => { setFiltrosOS({ busca: '', status: 'todos', prioridade: 'todos', aeroporto: 'todos', categoria: 'todos' }); loadData(); }}>
+                      <X className="w-4 h-4 mr-2" /> Limpar
+                    </Button>
                   </div>
                 </div>
               </CardContent>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Filter, Plus, RefreshCw, FileDown, FileText, X, Trash2, Download, Pencil } from 'lucide-react';
+import { DollarSign, Filter, Plus, RefreshCw, FileDown, FileText, X, Trash2, Download, Pencil, Search, Loader2 } from 'lucide-react';
 import Combobox from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -85,8 +85,7 @@ export default function FundoManeio() {
       const user = await User.me();
       setCurrentUser(user);
 
-      const [movimentosData, aeroportosData, empresasData] = await Promise.all([
-        MovimentoFinanceiro.list('-data'),
+      const [aeroportosData, empresasData] = await Promise.all([
         user.empresa_id ? Aeroporto.filter({ empresa_id: user.empresa_id }) : Aeroporto.list(),
         Empresa.list()
       ]);
@@ -95,11 +94,14 @@ export default function FundoManeio() {
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
       const userAccessibleAeroportos = getAeroportosPermitidos(user, aeroportosAngola, user.empresa_id);
-      const userAccessibleAirportIds = userAccessibleAeroportos.map(a => a.id);
       setAeroportos(userAccessibleAeroportos);
 
-      const movimentosFiltrados = movimentosData.filter(m => userAccessibleAirportIds.includes(m.aeroporto_id));
-      setMovimentos(movimentosFiltrados);
+      // Initial load with empresa_id filter
+      const query = {};
+      if (user.empresa_id) query.empresa_id = user.empresa_id;
+      const movimentosData = await MovimentoFinanceiro.filter(query, '-data');
+      const userAccessibleAirportIds = userAccessibleAeroportos.map(a => a.id);
+      setMovimentos(movimentosData.filter(m => userAccessibleAirportIds.includes(m.aeroporto_id)));
     } catch (error) {
       console.error("Erro ao carregar dados do fundo de maneio:", error);
       setAlertInfo({ isOpen: true, type: 'error', title: t('fundo.error_load_title'), message: t('fundo.error_load_msg') });
@@ -109,6 +111,32 @@ export default function FundoManeio() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  const handleBuscar = async () => {
+    setIsLoading(true);
+    try {
+      const empId = currentUser?.empresa_id;
+      const query = {};
+      if (empId) query.empresa_id = empId;
+      if (filtros.aeroporto !== 'todos') query.aeroporto_id = filtros.aeroporto;
+      if (filtros.categoria !== 'todos') query.categoria = filtros.categoria;
+      if (filtros.tipo !== 'todos') query.tipo = filtros.tipo;
+      if (filtros.dataInicio) query.data = { ...query.data, $gte: filtros.dataInicio };
+      if (filtros.dataFim) query.data = { ...query.data, $lte: filtros.dataFim };
+      if (filtros.busca) query.descricao = { $ilike: `%${filtros.busca}%` };
+
+      const data = await MovimentoFinanceiro.filter(query, '-data');
+
+      // Still respect airport-level access
+      const userAccessibleAirportIds = aeroportos.map(a => a.id);
+      setMovimentos(data.filter(m => userAccessibleAirportIds.includes(m.aeroporto_id)));
+    } catch (err) {
+      console.error('Erro ao buscar movimentos:', err);
+      setAlertInfo({ isOpen: true, type: 'error', title: t('fundo.error_load_title'), message: t('fundo.error_load_msg') });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSort = useCallback((field, direction) => {
     setSortField(field);
@@ -169,8 +197,21 @@ export default function FundoManeio() {
     setFiltros(prev => ({ ...prev, [field]: value }));
   };
 
-  const clearFilters = () => {
+  const clearFilters = async () => {
     setFiltros({ aeroporto: 'todos', dataInicio: '', dataFim: '', categoria: 'todos', tipo: 'todos', busca: '' });
+    // Re-fetch without filters
+    setIsLoading(true);
+    try {
+      const query = {};
+      if (currentUser?.empresa_id) query.empresa_id = currentUser.empresa_id;
+      const data = await MovimentoFinanceiro.filter(query, '-data');
+      const userAccessibleAirportIds = aeroportos.map(a => a.id);
+      setMovimentos(data.filter(m => userAccessibleAirportIds.includes(m.aeroporto_id)));
+    } catch (err) {
+      console.error('Erro ao limpar filtros:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const hasActiveFilters = filtros.dataInicio !== '' || filtros.dataFim !== '' ||
@@ -178,19 +219,8 @@ export default function FundoManeio() {
                           filtros.aeroporto !== 'todos' || filtros.busca !== '';
 
   const filteredMovimentos = useMemo(() => {
-    let filtered = movimentos.filter(mov => {
-      const aeroportoMatch = filtros.aeroporto === 'todos' || mov.aeroporto_id === filtros.aeroporto;
-      const categoriaMatch = filtros.categoria === 'todos' || mov.categoria === filtros.categoria;
-      const tipoMatch = filtros.tipo === 'todos' || mov.tipo === filtros.tipo;
-      const dataMatch = (!filtros.dataInicio || mov.data >= filtros.dataInicio) &&
-                        (!filtros.dataFim || mov.data <= filtros.dataFim);
-      const buscaMatch = filtros.busca === '' ||
-                         mov.descricao?.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-                         mov.categoria?.toLowerCase().includes(filtros.busca.toLowerCase());
-      return aeroportoMatch && categoriaMatch && tipoMatch && dataMatch && buscaMatch;
-    });
-
-    filtered.sort((a, b) => {
+    const sorted = [...movimentos];
+    sorted.sort((a, b) => {
       let aVal = a[sortField];
       let bVal = b[sortField];
       if (sortField === 'data') { aVal = new Date(aVal).getTime(); bVal = new Date(bVal).getTime(); }
@@ -199,9 +229,8 @@ export default function FundoManeio() {
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-
-    return filtered;
-  }, [movimentos, filtros, sortField, sortDirection]);
+    return sorted;
+  }, [movimentos, sortField, sortDirection]);
 
   const handleSelectMovimento = (id, checked) => {
     setSelectedMovimentos(prev => checked ? [...prev, id] : prev.filter(i => i !== id));
@@ -458,11 +487,17 @@ export default function FundoManeio() {
                 <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 {t('fundo.filters')}
               </CardTitle>
-              {hasActiveFilters && (
-                <Button variant="outline" size="sm" onClick={clearFilters} className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950">
-                  <X className="w-4 h-4 mr-1" /> {t('fundo.clear_filters')}
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={handleBuscar} disabled={isLoading} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                  {isLoading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Search className="w-4 h-4 mr-1" />}
+                  {t('fundo.search_btn', 'Buscar')}
                 </Button>
-              )}
+                {hasActiveFilters && (
+                  <Button variant="outline" size="sm" onClick={clearFilters} disabled={isLoading} className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950">
+                    <X className="w-4 h-4 mr-1" /> {t('fundo.clear_filters')}
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>

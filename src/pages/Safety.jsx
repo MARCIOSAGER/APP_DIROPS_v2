@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Filter, FileDown, FileText, Mail } from 'lucide-react';
+import { Plus, RefreshCw, Filter, FileDown, FileText, Mail, Search, Loader2, X } from 'lucide-react';
 import Select from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -144,27 +144,35 @@ export default function Safety() {
     });
   };
 
-  const ocorrenciasFiltradas = useMemo(() => {
-    return ocorrencias.filter(ocorrencia => {
-      const aeroportoMatch = filtros.aeroporto === 'todos' || ocorrencia.aeroporto === filtros.aeroporto;
-      const gravidadeMatch = filtros.gravidade === 'todos' || ocorrencia.gravidade === filtros.gravidade;
-      const statusMatch = filtros.status === 'todos' || ocorrencia.status === filtros.status;
-      
-      let dataMatch = true;
-      if (filtros.dataInicio) {
-          const dataOcorrencia = new Date(ocorrencia.data_ocorrencia + 'T00:00:00'); 
-          const dataInicioFiltro = new Date(filtros.dataInicio + 'T00:00:00');
-          dataMatch = dataMatch && (dataOcorrencia >= dataInicioFiltro);
-      }
-      if (filtros.dataFim) {
-          const dataOcorrencia = new Date(ocorrencia.data_ocorrencia + 'T00:00:00');
-          const dataFimFiltro = new Date(filtros.dataFim + 'T00:00:00');
-          dataMatch = dataMatch && (dataOcorrencia <= dataFimFiltro);
-      }
-      
-      return aeroportoMatch && gravidadeMatch && statusMatch && dataMatch;
-    });
-  }, [ocorrencias, filtros]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleBuscar = async () => {
+    setIsSearching(true);
+    try {
+      const empId = user?.empresa_id;
+      const query = {};
+      if (empId) query.empresa_id = empId;
+      if (filtros.aeroporto !== 'todos') query.aeroporto = filtros.aeroporto;
+      if (filtros.gravidade !== 'todos') query.gravidade = filtros.gravidade;
+      if (filtros.status !== 'todos') query.status = filtros.status;
+      if (filtros.dataInicio) query.data_ocorrencia = { ...query.data_ocorrencia, $gte: filtros.dataInicio };
+      if (filtros.dataFim) query.data_ocorrencia = { ...query.data_ocorrencia, $lte: filtros.dataFim };
+
+      const data = await OcorrenciaSafety.filter(
+        Object.keys(query).length > 0 ? query : {},
+        '-data_ocorrencia'
+      );
+      const aeroportosAngola = aeroportos.filter(a => a.pais === 'AO');
+      setOcorrencias(filtrarDadosPorAcesso(user, data, 'aeroporto', aeroportosAngola));
+    } catch (error) {
+      console.error('Erro ao buscar:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // No client-side filtering needed — server-side handles all filters
+  const ocorrenciasFiltradas = ocorrencias;
 
   const handleSelectOcorrencia = useCallback((ocorrenciaId, isSelected) => {
     if (isSelected) {
@@ -481,6 +489,14 @@ export default function Safety() {
                   value={filtros.dataFim}
                   onChange={(e) => setFiltros({...filtros, dataFim: e.target.value})}
                 />
+              </div>
+              <div className="flex items-end gap-2 mt-2">
+                <Button onClick={handleBuscar} disabled={isSearching} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  {isSearching ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Buscando...</> : <><Search className="w-4 h-4 mr-2" /> Buscar</>}
+                </Button>
+                <Button variant="outline" onClick={() => { setFiltros({ aeroporto: 'todos', gravidade: 'todos', status: 'todos', dataInicio: '', dataFim: '' }); loadData(); }}>
+                  <X className="w-4 h-4 mr-2" /> Limpar
+                </Button>
               </div>
             </div>
           </CardContent>
