@@ -410,8 +410,7 @@ export default function Operacoes() {
       if (filtros.tipoVoo !== 'todos') query.tipo_voo = filtros.tipoVoo;
       if (filtros.aeroporto !== 'todos') query.aeroporto_operacao = filtros.aeroporto;
 
-      // Search by numero_voo (ilike) — registo_aeronave fallback handled client-side
-      if (filtros.busca) query.numero_voo = { $ilike: `%${filtros.busca}%` };
+      // Search: handled separately with .or() to search both numero_voo and registo_aeronave
 
       // Companhia: server-side filter by ICAO + IATA codes via $in
       if (filtros.companhia !== 'todos' && filtros.companhia !== 'outro') {
@@ -429,7 +428,39 @@ export default function Operacoes() {
       if (filtros.cargaMin) query.carga_kg = { ...query.carga_kg, $gte: parseFloat(filtros.cargaMin) };
       if (filtros.cargaMax) query.carga_kg = { ...query.carga_kg, $lte: parseFloat(filtros.cargaMax) };
 
-      const data = await Voo.filter(query, '-data_operacao');
+      // If search text, use direct supabase query with .or() for numero_voo + registo_aeronave
+      let data;
+      if (filtros.busca) {
+        let q = supabase.from('voo').select('*');
+        // Apply all filters manually
+        q = q.is('deleted_at', null);
+        if (query.empresa_id) q = q.eq('empresa_id', query.empresa_id);
+        if (query.data_operacao?.$gte) q = q.gte('data_operacao', query.data_operacao.$gte);
+        if (query.data_operacao?.$lte) q = q.lte('data_operacao', query.data_operacao.$lte);
+        if (query.tipo_movimento) q = q.eq('tipo_movimento', query.tipo_movimento);
+        if (query.status) q = q.eq('status', query.status);
+        if (query.tipo_voo) q = q.eq('tipo_voo', query.tipo_voo);
+        if (query.aeroporto_operacao) q = q.eq('aeroporto_operacao', query.aeroporto_operacao);
+        if (query.companhia_aerea?.$in) q = q.in('companhia_aerea', query.companhia_aerea.$in);
+        // OR search across numero_voo and registo_aeronave
+        q = q.or(`numero_voo.ilike.%${filtros.busca}%,registo_aeronave.ilike.%${filtros.busca}%`);
+        q = q.order('data_operacao', { ascending: false });
+        // Paginate
+        const PAGE = 500;
+        let all = [];
+        let from = 0;
+        while (true) {
+          const { data: batch, error } = await q.range(from, from + PAGE - 1);
+          if (error) throw error;
+          if (!batch || batch.length === 0) break;
+          all = all.concat(batch);
+          if (batch.length < PAGE) break;
+          from += PAGE;
+        }
+        data = all;
+      } else {
+        data = await Voo.filter(query, '-data_operacao');
+      }
       setVoos(data);
     } catch (error) {
       console.error('Erro ao filtrar voos:', error);
@@ -723,13 +754,17 @@ export default function Operacoes() {
               empresa_id: vooLigadoInstance.empresa_id || vooDep.empresa_id
             };
 
-            // Verificar se já existe cálculo (usar state em vez de buscar do banco)
-            const existingCalculo = calculosTarifa.find(ct => ct.voo_ligado_id === vooLigadoInstance.id || ct.voo_id === vooDep.id);
-
-            if (existingCalculo) {
-              await CalculoTarifa.update(existingCalculo.id, calculoComVooLigado);
-            } else {
-              await CalculoTarifa.create(calculoComVooLigado);
+            // Use SQL RPC for reliable upsert (handles existing records)
+            try {
+              await _recalculateSingleTariff(vooLigadoInstance);
+            } catch (rpcErr) {
+              // Fallback: try entity create/update
+              const existingCalcArr = await CalculoTarifa.filter({ voo_ligado_id: { $eq: vooLigadoInstance.id } });
+              if (existingCalcArr.length > 0) {
+                await CalculoTarifa.update(existingCalcArr[0].id, calculoComVooLigado);
+              } else {
+                await CalculoTarifa.create(calculoComVooLigado);
+              }
             }
 
             tariffsCalculatedSuccessfully = true;
