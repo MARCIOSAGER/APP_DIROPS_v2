@@ -466,9 +466,6 @@ export default function TesteFlightradar24() {
     setAlert(null);
     abortRef.current = false;
 
-    const SUPABASE_URL = 'https://glernwcsuwcyzwsnelad.supabase.co';
-    const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsZXJud2NzdXdjeXp3c25lbGFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2NDI5MjAsImV4cCI6MjA1MzIxODkyMH0.oGFHKO65MKXFhqHLkRND_7oc7nnWQ4xjqMlzfIh_N7g';
-
     try {
       const blocks = splitInto6hBlocks(startDate, endDate);
       const allResults = [];
@@ -478,34 +475,25 @@ export default function TesteFlightradar24() {
         if (abortRef.current) break;
         setApiProgress(`Buscando bloco ${i + 1}/${blocks.length}...`);
 
-        const session = (await supabase.auth.getSession()).data.session;
-        const response = await fetch(`${SUPABASE_URL}/functions/v1/fr24-proxy`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token || ANON_KEY}`,
-            'apikey': ANON_KEY,
-          },
-          body: JSON.stringify({ airportIcao, dateFrom: blocks[i].from, dateTo: blocks[i].to }),
+        const { data, error: fnError } = await supabase.functions.invoke('fr24-proxy', {
+          body: { airportIcao, dateFrom: blocks[i].from, dateTo: blocks[i].to },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.flights) {
-            data.flights.forEach(f => {
-              const landedDate = f.datetime_landed ? f.datetime_landed.substring(0, 10) : (f.datetime_takeoff ? f.datetime_takeoff.substring(0, 10) : startDate);
-              allResults.push({
-                fr24_id: f.fr24_id,
-                numero_voo: f.flight || f.callsign || '',
-                data_voo: landedDate,
-                airport_icao: airportIcao,
-                status: 'pendente',
-                raw_data: f,
-              });
+        if (!fnError && data?.flights) {
+          data.flights.forEach(f => {
+            const landedDate = f.datetime_landed ? f.datetime_landed.substring(0, 10) : (f.datetime_takeoff ? f.datetime_takeoff.substring(0, 10) : startDate);
+            allResults.push({
+              fr24_id: f.fr24_id,
+              numero_voo: f.flight || f.callsign || '',
+              data_voo: landedDate,
+              airport_icao: airportIcao,
+              status: 'pendente',
+              raw_data: f,
             });
-          }
+          });
         } else {
           errors++;
+          console.error('FR24 block error:', fnError, data?.error);
         }
 
         // Rate limit: wait 7s between calls
