@@ -295,6 +295,30 @@ export default function DashboardInterno() {
     };
   }, [dashboardStats, previousPeriodStats, calcTrend]);
 
+  // Top 10 Companhias (for single-airport enterprises like ATO)
+  const top10Companhias = useMemo(() => {
+    const compMap = new Map();
+    filteredVoos.forEach(v => {
+      const code = v.companhia_aerea || 'N/A';
+      if (!compMap.has(code)) compMap.set(code, { codigo: code, totalMovimentos: 0, arr: 0, dep: 0, passageiros: 0, carga: 0 });
+      const c = compMap.get(code);
+      c.totalMovimentos++;
+      if (v.tipo_movimento === 'ARR') {
+        c.arr++;
+        c.passageiros += (v.passageiros_desembarcados || 0);
+      } else {
+        c.dep++;
+        c.passageiros += (v.passageiros_local || 0) + (v.passageiros_transito_transbordo || 0);
+      }
+      c.carga += (v.carga_kg || 0);
+    });
+    return Array.from(compMap.values())
+      .sort((a, b) => b.totalMovimentos - a.totalMovimentos)
+      .slice(0, 10);
+  }, [filteredVoos]);
+
+  const showCompanhiasInsteadOfAeroportos = aeroportos.length <= 1;
+
   // Recent activity: combine recent voos, inspecoes, and ordens de servico
   const recentActivity = useMemo(() => {
     const items = [];
@@ -656,7 +680,50 @@ export default function DashboardInterno() {
                   </Card>
             }
 
-                {dashboardStats && dashboardStats.top10Aeroportos && dashboardStats.top10Aeroportos.length > 0 &&
+                {/* Top 10: Companhias (single airport) OR Aeroportos (multi airport) */}
+                {showCompanhiasInsteadOfAeroportos && top10Companhias.length > 0 && (
+            <Card className="border-slate-200 dark:border-slate-700">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center gap-2">
+                        <Plane className="w-5 h-5 text-blue-600" />
+                        <CardTitle className="text-lg">Top 10 Companhias por Volume</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                        {top10Companhias.map((comp, index) =>
+                  <Card key={comp.codigo} className="border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-base font-bold text-slate-400">#{index + 1}</span>
+                                <span className="text-xs font-bold text-blue-600">{comp.codigo}</span>
+                              </div>
+                              <div className="space-y-1.5">
+                                <div className="bg-slate-50 dark:bg-slate-800 rounded p-1.5">
+                                  <p className="text-[10px] text-slate-600 mb-0.5">{t('home.movimentos')}:</p>
+                                  <p className="text-base font-bold text-slate-900">{comp.totalMovimentos}</p>
+                                  <div className="flex justify-between text-[10px] mt-0.5">
+                                    <span className="text-green-600">ARR: {comp.arr}</span>
+                                    <span className="text-purple-600">DEP: {comp.dep}</span>
+                                  </div>
+                                </div>
+                                <div className="bg-blue-50 rounded p-1.5">
+                                  <p className="text-[10px] text-slate-600 mb-0.5">{t('home.passageiros')}:</p>
+                                  <p className="text-base font-bold text-blue-900">{comp.passageiros.toLocaleString()}</p>
+                                </div>
+                                <div className="bg-orange-50 rounded p-1.5">
+                                  <p className="text-[10px] text-slate-600 mb-0.5">{t('home.carga_total')}:</p>
+                                  <p className="text-base font-bold text-orange-900">{comp.carga.toLocaleString()} kg</p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                  )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {!showCompanhiasInsteadOfAeroportos && dashboardStats && dashboardStats.top10Aeroportos && dashboardStats.top10Aeroportos.length > 0 &&
             <Card className="border-slate-200 dark:border-slate-700">
                     <CardHeader className="pb-4">
                       <div className="flex items-center gap-2">
