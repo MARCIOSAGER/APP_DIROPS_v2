@@ -218,13 +218,16 @@ Deno.serve(async (req) => {
 
     // 7a. Special endpoint: extrato (consolidated billing extract)
     if (entityName === "extrato") {
-      const rpcParams: Record<string, any> = {};
+      // CRITICAL: always filter by empresa_id from API key (server-side in SQL)
+      const rpcParams: Record<string, any> = {
+        p_empresa_id: keyRecord.empresa_id,
+      };
       if (filters.aeroporto_id) rpcParams.p_aeroporto_id = filters.aeroporto_id;
       if (filters.companhia_id) rpcParams.p_companhia_id = filters.companhia_id;
       if (filters.data_inicio) rpcParams.p_data_inicio = filters.data_inicio;
       if (filters.data_fim) rpcParams.p_data_fim = filters.data_fim;
 
-      // Get calculos via RPC (already filtered by data_operacao + complete ARR+DEP)
+      // Get calculos via RPC (filtered by empresa_id + data_operacao + complete ARR+DEP)
       const { data: calculos, error: rpcError } = await supabase
         .rpc("get_calculos_por_periodo", rpcParams)
         .limit(limit);
@@ -235,8 +238,7 @@ Deno.serve(async (req) => {
         throw new Error(errorMsg);
       }
 
-      // Filter by empresa_id from API key
-      const empresaCalcs = (calculos || []).filter((c: any) => c.empresa_id === keyRecord.empresa_id);
+      const empresaCalcs = calculos || [];
 
       // Get voo + voo_ligado data for each calculo
       const vooIds = [...new Set(empresaCalcs.map((c: any) => c.voo_id).filter(Boolean))];
