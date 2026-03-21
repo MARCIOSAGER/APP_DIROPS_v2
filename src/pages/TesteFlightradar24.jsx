@@ -464,45 +464,73 @@ export default function TesteFlightradar24() {
     setApiLoading(true);
     setApiResults([]);
     setAlert(null);
-    setApiProgress('Buscando via Edge Function (server-side)...');
+    abortRef.current = false;
+
+    const SUPABASE_URL = 'https://glernwcsuwcyzwsnelad.supabase.co';
+    const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsZXJud2NzdXdjeXp3c25lbGFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2NDI5MjAsImV4cCI6MjA1MzIxODkyMH0.oGFHKO65MKXFhqHLkRND_7oc7nnWQ4xjqMlzfIh_N7g';
 
     try {
-      const response = await fetch('https://glernwcsuwcyzwsnelad.supabase.co/functions/v1/fr24-proxy', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsZXJud2NzdXdjeXp3c25lbGFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2NDI5MjAsImV4cCI6MjA1MzIxODkyMH0.oGFHKO65MKXFhqHLkRND_7oc7nnWQ4xjqMlzfIh_N7g',
-        },
-        body: JSON.stringify({ airportIcao, startDate, endDate }),
-      });
+      const blocks = splitInto6hBlocks(startDate, endDate);
+      const allResults = [];
+      let errors = 0;
 
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Edge Function ${response.status}: ${errText}`);
+      for (let i = 0; i < blocks.length; i++) {
+        if (abortRef.current) break;
+        setApiProgress(`Buscando bloco ${i + 1}/${blocks.length}...`);
+
+        const session = (await supabase.auth.getSession()).data.session;
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/fr24-proxy`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ANON_KEY}`,
+            'apikey': ANON_KEY,
+          },
+          body: JSON.stringify({ airportIcao, dateFrom: blocks[i].from, dateTo: blocks[i].to }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.flights) {
+            data.flights.forEach(f => {
+              const landedDate = f.datetime_landed ? f.datetime_landed.substring(0, 10) : (f.datetime_takeoff ? f.datetime_takeoff.substring(0, 10) : startDate);
+              allResults.push({
+                fr24_id: f.fr24_id,
+                numero_voo: f.flight || f.callsign || '',
+                data_voo: landedDate,
+                airport_icao: airportIcao,
+                status: 'pendente',
+                raw_data: f,
+              });
+            });
+          }
+        } else {
+          errors++;
+        }
+
+        // Rate limit: wait 7s between calls
+        if (i < blocks.length - 1 && !abortRef.current) {
+          for (let s = 7; s > 0; s--) {
+            if (abortRef.current) break;
+            setApiProgress(`Bloco ${i + 1}/${blocks.length} OK (${allResults.length} voos). Aguardando ${s}s...`);
+            await new Promise(r => setTimeout(r, 1000));
+          }
+        }
       }
 
-      const data = await response.json();
-      if (data?.error) throw new Error(data.error);
-
-      const flights = (data?.flights || []).map(f => {
-        const landedDate = f.datetime_landed ? f.datetime_landed.substring(0, 10) : (f.datetime_takeoff ? f.datetime_takeoff.substring(0, 10) : startDate);
-        return {
-          fr24_id: f.fr24_id,
-          numero_voo: f.flight || f.callsign || '',
-          data_voo: landedDate,
-          airport_icao: airportIcao,
-          status: 'pendente',
-          raw_data: f,
-        };
+      // Deduplicate
+      const seen = new Set();
+      const deduped = allResults.filter(r => {
+        if (seen.has(r.fr24_id)) return false;
+        seen.add(r.fr24_id);
+        return true;
       });
 
-      setApiResults(flights);
+      setApiResults(deduped);
       setApiProgress('');
-      const errMsg = data?.errors?.length ? ` (${data.errors.length} erros)` : '';
-      showAlert('success', `${flights.length} voos encontrados em ${data?.blocks || '?'} blocos.${errMsg} Dados salvos no cache automaticamente.`);
+      showAlert('success', `${deduped.length} voos encontrados em ${blocks.length} blocos. ${errors ? errors + ' erros.' : ''} Dados salvos no cache.`);
     } catch (err) {
-      showAlert('error', `Erro API FR24: ${err.message}`);
+      showAlert('error', `Erro: ${err.message}`);
       setApiProgress('');
     } finally {
       setApiLoading(false);
