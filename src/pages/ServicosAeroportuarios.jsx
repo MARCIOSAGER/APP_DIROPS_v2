@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Select from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Layers, Plus, RefreshCw, Loader2, MoreVertical, Pencil, Trash2, GraduationCap, Plane } from 'lucide-react';
+import { Layers, Plus, RefreshCw, Loader2, MoreVertical, Pencil, Trash2, GraduationCap, Plane, Search, X } from 'lucide-react';
 import { Cliente } from '@/entities/Cliente';
 import { CobrancaServico } from '@/entities/CobrancaServico';
 import { TipoServicoGeral } from '@/entities/TipoServicoGeral';
@@ -33,6 +33,7 @@ export default function ServicosAeroportuarios() {
   const [tiposOutraTarifa, setTiposOutraTarifa] = useState([]);
   const [outrasTarifas, setOutrasTarifas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Filters
   const hoje = new Date();
@@ -40,7 +41,7 @@ export default function ServicosAeroportuarios() {
   const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
   const [dataInicio, setDataInicio] = useState(primeiroDia);
   const [dataFim, setDataFim] = useState(ultimoDia);
-  const [filtroEmpresa, setFiltroEmpresa] = useState('');
+  const [filtroCliente, setFiltroCliente] = useState('');
 
   // Modals
   const [formCobrancaCategoria, setFormCobrancaCategoria] = useState('cursos_licencas');
@@ -99,32 +100,74 @@ export default function ServicosAeroportuarios() {
       }));
   }, [tiposOutraTarifa, outrasTarifas]);
 
-  // Load cobrancas
+  // Build server-side query from current filters
+  const buildQuery = useCallback(() => {
+    const query = {};
+    if (effectiveEmpresaId) query.empresa_id = effectiveEmpresaId;
+    if (dataInicio) query.data_servico = { ...query.data_servico, $gte: dataInicio };
+    if (dataFim) query.data_servico = { ...query.data_servico, $lte: dataFim };
+    if (filtroCliente) query.cliente_id = filtroCliente;
+    return query;
+  }, [effectiveEmpresaId, dataInicio, dataFim, filtroCliente]);
+
+  // Load cobrancas (initial load)
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const cobrancasData = await CobrancaServico.filter({ data_servico: { $gte: dataInicio, $lte: dataFim } });
-      // Quem acede a esta página vê todas as cobranças — filtro de empresa é só na UI (dropdown)
+      const query = buildQuery();
+      const cobrancasData = await CobrancaServico.filter(query, '-data_servico');
       setCobrancas(cobrancasData || []);
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [dataInicio, dataFim, currentUser, effectiveEmpresaId]);
+  }, [buildQuery]);
 
   useEffect(() => {
     if (currentUser) loadData();
-  }, [loadData, currentUser]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
+
+  // Buscar button handler — server-side search
+  const handleBuscar = async () => {
+    setIsSearching(true);
+    try {
+      const query = buildQuery();
+      const cobrancasData = await CobrancaServico.filter(query, '-data_servico');
+      setCobrancas(cobrancasData || []);
+    } catch (err) {
+      console.error('Erro ao buscar:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Limpar filters and reload with defaults
+  const handleLimparFiltros = async () => {
+    setDataInicio(primeiroDia);
+    setDataFim(ultimoDia);
+    setFiltroCliente('');
+    // Reload with default filter values (state not yet updated, so build query manually)
+    setIsSearching(true);
+    try {
+      const query = {};
+      if (effectiveEmpresaId) query.empresa_id = effectiveEmpresaId;
+      query.data_servico = { $gte: primeiroDia, $lte: ultimoDia };
+      const cobrancasData = await CobrancaServico.filter(query, '-data_servico');
+      setCobrancas(cobrancasData || []);
+    } catch (err) {
+      console.error('Erro ao limpar filtros:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   // ==================== Cobranças ====================
+  // Server-side handles all filters; client-side only separates by category
   const cobrancasFiltradas = useCallback((cat) => {
-    let resultado = cobrancas.filter(c => c.categoria === cat);
-    if (filtroEmpresa) {
-      resultado = resultado.filter(c => c.cliente_id === filtroEmpresa);
-    }
-    return resultado.sort((a, b) => (b.data_servico || '').localeCompare(a.data_servico || ''));
-  }, [cobrancas, filtroEmpresa]);
+    return cobrancas.filter(c => c.categoria === cat);
+  }, [cobrancas]);
 
   const handleNovaCobranca = (cat) => {
     setFormCobrancaCategoria(cat);
@@ -139,7 +182,8 @@ export default function ServicosAeroportuarios() {
   };
 
   const handleCobrancaSaved = async () => {
-    const cobrancasData = await CobrancaServico.filter({ data_servico: { $gte: dataInicio, $lte: dataFim } });
+    const query = buildQuery();
+    const cobrancasData = await CobrancaServico.filter(query, '-data_servico');
     setCobrancas(cobrancasData || []);
   };
 
@@ -174,18 +218,8 @@ export default function ServicosAeroportuarios() {
     const total = getTotalCobrancas(cat);
     return (
       <div className="space-y-4">
-        {/* Filters */}
+        {/* Actions */}
         <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">{t('servicos.cliente')}</Label>
-            <Select
-              options={[{ value: '', label: t('servicos.todos') }, ...clientes.map(e => ({ value: e.id, label: e.nome }))]}
-              value={filtroEmpresa}
-              onValueChange={setFiltroEmpresa}
-              placeholder={t('servicos.todos')}
-              className="min-w-[280px] w-auto"
-            />
-          </div>
           <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white h-9" onClick={() => handleNovaCobranca(cat)}>
             <Plus className="w-4 h-4 mr-1" /> {t('servicos.novaCobranca')}
           </Button>
@@ -266,13 +300,13 @@ export default function ServicosAeroportuarios() {
               <Layers className="w-5 h-5 text-cyan-600" />
               {t('page.servicos_aeroportuarios.title')}
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={loadData} disabled={isLoading}>
-              <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} /> {t('btn.refresh')}
+            <Button variant="outline" size="sm" onClick={handleBuscar} disabled={isSearching}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${isSearching ? 'animate-spin' : ''}`} /> {t('btn.refresh')}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {/* Period filters (shared) */}
+          {/* Server-side filters (shared) */}
           <div className="flex flex-wrap items-end gap-3 mb-4">
             <div className="space-y-1">
               <Label className="text-xs">{t('servicos.dataInicio')}</Label>
@@ -281,6 +315,24 @@ export default function ServicosAeroportuarios() {
             <div className="space-y-1">
               <Label className="text-xs">{t('servicos.dataFim')}</Label>
               <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="w-40 h-9" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">{t('servicos.cliente')}</Label>
+              <Select
+                options={[{ value: '', label: t('servicos.todos') }, ...clientes.map(e => ({ value: e.id, label: e.nome }))]}
+                value={filtroCliente}
+                onValueChange={setFiltroCliente}
+                placeholder={t('servicos.todos')}
+                className="min-w-[280px] w-auto"
+              />
+            </div>
+            <div className="flex items-end gap-2">
+              <Button onClick={handleBuscar} disabled={isSearching} className="bg-emerald-600 hover:bg-emerald-700 text-white h-9">
+                {isSearching ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Buscando...</> : <><Search className="w-4 h-4 mr-2" /> Buscar</>}
+              </Button>
+              <Button variant="outline" className="h-9" onClick={handleLimparFiltros}>
+                <X className="w-4 h-4 mr-2" /> Limpar
+              </Button>
             </div>
           </div>
 

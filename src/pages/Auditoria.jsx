@@ -25,6 +25,8 @@ import {
         ArrowUpDown,
         Edit,
         Trash2,
+        Search,
+        Loader2,
         } from
       'lucide-react';
 import { Label } from '@/components/ui/label';
@@ -146,6 +148,7 @@ export default function Auditoria() {
   const [sortOrderPAC, setSortOrderPAC] = useState('desc');
   const [sortFieldPAC, setSortFieldPAC] = useState('data_criacao');
   const [deletePACInfo, setDeletePACInfo] = useState({ isOpen: false, pac: null });
+  const [isSearching, setIsSearching] = useState(false);
 
 
   const showSuccess = useCallback((title, description) => {
@@ -225,6 +228,48 @@ export default function Auditoria() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const handleBuscar = async () => {
+    setIsSearching(true);
+    try {
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
+
+      // Build server-side query for ProcessoAuditoria
+      const queryProcesso = {};
+      if (empId) queryProcesso.empresa_id = empId;
+      if (filtros.aeroporto !== 'todos') queryProcesso.aeroporto_id = filtros.aeroporto;
+      if (filtros.status !== 'todos') queryProcesso.status = filtros.status;
+      if (filtros.dataInicio) queryProcesso.data_auditoria = { ...queryProcesso.data_auditoria, $gte: filtros.dataInicio };
+      if (filtros.dataFim) queryProcesso.data_auditoria = { ...queryProcesso.data_auditoria, $lte: filtros.dataFim };
+
+      const processosData = await ProcessoAuditoria.filter(
+        Object.keys(queryProcesso).length > 0 ? queryProcesso : {},
+        '-data_auditoria'
+      );
+      const processosFiltrados = filtrarDadosPorAcesso(currentUser, processosData || [], 'aeroporto_id', aeroportos || [], effectiveEmpresaId);
+      setProcessosAuditoria(processosFiltrados);
+
+      // Build server-side query for PlanoAcaoCorretiva
+      const queryPAC = {};
+      if (empId) queryPAC.empresa_id = empId;
+      if (filtros.aeroporto !== 'todos') queryPAC.aeroporto_id = filtros.aeroporto;
+      if (filtros.status !== 'todos') queryPAC.status = filtros.status;
+      if (filtros.dataInicio) queryPAC.data_criacao = { ...queryPAC.data_criacao, $gte: filtros.dataInicio };
+      if (filtros.dataFim) queryPAC.data_criacao = { ...queryPAC.data_criacao, $lte: filtros.dataFim };
+
+      const pacsData = await PlanoAcaoCorretiva.filter(
+        Object.keys(queryPAC).length > 0 ? queryPAC : {},
+        '-data_criacao'
+      );
+      const pacsFiltrados = filtrarDadosPorAcesso(currentUser, pacsData || [], 'aeroporto_id', aeroportos || [], effectiveEmpresaId);
+      setPacs(pacsFiltrados);
+
+    } catch (error) {
+      console.error('Erro ao buscar:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const estatisticas = useMemo(() => ({
     total: processosAuditoria.length,
@@ -591,18 +636,14 @@ export default function Auditoria() {
     }
   }, [aeroportos, showSuccess, showError, itensAuditoria, tiposAuditoria]);
 
+  // Server-side handles: aeroporto_id, status, data_auditoria range
+  // Client-side keeps: selectedCategoria (join), responsavel (text search)
   const filteredProcessos = useMemo(() => {
     const filtered = processosAuditoria.filter((proc) => {
       const tipo = tiposAuditoria.find((t) => t.id === proc.tipo_auditoria_id);
-
       const categoriaMatch = selectedCategoria === 'todos' || tipo?.categoria === selectedCategoria;
-      const aeroportoMatch = filtros.aeroporto === 'todos' || proc.aeroporto_id === filtros.aeroporto;
-      const statusMatch = filtros.status === 'todos' || proc.status === filtros.status;
-      const dataInicioMatch = !filtros.dataInicio || proc.data_auditoria && new Date(proc.data_auditoria) >= new Date(filtros.dataInicio);
-      const dataFimMatch = !filtros.dataFim || proc.data_auditoria && new Date(proc.data_auditoria) <= new Date(filtros.dataFim);
       const responsavelMatch = !filtros.responsavel || proc.auditor_responsavel?.toLowerCase().includes(filtros.responsavel.toLowerCase());
-
-      return categoriaMatch && aeroportoMatch && statusMatch && dataInicioMatch && dataFimMatch && responsavelMatch;
+      return categoriaMatch && responsavelMatch;
     });
 
     // Aplicar ordenação
@@ -628,17 +669,14 @@ export default function Auditoria() {
       
       return sortOrder === 'asc' ? comparison : -comparison;
     });
-  }, [processosAuditoria, filtros, selectedCategoria, tiposAuditoria, sortField, sortOrder]);
+  }, [processosAuditoria, filtros.responsavel, selectedCategoria, tiposAuditoria, sortField, sortOrder]);
 
+  // Server-side handles: aeroporto_id, status, data_criacao range
+  // Client-side keeps: responsavel (text search)
   const filteredPacs = useMemo(() => {
     const filtered = pacs.filter((pac) => {
-      const aeroportoMatch = filtros.aeroporto === 'todos' || pac.aeroporto_id === filtros.aeroporto;
-      const statusMatch = filtros.status === 'todos' || pac.status === filtros.status;
-      const dataInicioMatch = !filtros.dataInicio || pac.data_criacao && new Date(pac.data_criacao) >= new Date(filtros.dataInicio);
-      const dataFimMatch = !filtros.dataFim || pac.data_criacao && new Date(pac.data_criacao) <= new Date(filtros.dataFim);
       const responsavelMatch = !filtros.responsavel || pac.responsavel_elaboracao?.toLowerCase().includes(filtros.responsavel.toLowerCase());
-
-      return aeroportoMatch && statusMatch && dataInicioMatch && dataFimMatch && responsavelMatch;
+      return responsavelMatch;
     });
 
     // Aplicar ordenação
@@ -667,7 +705,7 @@ export default function Auditoria() {
       
       return sortOrderPAC === 'asc' ? comparison : -comparison;
     });
-  }, [pacs, filtros, sortFieldPAC, sortOrderPAC]);
+  }, [pacs, filtros.responsavel, sortFieldPAC, sortOrderPAC]);
 
   const clearFilters = () => {
     setFiltros({
@@ -677,7 +715,8 @@ export default function Auditoria() {
       dataFim: '',
       responsavel: ''
     });
-    setAlertInfo({ isOpen: false, type: 'info', title: '', message: '' }); // Clear messages when filters are cleared
+    setAlertInfo({ isOpen: false, type: 'info', title: '', message: '' });
+    loadData(); // Reload unfiltered data
   };
 
   const hasActiveFilters = filtros.aeroporto !== 'todos' || filtros.status !== 'todos' || filtros.dataInicio || filtros.dataFim || filtros.responsavel;
@@ -908,6 +947,14 @@ export default function Auditoria() {
                       onChange={(e) => setFiltros((f) => ({ ...f, dataFim: e.target.value }))} />
 
                   </div>
+                </div>
+                <div className="flex items-end gap-2 mt-2">
+                  <Button onClick={handleBuscar} disabled={isSearching} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                    {isSearching ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Buscando...</> : <><Search className="w-4 h-4 mr-2" /> Buscar</>}
+                  </Button>
+                  <Button variant="outline" onClick={clearFilters}>
+                    <X className="w-4 h-4 mr-2" /> Limpar
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -1142,6 +1189,14 @@ export default function Auditoria() {
                       onChange={(e) => setFiltros((f) => ({ ...f, dataFim: e.target.value }))} />
 
                   </div>
+                </div>
+                <div className="flex items-end gap-2 mt-2">
+                  <Button onClick={handleBuscar} disabled={isSearching} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                    {isSearching ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Buscando...</> : <><Search className="w-4 h-4 mr-2" /> Buscar</>}
+                  </Button>
+                  <Button variant="outline" onClick={clearFilters}>
+                    <X className="w-4 h-4 mr-2" /> Limpar
+                  </Button>
                 </div>
               </CardContent>
             </Card>

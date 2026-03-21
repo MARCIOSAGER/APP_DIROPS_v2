@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Filter, X, Search, Settings, ClipboardCheck, Download, FileText, Mail, Trash2, AlertTriangle, BarChart3, Brain, FileEdit } from 'lucide-react';
+import { Plus, RefreshCw, Filter, X, Search, Settings, ClipboardCheck, Download, FileText, Mail, Trash2, AlertTriangle, BarChart3, Brain, FileEdit, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -68,6 +68,7 @@ export default function KPIsOperacionais() {
   const [activeTab, setActiveTab] = useState('medicoes');
   const [selectedMedicoes, setSelectedMedicoes] = useState([]);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   // NOVO: Estado para ordenação da tabela
   const [sortField, setSortField] = useState('data_medicao');
@@ -737,6 +738,32 @@ Por favor tente novamente ou contacte o suporte técnico.`;
       dataFim: '',
       numeroVoo: ''
     });
+    loadData();
+  };
+
+  const handleBuscar = async () => {
+    setIsSearching(true);
+    try {
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
+      const query = {};
+      if (empId) query.empresa_id = empId;
+      if (filtros.aeroporto !== 'todos') query.aeroporto_id = filtros.aeroporto;
+      if (filtros.tipoKpi !== 'todos') query.tipo_kpi_id = filtros.tipoKpi;
+      if (filtros.dataInicio) query.data_medicao = { ...query.data_medicao, $gte: filtros.dataInicio };
+      if (filtros.dataFim) query.data_medicao = { ...query.data_medicao, $lte: filtros.dataFim };
+      if (filtros.numeroVoo) query.numero_voo = { $ilike: filtros.numeroVoo };
+
+      const data = await MedicaoKPI.filter(
+        Object.keys(query).length > 0 ? query : {},
+        '-data_medicao'
+      );
+      const aeroportosAngola = aeroportos.filter(a => a.pais === 'AO');
+      setMedicoesKPI(filtrarDadosPorAcesso(currentUser, data, 'aeroporto_id', aeroportosAngola));
+    } catch (error) {
+      console.error('Erro ao buscar KPIs:', error);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const hasActiveFilters = useMemo(() => Object.values(filtros).some((value) => value !== '' && value !== 'todos'), [filtros]);
@@ -747,17 +774,9 @@ Por favor tente novamente ou contacte o suporte técnico.`;
     );
   };
 
-  // NOVO: Filtrar e ordenar medições
+  // No client-side filtering needed — server-side handles all filters via handleBuscar
   const filteredAndSortedMedicoes = useMemo(() => {
-    let result = medicoesKPI.filter((medicao) => {
-      const aeroportoMatch = filtros.aeroporto === 'todos' || medicao.aeroporto_id === filtros.aeroporto;
-      const tipoKpiMatch = filtros.tipoKpi === 'todos' || medicao.tipo_kpi_id === filtros.tipoKpi;
-      const numeroVooMatch = filtros.numeroVoo === '' || medicao.numero_voo?.toLowerCase().includes(filtros.numeroVoo.toLowerCase());
-      const dataMatch = (!filtros.dataInicio || medicao.data_medicao >= filtros.dataInicio) && (
-      !filtros.dataFim || medicao.data_medicao <= filtros.dataFim);
-
-      return aeroportoMatch && tipoKpiMatch && numeroVooMatch && dataMatch;
-    });
+    let result = [...medicoesKPI];
 
     // Aplicar ordenação
     result.sort((a, b) => {
@@ -817,7 +836,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
     });
 
     return result;
-  }, [medicoesKPI, filtros, sortField, sortDirection, tiposKPI, aeroportos]);
+  }, [medicoesKPI, sortField, sortDirection, tiposKPI, aeroportos]);
 
   const allSelectedOnPage = filteredAndSortedMedicoes.length > 0 && selectedMedicoes.length === filteredAndSortedMedicoes.length;
 
@@ -1059,6 +1078,14 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                         className="pl-10" />
 
                     </div>
+                  </div>
+                  <div className="lg:col-span-4 flex items-end gap-2 mt-2">
+                    <Button onClick={handleBuscar} disabled={isSearching} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                      {isSearching ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Buscando...</> : <><Search className="w-4 h-4 mr-2" /> Buscar</>}
+                    </Button>
+                    <Button variant="outline" onClick={clearFilters}>
+                      <X className="w-4 h-4 mr-2" /> Limpar
+                    </Button>
                   </div>
                 </div>
               </CardContent>
