@@ -300,7 +300,7 @@ export default function DashboardInterno() {
     const compMap = new Map();
     filteredVoos.forEach(v => {
       const code = v.companhia_aerea || 'N/A';
-      if (!compMap.has(code)) compMap.set(code, { codigo: code, totalMovimentos: 0, arr: 0, dep: 0, passageiros: 0, carga: 0 });
+      if (!compMap.has(code)) compMap.set(code, { codigo: code, totalMovimentos: 0, arr: 0, dep: 0, passageiros: 0, carga: 0, receita: 0 });
       const c = compMap.get(code);
       c.totalMovimentos++;
       if (v.tipo_movimento === 'ARR') {
@@ -312,10 +312,17 @@ export default function DashboardInterno() {
       }
       c.carga += (v.carga_kg || 0);
     });
+    // Add revenue from calculosTarifa
+    calculosTarifa.forEach(ct => {
+      const voo = filteredVoos.find(v => v.id === ct.voo_id);
+      if (voo && compMap.has(voo.companhia_aerea)) {
+        compMap.get(voo.companhia_aerea).receita += (ct.total_tarifa_usd || 0);
+      }
+    });
     return Array.from(compMap.values())
       .sort((a, b) => b.totalMovimentos - a.totalMovimentos)
       .slice(0, 10);
-  }, [filteredVoos]);
+  }, [filteredVoos, calculosTarifa]);
 
   const showCompanhiasInsteadOfAeroportos = aeroportos.length <= 1;
 
@@ -715,6 +722,12 @@ export default function DashboardInterno() {
                                   <p className="text-[10px] text-slate-600 mb-0.5">{t('home.carga_total')}:</p>
                                   <p className="text-base font-bold text-orange-900">{comp.carga.toLocaleString()} kg</p>
                                 </div>
+                                {comp.receita > 0 && (
+                                <div className="bg-green-50 rounded p-1.5">
+                                  <p className="text-[10px] text-slate-600 mb-0.5">Receita (USD):</p>
+                                  <p className="text-base font-bold text-green-700">${comp.receita.toLocaleString('pt-PT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                                </div>
+                                )}
                               </div>
                             </CardContent>
                           </Card>
