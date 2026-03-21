@@ -13,6 +13,7 @@ import { Voo } from '@/entities/Voo';
 import { VooLigado } from '@/entities/VooLigado';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -190,6 +191,7 @@ function FlightTable({ flights, airportIcao, showActions, onCreateVoo, onIgnore,
 
 export default function TesteFlightradar24() {
   const { currentUser } = useAuth();
+  const { effectiveEmpresaId } = useCompanyView();
 
   // Shared filters
   const [airportIcao, setAirportIcao] = useState('FNBJ');
@@ -307,7 +309,7 @@ export default function TesteFlightradar24() {
   const createVooFromCache = useCallback(async (cachedFlight) => {
     const raw = cachedFlight.raw_data || {};
     const isArr = isArrival(raw, airportIcao);
-    const empresaId = currentUser?.empresa_id;
+    const empresaId = effectiveEmpresaId || currentUser?.empresa_id;
     if (!empresaId) {
       showAlert('error', 'Utilizador sem empresa_id.');
       return;
@@ -591,7 +593,7 @@ export default function TesteFlightradar24() {
     setCompareData([]);
     setCompareStats(null);
 
-    const empresaId = currentUser?.empresa_id;
+    const empresaId = effectiveEmpresaId || currentUser?.empresa_id;
     if (!empresaId) {
       showAlert('error', 'Utilizador sem empresa_id.');
       setCompareLoading(false);
