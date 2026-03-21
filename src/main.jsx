@@ -30,6 +30,18 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
+// Auto-reload when Service Worker activates new version (skipWaiting)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    const lastSWReload = sessionStorage.getItem('sw_reload_at');
+    const now = Date.now();
+    if (!lastSWReload || now - parseInt(lastSWReload) > 10000) {
+      sessionStorage.setItem('sw_reload_at', String(now));
+      window.location.reload();
+    }
+  });
+}
+
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,

@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//tmp/**)",
+      "Bash(node -e \"const{build}=require\\(''''vite''''\\); build\\(\\).then\\(\\(\\)=>console.log\\(''''BUILD OK''''\\)\\).catch\\(e=>console.error\\(''''FAIL:'''',e.message\\)\\)\")",
+      "Bash(grep -rn \"empresa_id\" supabase/migrations/*.sql)",
+      "Bash(grep -rn \"ADD COLUMN.*empresa_id\\\\|empresa_id.*uuid\" supabase/migrations/*.sql)",
+      "Bash(echo \"done:$?\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(node -e \"const{build}=require\\(''vite''\\); build\\(\\).then\\(\\(\\)=>console.log\\(''BUILD OK''\\)\\).catch\\(e=>console.error\\(''FAIL:'',e.message\\)\\)\")",
+      "Read(//d/VSCode_Claude/01-Projetos/APP_DIROPS/APP_DIROPS_v2/**)",
+      "Bash(echo \"DEPLOY:$?\")",
+      "Bash(grep -i \"registo_aeronave\" supabase/migrations/*.sql)",
+      "Bash(curl -s -X POST \"https://api.supabase.com/v1/projects/glernwcsuwcyzwsnelad/database/query\" -H \"Authorization: Bearer sbp_c8d01ec2c738bc1a6a9481b734a932cdcd6b18da\" -H \"Content-Type: application/json\" -d '{:*)",
+      "Bash(grep -v \"//.*\\\\.create\")",
+      "Bash(curl -s -X POST \"https://api.supabase.com/v1/projects/glernwcsuwcyzwsnelad/database/query\" -H \"Authorization: Bearer sbp_c8d01ec2c738bc1a6a9481b734a932cdcd6b18da\" -H \"Content-Type: application/json\" -d '{\"\"query\"\": \"\"SELECT table_name FROM information_schema.tables WHERE table_schema=''''public'''' AND table_type=''''BASE TABLE'''' ORDER BY table_name;\"\"}')",
+      "Bash(curl -s -X POST \"https://api.supabase.com/v1/projects/glernwcsuwcyzwsnelad/database/query\" -H \"Authorization: Bearer sbp_c8d01ec2c738bc1a6a9481b734a932cdcd6b18da\" -H \"Content-Type: application/json\" -d '{\"\"query\"\": \"\"SELECT table_name FROM information_schema.columns WHERE table_schema=''''public'''' AND column_name=''''empresa_id'''' ORDER BY table_name;\"\"}')",
+      "Bash(curl -s -X POST \"https://api.supabase.com/v1/projects/glernwcsuwcyzwsnelad/database/query\" -H \"Authorization: Bearer sbp_c8d01ec2c738bc1a6a9481b734a932cdcd6b18da\" -H \"Content-Type: application/json\" -d '{\"\"query\"\": \"\"SELECT schemaname, tablename, policyname, cmd, qual, with_check FROM pg_policies WHERE schemaname=''''public'''' AND cmd IN \\(''''INSERT''''\\) ORDER BY tablename;\"\"}')"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}
