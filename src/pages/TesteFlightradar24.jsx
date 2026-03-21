@@ -461,83 +461,35 @@ export default function TesteFlightradar24() {
   // ═══════════════════════════════════════════════════════════
 
   const fetchFR24API = useCallback(async () => {
-    // Try env first, then fetch from api_config table
-    let apiKey = import.meta.env.VITE_FR24_API_KEY;
-    if (!apiKey) {
-      const { data: configData } = await supabase.from('api_config').select('valor').eq('chave', 'FR24_API_KEY').single();
-      apiKey = configData?.valor;
-    }
-    if (!apiKey) {
-      showAlert('error', 'FR24 API Key não configurada. Adicione na tabela api_config.');
-      return;
-    }
-
     setApiLoading(true);
     setApiResults([]);
     setAlert(null);
-    abortRef.current = false;
+    setApiProgress('Buscando via Edge Function (server-side)...');
 
     try {
-      const blocks = splitInto6hBlocks(startDate, endDate);
-      const allResults = [];
-
-      for (let i = 0; i < blocks.length; i++) {
-        if (abortRef.current) break;
-
-        setApiProgress(`Buscando bloco ${i + 1}/${blocks.length}...`);
-
-        const url = `https://fr24api.flightradar24.com/api/flight-summary/light?airports=${airportIcao}&flight_datetime_from=${blocks[i].from}&flight_datetime_to=${blocks[i].to}&limit=20`;
-
-        const response = await fetch(url, {
-          headers: {
-            'Accept': 'application/json',
-            'Accept-Version': 'v1',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-        });
-
-        if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(`FR24 API ${response.status}: ${errText}`);
-        }
-
-        const json = await response.json();
-        const flights = json.data || [];
-
-        // Map to cache-like format
-        flights.forEach(f => {
-          const landedDate = f.datetime_landed ? f.datetime_landed.substring(0, 10) : (f.datetime_takeoff ? f.datetime_takeoff.substring(0, 10) : startDate);
-          allResults.push({
-            fr24_id: f.fr24_id,
-            numero_voo: f.flight || f.callsign || '',
-            data_voo: landedDate,
-            airport_icao: airportIcao,
-            status: 'pendente',
-            raw_data: f,
-          });
-        });
-
-        // Rate limit: wait 7s between calls (10 req/min limit)
-        if (i < blocks.length - 1) {
-          for (let s = 7; s > 0; s--) {
-            if (abortRef.current) break;
-            setApiProgress(`Buscando bloco ${i + 1}/${blocks.length}... aguardando ${s}s (rate limit)`);
-            await sleep(1000);
-          }
-        }
-      }
-
-      // Deduplicate by fr24_id
-      const seen = new Set();
-      const deduped = allResults.filter(r => {
-        if (seen.has(r.fr24_id)) return false;
-        seen.add(r.fr24_id);
-        return true;
+      const { data, error } = await supabase.functions.invoke('fr24-proxy', {
+        body: { airportIcao, startDate, endDate },
       });
 
-      setApiResults(deduped);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const flights = (data?.flights || []).map(f => {
+        const landedDate = f.datetime_landed ? f.datetime_landed.substring(0, 10) : (f.datetime_takeoff ? f.datetime_takeoff.substring(0, 10) : startDate);
+        return {
+          fr24_id: f.fr24_id,
+          numero_voo: f.flight || f.callsign || '',
+          data_voo: landedDate,
+          airport_icao: airportIcao,
+          status: 'pendente',
+          raw_data: f,
+        };
+      });
+
+      setApiResults(flights);
       setApiProgress('');
-      showAlert('success', `${deduped.length} voos encontrados na API FR24.`);
+      const errMsg = data?.errors?.length ? ` (${data.errors.length} erros)` : '';
+      showAlert('success', `${flights.length} voos encontrados em ${data?.blocks || '?'} blocos.${errMsg} Dados salvos no cache automaticamente.`);
     } catch (err) {
       showAlert('error', `Erro API FR24: ${err.message}`);
       setApiProgress('');
