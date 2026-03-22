@@ -2809,7 +2809,19 @@ export default function Operacoes() {
                                       <span className="text-slate-400 truncate max-w-[80px] inline-block">{voo.created_by || 'N/A'}</span>
                                     )}
                                   </TableCell>
-                                  <TableCell className="text-right">
+                                  <TableCell className="text-right flex gap-1 justify-end">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 px-2 text-xs border-red-300 text-red-600 hover:bg-red-50"
+                                      onClick={async () => {
+                                        if (!confirm(`Eliminar voo ${voo.numero_voo} ${voo.tipo_movimento} ${voo.data_operacao}?`)) return;
+                                        await Voo.update(voo.id, { deleted_at: new Date().toISOString() });
+                                        if (semLinkLoaded) loadVoosSemLink(); else setVoos(prev => prev.filter(v => v.id !== voo.id));
+                                      }}
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
                                     <Popover>
                                       <PopoverTrigger asChild>
                                         <Button
