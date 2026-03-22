@@ -231,6 +231,12 @@ export default function TesteFlightradar24() {
   const [compareStats, setCompareStats] = useState(null);
   const [comparingIds, setComparingIds] = useState(new Set());
 
+  // Filtered comparison data
+  const filteredCompareData = useMemo(() => {
+    if (!compareStatusFilter) return compareData;
+    return compareData.filter(r => r.compareStatus === compareStatusFilter);
+  }, [compareData, compareStatusFilter]);
+
   // Companhia cache
   const companhiaCacheRef = useRef(null);
 
@@ -1069,7 +1075,7 @@ export default function TesteFlightradar24() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">
-                  Comparação FR24 vs ATO ({(compareStatusFilter ? compareData.filter(r => r.compareStatus === compareStatusFilter) : compareData).length}{compareStatusFilter ? ` — ${compareStatusFilter}` : ''})
+                  Comparação FR24 vs ATO ({filteredCompareData.length}{compareStatusFilter ? ` — ${compareStatusFilter}` : ''})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1087,7 +1093,7 @@ export default function TesteFlightradar24() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(compareStatusFilter ? compareData.filter(r => r.compareStatus === compareStatusFilter) : compareData).map((row, idx) => {
+                      {filteredCompareData.map((row, idx) => {
                         const statusColors = {
                           OK: 'bg-green-100 text-green-800',
                           FALTA: 'bg-red-100 text-red-800',

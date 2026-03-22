@@ -2784,7 +2784,9 @@ export default function Operacoes() {
                                   <TableCell className="text-xs">{voo.registo_aeronave || 'N/A'}</TableCell>
                                   <TableCell className="text-xs hidden sm:table-cell">{voo.companhia_aerea || 'N/A'}</TableCell>
                                   <TableCell className="text-xs hidden md:table-cell">
-                                    {voo.aeroporto_origem || '?'} → {voo.aeroporto_destino || '?'}
+                                    {voo.tipo_movimento === 'ARR'
+                                      ? `${voo.aeroporto_origem_destino || '?'} → ${voo.aeroporto_operacao || '?'}`
+                                      : `${voo.aeroporto_operacao || '?'} → ${voo.aeroporto_origem_destino || '?'}`}
                                   </TableCell>
                                   <TableCell className="text-xs hidden md:table-cell whitespace-nowrap">
                                     {voo.horario_previsto || 'N/A'}{voo.horario_real ? ` / ${voo.horario_real}` : ''}
