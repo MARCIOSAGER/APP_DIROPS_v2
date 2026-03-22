@@ -16,19 +16,43 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from 'date-fns';
 
-export default function DashboardStats({ voos, ocorrencias, inspecoes, calculosTarifa, isLoading }) {
+export default function DashboardStats({ voos, ocorrencias, inspecoes, calculosTarifa, isLoading, serverStats }) {
   const calculateStats = () => {
-    if (!voos || !voos.length) return { 
-      movements: 0, 
-      punctuality: 0, 
-      revenue: 0, 
-      safetyIncidents: 0, 
-      chegadasHoje: 0, 
-      partidasHoje: 0, 
-      passageirosHoje: 0, 
-      inspecoesPendentes: 0 
+    // Use server stats if available (accurate, no pagination limit)
+    if (serverStats) {
+      const safetyIncidents = ocorrencias ? ocorrencias.filter(o => o.status === 'aberta').length : 0;
+      const inspecoesPendentes = inspecoes ? inspecoes.filter(i => i.status === 'em_andamento').length : 0;
+      let revenue = 0;
+      if (calculosTarifa && calculosTarifa.length > 0) {
+        revenue = calculosTarifa
+          .filter(ct => ct.tipo_tarifa !== 'Voo Isento de Tarifas')
+          .reduce((sum, ct) => sum + (ct.total_tarifa || 0), 0);
+      }
+      return {
+        movements: serverStats.total_voos || 0,
+        punctuality: serverStats.pontualidade || 0,
+        revenue,
+        safetyIncidents,
+        chegadasHoje: serverStats.chegadas_hoje || 0,
+        partidasHoje: serverStats.partidas_hoje || 0,
+        passageirosHoje: serverStats.total_passageiros || 0,
+        inspecoesPendentes,
+        ligados: serverStats.ligados || 0,
+        semLink: serverStats.sem_link || 0,
+      };
+    }
+
+    if (!voos || !voos.length) return {
+      movements: 0,
+      punctuality: 0,
+      revenue: 0,
+      safetyIncidents: 0,
+      chegadasHoje: 0,
+      partidasHoje: 0,
+      passageirosHoje: 0,
+      inspecoesPendentes: 0
     };
-    
+
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     const voosHoje = voos.filter(v => v.data_operacao === todayStr);
 
