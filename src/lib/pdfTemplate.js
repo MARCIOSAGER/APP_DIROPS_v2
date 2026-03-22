@@ -410,16 +410,23 @@ export function addTable(doc, startY, { columns, rows, headerOpts = null, rowHei
       y = drawTableHeader(y);
     }
 
-    // Alternating row background
-    if (rowIndex % 2 === 0) {
+    // Detect totals/subtotals row (last row with TOTA* or SUBTOTA* label)
+    const isLastRow = rowIndex === rows.length - 1;
+    const isTotalsRow = isLastRow && row.some(cell => {
+      const val = String(cell || '').toUpperCase().trim();
+      return val.startsWith('TOTA') || val.startsWith('SUBTOTA');
+    });
+
+    // Row background: totals row gets a distinct highlight, others get alternating stripe
+    if (isTotalsRow) {
+      setFill(doc, [230, 240, 250]); // light blue-gray for totals
+      doc.rect(m.left, y, tableWidth, rowHeight, 'F');
+    } else if (rowIndex % 2 === 0) {
       setFill(doc, PDF.colors.bgStripe);
       doc.rect(m.left, y, tableWidth, rowHeight, 'F');
     }
 
-    // Row text — bold for last row if it starts with "TOTAIS" or "TOTAL"
     setColor(doc, PDF.colors.dark);
-    const isLastRow = rowIndex === rows.length - 1;
-    const isTotalsRow = isLastRow && String(row[0] || '').toUpperCase().startsWith('TOTA');
     doc.setFont('helvetica', isTotalsRow ? 'bold' : 'normal');
 
     columns.forEach((col, colIndex) => {
@@ -436,9 +443,16 @@ export function addTable(doc, startY, { columns, rows, headerOpts = null, rowHei
       doc.text(truncated, tx, y + rowHeight - 1.5, { align });
     });
 
+    // Top border for totals row (thicker separator)
+    if (isTotalsRow) {
+      setDraw(doc, PDF.colors.dark);
+      doc.setLineWidth(0.4);
+      doc.line(m.left, y, m.left + tableWidth, y);
+    }
+
     // Bottom border
     setDraw(doc, PDF.colors.separator);
-    doc.setLineWidth(0.1);
+    doc.setLineWidth(isTotalsRow ? 0.4 : 0.1);
     doc.line(m.left, y + rowHeight, m.left + tableWidth, y + rowHeight);
 
     y += rowHeight;

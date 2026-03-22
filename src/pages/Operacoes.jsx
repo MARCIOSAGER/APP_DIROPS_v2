@@ -147,7 +147,8 @@ export default function Operacoes() {
     passageirosMin: '',
     passageirosMax: '',
     cargaMin: '',
-    cargaMax: ''
+    cargaMax: '',
+    origem: 'todos'
   });
   const [isFiltering, setIsFiltering] = useState(false);
 
@@ -410,6 +411,11 @@ export default function Operacoes() {
       if (filtros.tipoVoo !== 'todos') query.tipo_voo = filtros.tipoVoo;
       if (filtros.aeroporto !== 'todos') query.aeroporto_operacao = filtros.aeroporto;
 
+      // Origem (created_by) filter
+      if (filtros.origem === 'fr24') query.created_by = { $ilike: '%FR24%' };
+      else if (filtros.origem === 'sistema') query.created_by = { $ilike: '%import%' };
+      else if (filtros.origem === 'manual') query.created_by = { $is: null };
+
       // Search: handled separately with .or() to search both numero_voo and registo_aeronave
 
       // Companhia: server-side filter by ICAO + IATA codes via $in
@@ -442,6 +448,8 @@ export default function Operacoes() {
         if (query.tipo_voo) q = q.eq('tipo_voo', query.tipo_voo);
         if (query.aeroporto_operacao) q = q.eq('aeroporto_operacao', query.aeroporto_operacao);
         if (query.companhia_aerea?.$in) q = q.in('companhia_aerea', query.companhia_aerea.$in);
+        if (query.created_by?.$ilike) q = q.ilike('created_by', query.created_by.$ilike);
+        else if (query.created_by?.$is === null) q = q.is('created_by', null);
         // OR search across numero_voo and registo_aeronave
         q = q.or(`numero_voo.ilike.%${filtros.busca}%,registo_aeronave.ilike.%${filtros.busca}%`);
         q = q.order('data_operacao', { ascending: false });
@@ -1762,7 +1770,8 @@ export default function Operacoes() {
       passageirosMin: '',
       passageirosMax: '',
       cargaMin: '',
-      cargaMax: ''
+      cargaMax: '',
+      origem: 'todos'
     });
     setIsFiltering(false);
         loadData(); // Recarregar com os 1000 últimos voos
@@ -2166,7 +2175,20 @@ export default function Operacoes() {
                           onValueChange={(v) => handleFilterChange('statusVinculacao', v)}
                         />
                       </div>
-
+                      <div>
+                        <Label htmlFor="filtro-origem" className="text-xs sm:text-sm">{t('operacoes.origem') || 'Origem'}</Label>
+                        <Select
+                          id="filtro-origem"
+                          options={[
+                            { value: 'todos', label: t('operacoes.todos') || 'Todos' },
+                            { value: 'fr24', label: 'FR24-Import' },
+                            { value: 'sistema', label: t('operacoes.sistema') || 'Sistema' },
+                            { value: 'manual', label: 'Manual' }
+                          ]}
+                          value={filtros.origem}
+                          onValueChange={(v) => handleFilterChange('origem', v)}
+                        />
+                      </div>
 
                       <div>
                         <Label htmlFor="passageiros-min" className="text-xs sm:text-sm">{t('operacoes.passageiros_min')}</Label>

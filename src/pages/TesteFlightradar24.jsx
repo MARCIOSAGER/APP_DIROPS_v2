@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,6 +67,12 @@ function splitInto6hBlocks(startDate, endDate) {
 // ─── Alert Component ────────────────────────────────────────
 
 function AlertBanner({ alert, onDismiss }) {
+  useEffect(() => {
+    if (!alert) return;
+    const timer = setTimeout(() => onDismiss(), 5000);
+    return () => clearTimeout(timer);
+  }, [alert, onDismiss]);
+
   if (!alert) return null;
   const isError = alert.type === 'error';
   return (
@@ -207,6 +213,7 @@ export default function TesteFlightradar24() {
   const [cachedFlights, setCachedFlights] = useState([]);
   const [cacheStats, setCacheStats] = useState(null);
   const [cacheStatusFilter, setCacheStatusFilter] = useState('todos');
+  const [cacheCompanhiaFilter, setCacheCompanhiaFilter] = useState('todas');
   const [creatingIds, setCreatingIds] = useState(new Set());
   const [bulkCreating, setBulkCreating] = useState(false);
 
@@ -246,7 +253,7 @@ export default function TesteFlightradar24() {
     return (
       <Card>
         <CardContent className="pt-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Aeroporto (ICAO)</label>
               <Input
@@ -283,6 +290,7 @@ export default function TesteFlightradar24() {
   const loadCache = useCallback(async () => {
     setCacheLoading(true);
     setAlert(null);
+    setCacheCompanhiaFilter('todas');
     try {
       const filters = { airport_icao: airportIcao };
       if (startDate) filters.data_voo = { $gte: startDate };
@@ -733,7 +741,36 @@ export default function TesteFlightradar24() {
   // RENDER
   // ═══════════════════════════════════════════════════════════
 
-  const pendingCount = cachedFlights.filter(f => f.status === 'pendente').length;
+  // Unique companhias from cached flights
+  const uniqueCompanhias = useMemo(() => {
+    const set = new Set();
+    cachedFlights.forEach(f => {
+      const comp = f.raw_data?.operating_as;
+      if (comp) set.add(comp);
+    });
+    return [...set].sort();
+  }, [cachedFlights]);
+
+  // Filtered cached flights (by companhia)
+  const filteredCachedFlights = useMemo(() => {
+    if (cacheCompanhiaFilter === 'todas') return cachedFlights;
+    return cachedFlights.filter(f => (f.raw_data?.operating_as || '') === cacheCompanhiaFilter);
+  }, [cachedFlights, cacheCompanhiaFilter]);
+
+  // Stats based on filtered flights
+  const filteredCacheStats = useMemo(() => {
+    if (!cacheStats) return null;
+    if (cacheCompanhiaFilter === 'todas') return cacheStats;
+    const list = filteredCachedFlights;
+    return {
+      total: list.length,
+      importados: list.filter(f => f.status === 'importado').length,
+      pendentes: list.filter(f => f.status === 'pendente').length,
+      ignorados: list.filter(f => f.status === 'ignorado').length,
+    };
+  }, [cacheStats, filteredCachedFlights, cacheCompanhiaFilter]);
+
+  const pendingCount = filteredCachedFlights.filter(f => f.status === 'pendente').length;
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4">
@@ -767,28 +804,43 @@ export default function TesteFlightradar24() {
             loading={cacheLoading}
             buttonLabel="Buscar Cache"
             extraFilters={
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
-                <select
-                  value={cacheStatusFilter}
-                  onChange={(e) => setCacheStatusFilter(e.target.value)}
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="todos">Todos</option>
-                  <option value="pendente">Pendente</option>
-                  <option value="importado">Importado</option>
-                  <option value="ignorado">Ignorado</option>
-                </select>
-              </div>
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+                  <select
+                    value={cacheStatusFilter}
+                    onChange={(e) => setCacheStatusFilter(e.target.value)}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="todos">Todos</option>
+                    <option value="pendente">Pendente</option>
+                    <option value="importado">Importado</option>
+                    <option value="ignorado">Ignorado</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Companhia</label>
+                  <select
+                    value={cacheCompanhiaFilter}
+                    onChange={(e) => setCacheCompanhiaFilter(e.target.value)}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="todas">Todas</option>
+                    {uniqueCompanhias.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
             }
           />
 
-          {cacheStats && (
+          {filteredCacheStats && (
             <StatsCards items={[
               {
                 bg: 'bg-sky-50 border-sky-200',
                 icon: <Database className="w-5 h-5 text-sky-600 mx-auto mb-1" />,
-                value: cacheStats.total,
+                value: filteredCacheStats.total,
                 textColor: 'text-sky-700',
                 label: 'Total',
                 labelColor: 'text-sky-600',
@@ -796,7 +848,7 @@ export default function TesteFlightradar24() {
               {
                 bg: 'bg-green-50 border-green-200',
                 icon: <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-1" />,
-                value: cacheStats.importados,
+                value: filteredCacheStats.importados,
                 textColor: 'text-green-700',
                 label: 'Importados',
                 labelColor: 'text-green-600',
@@ -804,7 +856,7 @@ export default function TesteFlightradar24() {
               {
                 bg: 'bg-yellow-50 border-yellow-200',
                 icon: <Clock className="w-5 h-5 text-yellow-600 mx-auto mb-1" />,
-                value: cacheStats.pendentes,
+                value: filteredCacheStats.pendentes,
                 textColor: 'text-yellow-700',
                 label: 'Pendentes',
                 labelColor: 'text-yellow-600',
@@ -812,7 +864,7 @@ export default function TesteFlightradar24() {
               {
                 bg: 'bg-slate-50 border-slate-200',
                 icon: <EyeOff className="w-5 h-5 text-slate-500 mx-auto mb-1" />,
-                value: cacheStats.ignorados,
+                value: filteredCacheStats.ignorados,
                 textColor: 'text-slate-700',
                 label: 'Ignorados',
                 labelColor: 'text-slate-500',
@@ -832,17 +884,31 @@ export default function TesteFlightradar24() {
                   : <PlusCircle className="w-4 h-4 mr-2" />}
                 Criar Todos Pendentes ({pendingCount})
               </Button>
+              <Button
+                onClick={async () => {
+                  const empId = effectiveEmpresaId || currentUser?.empresa_id;
+                  if (!empId) { showAlert('error', 'Sem empresa_id'); return; }
+                  showAlert('success', 'Linkando e calculando...');
+                  const { data, error } = await supabase.rpc('link_and_calculate_pending', { p_empresa_id: empId });
+                  if (error) { showAlert('error', error.message); return; }
+                  showAlert('success', `Linkados: ${data?.linked || 0}, Tarifas calculadas: ${data?.calculated || 0}`);
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <ArrowRightLeft className="w-4 h-4 mr-2" />
+                Linkar & Calcular Tarifas
+              </Button>
             </div>
           )}
 
-          {cachedFlights.length > 0 && (
+          {filteredCachedFlights.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Voos em Cache ({cachedFlights.length})</CardTitle>
+                <CardTitle className="text-base">Voos em Cache ({filteredCachedFlights.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 <FlightTable
-                  flights={cachedFlights}
+                  flights={filteredCachedFlights}
                   airportIcao={airportIcao}
                   showActions={true}
                   onCreateVoo={createVooFromCache}
@@ -853,7 +919,7 @@ export default function TesteFlightradar24() {
             </Card>
           )}
 
-          {!cacheLoading && cachedFlights.length === 0 && !alert && (
+          {!cacheLoading && filteredCachedFlights.length === 0 && !alert && (
             <Card className="bg-slate-50 border-dashed">
               <CardContent className="pt-8 pb-8 text-center text-slate-500">
                 <Database className="w-8 h-8 mx-auto mb-2 text-slate-400" />

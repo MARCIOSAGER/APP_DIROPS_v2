@@ -655,9 +655,9 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
               <Badge variant="outline">{group.rows.length} {t('dashFat.voosCount')}</Badge>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table className="text-[11px] w-max">
+          <CardContent className="p-0 overflow-hidden">
+              <div className="overflow-x-auto max-w-full">
+                <Table className="text-[11px] w-max min-w-full">
                   <TableHeader className="bg-slate-50 sticky top-0 z-10">
                     <TableRow>
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-1.5 text-center w-8">Nº</TableHead>
@@ -682,7 +682,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                         </React.Fragment>
                       ))}
                       <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right">IVA</TableHead>
-                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right bg-emerald-50 sticky right-0 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">TOTAL</TableHead>
+                      <TableHead className="text-[10px] font-semibold whitespace-nowrap px-2 text-right bg-emerald-50 sticky right-0 z-20 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">TOTAL</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -714,7 +714,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                           </React.Fragment>
                         ))}
                         <TableCell className="px-1.5 text-right">{fmtNum(r.ivaTotal)}</TableCell>
-                        <TableCell className="px-1.5 text-right font-bold text-emerald-700 bg-emerald-50 sticky right-0 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">{fmtNum(r.totalUsd)}</TableCell>
+                        <TableCell className="px-1.5 text-right font-bold text-emerald-700 bg-emerald-50 sticky right-0 z-10 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">{fmtNum(r.totalUsd)}</TableCell>
                       </TableRow>
                     ))}
                     {/* Subtotals row */}
@@ -734,7 +734,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                           </React.Fragment>
                         ))}
                         <TableCell className="px-1.5 text-right">{fmtNum(groupTotals.ivaTotal)}</TableCell>
-                        <TableCell className="px-1.5 text-right text-emerald-700 bg-emerald-100 text-sm sticky right-0 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">${fmtNum(groupTotals.totalUsd)}</TableCell>
+                        <TableCell className="px-1.5 text-right text-emerald-700 bg-emerald-100 text-sm sticky right-0 z-10 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">${fmtNum(groupTotals.totalUsd)}</TableCell>
                       </TableRow>
                   </TableBody>
                 </Table>

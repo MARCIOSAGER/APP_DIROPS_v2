@@ -1009,8 +1009,8 @@ async function generateExtratoLandscape({
       return row;
     });
 
-    // Totals row: Nº(empty) + Registo(empty) + PMD(empty) + Tipo(empty) + Voo(empty) + Aterragem(empty) + Descolagem(LABEL) = 7 fixed
-    const totalRow = ['', '', '', '', '', '', totalLabel];
+    // Totals row: label in Registo column (index 1) for visibility, rest empty until numeric cols
+    const totalRow = ['', totalLabel, '', '', '', '', ''];
     totalRow.push(fmtNum(t.pouso));        // TX Aterr
     totalRow.push(fmtNum(t.estac_h, 1));   // Estac(h)
     totalRow.push(fmtNum(t.estac));        // Estac($)
