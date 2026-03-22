@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useCompanyView } from '@/lib/CompanyViewContext';
-import { AlertTriangle, Link2, Plane, X, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Link2 as LinkIcon, Plane, X, ChevronRight } from 'lucide-react';
 
 const DISMISS_KEY = 'systemAlerts_dismissed';
 const DISMISS_TTL = 24 * 60 * 60 * 1000; // 24 hours
@@ -42,7 +42,7 @@ const ALERT_CONFIG = {
     linkTo: createPageUrl('Operacoes'),
   },
   voos_sem_link: {
-    icon: Link2,
+    icon: LinkIcon,
     color: 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200',
     iconColor: 'text-amber-500',
     label: (count) => `${count} voo${count !== 1 ? 's' : ''} sem link nos ultimos 30 dias`,
@@ -163,13 +163,13 @@ export default function SystemAlerts() {
           >
             <Icon className={`h-3.5 w-3.5 flex-shrink-0 ${config.iconColor}`} />
             <span className="flex-1">{config.label(count)}</span>
-            <Link
+            <RouterLink
               to={config.linkTo}
               className="inline-flex items-center gap-0.5 font-medium hover:underline flex-shrink-0"
             >
               {config.linkLabel}
               <ChevronRight className="h-3 w-3" />
-            </Link>
+            </RouterLink>
             <button
               onClick={() => handleDismiss(type)}
               className="p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 flex-shrink-0"
