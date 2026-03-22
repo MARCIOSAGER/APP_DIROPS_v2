@@ -503,21 +503,17 @@ export default function TesteFlightradar24() {
 
   // Bulk create all pending (ARR first so DEP can link)
   const createAllPending = useCallback(async () => {
-    const pending = filteredCachedFlights.filter(f => f.status === 'pendente');
+    const pending = cachedFlights.filter(f => f.status === 'pendente');
     if (pending.length === 0) {
       showAlert('error', 'Nenhum voo pendente para criar.');
       return;
     }
 
-    // Sort: ARR first, then DEP — so when DEP is created it can find and link to the ARR
+    // Sort: ARR first, then DEP
     const sorted = [...pending].sort((a, b) => {
       const aIsArr = isArrival(a.raw_data || {}, airportIcao) ? 0 : 1;
       const bIsArr = isArrival(b.raw_data || {}, airportIcao) ? 0 : 1;
-      if (aIsArr !== bIsArr) return aIsArr - bIsArr;
-      // Within same type, sort by date then time
-      const aDate = a.data_voo || '';
-      const bDate = b.data_voo || '';
-      return aDate.localeCompare(bDate);
+      return aIsArr - bIsArr;
     });
 
     setBulkCreating(true);
@@ -526,7 +522,6 @@ export default function TesteFlightradar24() {
     let errors = 0;
     for (const flight of sorted) {
       try {
-        // Re-check status in local state (may have been marked importado by a previous iteration)
         const current = cachedFlights.find(f => f.id === flight.id);
         if (current && current.status !== 'pendente') {
           skipped++;
@@ -540,7 +535,7 @@ export default function TesteFlightradar24() {
     }
     setBulkCreating(false);
     showAlert('success', `Criados: ${created}${skipped ? ', Já tratados: ' + skipped : ''}${errors ? ', Erros: ' + errors : ''}`);
-  }, [filteredCachedFlights, cachedFlights, createVooFromCache, airportIcao]);
+  }, [cachedFlights, createVooFromCache, airportIcao]);
 
   // Verify pending: mark as "importado" flights that already exist or have linked turnaround in ATO
   const verifyPending = useCallback(async () => {
@@ -549,7 +544,7 @@ export default function TesteFlightradar24() {
       showAlert('error', 'Utilizador sem empresa_id.');
       return;
     }
-    const pending = filteredCachedFlights.filter(f => f.status === 'pendente');
+    const pending = cachedFlights.filter(f => f.status === 'pendente');
     if (pending.length === 0) {
       showAlert('error', 'Nenhum voo pendente para verificar.');
       return;
@@ -624,7 +619,7 @@ export default function TesteFlightradar24() {
     } finally {
       setVerifyingPending(false);
     }
-  }, [filteredCachedFlights, airportIcao, startDate, endDate, currentUser, effectiveEmpresaId]);
+  }, [cachedFlights, airportIcao, startDate, endDate, currentUser, effectiveEmpresaId]);
 
   // ═══════════════════════════════════════════════════════════
   // TAB 2: BUSCAR API FR24
