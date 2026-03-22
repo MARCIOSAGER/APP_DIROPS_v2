@@ -578,6 +578,7 @@ export default function Operacoes() {
         p_data_fim: filtrosSemLink.dataFim || null,
         p_tipo: filtrosSemLink.tipoMovimento === 'todos' ? null : filtrosSemLink.tipoMovimento,
         p_companhia: filtrosSemLink.companhia === 'todos' ? null : filtrosSemLink.companhia,
+        p_registo: filtrosSemLink.registo === 'todos' || !filtrosSemLink.registo ? null : filtrosSemLink.registo,
         p_busca: filtrosSemLink.busca || null,
       });
 
@@ -2695,7 +2696,18 @@ export default function Operacoes() {
                           onValueChange={(v) => setFiltrosSemLink(prev => ({ ...prev, companhia: v }))}
                           options={[
                             { value: 'todos', label: 'Todas' },
-                            ...companhias.map(c => ({ value: c.codigo_icao, label: `${c.nome} (${c.codigo_icao})` }))
+                            ...[...new Set(voosSemLink.map(v => v.companhia_aerea).filter(Boolean))].sort().map(c => ({ value: c, label: c }))
+                          ]}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Registo</Label>
+                        <Select
+                          value={filtrosSemLink.registo || 'todos'}
+                          onValueChange={(v) => setFiltrosSemLink(prev => ({ ...prev, registo: v }))}
+                          options={[
+                            { value: 'todos', label: 'Todos' },
+                            ...[...new Set(voosSemLink.map(v => v.registo_aeronave).filter(Boolean))].sort().map(r => ({ value: r, label: r }))
                           ]}
                         />
                       </div>
