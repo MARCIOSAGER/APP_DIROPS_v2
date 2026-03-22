@@ -897,8 +897,8 @@ export default function TesteFlightradar24() {
             ]} />
           )}
 
-          {pendingCount > 0 && (
-            <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
+            {pendingCount > 0 && (
               <Button
                 onClick={createAllPending}
                 disabled={bulkCreating}
@@ -909,36 +909,36 @@ export default function TesteFlightradar24() {
                   : <PlusCircle className="w-4 h-4 mr-2" />}
                 Criar Todos Pendentes ({pendingCount})
               </Button>
-              <Button
-                onClick={async () => {
-                  const empId = effectiveEmpresaId || currentUser?.empresa_id;
-                  if (!empId) { showAlert('error', 'Sem empresa_id'); return; }
-                  showAlert('success', 'Linkando e calculando...');
-                  const { data, error } = await supabase.rpc('link_and_calculate_pending', { p_empresa_id: empId });
-                  if (error) { showAlert('error', error.message); return; }
-                  showAlert('success', `Linkados: ${data?.linked || 0}, Tarifas calculadas: ${data?.calculated || 0}`);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <ArrowRightLeft className="w-4 h-4 mr-2" />
-                Linkar & Calcular Tarifas
-              </Button>
-              <Button
-                onClick={async () => {
-                  const empId = effectiveEmpresaId || currentUser?.empresa_id;
-                  if (!empId) { showAlert('error', 'Sem empresa_id'); return; }
-                  showAlert('success', 'Sincronizando registos e companhias...');
-                  const { data, error } = await supabase.rpc('sync_fr24_registos', { p_empresa_id: empId });
-                  if (error) { showAlert('error', error.message); return; }
-                  showAlert('success', `Registos criados: ${data?.registos_created || 0}, Companhias criadas: ${data?.companhias_created || 0}, Registos atualizados: ${data?.registos_updated || 0}`);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Sincronizar Registos & Companhias
-              </Button>
-            </div>
-          )}
+            )}
+            <Button
+              onClick={async () => {
+                const empId = effectiveEmpresaId || currentUser?.empresa_id;
+                if (!empId) { showAlert('error', 'Sem empresa_id'); return; }
+                showAlert('success', 'Linkando e calculando...');
+                const { data, error } = await supabase.rpc('link_and_calculate_pending', { p_empresa_id: empId });
+                if (error) { showAlert('error', error.message); return; }
+                showAlert('success', `Linkados: ${data?.linked || 0}, Tarifas calculadas: ${data?.calculated || 0}`);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <ArrowRightLeft className="w-4 h-4 mr-2" />
+              Linkar & Calcular Tarifas
+            </Button>
+            <Button
+              onClick={async () => {
+                const empId = effectiveEmpresaId || currentUser?.empresa_id;
+                if (!empId) { showAlert('error', 'Sem empresa_id'); return; }
+                showAlert('success', 'Sincronizando registos e companhias...');
+                const { data, error } = await supabase.rpc('sync_fr24_registos', { p_empresa_id: empId });
+                if (error) { showAlert('error', error.message); return; }
+                showAlert('success', `Registos criados: ${data?.registos_created || 0}, Companhias criadas: ${data?.companhias_created || 0}, Registos atualizados: ${data?.registos_updated || 0}`);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Sincronizar Registos & Companhias
+            </Button>
+          </div>
 
           {filteredCachedFlights.length > 0 && (
             <Card>
