@@ -502,7 +502,23 @@ export default function TesteFlightradar24() {
     abortRef.current = false;
 
     try {
-      const blocks = splitInto6hBlocks(startDate, endDate);
+      // Check last sync to avoid re-fetching
+      const syncKey = `FR24_LAST_SYNC_${airportIcao}`;
+      const { data: lastSyncData } = await supabase.from('api_config').select('valor').eq('chave', syncKey).single();
+      const lastSync = lastSyncData?.valor;
+
+      let effectiveStartDate = startDate;
+      if (lastSync) {
+        const lastSyncDate = lastSync.substring(0, 10);
+        if (lastSyncDate > startDate) {
+          effectiveStartDate = lastSyncDate;
+          showAlert('success', `Última sincronização: ${lastSync.substring(0, 19)}. Buscando apenas a partir de ${lastSyncDate}.`);
+          await new Promise(r => setTimeout(r, 2000));
+          setAlert(null);
+        }
+      }
+
+      const blocks = splitInto6hBlocks(effectiveStartDate, endDate);
       const allResults = [];
       let errors = 0;
 
@@ -567,6 +583,11 @@ export default function TesteFlightradar24() {
 
       setApiResults(deduped);
       setApiProgress('');
+
+      // Update last sync timestamp
+      const syncKey = `FR24_LAST_SYNC_${airportIcao}`;
+      await supabase.from('api_config').upsert({ chave: syncKey, valor: new Date().toISOString(), descricao: `Ultima sincronizacao FR24 para ${airportIcao}` }, { onConflict: 'chave' });
+
       showAlert('success', `${deduped.length} voos encontrados em ${blocks.length} blocos. ${errors ? errors + ' erros.' : ''} Dados salvos no cache.`);
     } catch (err) {
       showAlert('error', `Erro: ${err.message}`);
