@@ -336,7 +336,7 @@ export default function TesteFlightradar24() {
       const tipo = isArr ? 'ARR' : 'DEP';
       const { data: existing } = await supabase.from('voo')
         .select('id')
-        .eq('numero_voo', raw.flight || cachedFlight.numero_voo)
+        .eq('numero_voo', raw.flight || cachedFlight.numero_voo || normalizeReg(raw.reg) || raw.callsign)
         .eq('data_operacao', cachedFlight.data_voo)
         .eq('tipo_movimento', tipo)
         .eq('empresa_id', empresaId)
@@ -354,7 +354,7 @@ export default function TesteFlightradar24() {
       const companhiaCode = await lookupCompanhiaIata(raw.operating_as);
 
       const vooData = {
-        numero_voo: raw.flight || cachedFlight.numero_voo,
+        numero_voo: raw.flight || cachedFlight.numero_voo || normalizeReg(raw.reg) || raw.callsign,
         tipo_movimento: isArr ? 'ARR' : 'DEP',
         data_operacao: cachedFlight.data_voo,
         companhia_aerea: companhiaCode,
