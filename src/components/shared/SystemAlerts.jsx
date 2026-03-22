@@ -90,42 +90,17 @@ export default function SystemAlerts() {
     }
 
     try {
-      // b) Voos sem link (ultimos 30 dias)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const dateStr = thirtyDaysAgo.toISOString().split('T')[0];
+      // b) Voos sem link (via server-side RPC)
+      const { data: dashStats } = await supabase.rpc('get_dashboard_stats', {
+        p_empresa_id: empresaId,
+        p_dias: 30,
+      });
 
-      // Get voos in range
-      const { data: voos } = await supabase
-        .from('voo')
-        .select('id')
-        .eq('empresa_id', empresaId)
-        .is('deleted_at', null)
-        .gte('data_operacao', dateStr);
-
-      if (voos && voos.length > 0) {
-        const vooIds = voos.map(v => v.id);
-        // Get linked voo ids
-        const { data: links } = await supabase
-          .from('voo_ligado')
-          .select('id_voo_arr, id_voo_dep')
-          .or(
-            vooIds.map(id => `id_voo_arr.eq.${id}`).join(',') + ',' +
-            vooIds.map(id => `id_voo_dep.eq.${id}`).join(',')
-          );
-
-        const linkedIds = new Set();
-        if (links) {
-          links.forEach(l => {
-            if (l.id_voo_arr) linkedIds.add(l.id_voo_arr);
-            if (l.id_voo_dep) linkedIds.add(l.id_voo_dep);
-          });
-        }
-        const unlinkedCount = vooIds.filter(id => !linkedIds.has(id)).length;
-        if (unlinkedCount > 0) results.voos_sem_link = unlinkedCount;
+      if (dashStats && dashStats.sem_link > 0) {
+        results.voos_sem_link = dashStats.sem_link;
       }
     } catch (e) {
-      console.warn('SystemAlerts: voos_sem_link check failed', e);
+      console.warn('SystemAlerts: voos sem link check failed', e);
     }
 
     try {
