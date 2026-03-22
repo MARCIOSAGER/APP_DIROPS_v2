@@ -227,6 +227,7 @@ export default function TesteFlightradar24() {
   // Tab 3: Comparison
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareData, setCompareData] = useState([]);
+  const [compareStatusFilter, setCompareStatusFilter] = useState(null);
   const [compareStats, setCompareStats] = useState(null);
   const [comparingIds, setComparingIds] = useState(new Set());
 
@@ -325,6 +326,24 @@ export default function TesteFlightradar24() {
 
     setCreatingIds(prev => new Set([...prev, cachedFlight.id]));
     try {
+      // Check if voo already exists
+      const tipo = isArr ? 'ARR' : 'DEP';
+      const { data: existing } = await supabase.from('voo')
+        .select('id')
+        .eq('numero_voo', raw.flight || cachedFlight.numero_voo)
+        .eq('data_operacao', cachedFlight.data_voo)
+        .eq('tipo_movimento', tipo)
+        .eq('empresa_id', empresaId)
+        .is('deleted_at', null)
+        .limit(1);
+      if (existing && existing.length > 0) {
+        // Already exists - just update cache status
+        await CacheVooFR24.update(cachedFlight.id, { status: 'importado' });
+        setCachedFlights(prev => prev.map(f => f.id === cachedFlight.id ? { ...f, status: 'importado' } : f));
+        showAlert('success', `Voo ${raw.flight} já existe no ATO. Cache atualizado.`);
+        return;
+      }
+
       // Lookup companhia IATA
       const companhiaCode = await lookupCompanhiaIata(raw.operating_as);
 
@@ -1007,47 +1026,37 @@ export default function TesteFlightradar24() {
             buttonIcon={ArrowRightLeft}
           />
 
-          {compareStats && (
-            <StatsCards items={[
-              {
-                bg: 'bg-sky-50 border-sky-200',
-                icon: <Database className="w-5 h-5 text-sky-600 mx-auto mb-1" />,
-                value: compareStats.total,
-                textColor: 'text-sky-700',
-                label: 'Total FR24',
-                labelColor: 'text-sky-600',
-              },
-              {
-                bg: 'bg-green-50 border-green-200',
-                icon: <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-1" />,
-                value: compareStats.matchOk,
-                textColor: 'text-green-700',
-                label: 'Match OK',
-                labelColor: 'text-green-600',
-              },
-              {
-                bg: 'bg-red-50 border-red-200',
-                icon: <XCircle className="w-5 h-5 text-red-600 mx-auto mb-1" />,
-                value: compareStats.falta,
-                textColor: 'text-red-700',
-                label: 'Em Falta no ATO',
-                labelColor: 'text-red-600',
-              },
-              {
-                bg: 'bg-amber-50 border-amber-200',
-                icon: <AlertTriangle className="w-5 h-5 text-amber-600 mx-auto mb-1" />,
-                value: compareStats.regDiff,
-                textColor: 'text-amber-700',
-                label: 'Registo Diferente',
-                labelColor: 'text-amber-600',
-              },
-            ]} />
-          )}
+          {compareStats && (() => {
+            const filterOptions = [
+              { key: null, bg: 'bg-sky-50 border-sky-200', icon: <Database className="w-5 h-5 text-sky-600 mx-auto mb-1" />, value: compareStats.total, textColor: 'text-sky-700', label: 'Total FR24', labelColor: 'text-sky-600' },
+              { key: 'OK', bg: 'bg-green-50 border-green-200', icon: <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-1" />, value: compareStats.matchOk, textColor: 'text-green-700', label: 'Match OK', labelColor: 'text-green-600' },
+              { key: 'FALTA', bg: 'bg-red-50 border-red-200', icon: <XCircle className="w-5 h-5 text-red-600 mx-auto mb-1" />, value: compareStats.falta, textColor: 'text-red-700', label: 'Em Falta no ATO', labelColor: 'text-red-600' },
+              { key: 'REG_DIFF', bg: 'bg-amber-50 border-amber-200', icon: <AlertTriangle className="w-5 h-5 text-amber-600 mx-auto mb-1" />, value: compareStats.regDiff, textColor: 'text-amber-700', label: 'Registo Diferente', labelColor: 'text-amber-600' },
+            ];
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {filterOptions.map((item, i) => (
+                  <Card key={i}
+                    className={`${item.bg} cursor-pointer transition-all ${compareStatusFilter === item.key ? 'ring-2 ring-offset-1 ring-blue-500 scale-105' : 'hover:scale-102'}`}
+                    onClick={() => setCompareStatusFilter(compareStatusFilter === item.key ? null : item.key)}
+                  >
+                    <CardContent className="pt-4 pb-4 text-center">
+                      {item.icon}
+                      <p className={`text-2xl font-bold ${item.textColor}`}>{item.value}</p>
+                      <p className={`text-xs ${item.labelColor}`}>{item.label}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            );
+          })()}
 
           {compareData.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Comparação FR24 vs ATO ({compareData.length})</CardTitle>
+                <CardTitle className="text-base">
+                  Comparação FR24 vs ATO ({(compareStatusFilter ? compareData.filter(r => r.compareStatus === compareStatusFilter) : compareData).length}{compareStatusFilter ? ` — ${compareStatusFilter}` : ''})
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -1064,7 +1073,7 @@ export default function TesteFlightradar24() {
                       </tr>
                     </thead>
                     <tbody>
-                      {compareData.map((row, idx) => {
+                      {(compareStatusFilter ? compareData.filter(r => r.compareStatus === compareStatusFilter) : compareData).map((row, idx) => {
                         const statusColors = {
                           OK: 'bg-green-100 text-green-800',
                           FALTA: 'bg-red-100 text-red-800',
