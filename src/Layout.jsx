@@ -702,7 +702,7 @@ function LayoutContent({ children, currentPageName }) {
               </DropdownMenu>
             </div>
           </header>
-          {user && user.empresa_id && (
+          {user && (
             <React.Suspense fallback={null}>
               <SystemAlerts />
             </React.Suspense>
