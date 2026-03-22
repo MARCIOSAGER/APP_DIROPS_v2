@@ -702,7 +702,11 @@ function LayoutContent({ children, currentPageName }) {
               </DropdownMenu>
             </div>
           </header>
-          {/* SystemAlerts temporarily disabled for debugging */}
+          {user && (
+            <React.Suspense fallback={null}>
+              <SystemAlerts />
+            </React.Suspense>
+          )}
           <main className="p-4 md:p-6 lg:p-8">{children}</main>
           <BottomTabs />
           <React.Suspense fallback={null}>
