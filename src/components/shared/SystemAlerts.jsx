@@ -66,7 +66,10 @@ export default function SystemAlerts() {
   const [dismissed, setDismissed] = useState(() => getDismissed());
 
   const empresaId = effectiveEmpresaId || currentUser?.empresa_id;
-  const canView = !!empresaId;
+  const allowedRoles = ['administrador', 'operacoes', 'admin'];
+  const userPerfis = currentUser?.perfis || [];
+  const userRole = currentUser?.role;
+  const canView = !!empresaId && (allowedRoles.includes(userRole) || userPerfis.some(p => allowedRoles.includes(p)));
 
   const fetchAlerts = useCallback(async () => {
     if (!canView || !empresaId) return;
