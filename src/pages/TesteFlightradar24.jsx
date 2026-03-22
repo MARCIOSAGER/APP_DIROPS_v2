@@ -638,17 +638,25 @@ export default function TesteFlightradar24() {
       const lastSync = lastSyncData?.valor;
 
       let effectiveStartDate = startDate;
+      let customStartDatetime = null;
       if (lastSync) {
+        // Use datetime from last sync (not just date)
+        const lastSyncDt = lastSync.replace('+00', 'Z').replace(' ', 'T');
         const lastSyncDate = lastSync.substring(0, 10);
-        if (lastSyncDate > startDate) {
+        if (lastSyncDate >= startDate) {
           effectiveStartDate = lastSyncDate;
-          showAlert('success', `Última sincronização: ${lastSync.substring(0, 19)}. Buscando apenas a partir de ${lastSyncDate}.`);
+          customStartDatetime = lastSyncDt.substring(0, 19); // YYYY-MM-DDTHH:MM:SS
+          showAlert('success', `Última sincronização: ${lastSync.substring(0, 19)}. Buscando apenas a partir daí.`);
           await new Promise(r => setTimeout(r, 2000));
           setAlert(null);
         }
       }
 
+      // Build blocks - if we have a custom datetime start, modify the first block
       const blocks = splitInto6hBlocks(effectiveStartDate, endDate);
+      if (customStartDatetime && blocks.length > 0) {
+        blocks[0].from = customStartDatetime;
+      }
       const allResults = [];
       let errors = 0;
 
