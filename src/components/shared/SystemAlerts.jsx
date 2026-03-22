@@ -65,12 +65,11 @@ export default function SystemAlerts() {
   const [alerts, setAlerts] = useState({});
   const [dismissed, setDismissed] = useState(() => getDismissed());
 
-  const allowedRoles = ['administrador', 'operacoes'];
-  const userRole = currentUser?.role || currentUser?.perfis?.[0];
-  const canView = allowedRoles.includes(userRole);
+  const empresaId = effectiveEmpresaId || currentUser?.empresa_id;
+  const canView = !!empresaId;
 
   const fetchAlerts = useCallback(async () => {
-    if (!canView || !effectiveEmpresaId) return;
+    if (!canView || !empresaId) return;
 
     const results = {};
 
@@ -79,7 +78,7 @@ export default function SystemAlerts() {
       const { count: mtowCount } = await supabase
         .from('registo_aeronave')
         .select('*', { count: 'exact', head: true })
-        .eq('empresa_id', effectiveEmpresaId)
+        .eq('empresa_id', empresaId)
         .or('mtow_kg.is.null,mtow_kg.eq.0');
 
       if (mtowCount > 0) results.mtow = mtowCount;
@@ -97,7 +96,7 @@ export default function SystemAlerts() {
       const { data: voos } = await supabase
         .from('voo')
         .select('id')
-        .eq('empresa_id', effectiveEmpresaId)
+        .eq('empresa_id', empresaId)
         .is('deleted_at', null)
         .gte('data_operacao', dateStr);
 
@@ -139,7 +138,7 @@ export default function SystemAlerts() {
     }
 
     setAlerts(results);
-  }, [canView, effectiveEmpresaId]);
+  }, [canView, empresaId]);
 
   useEffect(() => {
     if (!canView) return;
