@@ -216,6 +216,7 @@ export default function TesteFlightradar24() {
   const [cacheCompanhiaFilter, setCacheCompanhiaFilter] = useState('todas');
   const [creatingIds, setCreatingIds] = useState(new Set());
   const [bulkCreating, setBulkCreating] = useState(false);
+  const [verifyingPending, setVerifyingPending] = useState(false);
 
   // Tab 2: API
   const [apiLoading, setApiLoading] = useState(false);
@@ -350,6 +351,37 @@ export default function TesteFlightradar24() {
         return;
       }
 
+      // Check 2: Is there already a LINKED pair in ATO for this registo + date?
+      // International airlines (TAP, Air France, etc.) may use different registos for ARR/DEP
+      // of the same turnaround. If the counterpart is already linked, skip this flight.
+      const regNormCheck = normalizeReg(raw.reg);
+      if (regNormCheck) {
+        const pairTipoCheck = isArr ? 'DEP' : 'ARR';
+        const { data: regMatches } = await supabase.from('voo')
+          .select('id, voo_ligado_id')
+          .eq('empresa_id', empresaId)
+          .eq('aeroporto_operacao', airportIcao)
+          .eq('tipo_movimento', pairTipoCheck)
+          .eq('data_operacao', cachedFlight.data_voo)
+          .eq('registo_aeronave', regNormCheck)
+          .is('deleted_at', null)
+          .not('voo_ligado_id', 'is', null)
+          .limit(1);
+
+        if (regMatches && regMatches.length > 0) {
+          // Counterpart with same registo already exists AND is linked - this turnaround is handled
+          await CacheVooFR24.update(cachedFlight.id, { status: 'importado' });
+          setCachedFlights(prev => prev.map(f => f.id === cachedFlight.id ? { ...f, status: 'importado' } : f));
+          setCacheStats(prev => prev ? {
+            ...prev,
+            importados: prev.importados + 1,
+            pendentes: prev.pendentes - 1,
+          } : prev);
+          showAlert('success', `Voo ${raw.flight || regNormCheck} — turnaround já vinculado no ATO. Cache atualizado.`);
+          return;
+        }
+      }
+
       // Lookup companhia IATA
       const companhiaCode = await lookupCompanhiaIata(raw.operating_as);
 
@@ -469,18 +501,37 @@ export default function TesteFlightradar24() {
     }
   }, []);
 
-  // Bulk create all pending
+  // Bulk create all pending (ARR first so DEP can link)
   const createAllPending = useCallback(async () => {
-    const pending = cachedFlights.filter(f => f.status === 'pendente');
+    const pending = filteredCachedFlights.filter(f => f.status === 'pendente');
     if (pending.length === 0) {
       showAlert('error', 'Nenhum voo pendente para criar.');
       return;
     }
+
+    // Sort: ARR first, then DEP — so when DEP is created it can find and link to the ARR
+    const sorted = [...pending].sort((a, b) => {
+      const aIsArr = isArrival(a.raw_data || {}, airportIcao) ? 0 : 1;
+      const bIsArr = isArrival(b.raw_data || {}, airportIcao) ? 0 : 1;
+      if (aIsArr !== bIsArr) return aIsArr - bIsArr;
+      // Within same type, sort by date then time
+      const aDate = a.data_voo || '';
+      const bDate = b.data_voo || '';
+      return aDate.localeCompare(bDate);
+    });
+
     setBulkCreating(true);
     let created = 0;
+    let skipped = 0;
     let errors = 0;
-    for (const flight of pending) {
+    for (const flight of sorted) {
       try {
+        // Re-check status in local state (may have been marked importado by a previous iteration)
+        const current = cachedFlights.find(f => f.id === flight.id);
+        if (current && current.status !== 'pendente') {
+          skipped++;
+          continue;
+        }
         await createVooFromCache(flight);
         created++;
       } catch {
@@ -488,8 +539,92 @@ export default function TesteFlightradar24() {
       }
     }
     setBulkCreating(false);
-    showAlert('success', `Criados: ${created}, Erros: ${errors}`);
-  }, [cachedFlights, createVooFromCache]);
+    showAlert('success', `Criados: ${created}${skipped ? ', Já tratados: ' + skipped : ''}${errors ? ', Erros: ' + errors : ''}`);
+  }, [filteredCachedFlights, cachedFlights, createVooFromCache, airportIcao]);
+
+  // Verify pending: mark as "importado" flights that already exist or have linked turnaround in ATO
+  const verifyPending = useCallback(async () => {
+    const empresaId = effectiveEmpresaId || currentUser?.empresa_id;
+    if (!empresaId) {
+      showAlert('error', 'Utilizador sem empresa_id.');
+      return;
+    }
+    const pending = filteredCachedFlights.filter(f => f.status === 'pendente');
+    if (pending.length === 0) {
+      showAlert('error', 'Nenhum voo pendente para verificar.');
+      return;
+    }
+
+    setVerifyingPending(true);
+    let markedImported = 0;
+
+    try {
+      // Load all ATO voos for the date range
+      const { data: voos } = await supabase
+        .from('voo')
+        .select('id, numero_voo, data_operacao, tipo_movimento, registo_aeronave, voo_ligado_id')
+        .eq('empresa_id', empresaId)
+        .eq('aeroporto_operacao', airportIcao)
+        .is('deleted_at', null)
+        .gte('data_operacao', startDate)
+        .lte('data_operacao', endDate);
+
+      const atoVoos = voos || [];
+
+      for (const flight of pending) {
+        const raw = flight.raw_data || {};
+        const flightIsArr = isArrival(raw, airportIcao);
+        const tipo = flightIsArr ? 'ARR' : 'DEP';
+        const flightNum = (raw.flight || flight.numero_voo || '').toUpperCase();
+        const regNorm = normalizeReg(raw.reg);
+
+        // Check 1: exact match (same flight number + date + type)
+        const exactMatch = atoVoos.find(v =>
+          (v.numero_voo || '').toUpperCase() === flightNum &&
+          v.data_operacao === flight.data_voo &&
+          v.tipo_movimento === tipo
+        );
+        if (exactMatch) {
+          await CacheVooFR24.update(flight.id, { status: 'importado' });
+          setCachedFlights(prev => prev.map(f => f.id === flight.id ? { ...f, status: 'importado' } : f));
+          markedImported++;
+          continue;
+        }
+
+        // Check 2: counterpart with same registo already linked in ATO
+        if (regNorm) {
+          const pairTipo = flightIsArr ? 'DEP' : 'ARR';
+          const linkedCounterpart = atoVoos.find(v =>
+            normalizeReg(v.registo_aeronave) === regNorm &&
+            v.data_operacao === flight.data_voo &&
+            v.tipo_movimento === pairTipo &&
+            v.voo_ligado_id != null
+          );
+          if (linkedCounterpart) {
+            await CacheVooFR24.update(flight.id, { status: 'importado' });
+            setCachedFlights(prev => prev.map(f => f.id === flight.id ? { ...f, status: 'importado' } : f));
+            markedImported++;
+            continue;
+          }
+        }
+      }
+
+      // Update stats
+      if (markedImported > 0) {
+        setCacheStats(prev => prev ? {
+          ...prev,
+          importados: prev.importados + markedImported,
+          pendentes: prev.pendentes - markedImported,
+        } : prev);
+      }
+
+      showAlert('success', `Verificação concluída: ${markedImported} pendentes marcados como importados, ${pending.length - markedImported} continuam pendentes.`);
+    } catch (err) {
+      showAlert('error', `Erro ao verificar pendentes: ${err.message}`);
+    } finally {
+      setVerifyingPending(false);
+    }
+  }, [filteredCachedFlights, airportIcao, startDate, endDate, currentUser, effectiveEmpresaId]);
 
   // ═══════════════════════════════════════════════════════════
   // TAB 2: BUSCAR API FR24
@@ -919,16 +1054,29 @@ export default function TesteFlightradar24() {
 
           <div className="flex flex-wrap justify-end gap-2">
             {pendingCount > 0 && (
-              <Button
-                onClick={createAllPending}
-                disabled={bulkCreating}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                {bulkCreating
-                  ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  : <PlusCircle className="w-4 h-4 mr-2" />}
-                Criar Todos Pendentes ({pendingCount})
-              </Button>
+              <>
+                <Button
+                  onClick={verifyPending}
+                  disabled={verifyingPending || bulkCreating}
+                  variant="outline"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                >
+                  {verifyingPending
+                    ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    : <Eye className="w-4 h-4 mr-2" />}
+                  Verificar Pendentes ({pendingCount})
+                </Button>
+                <Button
+                  onClick={createAllPending}
+                  disabled={bulkCreating || verifyingPending}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {bulkCreating
+                    ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    : <PlusCircle className="w-4 h-4 mr-2" />}
+                  Criar Todos Pendentes ({pendingCount})
+                </Button>
+              </>
             )}
             <Button
               onClick={async () => {
