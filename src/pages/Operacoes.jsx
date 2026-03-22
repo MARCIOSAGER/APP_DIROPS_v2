@@ -714,23 +714,33 @@ export default function Operacoes() {
     const vooDate = new Date(voo.data_operacao);
 
     if (voo.tipo_movimento === 'ARR') {
-      // Suggest DEP with same registo, DEP date >= ARR date, <= ARR + 7 days
-      return source.filter(v =>
-        v.tipo_movimento === 'DEP' &&
-        v.registo_aeronave === voo.registo_aeronave &&
-        v.id !== voo.id &&
-        new Date(v.data_operacao) >= vooDate &&
-        new Date(v.data_operacao) <= addDays(vooDate, 7)
-      ).sort((a, b) => new Date(a.data_operacao) - new Date(b.data_operacao));
+      // Suggest DEP with same registo, DEP after ARR (same day: check time), <= ARR + 7 days
+      return source.filter(v => {
+        if (v.tipo_movimento !== 'DEP' || v.registo_aeronave !== voo.registo_aeronave || v.id === voo.id) return false;
+        const vDate = new Date(v.data_operacao);
+        if (vDate < vooDate || vDate > addDays(vooDate, 7)) return false;
+        // Same day: DEP time must be after ARR time
+        if (v.data_operacao === voo.data_operacao) {
+          const depTime = v.horario_real || v.horario_previsto || '23:59';
+          const arrTime = voo.horario_real || voo.horario_previsto || '00:00';
+          if (depTime <= arrTime) return false;
+        }
+        return true;
+      }).sort((a, b) => new Date(a.data_operacao) - new Date(b.data_operacao));
     } else {
-      // DEP voo: suggest ARR with same registo, ARR date <= DEP date, >= DEP - 7 days
-      return source.filter(v =>
-        v.tipo_movimento === 'ARR' &&
-        v.registo_aeronave === voo.registo_aeronave &&
-        v.id !== voo.id &&
-        new Date(v.data_operacao) <= vooDate &&
-        new Date(v.data_operacao) >= addDays(vooDate, -7)
-      ).sort((a, b) => new Date(b.data_operacao) - new Date(a.data_operacao));
+      // DEP voo: suggest ARR with same registo, ARR before DEP, >= DEP - 7 days
+      return source.filter(v => {
+        if (v.tipo_movimento !== 'ARR' || v.registo_aeronave !== voo.registo_aeronave || v.id === voo.id) return false;
+        const vDate = new Date(v.data_operacao);
+        if (vDate > vooDate || vDate < addDays(vooDate, -7)) return false;
+        // Same day: ARR time must be before DEP time
+        if (v.data_operacao === voo.data_operacao) {
+          const arrTime = v.horario_real || v.horario_previsto || '00:00';
+          const depTime = voo.horario_real || voo.horario_previsto || '23:59';
+          if (arrTime >= depTime) return false;
+        }
+        return true;
+      }).sort((a, b) => new Date(b.data_operacao) - new Date(a.data_operacao));
     }
   }, [voosSemLink, voosSemLinkComputed, semLinkLoaded]);
 
