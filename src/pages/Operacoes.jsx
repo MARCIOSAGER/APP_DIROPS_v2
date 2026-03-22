@@ -570,35 +570,19 @@ export default function Operacoes() {
     setIsLoadingSemLink(true);
     try {
       const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-      const filters = { deleted_at: { $is: null } };
-      if (empId) filters.empresa_id = empId;
+      if (!empId) return;
 
-      // Apply date filters server-side
-      if (filtrosSemLink.dataInicio) filters.data_operacao = { ...filters.data_operacao, $gte: filtrosSemLink.dataInicio };
-      if (filtrosSemLink.dataFim) filters.data_operacao = { ...filters.data_operacao, $lte: filtrosSemLink.dataFim };
-      if (filtrosSemLink.tipoMovimento !== 'todos') filters.tipo_movimento = filtrosSemLink.tipoMovimento;
-      if (filtrosSemLink.companhia !== 'todos') filters.companhia_aerea = filtrosSemLink.companhia;
+      const { data, error } = await supabase.rpc('get_voos_sem_link', {
+        p_empresa_id: empId,
+        p_data_inicio: filtrosSemLink.dataInicio || null,
+        p_data_fim: filtrosSemLink.dataFim || null,
+        p_tipo: filtrosSemLink.tipoMovimento === 'todos' ? null : filtrosSemLink.tipoMovimento,
+        p_companhia: filtrosSemLink.companhia === 'todos' ? null : filtrosSemLink.companhia,
+        p_busca: filtrosSemLink.busca || null,
+      });
 
-      const [voosResult, vlResult] = await Promise.all([
-        Voo.filter(filters, '-data_operacao', 1000),
-        VooLigado.filter(empId ? { empresa_id: empId } : {}, '-created_date')
-      ]);
-
-      const linkedIds = new Set();
-      vlResult.forEach(vl => { linkedIds.add(vl.id_voo_arr); linkedIds.add(vl.id_voo_dep); });
-
-      let unlinked = voosResult.filter(v => !linkedIds.has(v.id) && v.status !== 'Cancelado');
-
-      // Client-side text search
-      if (filtrosSemLink.busca) {
-        const buscaLower = filtrosSemLink.busca.toLowerCase();
-        unlinked = unlinked.filter(v =>
-          v.numero_voo?.toLowerCase().includes(buscaLower) ||
-          v.registo_aeronave?.toLowerCase().includes(buscaLower)
-        );
-      }
-
-      setVoosSemLink(unlinked);
+      if (error) throw error;
+      setVoosSemLink(data || []);
       setSemLinkLoaded(true);
     } catch (error) {
       console.error('Erro ao carregar voos sem link:', error);
