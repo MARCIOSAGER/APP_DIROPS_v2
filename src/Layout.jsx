@@ -24,6 +24,7 @@ import { RegraPermissao } from '@/entities/RegraPermissao';
 import AccessDenied from '@/components/shared/AccessDenied';
 import { logAuthEvent } from '@/lib/auditLog';
 import NetworkIndicator from '@/components/shared/NetworkIndicator';
+const SystemAlerts = React.lazy(() => import('@/components/shared/SystemAlerts'));
             import GlobalLoadingModal from '@/components/shared/GlobalLoadingModal';
 const ChatbotIA = React.lazy(() => import('@/components/shared/ChatbotIA'));
 const SessionTimeoutModal = React.lazy(() => import('@/components/shared/SessionTimeoutModal'));
@@ -701,6 +702,11 @@ function LayoutContent({ children, currentPageName }) {
               </DropdownMenu>
             </div>
           </header>
+          {user && user.empresa_id && (
+            <React.Suspense fallback={null}>
+              <SystemAlerts />
+            </React.Suspense>
+          )}
           <main className="p-4 md:p-6 lg:p-8">{children}</main>
           <BottomTabs />
           <React.Suspense fallback={null}>

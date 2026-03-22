@@ -65,6 +65,7 @@ export default function DashboardInterno() {
   const [calculosTarifa, setCalculosTarifa] = useState([]);
   const [ordensServico, setOrdensServico] = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
+  const [serverStats, setServerStats] = useState(null);
   const [previousPeriodStats, setPreviousPeriodStats] = useState(null);
   const [selectedAeroporto, setSelectedAeroporto] = useState("todos");
   const [selectedPeriodo, setSelectedPeriodo] = useState("30");
@@ -162,16 +163,22 @@ export default function DashboardInterno() {
       const params = { aeroporto: selectedAeroporto, periodo: selectedPeriodo, empresaId };
       // Fetch current and previous period in parallel for trend comparison
       const previousPeriodo = String(parseInt(selectedPeriodo) * 2);
-      const [response, prevResponse] = await Promise.all([
+      const [response, prevResponse, rpcResult] = await Promise.all([
         getDashboardStats(params),
         getDashboardStats({ aeroporto: selectedAeroporto, periodo: previousPeriodo, empresaId }),
+        supabase.rpc('get_dashboard_stats', {
+          p_empresa_id: empresaId || null,
+          p_dias: parseInt(selectedPeriodo) || 30,
+        }).then(res => res.data).catch(err => { console.error('RPC get_dashboard_stats error:', err); return null; }),
       ]);
       setDashboardStats(response.data);
       setPreviousPeriodStats(prevResponse.data);
+      setServerStats(rpcResult);
     } catch (error) {
       console.error('❌ Erro ao carregar estatísticas:', error);
       setError(error.message || t('common.error'));
       setDashboardStats(null);
+      setServerStats(null);
       setPreviousPeriodStats(null);
     } finally {
       setIsLoadingStats(false);
@@ -290,11 +297,11 @@ export default function DashboardInterno() {
   const trends = useMemo(() => {
     if (!dashboardStats || !previousPeriodStats) return {};
     return {
-      voos: calcTrend(dashboardStats.totalVoos, previousPeriodStats.totalVoos),
-      pontualidade: calcTrend(dashboardStats.taxaPontualidade, previousPeriodStats.taxaPontualidade),
-      passageiros: calcTrend(dashboardStats.passageirosPeriodo, previousPeriodStats.passageirosPeriodo),
+      voos: calcTrend(serverStats?.total_voos ?? dashboardStats.totalVoos, previousPeriodStats.totalVoos),
+      pontualidade: calcTrend(serverStats?.pontualidade ?? dashboardStats.taxaPontualidade, previousPeriodStats.taxaPontualidade),
+      passageiros: calcTrend(serverStats?.total_passageiros ?? dashboardStats.passageirosPeriodo, previousPeriodStats.passageirosPeriodo),
     };
-  }, [dashboardStats, previousPeriodStats, calcTrend]);
+  }, [dashboardStats, previousPeriodStats, serverStats, calcTrend]);
 
   // Top 10 Companhias (for single-airport enterprises like ATO)
   const [receitaPorCompanhia, setReceitaPorCompanhia] = useState(new Map());
@@ -531,13 +538,13 @@ export default function DashboardInterno() {
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{dashboardStats?.totalVoos || 0}</span>
+                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{serverStats?.total_voos ?? dashboardStats?.totalVoos ?? 0}</span>
                         <TrendIndicator trend={trends.voos} />
                       </div>
                       <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.total_voos')}</p>
-                      {dashboardStats?.voosUnicosLigados > 0 &&
+                      {(serverStats?.ligados > 0 || dashboardStats?.voosUnicosLigados > 0) &&
                   <p className="text-[9px] text-slate-400">
-                          {dashboardStats.voosUnicosLigados} {t('home.ligados')}, {dashboardStats.voosSemLink} {t('home.sem_link')}
+                          {serverStats?.ligados ?? dashboardStats?.voosUnicosLigados ?? 0} {t('home.ligados')}, {serverStats?.sem_link ?? dashboardStats?.voosSemLink ?? 0} {t('home.sem_link')}
                         </p>
                   }
                     </CardContent>
@@ -550,7 +557,7 @@ export default function DashboardInterno() {
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.chegadasHoje || 0}</div>
+                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{serverStats?.chegadas_hoje ?? dashboardStats?.chegadasHoje ?? 0}</div>
                       <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.chegadas_hoje')}</p>
                     </CardContent>
                   </Card>
@@ -562,7 +569,7 @@ export default function DashboardInterno() {
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.partidasHoje || 0}</div>
+                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{serverStats?.partidas_hoje ?? dashboardStats?.partidasHoje ?? 0}</div>
                       <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.partidas_hoje')}</p>
                     </CardContent>
                   </Card>
@@ -575,7 +582,7 @@ export default function DashboardInterno() {
                     </CardHeader>
                     <CardContent className="px-4 pb-4">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{(dashboardStats?.taxaPontualidade || 0).toFixed(1)}%</span>
+                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{(serverStats?.pontualidade ?? dashboardStats?.taxaPontualidade ?? 0).toFixed(1)}%</span>
                         <TrendIndicator trend={trends.pontualidade} />
                       </div>
                       <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.pontualidade')}</p>
@@ -615,9 +622,10 @@ export default function DashboardInterno() {
                     <CardContent className="px-4 pb-4">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                          {(dashboardStats?.passageirosPeriodo || 0) > 0 ?
-                      `${(dashboardStats.passageirosPeriodo / 1000).toFixed(1)}K` :
-                      '0'}
+                          {(() => {
+                            const pax = serverStats?.total_passageiros ?? dashboardStats?.passageirosPeriodo ?? 0;
+                            return pax > 0 ? `${(pax / 1000).toFixed(1)}K` : '0';
+                          })()}
                         </span>
                         <TrendIndicator trend={trends.passageiros} />
                       </div>

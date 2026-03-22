@@ -1,0 +1,211 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
+import { useCompanyView } from '@/lib/CompanyViewContext';
+import { AlertTriangle, Link2, Plane, X, ChevronRight } from 'lucide-react';
+
+const DISMISS_KEY = 'systemAlerts_dismissed';
+const DISMISS_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+function getDismissed() {
+  try {
+    const raw = localStorage.getItem(DISMISS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    const now = Date.now();
+    // Clean expired entries
+    const cleaned = {};
+    for (const [key, ts] of Object.entries(parsed)) {
+      if (now - ts < DISMISS_TTL) cleaned[key] = ts;
+    }
+    return cleaned;
+  } catch {
+    return {};
+  }
+}
+
+function dismissAlert(type) {
+  const current = getDismissed();
+  current[type] = Date.now();
+  localStorage.setItem(DISMISS_KEY, JSON.stringify(current));
+}
+
+const ALERT_CONFIG = {
+  mtow: {
+    icon: AlertTriangle,
+    color: 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950 dark:border-red-800 dark:text-red-200',
+    iconColor: 'text-red-500',
+    label: (count) => `${count} aeronave${count !== 1 ? 's' : ''} sem MTOW — tarifas de pouso incompletas`,
+    linkLabel: 'Corrigir',
+    linkTo: createPageUrl('Operacoes'),
+  },
+  voos_sem_link: {
+    icon: Link2,
+    color: 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200',
+    iconColor: 'text-amber-500',
+    label: (count) => `${count} voo${count !== 1 ? 's' : ''} sem link nos ultimos 30 dias`,
+    linkLabel: 'Corrigir',
+    linkTo: createPageUrl('Operacoes'),
+  },
+  fr24: {
+    icon: Plane,
+    color: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200',
+    iconColor: 'text-blue-500',
+    label: (count) => `${count} voo${count !== 1 ? 's' : ''} FR24 pendente${count !== 1 ? 's' : ''} para importacao`,
+    linkLabel: 'Ver',
+    linkTo: createPageUrl('FR24'),
+  },
+};
+
+export default function SystemAlerts() {
+  const { currentUser } = useAuth();
+  const { effectiveEmpresaId } = useCompanyView();
+  const [alerts, setAlerts] = useState({});
+  const [dismissed, setDismissed] = useState(() => getDismissed());
+
+  const allowedRoles = ['administrador', 'operacoes'];
+  const userRole = currentUser?.role || currentUser?.perfis?.[0];
+  const canView = allowedRoles.includes(userRole);
+
+  const fetchAlerts = useCallback(async () => {
+    if (!canView || !effectiveEmpresaId) return;
+
+    const results = {};
+
+    try {
+      // a) Registos sem MTOW
+      const { count: mtowCount } = await supabase
+        .from('registo_aeronave')
+        .select('*', { count: 'exact', head: true })
+        .eq('empresa_id', effectiveEmpresaId)
+        .or('mtow_kg.is.null,mtow_kg.eq.0');
+
+      if (mtowCount > 0) results.mtow = mtowCount;
+    } catch (e) {
+      console.warn('SystemAlerts: mtow check failed', e);
+    }
+
+    try {
+      // b) Voos sem link (ultimos 30 dias)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const dateStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+      // Get voos in range
+      const { data: voos } = await supabase
+        .from('voo')
+        .select('id')
+        .eq('empresa_id', effectiveEmpresaId)
+        .is('deleted_at', null)
+        .gte('data_operacao', dateStr);
+
+      if (voos && voos.length > 0) {
+        const vooIds = voos.map(v => v.id);
+        // Get linked voo ids
+        const { data: links } = await supabase
+          .from('voo_ligado')
+          .select('id_voo_arr, id_voo_dep')
+          .or(
+            vooIds.map(id => `id_voo_arr.eq.${id}`).join(',') + ',' +
+            vooIds.map(id => `id_voo_dep.eq.${id}`).join(',')
+          );
+
+        const linkedIds = new Set();
+        if (links) {
+          links.forEach(l => {
+            if (l.id_voo_arr) linkedIds.add(l.id_voo_arr);
+            if (l.id_voo_dep) linkedIds.add(l.id_voo_dep);
+          });
+        }
+        const unlinkedCount = vooIds.filter(id => !linkedIds.has(id)).length;
+        if (unlinkedCount > 0) results.voos_sem_link = unlinkedCount;
+      }
+    } catch (e) {
+      console.warn('SystemAlerts: voos_sem_link check failed', e);
+    }
+
+    try {
+      // c) FR24 pendentes
+      const { count: fr24Count } = await supabase
+        .from('cache_voo_f_r24')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pendente');
+
+      if (fr24Count > 0) results.fr24 = fr24Count;
+    } catch (e) {
+      console.warn('SystemAlerts: fr24 check failed', e);
+    }
+
+    setAlerts(results);
+  }, [canView, effectiveEmpresaId]);
+
+  useEffect(() => {
+    if (!canView) return;
+
+    // Delay initial fetch to not block page load
+    const initialTimeout = setTimeout(() => {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => fetchAlerts());
+      } else {
+        fetchAlerts();
+      }
+    }, 2000);
+
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchAlerts, 5 * 60 * 1000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, [canView, fetchAlerts]);
+
+  const handleDismiss = (type) => {
+    dismissAlert(type);
+    setDismissed(prev => ({ ...prev, [type]: Date.now() }));
+  };
+
+  if (!canView) return null;
+
+  const visibleAlerts = Object.entries(alerts).filter(
+    ([type, count]) => count > 0 && !dismissed[type]
+  );
+
+  if (visibleAlerts.length === 0) return null;
+
+  return (
+    <div className="space-y-0">
+      {visibleAlerts.map(([type, count]) => {
+        const config = ALERT_CONFIG[type];
+        if (!config) return null;
+        const Icon = config.icon;
+
+        return (
+          <div
+            key={type}
+            className={`flex items-center gap-2 px-3 py-1.5 text-xs border-b ${config.color}`}
+          >
+            <Icon className={`h-3.5 w-3.5 flex-shrink-0 ${config.iconColor}`} />
+            <span className="flex-1">{config.label(count)}</span>
+            <Link
+              to={config.linkTo}
+              className="inline-flex items-center gap-0.5 font-medium hover:underline flex-shrink-0"
+            >
+              {config.linkLabel}
+              <ChevronRight className="h-3 w-3" />
+            </Link>
+            <button
+              onClick={() => handleDismiss(type)}
+              className="p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 flex-shrink-0"
+              aria-label="Dispensar alerta"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
