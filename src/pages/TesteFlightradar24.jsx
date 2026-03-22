@@ -585,7 +585,6 @@ export default function TesteFlightradar24() {
       setApiProgress('');
 
       // Update last sync timestamp
-      const syncKey = `FR24_LAST_SYNC_${airportIcao}`;
       await supabase.from('api_config').upsert({ chave: syncKey, valor: new Date().toISOString(), descricao: `Ultima sincronizacao FR24 para ${airportIcao}` }, { onConflict: 'chave' });
 
       showAlert('success', `${deduped.length} voos encontrados em ${blocks.length} blocos. ${errors ? errors + ' erros.' : ''} Dados salvos no cache.`);
