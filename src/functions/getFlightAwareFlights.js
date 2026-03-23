@@ -268,30 +268,26 @@ export async function getFlightAwareFIDS({ airportIcao }) {
   const stats = { apiCalls: 0, errors: [] };
 
   try {
-    const params = { max_pages: '2' };
+    // Use PostgreSQL RPC function (via REST API) instead of Edge Function
+    // This avoids CORS/network issues with Edge Functions
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('fetch_flightaware_fids', {
+      airport_icao: airportIcao,
+    });
 
-    // Fetch arrivals and departures in parallel via proxy
-    // Use allSettled so one failure doesn't block the other
-    const [arrivalsResult, departuresResult] = await Promise.allSettled([
-      fetchViaProxy(`/airports/${airportIcao}/flights/arrivals`, params, stats),
-      fetchViaProxy(`/airports/${airportIcao}/flights/departures`, params, stats),
-    ]);
+    stats.apiCalls++;
 
-    const arrivalsData = arrivalsResult.status === 'fulfilled' ? arrivalsResult.value : null;
-    const departuresData = departuresResult.status === 'fulfilled' ? departuresResult.value : null;
-
-    if (arrivalsResult.status === 'rejected') stats.errors.push(`Arrivals: ${arrivalsResult.reason?.message}`);
-    if (departuresResult.status === 'rejected') stats.errors.push(`Departures: ${departuresResult.reason?.message}`);
-
-    // If both failed, throw
-    if (!arrivalsData && !departuresData) {
-      throw new Error(stats.errors.join('; '));
+    if (rpcError) {
+      throw new Error(rpcError.message || 'RPC call failed');
     }
 
-    const arrivals = (arrivalsData?.arrivals || []).map((f) =>
+    if (!rpcResult?.success) {
+      throw new Error(rpcResult?.error || 'FlightAware API error');
+    }
+
+    const arrivals = (rpcResult.arrivals || []).map((f) =>
       normalizeFlightAwareFlight(f, 'ARR', airportIcao)
     );
-    const departures = (departuresData?.departures || []).map((f) =>
+    const departures = (rpcResult.departures || []).map((f) =>
       normalizeFlightAwareFlight(f, 'DEP', airportIcao)
     );
 
