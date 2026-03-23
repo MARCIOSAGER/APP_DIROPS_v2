@@ -235,6 +235,7 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
     posicao_stand: posicaoStand || null,
     origem_dados: 'FlightAware',
     empresa_id: empresaId || null,
+    created_by: 'FlightAware',
     created_date: new Date().toISOString(),
   }).select().single();
 
