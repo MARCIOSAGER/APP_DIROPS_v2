@@ -235,9 +235,10 @@ export default function FIDSPanel({ aeroportos = [] }) {
         setLastUpdated(result.lastUpdated || new Date().toISOString());
 
         // Save to cache_voo_f_r24 in background (non-blocking)
+        // Only insert NEW flights (don't overwrite already imported ones)
         if (allFlights.length > 0) {
           const records = allFlights
-            .filter(f => f.fr24_id) // only flights with valid ID
+            .filter(f => f.fr24_id)
             .map(f => ({
               fr24_id: f.fr24_id,
               numero_voo: f.flight || f.callsign || '',
@@ -246,11 +247,24 @@ export default function FIDSPanel({ aeroportos = [] }) {
               data_expiracao: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
               status: 'pendente',
               raw_data: f,
+              updated_date: new Date().toISOString(),
             }));
+
+          // Get existing fr24_ids to skip already-imported flights
+          const fr24Ids = records.map(r => r.fr24_id);
           supabase.from('cache_voo_f_r24')
-            .upsert(records, { onConflict: 'fr24_id', ignoreDuplicates: true })
-            .then(({ error: cacheErr }) => {
-              if (cacheErr) console.warn('FIDS cache save failed:', cacheErr.message);
+            .select('fr24_id')
+            .in('fr24_id', fr24Ids)
+            .then(({ data: existing }) => {
+              const existingIds = new Set((existing || []).map(e => e.fr24_id));
+              const newRecords = records.filter(r => !existingIds.has(r.fr24_id));
+              if (newRecords.length > 0) {
+                supabase.from('cache_voo_f_r24')
+                  .insert(newRecords)
+                  .then(({ error: cacheErr }) => {
+                    if (cacheErr) console.warn('FIDS cache save failed:', cacheErr.message);
+                  });
+              }
             });
         }
       } else {
