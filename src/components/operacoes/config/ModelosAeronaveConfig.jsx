@@ -108,27 +108,38 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
     guardedSubmit(async () => {
     setIsSubmitting(true);
     try {
-      // Validar duplicidade de código IATA
-      const codigoIataNormalizado = formData.codigo_iata.trim().toUpperCase();
-      let modeloDuplicado = modelos.find(
-        (m) => m.codigo_iata?.trim().toUpperCase() === codigoIataNormalizado && 
+      // Validar MTOW mínimo 4 dígitos (>= 1000 kg)
+      if (!formData.mtow_kg || formData.mtow_kg < 1000) {
+        setAlertInfo({
+          isOpen: true,
+          type: 'error',
+          title: 'MTOW Inválido',
+          message: 'O MTOW deve ter no mínimo 4 dígitos (≥ 1000 kg). Nenhuma aeronave tem MTOW inferior a 1000 kg.'
+        });
+        return;
+      }
+
+      // Validar duplicidade de código ICAO (UNIQUE na BD)
+      const codigoIcaoNormalizado = formData.codigo_icao.trim().toUpperCase();
+      let modeloDuplicadoIcao = modelos.find(
+        (m) => m.codigo_icao?.trim().toUpperCase() === codigoIcaoNormalizado &&
         (!editingModelo || m.id !== editingModelo.id)
       );
 
       // Verificar também diretamente na BD para evitar race conditions
-      if (!modeloDuplicado && !editingModelo) {
-        const existingInDB = await ModeloAeronave.filter({ codigo_iata: codigoIataNormalizado });
+      if (!modeloDuplicadoIcao && !editingModelo) {
+        const existingInDB = await ModeloAeronave.filter({ codigo_icao: codigoIcaoNormalizado });
         if (existingInDB && existingInDB.length > 0) {
-          modeloDuplicado = existingInDB[0];
+          modeloDuplicadoIcao = existingInDB[0];
         }
       }
 
-      if (modeloDuplicado) {
+      if (modeloDuplicadoIcao) {
         setAlertInfo({
           isOpen: true,
           type: 'error',
-          title: 'Código IATA Duplicado',
-          message: `O código IATA "${codigoIataNormalizado}" já está registado para o modelo "${modeloDuplicado.modelo}". Cada modelo deve ter um código IATA único. Por favor, verifique o código ou edite o modelo existente.`
+          title: 'Código ICAO Duplicado',
+          message: `O código ICAO "${codigoIcaoNormalizado}" já está registado para o modelo "${modeloDuplicadoIcao.modelo}". Cada modelo deve ter um código ICAO único. Por favor, verifique o código ou edite o modelo existente.`
         });
         return;
       }
@@ -160,8 +171,8 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
         setAlertInfo({
           isOpen: true,
           type: 'error',
-          title: 'Código IATA Duplicado',
-          message: `O código IATA "${formData.codigo_iata}" já está registado no sistema. Cada modelo deve ter um código IATA único. Por favor, utilize um código diferente ou edite o modelo existente.`
+          title: 'Código ICAO Duplicado',
+          message: `O código ICAO "${formData.codigo_icao}" já está registado no sistema. Cada modelo deve ter um código ICAO único. Por favor, utilize um código diferente ou edite o modelo existente.`
         });
       } else {
         setAlertInfo({
@@ -379,7 +390,10 @@ export default function ModelosAeronaveConfig({ modelos, onReload }) {
               </div>
               <div>
                 <Label>{t('configModelos.mtowKg')} *</Label>
-                <Input type="number" value={formData.mtow_kg} onChange={(e) => setFormData({ ...formData, mtow_kg: Number(e.target.value) })} required />
+                <Input type="number" min="1000" value={formData.mtow_kg} onChange={(e) => setFormData({ ...formData, mtow_kg: Number(e.target.value) })} required />
+                {formData.mtow_kg > 0 && formData.mtow_kg < 1000 && (
+                  <p className="text-red-500 text-xs mt-1">MTOW deve ter no mínimo 4 dígitos (≥ 1000 kg)</p>
+                )}
               </div>
               <div>
                 <Label>{t('configModelos.comprimento')}</Label>

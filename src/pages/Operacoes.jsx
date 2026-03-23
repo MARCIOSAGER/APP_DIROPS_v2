@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Download, Settings, Filter, X, Trash2, Link2, Unlink, Loader2, Search, ArrowRightLeft } from 'lucide-react';
+import { Plus, RefreshCw, Download, Settings, Filter, X, Trash2, Link2, Unlink, Loader2, Search, ArrowRightLeft, Plane } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, parseISO, addDays } from 'date-fns';
@@ -61,6 +61,7 @@ import UploadDocumentoVooModal from '../components/operacoes/UploadDocumentoVooM
 import LixeiraVoosModal from '../components/operacoes/LixeiraVoosModal';
 import DocumentosVooModal from '../components/operacoes/DocumentosVooModal';
 import UploadMultiplosDocumentosModal from '../components/operacoes/UploadMultiplosDocumentosModal';
+import FIDSPanel from '../components/operacoes/FIDSPanel';
 
 const formatCurrency = (value, currency = 'AOA') => {
   return new Intl.NumberFormat('pt-AO', { style: 'currency', currency: currency }).format(value || 0);
@@ -2232,7 +2233,7 @@ export default function Operacoes() {
         </div>
 
         <Tabs defaultValue="voos" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-auto">
+          <TabsList className="grid w-full grid-cols-5 h-auto">
             <TabsTrigger value="voos" className="text-xs sm:text-sm px-2 py-2">{t('tab.all_flights')}</TabsTrigger>
             <TabsTrigger value="linkados" className="text-xs sm:text-sm px-2 py-2">
               <span className="hidden sm:inline">{t('tab.linked_flights')}</span>
@@ -2252,6 +2253,11 @@ export default function Operacoes() {
                   {semLinkStats.total}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="fids" className="text-xs sm:text-sm px-2 py-2">
+              <Plane className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+              <span className="hidden sm:inline">FIDS</span>
+              <span className="sm:hidden">FIDS</span>
             </TabsTrigger>
             <TabsTrigger value="configuracoes" className="text-xs sm:text-sm px-2 py-2">
               <Settings className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
@@ -2889,6 +2895,10 @@ export default function Operacoes() {
                 })()}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="fids" className="space-y-4 sm:space-y-6">
+            <FIDSPanel aeroportos={todosAeroportos} />
           </TabsContent>
 
           <TabsContent value="configuracoes" className="space-y-4 sm:space-y-6">

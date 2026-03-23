@@ -30,21 +30,21 @@ export async function syncFR24ToCache({ flights, empresaId, cacheDays = 30 }) {
     .map(f => f.fr24_id)
     .filter(Boolean);
 
-  const existingMap = new Map();
+  const existingMap = new Map(); // fr24_id => { id, status }
   if (fr24Ids.length > 0) {
     // Fetch in batches of 100 to avoid query limits
     for (let i = 0; i < fr24Ids.length; i += 100) {
       const batch = fr24Ids.slice(i, i + 100);
       const { data: existing, error } = await supabase
         .from('cache_voo_f_r24')
-        .select('id, fr24_id')
+        .select('id, fr24_id, status')
         .in('fr24_id', batch);
 
       if (error) {
         errors.push(`Error fetching existing records: ${error.message}`);
       } else if (existing) {
         for (const row of existing) {
-          existingMap.set(row.fr24_id, row.id);
+          existingMap.set(row.fr24_id, { id: row.id, status: row.status });
         }
       }
     }
@@ -83,9 +83,14 @@ export async function syncFR24ToCache({ flights, empresaId, cacheDays = 30 }) {
     };
 
     if (existingMap.has(flight.fr24_id)) {
-      // Update existing
+      const existing = existingMap.get(flight.fr24_id);
+      // Don't overwrite status of already-imported records
+      if (existing.status === 'importado') {
+        skipped++;
+        continue;
+      }
       toUpdate.push({
-        id: existingMap.get(flight.fr24_id),
+        id: existing.id,
         ...record,
       });
     } else {

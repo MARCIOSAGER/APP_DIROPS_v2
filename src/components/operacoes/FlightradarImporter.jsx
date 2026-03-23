@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, AlertCircle, CheckCircle2, Clock, GripVertical, FileSpreadsheet } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getFlightradarFlights } from '@/functions/getFlightradarFlights';
+import { getFlightAwareFlights } from '@/functions/getFlightAwareFlights';
 import { importVooFromFR24Cache } from '@/functions/importVooFromFR24Cache';
 import VooFR24ReviewModal from './VooFR24ReviewModal';
 import CacheVooFR24List from './CacheVooFR24List';
@@ -46,6 +46,12 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
     'datetime_landed',
     'flight_time',
     'actual_distance',
+    'status',
+    'departure_delay',
+    'gate_origin',
+    'gate_destination',
+    'terminal_origin',
+    'terminal_destination',
     'category',
     'flight_ended'
   ]);
@@ -131,6 +137,12 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
     datetime_landed: t('flightradar.colHoraPouso'),
     flight_time: t('flightradar.colTempoVoo'),
     actual_distance: t('flightradar.colDistancia'),
+    status: 'Status',
+    departure_delay: 'Atraso',
+    gate_origin: 'Gate\nOrigem',
+    gate_destination: 'Gate\nDestino',
+    terminal_origin: 'Terminal\nOrigem',
+    terminal_destination: 'Terminal\nDestino',
     category: t('flightradar.colCategoria'),
     flight_ended: t('flightradar.colFinalizado')
   };
@@ -144,7 +156,8 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
     setIsLoading(true);
     setShowProgress(true);
     setError(null);
-    setSearchStartTime(Date.now());
+    const startTime = Date.now();
+    setSearchStartTime(startTime);
     setProgressData({
       progress: 0,
       totalFlights: 0,
@@ -157,20 +170,73 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
 
     try {
       const { base44 } = await import('@/api/base44Client');
+      const { syncFR24ToCache } = await import('@/functions/syncFR24ToCache');
       const allFlights = [];
 
-      // Validar intervalo de datas (máximo 13 dias)
+      // Validar intervalo de datas (máximo 10 dias - limite FlightAware)
       const startDateObj = new Date(`${dataInicio}T00:00:00`);
       const endDateObj = new Date(`${dataFim}T23:59:59`);
       const diffDays = Math.floor((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
 
-      if (diffDays >= 14) {
-        setError(`${t('flightradar.dateRangeTooLarge')} (${diffDays} dias). ${t('flightradar.maxDays')}`);
+      if (diffDays >= 10) {
+        setError(`Intervalo máximo de 10 dias (FlightAware). Período selecionado: ${diffDays} dias.`);
         setIsLoading(false);
         return;
       }
 
-      // Buscar TODOS os voos em cache para os aeroportos selecionados
+      // 1) Buscar voos da FlightAware API para cada aeroporto
+      let totalFromApi = 0;
+
+      for (let i = 0; i < aeroportosSelecionados.length; i++) {
+        const aeroporto = aeroportosSelecionados[i];
+
+        setProgressData(prev => ({
+          ...prev,
+          currentPage: i + 1,
+          elapsedTime: Date.now() - startTime
+        }));
+
+        try {
+          const response = await getFlightAwareFlights({
+            airportIcao: aeroporto,
+            startDate: `${dataInicio}T00:00:00Z`,
+            endDate: `${dataFim}T23:59:59Z`,
+            maxPages: 5,
+            onProgress: ({ phase }) => {
+              setProgressData(prev => ({
+                ...prev,
+                elapsedTime: Date.now() - startTime
+              }));
+            }
+          });
+
+          if (response.success && response.flights) {
+            totalFromApi += response.flights.length;
+
+            // 2) Sync novos voos para o cache
+            const syncResult = await syncFR24ToCache({ flights: response.flights });
+
+            setProgressData(prev => ({
+              ...prev,
+              progress: totalFromApi,
+              totalFlights: totalFromApi,
+              elapsedTime: Date.now() - startTime
+            }));
+
+            if (!syncResult.success && syncResult.errors?.length > 0) {
+              console.warn('Avisos ao sincronizar cache:', syncResult.errors);
+            }
+          } else if (response.error) {
+            console.error(`Erro na API para ${aeroporto}:`, response.error);
+            // Continue com os outros aeroportos
+          }
+        } catch (apiErr) {
+          console.error(`Exceção ao buscar ${aeroporto}:`, apiErr);
+          // Continue com os outros aeroportos
+        }
+      }
+
+      // 3) Buscar TODOS os voos do cache para os aeroportos e período selecionados
       const cacheVoos = await Promise.all(
         aeroportosSelecionados.map(aeroporto =>
           base44.entities.CacheVooFR24.filter({
@@ -180,125 +246,49 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
         )
       );
 
-      // Adicionar voos do cache, convertendo para o formato correto
-      const voosEmCache = cacheVoos.flat().map(cache => ({
+      // Converter cache para formato de exibição
+      const voosDoCache = cacheVoos.flat().map(cache => ({
         ...cache.raw_data,
         cache_id: cache.id,
         fr24_id: cache.fr24_id,
-        data_voo_cache: cache.data_voo
+        fa_flight_id: cache.fr24_id,
+        data_voo_cache: cache.data_voo,
+        _cache_status: cache.status
       }));
 
-      allFlights.push(...voosEmCache);
-
-      // Atualizar progresso com voos do cache
-      let now = Date.now();
-      let elapsed = now - searchStartTime;
-      setProgressData(prev => ({
-        ...prev,
-        progress: voosEmCache.length,
-        totalFlights: voosEmCache.length,
-        elapsedTime: elapsed,
-        currentPage: 1
-      }));
-
-      // Buscar novos voos da API para cada aeroporto
-      let pageCounter = 1;
-
-      for (const aeroporto of aeroportosSelecionados) {
-        try {
-          const response = await getFlightradarFlights({
-            airportIcao: aeroporto,
-            startDate: `${dataInicio}T00:00:00`,
-            endDate: `${dataFim}T23:59:59`
-          });
-
-          if (response && response.data && response.data.flights && Array.isArray(response.data.flights)) {
-            allFlights.push(...response.data.flights);
-
-            // Atualizar progresso
-            now = Date.now();
-            elapsed = now - searchStartTime;
-
-            setProgressData(prev => ({
-              ...prev,
-              progress: allFlights.length,
-              totalFlights: allFlights.length,
-              elapsedTime: elapsed,
-              currentPage: pageCounter,
-              error: null
-            }));
-            pageCounter++;
-          } else if (response && response.data && response.data.error) {
-            console.error(`❌ Erro na API para ${aeroporto}:`, response.data.error);
-            setProgressData(prev => ({
-              ...prev,
-              error: response.data.error,
-              isComplete: true
-            }));
-            setError(response.data.error);
-            setIsLoading(false);
-            return;
-          } else {
-            console.warn(`⚠️ Nenhum voo retornado da API para ${aeroporto}`);
-          }
-        } catch (apiErr) {
-          console.error(`❌ Exceção ao buscar ${aeroporto}:`, apiErr);
-          const errorMsg = apiErr.message || 'Erro desconhecido ao buscar da API';
-          setProgressData(prev => ({
-            ...prev,
-            error: errorMsg,
-            isComplete: true
-          }));
-          setError(errorMsg);
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // Remover duplicatas usando Set baseado em cache_id ou fr24_id
+      // Deduplicar por fr24_id/fa_flight_id
       const seen = new Set();
-      const uniqueFlights = allFlights.filter(voo => {
-        const id = voo.cache_id || voo.fr24_id || voo.id;
-        if (!id) {
-          console.warn('⚠️ Voo sem ID encontrado:', voo);
-          return false;
-        }
-        if (seen.has(id)) return false;
+      const uniqueFlights = voosDoCache.filter(voo => {
+        const id = voo.fr24_id || voo.fa_flight_id || voo.cache_id;
+        if (!id || seen.has(id)) return false;
         seen.add(id);
         return true;
       });
 
-      // Garantir que todos os voos têm cache_id
-      const voosComCacheId = uniqueFlights.filter(voo => {
-        if (!voo.cache_id) {
-          console.warn('⚠️ Voo sem cache_id:', voo.fr24_id || voo.id);
-          return false;
-        }
-        return true;
-      });
+      // Filtrar apenas voos pendentes (não importados)
+      const voosPendentes = uniqueFlights.filter(v => v._cache_status !== 'importado');
 
       // Marcar como completo
-      now = Date.now();
-      elapsed = now - searchStartTime;
-      setProgressData(prev => ({
-        ...prev,
-        progress: voosComCacheId.length,
-        totalFlights: voosComCacheId.length,
-        elapsedTime: elapsed,
+      setProgressData({
+        progress: voosPendentes.length,
+        totalFlights: voosPendentes.length,
+        elapsedTime: Date.now() - startTime,
+        estimatedTime: 0,
+        currentPage: aeroportosSelecionados.length,
+        error: null,
         isComplete: true
-      }));
+      });
 
-      if (voosComCacheId.length > 0) {
-        setVoosFR24(voosComCacheId);
+      if (voosPendentes.length > 0) {
+        setVoosFR24(voosPendentes);
         setError(null);
       } else {
-        console.warn('⚠️ Nenhum voo encontrado no período.');
         setError(t('flightradar.noFlights'));
         setVoosFR24([]);
       }
-      } catch (err) {
-      console.error('❌ Erro ao buscar voos:', err);
-      const errorMsg = err.response?.data?.error || err.message || 'Erro ao buscar voos do Flightradar24';
+    } catch (err) {
+      console.error('Erro ao buscar voos:', err);
+      const errorMsg = err.message || 'Erro ao buscar voos do FlightAware';
       setError(errorMsg);
       setVoosFR24([]);
       setProgressData(prev => ({
@@ -306,10 +296,10 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
         error: errorMsg,
         isComplete: true
       }));
-      } finally {
+    } finally {
       setIsLoading(false);
-      }
-      };
+    }
+  };
 
   const getStatusBadge = (voo) => {
     if (voo.status_validacao === 'validado') {
@@ -335,22 +325,22 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
   const handleConfirmImport = async (suggestions, userSelections) => {
     setIsImporting(true);
     try {
-      const response = await importVooFromFR24Cache({
+      const result = await importVooFromFR24Cache({
         cacheVooId: selectedCacheVoo,
         suggestions: suggestions,
         userSelections: userSelections || {}
       });
 
-      if (response.data.success) {
+      if (result.success) {
         setShowReviewModal(false);
         setSelectedCacheVoo(null);
         setSelectedFR24Voo(null);
-        
-        // Remover o voo da lista de FR24
+
+        // Remover o voo da lista
         setVoosFR24(prev => prev.filter(v => v.cache_id !== selectedCacheVoo));
-        
+
         if (onImportSuccess) {
-          onImportSuccess(response.data);
+          onImportSuccess(result);
         }
       }
     } catch (err) {
@@ -477,7 +467,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `buscar_voos_fr24_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.download = `buscar_voos_flightaware_${new Date().toISOString().split('T')[0]}.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -730,7 +720,30 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
                          const circleDist = voo.circle_distance ? Math.round(voo.circle_distance) : null;
                          return actualDist && circleDist ? `${actualDist}/${circleDist}` : actualDist || circleDist || '-';
                        })(),
-                       category: voo.category || '-',
+                       status: voo.status ? (
+                         <span className={`text-[9px] px-1 py-0.5 rounded ${
+                           voo.status.toLowerCase().includes('arrived') ? 'bg-green-100 text-green-700' :
+                           voo.status.toLowerCase().includes('en route') ? 'bg-blue-100 text-blue-700' :
+                           voo.status.toLowerCase().includes('cancelled') || voo.cancelled ? 'bg-red-100 text-red-700' :
+                           'bg-slate-100 text-slate-600'
+                         }`}>{voo.status}</span>
+                       ) : '-',
+                       departure_delay: (() => {
+                         const delay = voo.departure_delay || voo.arrival_delay;
+                         if (!delay || delay === 0) return '-';
+                         const mins = Math.round(delay / 60);
+                         if (Math.abs(mins) < 2) return '-';
+                         return (
+                           <span className={mins > 0 ? 'text-red-600 font-medium' : 'text-green-600'}>
+                             {mins > 0 ? `+${mins}m` : `${mins}m`}
+                           </span>
+                         );
+                       })(),
+                       gate_origin: voo.gate_origin || '-',
+                       gate_destination: voo.gate_destination || '-',
+                       terminal_origin: voo.terminal_origin || '-',
+                       terminal_destination: voo.terminal_destination || '-',
+                       category: voo.category || voo.flight_type || '-',
                        flight_ended: (
                          <span className={voo.flight_ended ? 'text-green-600' : 'text-slate-400'}>
                            {voo.flight_ended ? '✓' : '✗'}
