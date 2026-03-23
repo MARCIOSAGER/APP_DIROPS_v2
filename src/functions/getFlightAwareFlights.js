@@ -121,12 +121,12 @@ export async function getFlightAwareFlights({
 }
 
 /**
- * Call FlightAware API through Supabase Edge Function proxy.
- * Uses supabase.functions.invoke() which handles CORS and auth automatically.
- * Retries up to MAX_RETRIES on network failures (cold start / timeout).
+ * Call FlightAware API through PostgreSQL RPC function (fetch_flightaware).
+ * Uses supabase.rpc() via REST API to avoid CORS/Edge Function issues.
+ * Retries up to MAX_RETRIES on transient failures.
  */
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 1500;
+const MAX_RETRIES = 1;
+const RETRY_DELAY_MS = 2000;
 
 async function fetchViaProxy(endpoint, params, stats) {
   let lastError;
@@ -134,17 +134,19 @@ async function fetchViaProxy(endpoint, params, stats) {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       if (attempt > 0) {
-        await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt));
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
       }
 
-      const { data, error } = await supabase.functions.invoke('flightaware-proxy', {
-        body: { endpoint, params },
+      const { data, error } = await supabase.rpc('fetch_flightaware', {
+        p_airport: endpoint.split('/')[2] || '',
+        p_endpoint: endpoint,
+        p_params: params || {},
       });
 
       stats.apiCalls++;
 
       if (error) {
-        throw new Error(error.message || `FlightAware proxy error: ${JSON.stringify(error)}`);
+        throw new Error(error.message || `FlightAware RPC error: ${JSON.stringify(error)}`);
       }
 
       if (data?.error) {
@@ -154,8 +156,8 @@ async function fetchViaProxy(endpoint, params, stats) {
       return data;
     } catch (err) {
       lastError = err;
-      if (attempt < MAX_RETRIES && (err.message?.includes('Failed to fetch') || err.message?.includes('FunctionsFetchError'))) {
-        console.warn(`FlightAware proxy attempt ${attempt + 1} failed, retrying...`, err.message);
+      if (attempt < MAX_RETRIES && err.message?.includes('timeout')) {
+        console.warn(`FlightAware RPC attempt ${attempt + 1} failed, retrying...`, err.message);
         continue;
       }
       throw err;
