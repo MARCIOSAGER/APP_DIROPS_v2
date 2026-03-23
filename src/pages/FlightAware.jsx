@@ -1145,7 +1145,7 @@ export default function FlightAwarePage() {
             <CardContent className="pt-3 pb-3 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
               <p className="text-xs text-amber-700">
-                Plano Explorer: max 20 resultados por query, 10 req/min, 30 dias de histórico.
+                FlightAware AeroAPI: resultados paginados (max 2 páginas por bloco).
                 Intervalos maiores que 1 dia são divididos em blocos de 6h.
               </p>
             </CardContent>
