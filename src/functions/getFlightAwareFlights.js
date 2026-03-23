@@ -1,43 +1,31 @@
 import { supabase } from '@/lib/supabaseClient';
 
-const FA_API_BASE = 'https://aeroapi.flightaware.com/aeroapi';
+const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || '';
 
 /**
  * Fetch flights from FlightAware AeroAPI for a given airport and date range.
+ * Uses Supabase Edge Function proxy to avoid CORS issues.
  *
  * @param {Object} params
- * @param {string} params.airportIcao - ICAO code (e.g. 'FNLU')
- * @param {string} [params.startDate] - ISO string or YYYY-MM-DD (start of range)
- * @param {string} [params.endDate] - ISO string or YYYY-MM-DD (end of range)
- * @param {string} [params.apiKey] - FlightAware API key. If not provided, reads from api_config table.
+ * @param {string} params.airportIcao - ICAO code (e.g. 'FNBJ')
+ * @param {string} [params.startDate] - ISO string or YYYY-MM-DD
+ * @param {string} [params.endDate] - ISO string or YYYY-MM-DD
  * @param {string} [params.type] - 'arrivals' | 'departures' | 'all' (default: 'all')
  * @param {number} [params.maxPages] - Max pages to fetch (default: 5)
- * @param {Function} [params.onProgress] - Progress callback ({ phase, current, total })
+ * @param {Function} [params.onProgress] - Progress callback
  * @returns {{ success: boolean, flights: Array, stats: Object }}
  */
 export async function getFlightAwareFlights({
   airportIcao,
   startDate,
   endDate,
-  apiKey,
   type = 'all',
   maxPages = 5,
   onProgress,
 }) {
   if (!airportIcao) {
     return { success: false, error: 'airportIcao is required' };
-  }
-
-  // Resolve API key
-  let resolvedKey = apiKey;
-  if (!resolvedKey) {
-    resolvedKey = await getStoredApiKey();
-  }
-  if (!resolvedKey) {
-    return {
-      success: false,
-      error: 'FlightAware API key not configured. Provide apiKey param or store in api_config table (config_key = "flightaware_api_key").',
-    };
   }
 
   const stats = {
@@ -49,37 +37,35 @@ export async function getFlightAwareFlights({
 
   const allFlights = [];
 
-  // Build query params
-  const params = new URLSearchParams();
-  if (maxPages) params.set('max_pages', maxPages.toString());
+  // Build query params for FlightAware API
+  const queryParams = {};
+  if (maxPages) queryParams.max_pages = maxPages.toString();
 
   if (startDate) {
     const start = new Date(startDate);
     if (isNaN(start.getTime())) {
       return { success: false, error: 'Invalid startDate format.' };
     }
-    params.set('start', start.toISOString());
+    queryParams.start = start.toISOString();
   }
   if (endDate) {
     const end = new Date(endDate);
     if (isNaN(end.getTime())) {
       return { success: false, error: 'Invalid endDate format.' };
     }
-    // If only date provided (YYYY-MM-DD), set to end of day
     if (typeof endDate === 'string' && endDate.length === 10) {
       end.setHours(23, 59, 59, 999);
     }
-    params.set('end', end.toISOString());
+    queryParams.end = end.toISOString();
   }
 
   try {
     if (type === 'all' || type === 'arrivals') {
       onProgress?.({ phase: 'arrivals', current: 0, total: 1 });
 
-      const arrivalsData = await fetchEndpoint(
-        resolvedKey,
+      const arrivalsData = await fetchViaProxy(
         `/airports/${airportIcao}/flights/arrivals`,
-        params,
+        queryParams,
         stats
       );
 
@@ -95,10 +81,9 @@ export async function getFlightAwareFlights({
     if (type === 'all' || type === 'departures') {
       onProgress?.({ phase: 'departures', current: 0, total: 1 });
 
-      const departuresData = await fetchEndpoint(
-        resolvedKey,
+      const departuresData = await fetchViaProxy(
         `/airports/${airportIcao}/flights/departures`,
-        params,
+        queryParams,
         stats
       );
 
@@ -139,29 +124,43 @@ export async function getFlightAwareFlights({
 }
 
 /**
- * Fetch a single AeroAPI endpoint with pagination support.
+ * Call FlightAware API through Supabase Edge Function proxy to avoid CORS.
  */
-async function fetchEndpoint(apiKey, path, params, stats) {
-  const url = `${FA_API_BASE}${path}?${params.toString()}`;
+async function fetchViaProxy(endpoint, params, stats) {
+  const proxyUrl = `${SUPABASE_URL}/functions/v1/flightaware-proxy`;
 
-  const response = await fetch(url, {
-    method: 'GET',
+  const response = await fetch(proxyUrl, {
+    method: 'POST',
     headers: {
-      'x-apikey': apiKey,
-      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'apikey': SUPABASE_ANON_KEY,
     },
+    body: JSON.stringify({ endpoint, params }),
   });
 
   stats.apiCalls++;
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => '');
-    const err = new Error(`FlightAware API error ${response.status}: ${errorBody}`);
-    err.status = response.status;
-    throw err;
+    let errorMsg;
+    try {
+      const parsed = JSON.parse(errorBody);
+      errorMsg = parsed.error || `FlightAware API error ${response.status}`;
+    } catch {
+      errorMsg = `FlightAware proxy error ${response.status}: ${errorBody.substring(0, 200)}`;
+    }
+    throw new Error(errorMsg);
   }
 
-  return response.json();
+  const data = await response.json();
+
+  // The proxy might return an error in the JSON body
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
 }
 
 /**
@@ -201,7 +200,6 @@ function normalizeFlightAwareFlight(raw, movementType, airportIcao) {
     dest_iata_actual: dest.code_iata || '',
 
     // Times (FlightAware uses OUT/OFF/ON/IN model, already ISO 8601)
-    // OUT = gate departure, OFF = wheels off, ON = wheels on, IN = gate arrival
     datetime_takeoff: raw.actual_off || raw.estimated_off || raw.scheduled_off || null,
     datetime_landed: raw.actual_on || raw.estimated_on || raw.scheduled_on || null,
     datetime_scheduled_takeoff: raw.scheduled_off || null,
@@ -239,7 +237,7 @@ function normalizeFlightAwareFlight(raw, movementType, airportIcao) {
     baggage_claim: raw.baggage_claim || '',
 
     // Classification
-    category: raw.type || '', // "General_Aviation", "Airline"
+    category: raw.type || '',
     flight_type: raw.type || '',
     movement_type: movementType,
     airport_icao: airportIcao,
@@ -259,37 +257,21 @@ function normalizeFlightAwareFlight(raw, movementType, airportIcao) {
 /**
  * Fetch flights for FIDS (Flight Information Display System).
  * Returns current/recent arrivals and departures for display.
- *
- * @param {Object} params
- * @param {string} params.airportIcao - ICAO code
- * @param {string} [params.apiKey] - API key (optional, reads from config)
- * @returns {{ success: boolean, arrivals: Array, departures: Array }}
  */
-export async function getFlightAwareFIDS({ airportIcao, apiKey }) {
+export async function getFlightAwareFIDS({ airportIcao }) {
   if (!airportIcao) {
     return { success: false, error: 'airportIcao is required' };
-  }
-
-  let resolvedKey = apiKey;
-  if (!resolvedKey) {
-    resolvedKey = await getStoredApiKey();
-  }
-  if (!resolvedKey) {
-    return {
-      success: false,
-      error: 'FlightAware API key not configured.',
-    };
   }
 
   const stats = { apiCalls: 0, errors: [] };
 
   try {
-    const params = new URLSearchParams({ max_pages: '2' });
+    const params = { max_pages: '2' };
 
-    // Fetch arrivals and departures
+    // Fetch arrivals and departures in parallel via proxy
     const [arrivalsData, departuresData] = await Promise.all([
-      fetchEndpoint(resolvedKey, `/airports/${airportIcao}/flights/arrivals`, params, stats),
-      fetchEndpoint(resolvedKey, `/airports/${airportIcao}/flights/departures`, params, stats),
+      fetchViaProxy(`/airports/${airportIcao}/flights/arrivals`, params, stats),
+      fetchViaProxy(`/airports/${airportIcao}/flights/departures`, params, stats),
     ]);
 
     const arrivals = (arrivalsData?.arrivals || []).map((f) =>
@@ -299,7 +281,7 @@ export async function getFlightAwareFIDS({ airportIcao, apiKey }) {
       normalizeFlightAwareFlight(f, 'DEP', airportIcao)
     );
 
-    // Sort: upcoming/in-progress first, then by time
+    // Sort by most recent first
     const sortByTime = (a, b) => {
       const timeA = a.movement_type === 'ARR'
         ? (a.datetime_landed || a.datetime_estimated_landed || a.datetime_scheduled_landed)
@@ -307,7 +289,6 @@ export async function getFlightAwareFIDS({ airportIcao, apiKey }) {
       const timeB = b.movement_type === 'ARR'
         ? (b.datetime_landed || b.datetime_estimated_landed || b.datetime_scheduled_landed)
         : (b.datetime_takeoff || b.datetime_estimated_takeoff || b.datetime_scheduled_takeoff);
-      // Most recent first
       return new Date(timeB) - new Date(timeA);
     };
 
@@ -324,33 +305,6 @@ export async function getFlightAwareFIDS({ airportIcao, apiKey }) {
   } catch (err) {
     return { success: false, error: err.message, stats };
   }
-}
-
-/**
- * Read FlightAware API key from config store.
- */
-async function getStoredApiKey() {
-  // Try VITE env variable first (for development)
-  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FLIGHTAWARE_API_KEY) {
-    return import.meta.env.VITE_FLIGHTAWARE_API_KEY;
-  }
-
-  // Try api_config table in Supabase
-  try {
-    const { data, error } = await supabase
-      .from('api_config')
-      .select('config_value')
-      .eq('config_key', 'flightaware_api_key')
-      .maybeSingle();
-
-    if (!error && data?.config_value) {
-      return data.config_value;
-    }
-  } catch {
-    // Table may not exist yet
-  }
-
-  return null;
 }
 
 export default getFlightAwareFlights;

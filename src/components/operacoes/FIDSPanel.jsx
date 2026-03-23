@@ -201,7 +201,7 @@ function FIDSTable({ flights, type, isLoading }) {
 
 export default function FIDSPanel({ aeroportos = [] }) {
   const { t } = useI18n();
-  const [selectedAirport, setSelectedAirport] = useState('');
+  const [selectedAirport, setSelectedAirport] = useState('FNBJ');
   const [arrivals, setArrivals] = useState([]);
   const [departures, setDepartures] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -211,16 +211,12 @@ export default function FIDSPanel({ aeroportos = [] }) {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const intervalRef = useRef(null);
 
-  // Filter SGA airports
-  const sgaAeroportos = aeroportos.filter(a => a.isSGA === true);
-  const aeroportosFiltrados = sgaAeroportos.length > 0 ? sgaAeroportos : aeroportos;
-
-  // Auto-select first airport
-  useEffect(() => {
-    if (!selectedAirport && aeroportosFiltrados.length > 0) {
-      setSelectedAirport(aeroportosFiltrados[0].codigo_icao);
-    }
-  }, [aeroportosFiltrados, selectedAirport]);
+  // Only show FNBJ (locked airport for FIDS)
+  const aeroportosFiltrados = aeroportos.filter(a => a.codigo_icao === 'FNBJ');
+  // Fallback: if FNBJ not found, use SGA airports
+  const displayAeroportos = aeroportosFiltrados.length > 0
+    ? aeroportosFiltrados
+    : aeroportos.filter(a => a.isSGA === true);
 
   const fetchFIDS = useCallback(async () => {
     if (!selectedAirport) return;
@@ -262,7 +258,7 @@ export default function FIDSPanel({ aeroportos = [] }) {
     };
   }, [autoRefresh, selectedAirport, fetchFIDS]);
 
-  const selectedAirportData = aeroportosFiltrados.find(a => a.codigo_icao === selectedAirport);
+  const selectedAirportData = displayAeroportos.find(a => a.codigo_icao === selectedAirport);
   const airportName = selectedAirportData?.nome || selectedAirportData?.codigo_icao || '';
 
   const wrapperClass = isDarkMode
@@ -289,21 +285,24 @@ export default function FIDSPanel({ aeroportos = [] }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Airport selector */}
+            {/* Airport selector (locked to FNBJ) */}
             <select
               value={selectedAirport}
               onChange={(e) => setSelectedAirport(e.target.value)}
+              disabled={displayAeroportos.length <= 1}
               className={`text-sm rounded-md px-3 py-1.5 border ${
                 isDarkMode
                   ? 'bg-slate-700 border-slate-600 text-white'
                   : 'bg-white border-slate-300 text-slate-900'
-              }`}
+              } ${displayAeroportos.length <= 1 ? 'opacity-80 cursor-not-allowed' : ''}`}
             >
-              {aeroportosFiltrados.map(a => (
+              {displayAeroportos.length > 0 ? displayAeroportos.map(a => (
                 <option key={a.id || a.codigo_icao} value={a.codigo_icao}>
                   {a.codigo_icao} — {a.nome || a.cidade}
                 </option>
-              ))}
+              )) : (
+                <option value="FNBJ">FNBJ — Dr. António Agostinho Neto</option>
+              )}
             </select>
 
             {/* Dark mode toggle */}
