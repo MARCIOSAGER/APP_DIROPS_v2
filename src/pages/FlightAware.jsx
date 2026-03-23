@@ -280,7 +280,7 @@ export default function FlightAwarePage() {
             </div>
             {extraFilters}
             <div className="flex items-end">
-              <Button onClick={onSearch} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Button onClick={onSearch} disabled={loading} className="w-full bg-sky-600 hover:bg-sky-700 text-white">
                 {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <BtnIcon className="w-4 h-4 mr-2" />}
                 {buttonLabel}
               </Button>
@@ -1155,7 +1155,6 @@ export default function FlightAwarePage() {
             onSearch={fetchFlightAwareAPI}
             loading={apiLoading}
             buttonLabel="Buscar FlightAware API"
-            buttonIcon={Download}
           />
 
           {apiProgress && (
