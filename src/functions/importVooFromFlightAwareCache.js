@@ -240,11 +240,102 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
 
   if (vooError) throw vooError;
 
+  // === Try to link ARR ↔ DEP (voo_ligado) ===
+  let linked = false;
+  let vooLigadoId = null;
+  const regNorm = (flightData.reg || '').replace(/-/g, '').toUpperCase();
+
+  if (regNorm && empresaId) {
+    const pairTipo = tipoMovimento === 'ARR' ? 'DEP' : 'ARR';
+
+    // Find unlinked counterpart with same registration, same date, same airport
+    const { data: candidates } = await supabase
+      .from('voo')
+      .select('id, tipo_movimento, horario_real, horario_previsto, data_operacao')
+      .eq('empresa_id', empresaId)
+      .eq('aeroporto_operacao', cacheVoo.airport_icao)
+      .eq('tipo_movimento', pairTipo)
+      .eq('data_operacao', dataOperacao)
+      .is('deleted_at', null)
+      .is('voo_ligado_id', null)
+      .neq('id', voo.id);
+
+    const match = (candidates || []).find(c => {
+      // Match by registration — get registo from voo
+      // We already know regNorm, check candidate's registration
+      return true; // candidates are already filtered, pick first unlinked with same reg
+    });
+
+    // Refine: need to check registration on candidate
+    const { data: matchByReg } = await supabase
+      .from('voo')
+      .select('id, horario_real, horario_previsto, data_operacao')
+      .eq('empresa_id', empresaId)
+      .eq('aeroporto_operacao', cacheVoo.airport_icao)
+      .eq('tipo_movimento', pairTipo)
+      .eq('data_operacao', dataOperacao)
+      .eq('registo_aeronave', flightData.reg)
+      .is('deleted_at', null)
+      .is('voo_ligado_id', null)
+      .neq('id', voo.id)
+      .limit(1);
+
+    const pairVoo = matchByReg?.[0];
+    if (pairVoo) {
+      const arrId = tipoMovimento === 'ARR' ? voo.id : pairVoo.id;
+      const depId = tipoMovimento === 'ARR' ? pairVoo.id : voo.id;
+
+      const arrTime = tipoMovimento === 'ARR' ? horarioReal : (pairVoo.horario_real || pairVoo.horario_previsto);
+      const depTime = tipoMovimento === 'ARR' ? (pairVoo.horario_real || pairVoo.horario_previsto) : horarioReal;
+
+      let tempoPermanenciaMin = 0;
+      if (arrTime && depTime) {
+        const arrDt = new Date(`${dataOperacao}T${arrTime}`);
+        const depDt = new Date(`${dataOperacao}T${depTime}`);
+        tempoPermanenciaMin = Math.round((depDt.getTime() - arrDt.getTime()) / (1000 * 60));
+        if (tempoPermanenciaMin < 0) tempoPermanenciaMin = 0;
+      }
+
+      // Create voo_ligado
+      const { data: vooLigado, error: vlError } = await supabase.from('voo_ligado').insert({
+        id_voo_arr: arrId,
+        id_voo_dep: depId,
+        tempo_permanencia_min: tempoPermanenciaMin,
+        empresa_id: empresaId,
+        created_date: new Date().toISOString(),
+      }).select().single();
+
+      if (!vlError && vooLigado) {
+        vooLigadoId = vooLigado.id;
+        // Update both voos with voo_ligado_id
+        await Promise.all([
+          supabase.from('voo').update({ voo_ligado_id: vooLigado.id }).eq('id', arrId),
+          supabase.from('voo').update({ voo_ligado_id: vooLigado.id }).eq('id', depId),
+        ]);
+
+        // Try to calculate tariff (non-critical)
+        try {
+          await supabase.rpc('calculate_tariff', { p_voo_ligado_id: vooLigado.id });
+        } catch (e) {
+          console.warn('Tariff calculation failed (non-critical):', e);
+        }
+
+        linked = true;
+      }
+    }
+  }
+
   // Update cache status
   await supabase.from('cache_voo_f_r24').update({
     status: 'importado',
     updated_date: new Date().toISOString(),
   }).eq('id', cacheVooId);
 
-  return { success: true, vooId: voo.id, message: 'Voo importado com sucesso' };
+  return {
+    success: true,
+    vooId: voo.id,
+    vooLigadoId,
+    linked,
+    message: linked ? 'Voo importado e vinculado com sucesso' : 'Voo importado com sucesso',
+  };
 }

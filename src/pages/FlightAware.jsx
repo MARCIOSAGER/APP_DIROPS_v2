@@ -10,8 +10,8 @@ import {
 } from 'lucide-react';
 import { CacheVooFlightAware } from '@/entities/CacheVooFlightAware';
 import { Voo } from '@/entities/Voo';
-import { VooLigado } from '@/entities/VooLigado';
 import { supabase } from '@/lib/supabaseClient';
+import { importVooFromFlightAwareCache } from '@/functions/importVooFromFlightAwareCache';
 import { useAuth } from '@/lib/AuthContext';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 
@@ -324,7 +324,6 @@ export default function FlightAwarePage() {
   // Create a single voo from FlightAware cache entry
   const createVooFromCache = useCallback(async (cachedFlight) => {
     const raw = cachedFlight.raw_data || {};
-    const isArr = isArrival(raw, airportIcao);
     const empresaId = effectiveEmpresaId || currentUser?.empresa_id;
     if (!empresaId) {
       showAlert('error', 'Utilizador sem empresa_id.');
@@ -333,133 +332,10 @@ export default function FlightAwarePage() {
 
     setCreatingIds(prev => new Set([...prev, cachedFlight.id]));
     try {
-      // Check if voo already exists
-      const tipo = isArr ? 'ARR' : 'DEP';
-      const { data: existing } = await supabase.from('voo')
-        .select('id')
-        .eq('numero_voo', raw.flight || cachedFlight.numero_voo || normalizeReg(raw.reg) || raw.callsign)
-        .eq('data_operacao', cachedFlight.data_voo)
-        .eq('tipo_movimento', tipo)
-        .eq('empresa_id', empresaId)
-        .is('deleted_at', null)
-        .limit(1);
-      if (existing && existing.length > 0) {
-        // Already exists - just update cache status
-        await CacheVooFlightAware.update(cachedFlight.id, { status: 'importado' });
-        setCachedFlights(prev => prev.map(f => f.id === cachedFlight.id ? { ...f, status: 'importado' } : f));
-        showAlert('success', `Voo ${raw.flight} já existe no ATO. Cache atualizado.`);
-        return;
-      }
-
-      // Check 2: Is there already a LINKED pair in ATO for this registo + date?
-      // International airlines (TAP, Air France, etc.) may use different registos for ARR/DEP
-      // of the same turnaround. If the counterpart is already linked, skip this flight.
-      const regNormCheck = normalizeReg(raw.reg);
-      if (regNormCheck) {
-        const pairTipoCheck = isArr ? 'DEP' : 'ARR';
-        const { data: regMatches } = await supabase.from('voo')
-          .select('id, voo_ligado_id')
-          .eq('empresa_id', empresaId)
-          .eq('aeroporto_operacao', airportIcao)
-          .eq('tipo_movimento', pairTipoCheck)
-          .eq('data_operacao', cachedFlight.data_voo)
-          .eq('registo_aeronave', regNormCheck)
-          .is('deleted_at', null)
-          .not('voo_ligado_id', 'is', null)
-          .limit(1);
-
-        if (regMatches && regMatches.length > 0) {
-          // Counterpart with same registo already exists AND is linked - this turnaround is handled
-          await CacheVooFlightAware.update(cachedFlight.id, { status: 'importado' });
-          setCachedFlights(prev => prev.map(f => f.id === cachedFlight.id ? { ...f, status: 'importado' } : f));
-          setCacheStats(prev => prev ? {
-            ...prev,
-            importados: prev.importados + 1,
-            pendentes: prev.pendentes - 1,
-          } : prev);
-          showAlert('success', `Voo ${raw.flight || regNormCheck} — turnaround já vinculado no ATO. Cache atualizado.`);
-          return;
-        }
-      }
-
-      // Lookup companhia IATA
-      const companhiaCode = await lookupCompanhiaIata(raw.operating_as);
-
-      const vooData = {
-        numero_voo: raw.flight || cachedFlight.numero_voo || normalizeReg(raw.reg) || raw.callsign,
-        tipo_movimento: isArr ? 'ARR' : 'DEP',
-        data_operacao: cachedFlight.data_voo,
-        companhia_aerea: companhiaCode,
-        registo_aeronave: normalizeReg(raw.reg),
-        aeroporto_operacao: airportIcao,
-        aeroporto_origem_destino: isArr
-          ? (raw.orig_icao || '')
-          : (raw.dest_icao_actual || raw.dest_icao || ''),
-        horario_previsto: isArr
-          ? extractHHMM(raw.datetime_landed)
-          : extractHHMM(raw.datetime_takeoff),
-        horario_real: isArr
-          ? extractHHMM(raw.datetime_landed)
-          : extractHHMM(raw.datetime_takeoff),
-        status: 'Realizado',
-        tipo_voo: 'Regular',
-        empresa_id: empresaId,
-      };
-
-      const newVoo = await Voo.create(vooData);
-
-      // Try to link: find matching pair (ARR<->DEP) with same registo
-      let linked = false;
-      const pairTipo = isArr ? 'DEP' : 'ARR';
-      const regNorm = normalizeReg(raw.reg);
-
-      const { data: candidates } = await supabase
-        .from('voo')
-        .select('id, tipo_movimento, registo_aeronave, data_operacao, horario_real, horario_previsto, voo_ligado_id')
-        .eq('empresa_id', empresaId)
-        .eq('aeroporto_operacao', airportIcao)
-        .eq('tipo_movimento', pairTipo)
-        .eq('data_operacao', cachedFlight.data_voo)
-        .is('deleted_at', null)
-        .is('voo_ligado_id', null);
-
-      const match = (candidates || []).find(c => normalizeReg(c.registo_aeronave) === regNorm);
-
-      if (match) {
-        const arrId = isArr ? newVoo.id : match.id;
-        const depId = isArr ? match.id : newVoo.id;
-
-        const arrVoo = isArr ? newVoo : match;
-        const depVoo = isArr ? match : newVoo;
-
-        const arrTime = new Date(`${arrVoo.data_operacao}T${arrVoo.horario_real || arrVoo.horario_previsto}`);
-        const depTime = new Date(`${depVoo.data_operacao}T${depVoo.horario_real || depVoo.horario_previsto}`);
-        const tempoPermanenciaMin = Math.round((depTime.getTime() - arrTime.getTime()) / (1000 * 60));
-
-        const vooLigado = await VooLigado.create({
-          id_voo_arr: arrId,
-          id_voo_dep: depId,
-          tempo_permanencia_min: tempoPermanenciaMin > 0 ? tempoPermanenciaMin : 0,
-          empresa_id: empresaId,
-        });
-
-        // Update voos with voo_ligado_id
-        await Promise.all([
-          Voo.update(arrId, { voo_ligado_id: vooLigado.id }),
-          Voo.update(depId, { voo_ligado_id: vooLigado.id }),
-        ]);
-
-        // Calculate tariff
-        try {
-          await supabase.rpc('calculate_tariff', { p_voo_ligado_id: vooLigado.id });
-        } catch (tariffErr) {
-          console.warn('Tariff calculation failed (non-critical):', tariffErr);
-        }
-        linked = true;
-      }
-
-      // Update cache status
-      await CacheVooFlightAware.update(cachedFlight.id, { status: 'importado' });
+      const result = await importVooFromFlightAwareCache({
+        cacheVooId: cachedFlight.id,
+        empresaId,
+      });
 
       // Update local state
       setCachedFlights(prev => prev.map(f =>
@@ -471,7 +347,12 @@ export default function FlightAwarePage() {
         pendentes: prev.pendentes - 1,
       } : prev);
 
-      showAlert('success', `Voo ${vooData.numero_voo} criado${linked ? ' e vinculado' : ''} com sucesso.`);
+      if (result.duplicado) {
+        showAlert('success', `Voo ${raw.flight || cachedFlight.numero_voo} já existe no ATO. Cache atualizado.`);
+      } else {
+        const linkedMsg = result.linked ? ' e vinculado' : '';
+        showAlert('success', `Voo ${raw.flight || cachedFlight.numero_voo} criado${linkedMsg} com sucesso.`);
+      }
     } catch (err) {
       showAlert('error', `Erro ao criar voo: ${err.message}`);
     } finally {
