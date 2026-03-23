@@ -7,6 +7,7 @@ import { RefreshCw, Plane, PlaneLanding, PlaneTakeoff, Clock, AlertCircle, Monit
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AeroportoMultiSelect from '@/components/ui/aeroporto-multi-select';
 import { getFlightAwareFIDS } from '@/functions/getFlightAwareFlights';
+import { supabase } from '@/lib/supabaseClient';
 import { format } from 'date-fns';
 
 const AUTO_REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minutes
@@ -228,9 +229,30 @@ export default function FIDSPanel({ aeroportos = [] }) {
       const result = await getFlightAwareFIDS({ airportIcao: selectedAirport });
 
       if (result.success) {
+        const allFlights = [...(result.arrivals || []), ...(result.departures || [])];
         setArrivals(result.arrivals || []);
         setDepartures(result.departures || []);
         setLastUpdated(result.lastUpdated || new Date().toISOString());
+
+        // Save to cache_voo_f_r24 in background (non-blocking)
+        if (allFlights.length > 0) {
+          const records = allFlights
+            .filter(f => f.fr24_id) // only flights with valid ID
+            .map(f => ({
+              fr24_id: f.fr24_id,
+              numero_voo: f.flight || f.callsign || '',
+              airport_icao: selectedAirport,
+              data_voo: (f.datetime_landed || f.datetime_takeoff || f.datetime_scheduled_landed || f.datetime_scheduled_takeoff || '').substring(0, 10),
+              data_expiracao: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              status: 'pendente',
+              raw_data: f,
+            }));
+          supabase.from('cache_voo_f_r24')
+            .upsert(records, { onConflict: 'fr24_id', ignoreDuplicates: true })
+            .then(({ error: cacheErr }) => {
+              if (cacheErr) console.warn('FIDS cache save failed:', cacheErr.message);
+            });
+        }
       } else {
         setError(result.error);
       }
