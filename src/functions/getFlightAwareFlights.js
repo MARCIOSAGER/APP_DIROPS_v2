@@ -125,42 +125,64 @@ export async function getFlightAwareFlights({
 
 /**
  * Call FlightAware API through Supabase Edge Function proxy to avoid CORS.
+ * Retries up to MAX_RETRIES on network failures (cold start / timeout).
  */
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1500;
+
 async function fetchViaProxy(endpoint, params, stats) {
   const proxyUrl = `${SUPABASE_URL}/functions/v1/flightaware-proxy`;
+  let lastError;
 
-  const response = await fetch(proxyUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'apikey': SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ endpoint, params }),
-  });
-
-  stats.apiCalls++;
-
-  if (!response.ok) {
-    const errorBody = await response.text().catch(() => '');
-    let errorMsg;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const parsed = JSON.parse(errorBody);
-      errorMsg = parsed.error || `FlightAware API error ${response.status}`;
-    } catch {
-      errorMsg = `FlightAware proxy error ${response.status}: ${errorBody.substring(0, 200)}`;
+      if (attempt > 0) {
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt));
+      }
+
+      const response = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ endpoint, params }),
+      });
+
+      stats.apiCalls++;
+
+      if (!response.ok) {
+        const errorBody = await response.text().catch(() => '');
+        let errorMsg;
+        try {
+          const parsed = JSON.parse(errorBody);
+          errorMsg = parsed.error || `FlightAware API error ${response.status}`;
+        } catch {
+          errorMsg = `FlightAware proxy error ${response.status}: ${errorBody.substring(0, 200)}`;
+        }
+        throw new Error(errorMsg);
+      }
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      return data;
+    } catch (err) {
+      lastError = err;
+      // Only retry on network errors (Failed to fetch), not on API errors
+      if (attempt < MAX_RETRIES && err.message?.includes('Failed to fetch')) {
+        console.warn(`FlightAware proxy attempt ${attempt + 1} failed, retrying...`, err.message);
+        continue;
+      }
+      throw err;
     }
-    throw new Error(errorMsg);
   }
 
-  const data = await response.json();
-
-  // The proxy might return an error in the JSON body
-  if (data.error) {
-    throw new Error(data.error);
-  }
-
-  return data;
+  throw lastError;
 }
 
 /**
@@ -269,10 +291,22 @@ export async function getFlightAwareFIDS({ airportIcao }) {
     const params = { max_pages: '2' };
 
     // Fetch arrivals and departures in parallel via proxy
-    const [arrivalsData, departuresData] = await Promise.all([
+    // Use allSettled so one failure doesn't block the other
+    const [arrivalsResult, departuresResult] = await Promise.allSettled([
       fetchViaProxy(`/airports/${airportIcao}/flights/arrivals`, params, stats),
       fetchViaProxy(`/airports/${airportIcao}/flights/departures`, params, stats),
     ]);
+
+    const arrivalsData = arrivalsResult.status === 'fulfilled' ? arrivalsResult.value : null;
+    const departuresData = departuresResult.status === 'fulfilled' ? departuresResult.value : null;
+
+    if (arrivalsResult.status === 'rejected') stats.errors.push(`Arrivals: ${arrivalsResult.reason?.message}`);
+    if (departuresResult.status === 'rejected') stats.errors.push(`Departures: ${departuresResult.reason?.message}`);
+
+    // If both failed, throw
+    if (!arrivalsData && !departuresData) {
+      throw new Error(stats.errors.join('; '));
+    }
 
     const arrivals = (arrivalsData?.arrivals || []).map((f) =>
       normalizeFlightAwareFlight(f, 'ARR', airportIcao)
