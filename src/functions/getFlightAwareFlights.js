@@ -1,8 +1,5 @@
 import { supabase } from '@/lib/supabaseClient';
 
-const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || '';
-
 /**
  * Fetch flights from FlightAware AeroAPI for a given airport and date range.
  * Uses Supabase Edge Function proxy to avoid CORS issues.
@@ -124,14 +121,14 @@ export async function getFlightAwareFlights({
 }
 
 /**
- * Call FlightAware API through Supabase Edge Function proxy to avoid CORS.
+ * Call FlightAware API through Supabase Edge Function proxy.
+ * Uses supabase.functions.invoke() which handles CORS and auth automatically.
  * Retries up to MAX_RETRIES on network failures (cold start / timeout).
  */
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
 
 async function fetchViaProxy(endpoint, params, stats) {
-  const proxyUrl = `${SUPABASE_URL}/functions/v1/flightaware-proxy`;
   let lastError;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -140,41 +137,24 @@ async function fetchViaProxy(endpoint, params, stats) {
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt));
       }
 
-      const response = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'apikey': SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({ endpoint, params }),
+      const { data, error } = await supabase.functions.invoke('flightaware-proxy', {
+        body: { endpoint, params },
       });
 
       stats.apiCalls++;
 
-      if (!response.ok) {
-        const errorBody = await response.text().catch(() => '');
-        let errorMsg;
-        try {
-          const parsed = JSON.parse(errorBody);
-          errorMsg = parsed.error || `FlightAware API error ${response.status}`;
-        } catch {
-          errorMsg = `FlightAware proxy error ${response.status}: ${errorBody.substring(0, 200)}`;
-        }
-        throw new Error(errorMsg);
+      if (error) {
+        throw new Error(error.message || `FlightAware proxy error: ${JSON.stringify(error)}`);
       }
 
-      const data = await response.json();
-
-      if (data.error) {
+      if (data?.error) {
         throw new Error(data.error);
       }
 
       return data;
     } catch (err) {
       lastError = err;
-      // Only retry on network errors (Failed to fetch), not on API errors
-      if (attempt < MAX_RETRIES && err.message?.includes('Failed to fetch')) {
+      if (attempt < MAX_RETRIES && (err.message?.includes('Failed to fetch') || err.message?.includes('FunctionsFetchError'))) {
         console.warn(`FlightAware proxy attempt ${attempt + 1} failed, retrying...`, err.message);
         continue;
       }
