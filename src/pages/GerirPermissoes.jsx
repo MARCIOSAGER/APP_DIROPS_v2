@@ -201,9 +201,9 @@ const PAGINAS_DISPONIVEIS = [
     icon: '📂'
   },
   {
-    key: 'TesteFlightradar24',
-    label: 'Flightradar24',
-    descricao: 'Integração com dados do Flightradar24',
+    key: 'FlightAware',
+    label: 'FlightAware',
+    descricao: 'Integração com dados do FlightAware',
     category: 'Operações',
     icon: '🛫'
   },

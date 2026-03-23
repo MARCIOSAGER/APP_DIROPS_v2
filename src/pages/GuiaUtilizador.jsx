@@ -33,7 +33,7 @@ const sections = [
       { subtitulo: "Registar Voo", texto: "Clique em 'Novo Voo' para registar chegadas (ARR) ou partidas (DEP). Preencha o número de voo, data, aeronave, companhia, passageiros e carga." },
       { subtitulo: "Voos Ligados", texto: "Um voo ligado é um par ARR+DEP da mesma aeronave. O sistema cria automaticamente o voo ligado quando deteta o par. Pode também ligar manualmente clicando no ícone de ligação na tabela." },
       { subtitulo: "Cálculo de Tarifas", texto: "Após criar um voo ligado, o sistema calcula automaticamente as tarifas de pouso, permanência, passageiros e carga. Os valores aparecem na coluna 'Tarifa'." },
-      { subtitulo: "Importar do FR24", texto: "Utilize a funcionalidade de importação Flightradar24 para importar dados de voos automaticamente, evitando entrada manual." },
+      { subtitulo: "Importar do FlightAware", texto: "Utilize a funcionalidade de importação FlightAware para importar dados de voos automaticamente, evitando entrada manual." },
       { subtitulo: "Exportar", texto: "A tabela de voos pode ser exportada para Excel (XLSX) ou PDF para relatórios e arquivo." },
     ]
   },

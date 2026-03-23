@@ -49,13 +49,13 @@ const ALERT_CONFIG = {
     linkLabel: 'Corrigir',
     linkTo: createPageUrl('Operacoes'),
   },
-  fr24: {
+  flightaware: {
     icon: Plane,
     color: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200',
     iconColor: 'text-blue-500',
-    label: (count) => `${count} voo${count !== 1 ? 's' : ''} FR24 pendente${count !== 1 ? 's' : ''} para importacao`,
+    label: (count) => `${count} voo${count !== 1 ? 's' : ''} FlightAware pendente${count !== 1 ? 's' : ''} para importação`,
     linkLabel: 'Ver',
-    linkTo: createPageUrl('FR24'),
+    linkTo: createPageUrl('FlightAware'),
   },
 };
 
@@ -101,15 +101,15 @@ export default function SystemAlerts() {
     }
 
     try {
-      // c) FR24 pendentes
-      const { count: fr24Count } = await supabase
+      // c) FlightAware pendentes
+      const { count: faCount } = await supabase
         .from('cache_voo_f_r24')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pendente');
 
-      if (fr24Count > 0) results.fr24 = fr24Count;
+      if (faCount > 0) results.flightaware = faCount;
     } catch (e) {
-      console.warn('SystemAlerts: fr24 check failed', e);
+      console.warn('SystemAlerts: flightaware check failed', e);
     }
 
     setAlerts(results);

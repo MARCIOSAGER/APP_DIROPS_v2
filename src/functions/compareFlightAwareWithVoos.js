@@ -1,10 +1,10 @@
 import { supabase } from '@/lib/supabaseClient';
 
 /**
- * Compare cached FR24 flights with the voo table to find:
- * - matched: FR24 flights that match existing voo records
- * - missing_in_ato: FR24 flights with no corresponding voo record
- * - reg_mismatch: FR24 flights that match by flight number but have different aircraft registration
+ * Compare cached FlightAware flights with the voo table to find:
+ * - matched: FlightAware flights that match existing voo records
+ * - missing_in_ato: FlightAware flights with no corresponding voo record
+ * - reg_mismatch: FlightAware flights that match by flight number but have different aircraft registration
  *
  * Match criteria: numero_voo + data_operacao + tipo_movimento
  *
@@ -15,8 +15,8 @@ import { supabase } from '@/lib/supabaseClient';
  * @param {string} [params.empresaId] - Filter voo by empresa_id
  * @returns {{ success: boolean, matched: Array, missing_in_ato: Array, reg_mismatch: Array, stats: Object }}
  */
-export async function compareFR24WithVoos({ airportIcao, startDate, endDate, empresaId } = {}) {
-  // 1. Fetch cached FR24 flights
+export async function compareFlightAwareWithVoos({ airportIcao, startDate, endDate, empresaId } = {}) {
+  // 1. Fetch cached FlightAware flights
   let cacheQuery = supabase
     .from('cache_voo_f_r24')
     .select('*')
@@ -104,7 +104,7 @@ export async function compareFR24WithVoos({ airportIcao, startDate, endDate, emp
     const dataVoo = cacheFlight.data_voo;
     const fr24Reg = normalizeReg(rawData.reg || '');
 
-    // Determine movement type from FR24 data
+    // Determine movement type from FlightAware data
     const movementType = deriveMovementType(rawData, cacheFlight.airport_icao);
 
     // Look up in voo index
@@ -196,7 +196,7 @@ function buildVooKey(flightNumber, date, movementType) {
 }
 
 /**
- * Derive movement type (ARR/DEP) from FR24 data relative to the airport.
+ * Derive movement type (ARR/DEP) from FlightAware data relative to the airport.
  * If the airport is the destination => ARR, if origin => DEP.
  */
 function deriveMovementType(rawData, airportIcao) {
@@ -216,4 +216,4 @@ function deriveMovementType(rawData, airportIcao) {
   return 'DEP';
 }
 
-export default compareFR24WithVoos;
+export default compareFlightAwareWithVoos;

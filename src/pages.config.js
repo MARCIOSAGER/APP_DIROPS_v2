@@ -42,8 +42,7 @@ const ServicosAeroportuarios = lazy(() => import('./pages/ServicosAeroportuarios
 const SolicitacaoPerfil = lazy(() => import('./pages/SolicitacaoPerfil'));
 const Suporte = lazy(() => import('./pages/Suporte'));
 const TermosServico = lazy(() => import('./pages/TermosServico'));
-const TesteFlightradar24 = lazy(() => import('./pages/TesteFlightradar24'));
-const FR24 = TesteFlightradar24;
+const FlightAware = lazy(() => import('./pages/FlightAware'));
 const ValidacaoAcesso = lazy(() => import('./pages/ValidacaoAcesso'));
 const portalservicos = lazy(() => import('./pages/portalservicos'));
 
@@ -90,8 +89,7 @@ export const PAGES = {
     "SolicitacaoPerfil": SolicitacaoPerfil,
     "Suporte": Suporte,
     "TermosServico": TermosServico,
-    "TesteFlightradar24": TesteFlightradar24,
-    "FR24": FR24,
+    "FlightAware": FlightAware,
     "ValidacaoAcesso": ValidacaoAcesso,
     "portalservicos": portalservicos,
 }

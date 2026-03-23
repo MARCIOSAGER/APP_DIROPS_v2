@@ -174,7 +174,7 @@ function normalizeFlightAwareFlight(raw, movementType, airportIcao) {
   return {
     // Unique ID from FlightAware
     fa_flight_id: raw.fa_flight_id || '',
-    // For backward compatibility with FR24 cache
+    // Maps to fr24_id column in cache_voo_f_r24 table
     fr24_id: raw.fa_flight_id || '',
 
     // Flight identification

@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 
-export async function importVooFromFR24Cache({ cacheVooId, suggestions, userSelections }) {
+export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, userSelections }) {
   if (!cacheVooId) throw new Error('cacheVooId é obrigatório');
 
   const { data: cacheVoo, error } = await supabase

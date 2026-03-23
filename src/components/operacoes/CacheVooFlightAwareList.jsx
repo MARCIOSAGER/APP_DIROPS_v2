@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RefreshCw, Trash2, Eye, ChevronDown, ChevronUp, X, Filter, GripVertical, FileSpreadsheet } from 'lucide-react';
-import { CacheVooFR24 } from '@/entities/CacheVooFR24';
-import VooFR24ReviewModal from './VooFR24ReviewModal';
+import { CacheVooFlightAware } from '@/entities/CacheVooFlightAware';
+import VooFlightAwareReviewModal from './VooFlightAwareReviewModal';
 import AlertModal from '@/components/shared/AlertModal';
 import SuccessModal from '@/components/shared/SuccessModal';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -18,7 +18,7 @@ const statusColors = {
   rejeitado: { bg: 'bg-red-50', text: 'text-red-800', badge: 'bg-red-100 text-red-800' }
 };
 
-export default function CacheVooFR24List() {
+export default function CacheVooFlightAwareList() {
   const { t } = useI18n();
   const [cacheVoos, setCacheVoos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,34 +109,34 @@ export default function CacheVooFR24List() {
   }, [resizingColumn, startX, startWidth]);
 
   const columnLabels = {
-    'data_voo': t('cacheFR24.colDataVoo'),
-    'raw_data.flight': t('cacheFR24.colVoo'),
-    'raw_data.operating_as': t('cacheFR24.colOperando'),
-    'raw_data.type': t('cacheFR24.colTipo'),
-    'raw_data.reg': t('cacheFR24.colRegisto'),
-    'raw_data.orig_icao': t('cacheFR24.colOrigem'),
-    'raw_data.runway_takeoff': t('cacheFR24.colPistaDecolagem'),
-    'raw_data.datetime_takeoff': t('cacheFR24.colHoraDecolagem'),
-    'raw_data.dest_icao': t('cacheFR24.colDestino'),
-    'raw_data.dest_icao_actual': t('cacheFR24.colDestinoReal'),
-    'raw_data.runway_landed': t('cacheFR24.colPistaPouso'),
-    'raw_data.datetime_landed': t('cacheFR24.colHoraPouso'),
-    'raw_data.flight_time': t('cacheFR24.colTempoVoo'),
-    'raw_data.actual_distance': t('cacheFR24.colDistancia'),
-    'raw_data.category': t('cacheFR24.colCategoria'),
-    'raw_data.flight_ended': t('cacheFR24.colFinalizado'),
-    'status': t('cacheFR24.status')
+    'data_voo': t('cacheFA.colDataVoo'),
+    'raw_data.flight': t('cacheFA.colVoo'),
+    'raw_data.operating_as': t('cacheFA.colOperando'),
+    'raw_data.type': t('cacheFA.colTipo'),
+    'raw_data.reg': t('cacheFA.colRegisto'),
+    'raw_data.orig_icao': t('cacheFA.colOrigem'),
+    'raw_data.runway_takeoff': t('cacheFA.colPistaDecolagem'),
+    'raw_data.datetime_takeoff': t('cacheFA.colHoraDecolagem'),
+    'raw_data.dest_icao': t('cacheFA.colDestino'),
+    'raw_data.dest_icao_actual': t('cacheFA.colDestinoReal'),
+    'raw_data.runway_landed': t('cacheFA.colPistaPouso'),
+    'raw_data.datetime_landed': t('cacheFA.colHoraPouso'),
+    'raw_data.flight_time': t('cacheFA.colTempoVoo'),
+    'raw_data.actual_distance': t('cacheFA.colDistancia'),
+    'raw_data.category': t('cacheFA.colCategoria'),
+    'raw_data.flight_ended': t('cacheFA.colFinalizado'),
+    'status': t('cacheFA.status')
   };
 
   const carregarDados = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const voos = await CacheVooFR24.list('-data_expiracao', 1000);
+      const voos = await CacheVooFlightAware.list('-data_expiracao', 1000);
       setCacheVoos(voos || []);
     } catch (err) {
       console.error('❌ Erro ao carregar cache:', err);
-      setError(t('cacheFR24.erroCarregar'));
+      setError(t('cacheFA.erroCarregar'));
     } finally {
       setIsLoading(false);
     }
@@ -150,27 +150,27 @@ export default function CacheVooFR24List() {
     setAlertInfo({
       isOpen: true,
       type: 'error',
-      title: t('cacheFR24.excluirTodosTitulo'),
-      message: t('cacheFR24.confirmarExcluir'),
+      title: t('cacheFA.excluirTodosTitulo'),
+      message: t('cacheFA.confirmarExcluir'),
       showCancel: true,
-      confirmText: t('cacheFR24.excluir'),
+      confirmText: t('cacheFA.excluir'),
       action: async () => {
         setIsDeleting(true);
         try {
-          await CacheVooFR24.delete(id);
+          await CacheVooFlightAware.delete(id);
           setCacheVoos(prev => prev.filter(v => v.id !== id));
           setSuccessInfo({
             isOpen: true,
-            title: t('cacheFR24.cacheExcluido'),
-            message: t('cacheFR24.cacheExcluidoMsg')
+            title: t('cacheFA.cacheExcluido'),
+            message: t('cacheFA.cacheExcluidoMsg')
           });
         } catch (err) {
           console.error('Erro ao excluir:', err);
           setAlertInfo({
             isOpen: true,
             type: 'error',
-            title: t('cacheFR24.excluirTodosTitulo'),
-            message: t('cacheFR24.erroExcluir')
+            title: t('cacheFA.excluirTodosTitulo'),
+            message: t('cacheFA.erroExcluir')
           });
         } finally {
           setIsDeleting(false);
@@ -183,27 +183,27 @@ export default function CacheVooFR24List() {
     setAlertInfo({
       isOpen: true,
       type: 'warning',
-      title: t('cacheFR24.rejeitado'),
-      message: t('cacheFR24.confirmarExcluir'),
+      title: t('cacheFA.rejeitado'),
+      message: t('cacheFA.confirmarExcluir'),
       showCancel: true,
-      confirmText: t('cacheFR24.rejeitado'),
+      confirmText: t('cacheFA.rejeitado'),
       action: async () => {
         setIsDeleting(true);
         try {
-          await CacheVooFR24.update(id, { status: 'rejeitado' });
+          await CacheVooFlightAware.update(id, { status: 'rejeitado' });
           setCacheVoos(prev => prev.map(v => v.id === id ? { ...v, status: 'rejeitado' } : v));
           setSuccessInfo({
             isOpen: true,
-            title: t('cacheFR24.rejeitado'),
-            message: t('cacheFR24.cacheExcluidoMsg')
+            title: t('cacheFA.rejeitado'),
+            message: t('cacheFA.cacheExcluidoMsg')
           });
         } catch (err) {
           console.error('Erro ao rejeitar:', err);
           setAlertInfo({
             isOpen: true,
             type: 'error',
-            title: t('cacheFR24.rejeitado'),
-            message: t('cacheFR24.erroExcluir')
+            title: t('cacheFA.rejeitado'),
+            message: t('cacheFA.erroExcluir')
           });
         } finally {
           setIsDeleting(false);
@@ -300,16 +300,16 @@ export default function CacheVooFR24List() {
       
       setSuccessInfo({
         isOpen: true,
-        title: t('cacheFR24.cacheExcluido'),
-        message: t('cacheFR24.cacheExcluidoMsg')
+        title: t('cacheFA.cacheExcluido'),
+        message: t('cacheFA.cacheExcluidoMsg')
       });
     } catch (error) {
       console.error('Erro ao exportar:', error);
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: t('cacheFR24.erroCarregar'),
-        message: t('cacheFR24.erroExcluir')
+        title: t('cacheFA.erroCarregar'),
+        message: t('cacheFA.erroExcluir')
       });
     } finally {
       setIsLoading(false);
@@ -322,7 +322,7 @@ export default function CacheVooFR24List() {
         <CardContent className="p-6 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
-            <p className="text-slate-600">{t('cacheFR24.titulo')}...</p>
+            <p className="text-slate-600">{t('cacheFA.titulo')}...</p>
           </div>
         </CardContent>
       </Card>
@@ -332,7 +332,7 @@ export default function CacheVooFR24List() {
   return (
     <>
       {showReviewModal && selectedCacheVoo && (
-        <VooFR24ReviewModal
+        <VooFlightAwareReviewModal
           cacheVooId={selectedCacheVoo}
           onClose={() => {
             setShowReviewModal(false);
@@ -346,8 +346,8 @@ export default function CacheVooFR24List() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <CardTitle>{t('cacheFR24.titulo')}</CardTitle>
-            <CardDescription>{t('cacheFR24.descricao')}</CardDescription>
+            <CardTitle>{t('cacheFA.titulo')}</CardTitle>
+            <CardDescription>{t('cacheFA.descricao')}</CardDescription>
           </div>
           <Button
             variant="ghost"
@@ -371,10 +371,10 @@ export default function CacheVooFR24List() {
           <CardContent className="p-3 sm:p-4">
             <div className="flex flex-wrap items-end gap-3 sm:gap-4">
               <div className="flex-1 min-w-48">
-                <Label htmlFor="busca-cache" className="text-xs sm:text-sm">{t('cacheFR24.buscar')}</Label>
+                <Label htmlFor="busca-cache" className="text-xs sm:text-sm">{t('cacheFA.buscar')}</Label>
                 <Input
                   id="busca-cache"
-                  placeholder={t('cacheFR24.buscar')}...
+                  placeholder={t('cacheFA.buscar')}...
                   value={filtroBusca}
                   onChange={(e) => setFiltroBusca(e.target.value)}
                   className="text-xs sm:text-sm"
@@ -382,7 +382,7 @@ export default function CacheVooFR24List() {
               </div>
 
               <div className="w-32">
-                <Label htmlFor="filtro-data-inicio" className="text-xs sm:text-sm">{t('cacheFR24.dataInicio')}</Label>
+                <Label htmlFor="filtro-data-inicio" className="text-xs sm:text-sm">{t('cacheFA.dataInicio')}</Label>
                 <Input
                   id="filtro-data-inicio"
                   type="date"
@@ -393,7 +393,7 @@ export default function CacheVooFR24List() {
               </div>
 
               <div className="w-32">
-                <Label htmlFor="filtro-data-fim" className="text-xs sm:text-sm">{t('cacheFR24.dataFim')}</Label>
+                <Label htmlFor="filtro-data-fim" className="text-xs sm:text-sm">{t('cacheFA.dataFim')}</Label>
                 <Input
                   id="filtro-data-fim"
                   type="date"
@@ -404,14 +404,14 @@ export default function CacheVooFR24List() {
               </div>
 
               <div className="w-28">
-                <Label htmlFor="filtro-aeroporto" className="text-xs sm:text-sm">{t('cacheFR24.aeroporto')}</Label>
+                <Label htmlFor="filtro-aeroporto" className="text-xs sm:text-sm">{t('cacheFA.aeroporto')}</Label>
                 <select
                   id="filtro-aeroporto"
                   value={filtroAeroporto}
                   onChange={(e) => setFiltroAeroporto(e.target.value)}
                   className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-md"
                 >
-                  <option value="">{t('cacheFR24.todosFiltro')}</option>
+                  <option value="">{t('cacheFA.todosFiltro')}</option>
                   {aeroportosUnicos.map(ap => (
                     <option key={ap} value={ap}>{ap}</option>
                   ))}
@@ -419,17 +419,17 @@ export default function CacheVooFR24List() {
               </div>
 
               <div className="w-24">
-                <Label htmlFor="filtro-status" className="text-xs sm:text-sm">{t('cacheFR24.status')}</Label>
+                <Label htmlFor="filtro-status" className="text-xs sm:text-sm">{t('cacheFA.status')}</Label>
                 <select
                   id="filtro-status"
                   value={filtroStatus}
                   onChange={(e) => setFiltroStatus(e.target.value)}
                   className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-md"
                 >
-                  <option value="todos">{t('cacheFR24.todos')}</option>
-                  <option value="pendente">{t('cacheFR24.pendente')}</option>
-                  <option value="importado">{t('cacheFR24.importado')}</option>
-                  <option value="rejeitado">{t('cacheFR24.rejeitado')}</option>
+                  <option value="todos">{t('cacheFA.todos')}</option>
+                  <option value="pendente">{t('cacheFA.pendente')}</option>
+                  <option value="importado">{t('cacheFA.importado')}</option>
+                  <option value="rejeitado">{t('cacheFA.rejeitado')}</option>
                 </select>
               </div>
 
@@ -460,7 +460,7 @@ export default function CacheVooFR24List() {
             className="text-green-700 border-green-300 hover:bg-green-50"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span className="hidden sm:inline ml-2 text-sm">{t('flightradar.export')}</span>
+            <span className="hidden sm:inline ml-2 text-sm">{t('flightaware.export')}</span>
           </Button>
           <Button
             variant="outline"
@@ -469,7 +469,7 @@ export default function CacheVooFR24List() {
             disabled={isLoading}
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline ml-2 text-sm">{t('cacheFR24.recarregar')}</span>
+            <span className="hidden sm:inline ml-2 text-sm">{t('cacheFA.recarregar')}</span>
           </Button>
         </div>
 
@@ -477,7 +477,7 @@ export default function CacheVooFR24List() {
 
         {voosFiltratos.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
-            <p className="text-sm sm:text-base">{t('cacheFR24.nenhumVoo')}</p>
+            <p className="text-sm sm:text-base">{t('cacheFA.nenhumVoo')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto max-h-96 border border-slate-200 rounded-md">
@@ -524,7 +524,7 @@ export default function CacheVooFR24List() {
                         </Draggable>
                       ))}
                       {provided.placeholder}
-                      <th className="px-0.5 py-0.5 text-center">{t('cacheFR24.status')}</th>
+                      <th className="px-0.5 py-0.5 text-center">{t('cacheFA.status')}</th>
                     </tr>
                   )}
                 </Droppable>
@@ -539,9 +539,9 @@ export default function CacheVooFR24List() {
                     if (col === 'status') {
                       return (
                         <Badge className={statusConfig.badge}>
-                          {voo.status === 'pendente' && t('cacheFR24.pendente')}
-                          {voo.status === 'importado' && t('cacheFR24.importado')}
-                          {voo.status === 'rejeitado' && t('cacheFR24.rejeitado')}
+                          {voo.status === 'pendente' && t('cacheFA.pendente')}
+                          {voo.status === 'importado' && t('cacheFA.importado')}
+                          {voo.status === 'rejeitado' && t('cacheFA.rejeitado')}
                         </Badge>
                       );
                     }
@@ -684,7 +684,7 @@ export default function CacheVooFR24List() {
         )}
 
         <div className="text-xs text-slate-500 pt-2">
-          <p>Total: {voosFiltratos.length} {t('cacheFR24.colVoo')}(s)</p>
+          <p>Total: {voosFiltratos.length} {t('cacheFA.colVoo')}(s)</p>
         </div>
         </CardContent>
         )}

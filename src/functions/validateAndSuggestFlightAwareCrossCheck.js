@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 
-export async function validateAndSuggestFR24CrossCheck({ cacheVooId }) {
+export async function validateAndSuggestFlightAwareCrossCheck({ cacheVooId }) {
   if (!cacheVooId) throw new Error('cacheVooId é obrigatório');
 
   const { data: cacheVoo, error } = await supabase

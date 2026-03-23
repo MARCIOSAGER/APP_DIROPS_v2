@@ -9,24 +9,24 @@ import { Search, AlertCircle, CheckCircle2, Clock, GripVertical, FileSpreadsheet
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getFlightAwareFlights } from '@/functions/getFlightAwareFlights';
-import { importVooFromFR24Cache } from '@/functions/importVooFromFR24Cache';
-import VooFR24ReviewModal from './VooFR24ReviewModal';
-import CacheVooFR24List from './CacheVooFR24List';
+import { importVooFromFlightAwareCache } from '@/functions/importVooFromFlightAwareCache';
+import VooFlightAwareReviewModal from './VooFlightAwareReviewModal';
+import CacheVooFlightAwareList from './CacheVooFlightAwareList';
 import SearchProgressBar from './SearchProgressBar';
 import AeroportoMultiSelect from '@/components/ui/aeroporto-multi-select';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
-export default function FlightradarImporter({ aeroportos = [], onImportSuccess }) {
+export default function FlightAwareImporter({ aeroportos = [], onImportSuccess }) {
   const { t } = useI18n();
   const [aeroportosSelecionados, setAeroportosSelecionados] = useState([]);
   const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0]);
   const [dataFim, setDataFim] = useState(new Date().toISOString().split('T')[0]);
-  const [voosFR24, setVoosFR24] = useState([]);
+  const [voosFA, setVoosFA] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedCacheVoo, setSelectedCacheVoo] = useState(null);
-  const [selectedFR24Voo, setSelectedFR24Voo] = useState(null);
+  const [selectedFAVoo, setSelectedFAVoo] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
   const [selectedVoos, setSelectedVoos] = useState(new Set());
   const [sortColumn, setSortColumn] = useState(null);
@@ -123,33 +123,33 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
   }, [resizingColumn, startX, startWidth]);
 
   const columnLabels = {
-    data_voo_cache: t('flightradar.colDataVoo'),
-    flight: t('flightradar.colVoo'),
-    operating_as: t('flightradar.colOperando'),
-    type: t('flightradar.colTipo'),
-    reg: t('flightradar.colRegisto'),
-    orig_icao: t('flightradar.colOrigem'),
-    runway_takeoff: t('flightradar.colPistaDecolagem'),
-    datetime_takeoff: t('flightradar.colHoraDecolagem'),
-    dest_icao: t('flightradar.colDestino'),
-    dest_icao_actual: t('flightradar.colDestinoReal'),
-    runway_landed: t('flightradar.colPistaPouso'),
-    datetime_landed: t('flightradar.colHoraPouso'),
-    flight_time: t('flightradar.colTempoVoo'),
-    actual_distance: t('flightradar.colDistancia'),
+    data_voo_cache: t('flightaware.colDataVoo'),
+    flight: t('flightaware.colVoo'),
+    operating_as: t('flightaware.colOperando'),
+    type: t('flightaware.colTipo'),
+    reg: t('flightaware.colRegisto'),
+    orig_icao: t('flightaware.colOrigem'),
+    runway_takeoff: t('flightaware.colPistaDecolagem'),
+    datetime_takeoff: t('flightaware.colHoraDecolagem'),
+    dest_icao: t('flightaware.colDestino'),
+    dest_icao_actual: t('flightaware.colDestinoReal'),
+    runway_landed: t('flightaware.colPistaPouso'),
+    datetime_landed: t('flightaware.colHoraPouso'),
+    flight_time: t('flightaware.colTempoVoo'),
+    actual_distance: t('flightaware.colDistancia'),
     status: 'Status',
     departure_delay: 'Atraso',
     gate_origin: 'Gate\nOrigem',
     gate_destination: 'Gate\nDestino',
     terminal_origin: 'Terminal\nOrigem',
     terminal_destination: 'Terminal\nDestino',
-    category: t('flightradar.colCategoria'),
-    flight_ended: t('flightradar.colFinalizado')
+    category: t('flightaware.colCategoria'),
+    flight_ended: t('flightaware.colFinalizado')
   };
 
   const handleBuscar = async () => {
     if (aeroportosSelecionados.length === 0) {
-      setError(t('flightradar.selectAirports'));
+      setError(t('flightaware.selectAirports'));
       return;
     }
 
@@ -170,7 +170,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
 
     try {
       const { base44 } = await import('@/api/base44Client');
-      const { syncFR24ToCache } = await import('@/functions/syncFR24ToCache');
+      const { syncFlightAwareToCache } = await import('@/functions/syncFlightAwareToCache');
       const allFlights = [];
 
       // Validar intervalo de datas (máximo 10 dias - limite FlightAware)
@@ -214,7 +214,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
             totalFromApi += response.flights.length;
 
             // 2) Sync novos voos para o cache
-            const syncResult = await syncFR24ToCache({ flights: response.flights });
+            const syncResult = await syncFlightAwareToCache({ flights: response.flights });
 
             setProgressData(prev => ({
               ...prev,
@@ -239,7 +239,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
       // 3) Buscar TODOS os voos do cache para os aeroportos e período selecionados
       const cacheVoos = await Promise.all(
         aeroportosSelecionados.map(aeroporto =>
-          base44.entities.CacheVooFR24.filter({
+          base44.entities.CacheVooFlightAware.filter({
             airport_icao: aeroporto,
             data_voo: { $gte: dataInicio, $lte: dataFim }
           }, null, 1000)
@@ -280,17 +280,17 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
       });
 
       if (voosPendentes.length > 0) {
-        setVoosFR24(voosPendentes);
+        setVoosFA(voosPendentes);
         setError(null);
       } else {
-        setError(t('flightradar.noFlights'));
-        setVoosFR24([]);
+        setError(t('flightaware.noFlights'));
+        setVoosFA([]);
       }
     } catch (err) {
       console.error('Erro ao buscar voos:', err);
       const errorMsg = err.message || 'Erro ao buscar voos do FlightAware';
       setError(errorMsg);
-      setVoosFR24([]);
+      setVoosFA([]);
       setProgressData(prev => ({
         ...prev,
         error: errorMsg,
@@ -317,7 +317,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
       setError('Erro ao importar: cache_id não encontrado');
       return;
     }
-    setSelectedFR24Voo(voo);
+    setSelectedFAVoo(voo);
     setSelectedCacheVoo(voo.cache_id);
     setShowReviewModal(true);
   };
@@ -325,7 +325,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
   const handleConfirmImport = async (suggestions, userSelections) => {
     setIsImporting(true);
     try {
-      const result = await importVooFromFR24Cache({
+      const result = await importVooFromFlightAwareCache({
         cacheVooId: selectedCacheVoo,
         suggestions: suggestions,
         userSelections: userSelections || {}
@@ -334,10 +334,10 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
       if (result.success) {
         setShowReviewModal(false);
         setSelectedCacheVoo(null);
-        setSelectedFR24Voo(null);
+        setSelectedFAVoo(null);
 
         // Remover o voo da lista
-        setVoosFR24(prev => prev.filter(v => v.cache_id !== selectedCacheVoo));
+        setVoosFA(prev => prev.filter(v => v.cache_id !== selectedCacheVoo));
 
         if (onImportSuccess) {
           onImportSuccess(result);
@@ -363,7 +363,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
 
   const toggleSelectAll = (checked) => {
     if (checked) {
-      const cacheIds = voosFR24.filter(v => v.cache_id).map(v => v.cache_id);
+      const cacheIds = voosFA.filter(v => v.cache_id).map(v => v.cache_id);
       setSelectedVoos(new Set(cacheIds));
     } else {
       setSelectedVoos(new Set());
@@ -380,9 +380,9 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
   };
 
   const sortedVoos = React.useMemo(() => {
-    if (!sortColumn) return voosFR24;
+    if (!sortColumn) return voosFA;
     
-    return [...voosFR24].sort((a, b) => {
+    return [...voosFA].sort((a, b) => {
       let aVal = a[sortColumn];
       let bVal = b[sortColumn];
       
@@ -396,11 +396,11 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [voosFR24, sortColumn, sortDirection]);
+  }, [voosFA, sortColumn, sortDirection]);
 
   const handleImportSelected = async () => {
     if (selectedVoos.size === 0) {
-      setError(t('flightradar.selectAtLeast'));
+      setError(t('flightaware.selectAtLeast'));
       return;
     }
 
@@ -410,9 +410,9 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
     try {
       for (const cacheId of selectedVoos) {
         try {
-          const voo = voosFR24.find(v => v.cache_id === cacheId);
+          const voo = voosFA.find(v => v.cache_id === cacheId);
           if (voo) {
-            await importVooFromFR24Cache({
+            await importVooFromFlightAwareCache({
               cacheVooId: cacheId,
               suggestions: {
                 aeroporto_origem: { status: 'existente' },
@@ -436,7 +436,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
         }
       }
 
-      setVoosFR24(prev => prev.filter(v => !selectedVoos.has(v.cache_id)));
+      setVoosFA(prev => prev.filter(v => !selectedVoos.has(v.cache_id)));
       setSelectedVoos(new Set());
 
       if (importedCount > 0 && onImportSuccess) {
@@ -482,14 +482,14 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
 
   return (
     <>
-      {showReviewModal && selectedCacheVoo && selectedFR24Voo && (
-        <VooFR24ReviewModal
+      {showReviewModal && selectedCacheVoo && selectedFAVoo && (
+        <VooFlightAwareReviewModal
           cacheVooId={selectedCacheVoo}
-          vooData={selectedFR24Voo}
+          vooData={selectedFAVoo}
           onClose={() => {
             setShowReviewModal(false);
             setSelectedCacheVoo(null);
-            setSelectedFR24Voo(null);
+            setSelectedFAVoo(null);
           }}
           onConfirmImport={handleConfirmImport}
         />
@@ -497,20 +497,20 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
 
       <Tabs defaultValue="buscar" className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="buscar">{t('flightradar.tabSearch')}</TabsTrigger>
-          <TabsTrigger value="historico">{t('flightradar.tabHistory')}</TabsTrigger>
+          <TabsTrigger value="buscar">{t('flightaware.tabSearch')}</TabsTrigger>
+          <TabsTrigger value="historico">{t('flightaware.tabHistory')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="buscar">
           <Card>
           <CardHeader>
-            <CardTitle>{t('flightradar.title')}</CardTitle>
-            <CardDescription>{t('flightradar.description')}</CardDescription>
+            <CardTitle>{t('flightaware.title')}</CardTitle>
+            <CardDescription>{t('flightaware.description')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
-              <Label htmlFor="aeroporto">{t('flightradar.airports')}</Label>
+              <Label htmlFor="aeroporto">{t('flightaware.airports')}</Label>
               <AeroportoMultiSelect
                 aeroportos={aeroportosFiltrados}
                 values={aeroportosSelecionados}
@@ -520,7 +520,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
             </div>
 
             <div>
-              <Label htmlFor="dataInicio">{t('flightradar.startDate')}</Label>
+              <Label htmlFor="dataInicio">{t('flightaware.startDate')}</Label>
               <Input
                 id="dataInicio"
                 type="date"
@@ -530,7 +530,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
             </div>
 
             <div>
-              <Label htmlFor="dataFim">{t('flightradar.endDate')}</Label>
+              <Label htmlFor="dataFim">{t('flightaware.endDate')}</Label>
               <Input
                 id="dataFim"
                 type="date"
@@ -546,7 +546,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Search className="w-4 h-4 mr-2" />
-                {isLoading ? t('flightradar.searching') : t('flightradar.search')}
+                {isLoading ? t('flightaware.searching') : t('flightaware.search')}
               </Button>
             </div>
           </div>
@@ -570,21 +570,21 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
             </div>
           )}
 
-          {voosFR24.length > 0 && (
+          {voosFA.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-slate-700">
-                  {voosFR24.length} {t('flightradar.flightsFound')}
+                  {voosFA.length} {t('flightaware.flightsFound')}
                 </p>
                 <div className="flex gap-2">
                   <Button
                     onClick={handleExportarXLSX}
-                    disabled={isLoading || voosFR24.length === 0}
+                    disabled={isLoading || voosFA.length === 0}
                     variant="outline"
                     className="text-green-700 border-green-300 hover:bg-green-50"
                   >
                     <FileSpreadsheet className="w-4 h-4 mr-2" />
-                    {t('flightradar.export')}
+                    {t('flightaware.export')}
                   </Button>
                   {selectedVoos.size > 0 && (
                     <Button
@@ -592,7 +592,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
                       disabled={isImporting}
                       className="bg-green-600 hover:bg-green-700 text-white"
                     >
-                      {t('flightradar.importSelected')} {selectedVoos.size}
+                      {t('flightaware.importSelected')} {selectedVoos.size}
                     </Button>
                   )}
                 </div>
@@ -607,8 +607,8 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
                         <tr ref={provided.innerRef} {...provided.droppableProps}>
                           <th className="px-0.5 py-0.5 text-left w-6">
                             <Checkbox
-                              checked={selectedVoos.size === voosFR24.length && voosFR24.length > 0}
-                              indeterminate={selectedVoos.size > 0 && selectedVoos.size < voosFR24.length}
+                              checked={selectedVoos.size === voosFA.length && voosFA.length > 0}
+                              indeterminate={selectedVoos.size > 0 && selectedVoos.size < voosFA.length}
                               onCheckedChange={toggleSelectAll}
                             />
                           </th>
@@ -649,7 +649,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
                             </Draggable>
                           ))}
                           {provided.placeholder}
-                          <th className="px-0.5 py-0.5">{t('flightradar.import')}</th>
+                          <th className="px-0.5 py-0.5">{t('flightaware.import')}</th>
                         </tr>
                       )}
                     </Droppable>
@@ -798,7 +798,7 @@ export default function FlightradarImporter({ aeroportos = [], onImportSuccess }
           </TabsContent>
 
           <TabsContent value="historico">
-          <CacheVooFR24List />
+          <CacheVooFlightAwareList />
           </TabsContent>
           </Tabs>
           </>

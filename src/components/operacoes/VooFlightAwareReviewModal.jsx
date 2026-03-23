@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import { validateAndSuggestFR24CrossCheck } from '@/functions/validateAndSuggestFR24CrossCheck';
-import VooFR24ComparisonRow from './VooFR24ComparisonRow';
+import { validateAndSuggestFlightAwareCrossCheck } from '@/functions/validateAndSuggestFlightAwareCrossCheck';
+import VooFlightAwareComparisonRow from './VooFlightAwareComparisonRow';
 import { useI18n } from '@/components/lib/i18n';
 
-export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onConfirmImport }) {
+export default function VooFlightAwareReviewModal({ cacheVooId, vooData, onClose, onConfirmImport }) {
   const { t } = useI18n();
   const [suggestions, setSuggestions] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,12 +18,12 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
       setIsLoading(true);
       setError(null);
       try {
-        const response = await validateAndSuggestFR24CrossCheck({
+        const response = await validateAndSuggestFlightAwareCrossCheck({
           cacheVooId: cacheVooId
         });
         setSuggestions(response.data.suggestions);
       } catch (err) {
-        setError(err.message || t('vooFR24Review.validando'));
+        setError(err.message || t('vooFAReview.validando'));
       } finally {
         setIsLoading(false);
       }
@@ -61,7 +61,7 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
           <CardContent className="p-6 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
-              <p className="text-slate-600">{t('vooFR24Review.validando')}</p>
+              <p className="text-slate-600">{t('vooFAReview.validando')}</p>
             </div>
           </CardContent>
         </Card>
@@ -75,7 +75,7 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-blue-600" />
-            {t('vooFR24Review.titulo')}
+            {t('vooFAReview.titulo')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6 flex-1 overflow-y-auto">
@@ -89,8 +89,8 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
             <>
               {/* Voo Duplicado */}
               {suggestions.voo_duplicado && (
-                <VooFR24ComparisonRow
-                  title={t('vooFR24Review.vooDuplicado')}
+                <VooFlightAwareComparisonRow
+                  title={t('vooFAReview.vooDuplicado')}
                   suggestion={suggestions.voo_duplicado}
                   dadosAPI={suggestions.voo_duplicado.dadosAPI}
                   onSelectionChange={handleSelectionChange}
@@ -104,8 +104,8 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
                   ✈️ Voo: {vooData?.callsign || 'N/A'} ({vooData?.reg || 'N/A'})
                 </p>
                 <p className="text-xs text-blue-700">
-                  {vooData?.origin_airport_name || t('vooFR24Review.origemDesconhecida')} →
-                  {vooData?.destination_airport_name || t('vooFR24Review.destinoDesconhecido')}
+                  {vooData?.origin_airport_name || t('vooFAReview.origemDesconhecida')} →
+                  {vooData?.destination_airport_name || t('vooFAReview.destinoDesconhecido')}
                 </p>
               </div>
 
@@ -113,13 +113,13 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
               <div className="space-y-3">
                 <h3 className="font-semibold text-slate-900 flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-blue-600" />
-                  {t('vooFR24Review.validacaoDados')}
+                  {t('vooFAReview.validacaoDados')}
                 </h3>
 
                 {/* Aeroporto Origem */}
                 {suggestions.aeroporto_origem && (
-                  <VooFR24ComparisonRow
-                    title={t('vooFR24Review.aeroportoOrigem')}
+                  <VooFlightAwareComparisonRow
+                    title={t('vooFAReview.aeroportoOrigem')}
                     suggestion={suggestions.aeroporto_origem}
                     dadosAPI={{
                       codigo_icao: vooData?.orig_icao || 'N/A',
@@ -133,8 +133,8 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
 
                 {/* Aeroporto Destino */}
                 {suggestions.aeroporto_destino && (
-                  <VooFR24ComparisonRow
-                    title={t('vooFR24Review.aeroportoDestino')}
+                  <VooFlightAwareComparisonRow
+                    title={t('vooFAReview.aeroportoDestino')}
                     suggestion={suggestions.aeroporto_destino}
                     dadosAPI={{
                       codigo_icao: vooData?.dest_icao || 'N/A',
@@ -148,8 +148,8 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
 
                 {/* Companhia Aérea */}
                 {suggestions.companhia_aerea && (
-                  <VooFR24ComparisonRow
-                    title={t('vooFR24Review.companhiaAerea')}
+                  <VooFlightAwareComparisonRow
+                    title={t('vooFAReview.companhiaAerea')}
                     suggestion={suggestions.companhia_aerea}
                     dadosAPI={{
                       codigo_icao: vooData?.operating_as || vooData?.painted_as || 'N/A',
@@ -161,8 +161,8 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
 
                 {/* Modelo de Aeronave */}
                 {suggestions.modelo_aeronave && (
-                  <VooFR24ComparisonRow
-                    title={t('vooFR24Review.modeloAeronave')}
+                  <VooFlightAwareComparisonRow
+                    title={t('vooFAReview.modeloAeronave')}
                     suggestion={suggestions.modelo_aeronave}
                     dadosAPI={{
                       codigo_iata: vooData?.type || 'N/A',
@@ -175,8 +175,8 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
 
                 {/* Registo de Aeronave */}
                 {suggestions.registo_aeronave && (
-                  <VooFR24ComparisonRow
-                    title={t('vooFR24Review.registoAeronave')}
+                  <VooFlightAwareComparisonRow
+                    title={t('vooFAReview.registoAeronave')}
                     suggestion={suggestions.registo_aeronave}
                     dadosAPI={{
                       registo: vooData?.reg || 'N/A',
@@ -188,11 +188,11 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
               </div>
 
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-xs text-yellow-700">
-                <p className="font-semibold mb-1">ℹ️ {t('vooFR24Review.instrucoes')}</p>
+                <p className="font-semibold mb-1">ℹ️ {t('vooFAReview.instrucoes')}</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>{t('vooFR24Review.instrUsarSistema')}</li>
-                  <li>{t('vooFR24Review.instrUsarAPI')}</li>
-                  <li>{t('vooFR24Review.instrEditar')}</li>
+                  <li>{t('vooFAReview.instrUsarSistema')}</li>
+                  <li>{t('vooFAReview.instrUsarAPI')}</li>
+                  <li>{t('vooFAReview.instrEditar')}</li>
                 </ul>
               </div>
             </>
@@ -203,14 +203,14 @@ export default function VooFR24ReviewModal({ cacheVooId, vooData, onClose, onCon
               variant="outline"
               onClick={onClose}
             >
-              {t('vooFR24Review.cancelar')}
+              {t('vooFAReview.cancelar')}
             </Button>
             <Button
               className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => onConfirmImport(processedSuggestions, userSelections)}
               disabled={isLoading}
             >
-              {t('vooFR24Review.confirmarImportacao')}
+              {t('vooFAReview.confirmarImportacao')}
             </Button>
           </div>
         </CardContent>

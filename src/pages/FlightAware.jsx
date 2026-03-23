@@ -8,7 +8,7 @@ import {
   XCircle, AlertTriangle, Download, Eye, EyeOff, Clock, ArrowRightLeft,
   PlusCircle, Ban, RefreshCw, Save
 } from 'lucide-react';
-import { CacheVooFR24 } from '@/entities/CacheVooFR24';
+import { CacheVooFlightAware } from '@/entities/CacheVooFlightAware';
 import { Voo } from '@/entities/Voo';
 import { VooLigado } from '@/entities/VooLigado';
 import { supabase } from '@/lib/supabaseClient';
@@ -195,7 +195,7 @@ function FlightTable({ flights, airportIcao, showActions, onCreateVoo, onIgnore,
 
 // ─── Main Component ─────────────────────────────────────────
 
-export default function TesteFlightradar24() {
+export default function FlightAwarePage() {
   const { currentUser } = useAuth();
   const { effectiveEmpresaId } = useCompanyView();
 
@@ -292,7 +292,7 @@ export default function TesteFlightradar24() {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // TAB 1: CACHE FR24
+  // TAB 1: CACHE FLIGHTAWARE
   // ═══════════════════════════════════════════════════════════
 
   const loadCache = useCallback(async () => {
@@ -305,7 +305,7 @@ export default function TesteFlightradar24() {
       if (endDate) filters.data_voo = { ...filters.data_voo, $lte: endDate };
       if (cacheStatusFilter !== 'todos') filters.status = cacheStatusFilter;
 
-      const data = await CacheVooFR24.filter(filters, '-data_voo');
+      const data = await CacheVooFlightAware.filter(filters, '-data_voo');
       setCachedFlights(data);
 
       // Stats
@@ -321,7 +321,7 @@ export default function TesteFlightradar24() {
     }
   }, [airportIcao, startDate, endDate, cacheStatusFilter]);
 
-  // Create a single voo from FR24 cache entry
+  // Create a single voo from FlightAware cache entry
   const createVooFromCache = useCallback(async (cachedFlight) => {
     const raw = cachedFlight.raw_data || {};
     const isArr = isArrival(raw, airportIcao);
@@ -345,7 +345,7 @@ export default function TesteFlightradar24() {
         .limit(1);
       if (existing && existing.length > 0) {
         // Already exists - just update cache status
-        await CacheVooFR24.update(cachedFlight.id, { status: 'importado' });
+        await CacheVooFlightAware.update(cachedFlight.id, { status: 'importado' });
         setCachedFlights(prev => prev.map(f => f.id === cachedFlight.id ? { ...f, status: 'importado' } : f));
         showAlert('success', `Voo ${raw.flight} já existe no ATO. Cache atualizado.`);
         return;
@@ -370,7 +370,7 @@ export default function TesteFlightradar24() {
 
         if (regMatches && regMatches.length > 0) {
           // Counterpart with same registo already exists AND is linked - this turnaround is handled
-          await CacheVooFR24.update(cachedFlight.id, { status: 'importado' });
+          await CacheVooFlightAware.update(cachedFlight.id, { status: 'importado' });
           setCachedFlights(prev => prev.map(f => f.id === cachedFlight.id ? { ...f, status: 'importado' } : f));
           setCacheStats(prev => prev ? {
             ...prev,
@@ -459,7 +459,7 @@ export default function TesteFlightradar24() {
       }
 
       // Update cache status
-      await CacheVooFR24.update(cachedFlight.id, { status: 'importado' });
+      await CacheVooFlightAware.update(cachedFlight.id, { status: 'importado' });
 
       // Update local state
       setCachedFlights(prev => prev.map(f =>
@@ -486,7 +486,7 @@ export default function TesteFlightradar24() {
   // Ignore a cached flight
   const ignoreCachedFlight = useCallback(async (cachedFlight) => {
     try {
-      await CacheVooFR24.update(cachedFlight.id, { status: 'ignorado' });
+      await CacheVooFlightAware.update(cachedFlight.id, { status: 'ignorado' });
       setCachedFlights(prev => prev.map(f =>
         f.id === cachedFlight.id ? { ...f, status: 'ignorado' } : f
       ));
@@ -580,7 +580,7 @@ export default function TesteFlightradar24() {
           v.tipo_movimento === tipo
         );
         if (exactMatch) {
-          await CacheVooFR24.update(flight.id, { status: 'importado' });
+          await CacheVooFlightAware.update(flight.id, { status: 'importado' });
           setCachedFlights(prev => prev.map(f => f.id === flight.id ? { ...f, status: 'importado' } : f));
           markedImported++;
           continue;
@@ -596,7 +596,7 @@ export default function TesteFlightradar24() {
             v.voo_ligado_id != null
           );
           if (linkedCounterpart) {
-            await CacheVooFR24.update(flight.id, { status: 'importado' });
+            await CacheVooFlightAware.update(flight.id, { status: 'importado' });
             setCachedFlights(prev => prev.map(f => f.id === flight.id ? { ...f, status: 'importado' } : f));
             markedImported++;
             continue;
@@ -622,10 +622,10 @@ export default function TesteFlightradar24() {
   }, [cachedFlights, airportIcao, startDate, endDate, currentUser, effectiveEmpresaId]);
 
   // ═══════════════════════════════════════════════════════════
-  // TAB 2: BUSCAR API FR24
+  // TAB 2: BUSCAR API FLIGHTAWARE
   // ═══════════════════════════════════════════════════════════
 
-  const fetchFR24API = useCallback(async () => {
+  const fetchFlightAwareAPI = useCallback(async () => {
     setApiLoading(true);
     setApiResults([]);
     setAlert(null);
@@ -670,9 +670,9 @@ export default function TesteFlightradar24() {
           p_date_to: blocks[i].to,
         });
 
-        const fr24Flights = rpcResult?.data || [];
-        if (!rpcError && fr24Flights.length > 0) {
-          fr24Flights.forEach(f => {
+        const faFlights = rpcResult?.data || [];
+        if (!rpcError && faFlights.length > 0) {
+          faFlights.forEach(f => {
             const landedDate = f.datetime_landed ? f.datetime_landed.substring(0, 10) : (f.datetime_takeoff ? f.datetime_takeoff.substring(0, 10) : startDate);
             allResults.push({
               fr24_id: f.fr24_id,
@@ -684,8 +684,8 @@ export default function TesteFlightradar24() {
             });
           });
           // Auto-save to cache
-          if (fr24Flights.length > 0) {
-            const records = fr24Flights.map(f => ({
+          if (faFlights.length > 0) {
+            const records = faFlights.map(f => ({
               data_voo: (f.datetime_landed || f.datetime_takeoff || '').substring(0, 10) || startDate,
               numero_voo: f.flight || '',
               fr24_id: f.fr24_id,
@@ -698,7 +698,7 @@ export default function TesteFlightradar24() {
           }
         } else {
           errors++;
-          console.error(`FR24 block ${i+1}:`, rpcError, rpcResult?.error);
+          console.error(`FlightAware block ${i+1}:`, rpcError, rpcResult?.error);
         }
 
         // Rate limit: wait 7s between calls
@@ -723,7 +723,7 @@ export default function TesteFlightradar24() {
       setApiProgress('');
 
       // Update last sync timestamp
-      await supabase.from('api_config').upsert({ chave: syncKey, valor: new Date().toISOString(), descricao: `Ultima sincronizacao FR24 para ${airportIcao}` }, { onConflict: 'chave' });
+      await supabase.from('api_config').upsert({ chave: syncKey, valor: new Date().toISOString(), descricao: `Ultima sincronizacao FlightAware para ${airportIcao}` }, { onConflict: 'chave' });
 
       showAlert('success', `${deduped.length} voos encontrados em ${blocks.length} blocos. ${errors ? errors + ' erros.' : ''} Dados salvos no cache.`);
     } catch (err) {
@@ -744,17 +744,17 @@ export default function TesteFlightradar24() {
     try {
       for (const flight of apiResults) {
         // Check if fr24_id already exists
-        const existing = await CacheVooFR24.findOne({ fr24_id: flight.fr24_id });
+        const existing = await CacheVooFlightAware.findOne({ fr24_id: flight.fr24_id });
         if (existing) {
           // Update raw_data
-          await CacheVooFR24.update(existing.id, {
+          await CacheVooFlightAware.update(existing.id, {
             raw_data: flight.raw_data,
             data_voo: flight.data_voo,
             numero_voo: flight.numero_voo,
           });
           skipped++;
         } else {
-          await CacheVooFR24.create({
+          await CacheVooFlightAware.create({
             fr24_id: flight.fr24_id,
             numero_voo: flight.numero_voo,
             data_voo: flight.data_voo,
@@ -796,7 +796,7 @@ export default function TesteFlightradar24() {
       const cacheFilters = { airport_icao: airportIcao };
       if (startDate) cacheFilters.data_voo = { $gte: startDate };
       if (endDate) cacheFilters.data_voo = { ...cacheFilters.data_voo, $lte: endDate };
-      const cacheData = await CacheVooFR24.filter(cacheFilters, '-data_voo');
+      const cacheData = await CacheVooFlightAware.filter(cacheFilters, '-data_voo');
 
       // Load voos ATO
       const { data: voos } = await supabase
@@ -828,14 +828,14 @@ export default function TesteFlightradar24() {
         const flightNum = (raw.flight || f.numero_voo || '').toUpperCase();
         const key = `${flightNum}_${f.data_voo}_${tipo}`;
         const atoVoo = vooMap.get(key);
-        const fr24Reg = normalizeReg(raw.reg);
+        const faReg = normalizeReg(raw.reg);
 
         let status;
         let atoReg = '';
 
         if (atoVoo) {
           atoReg = normalizeReg(atoVoo.registo_aeronave);
-          if (fr24Reg === atoReg) {
+          if (faReg === atoReg) {
             status = 'OK';
             matchOk++;
           } else {
@@ -850,7 +850,7 @@ export default function TesteFlightradar24() {
         rows.push({
           ...f,
           tipo,
-          fr24Reg,
+          faReg,
           atoReg,
           atoVooId: atoVoo?.id,
           compareStatus: status,
@@ -899,16 +899,16 @@ export default function TesteFlightradar24() {
     if (!row.atoVooId) return;
     setComparingIds(prev => new Set([...prev, row.id]));
     try {
-      await Voo.update(row.atoVooId, { registo_aeronave: row.fr24Reg });
+      await Voo.update(row.atoVooId, { registo_aeronave: row.faReg });
       setCompareData(prev => prev.map(r =>
-        r.id === row.id ? { ...r, compareStatus: 'OK', atoReg: row.fr24Reg } : r
+        r.id === row.id ? { ...r, compareStatus: 'OK', atoReg: row.faReg } : r
       ));
       setCompareStats(prev => prev ? {
         ...prev,
         matchOk: prev.matchOk + 1,
         regDiff: prev.regDiff - 1,
       } : prev);
-      showAlert('success', `Registo do voo atualizado para ${row.fr24Reg}.`);
+      showAlert('success', `Registo do voo atualizado para ${row.faReg}.`);
     } catch (err) {
       showAlert('error', `Erro ao corrigir registo: ${err.message}`);
     } finally {
@@ -959,7 +959,7 @@ export default function TesteFlightradar24() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4">
       <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
         <Plane className="w-6 h-6 text-sky-500" />
-        Flightradar24 — Gestão de Voos
+        FlightAware — Gestão de Voos
       </h1>
 
       <AlertBanner alert={alert} onDismiss={() => setAlert(null)} />
@@ -968,7 +968,7 @@ export default function TesteFlightradar24() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="cache" className="text-xs sm:text-sm">
             <Database className="w-4 h-4 mr-1.5" />
-            Cache FR24
+            Cache FlightAware
           </TabsTrigger>
           <TabsTrigger value="api" className="text-xs sm:text-sm">
             <Search className="w-4 h-4 mr-1.5" />
@@ -1152,9 +1152,9 @@ export default function TesteFlightradar24() {
           </Card>
 
           <FiltersBar
-            onSearch={fetchFR24API}
+            onSearch={fetchFlightAwareAPI}
             loading={apiLoading}
-            buttonLabel="Buscar FR24 API"
+            buttonLabel="Buscar FlightAware API"
             buttonIcon={Download}
           />
 
@@ -1185,7 +1185,7 @@ export default function TesteFlightradar24() {
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Resultados API FR24 ({apiResults.length})</CardTitle>
+                  <CardTitle className="text-base">Resultados API FlightAware ({apiResults.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <FlightTable
@@ -1202,7 +1202,7 @@ export default function TesteFlightradar24() {
             <Card className="bg-slate-50 border-dashed">
               <CardContent className="pt-8 pb-8 text-center text-slate-500">
                 <Download className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                <p>Configure os filtros e clique "Buscar FR24 API"</p>
+                <p>Configure os filtros e clique "Buscar FlightAware API"</p>
               </CardContent>
             </Card>
           )}
@@ -1219,7 +1219,7 @@ export default function TesteFlightradar24() {
 
           {compareStats && (() => {
             const filterOptions = [
-              { key: null, bg: 'bg-sky-50 border-sky-200', icon: <Database className="w-5 h-5 text-sky-600 mx-auto mb-1" />, value: compareStats.total, textColor: 'text-sky-700', label: 'Total FR24', labelColor: 'text-sky-600' },
+              { key: null, bg: 'bg-sky-50 border-sky-200', icon: <Database className="w-5 h-5 text-sky-600 mx-auto mb-1" />, value: compareStats.total, textColor: 'text-sky-700', label: 'Total FlightAware', labelColor: 'text-sky-600' },
               { key: 'OK', bg: 'bg-green-50 border-green-200', icon: <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-1" />, value: compareStats.matchOk, textColor: 'text-green-700', label: 'Match OK', labelColor: 'text-green-600' },
               { key: 'FALTA', bg: 'bg-red-50 border-red-200', icon: <XCircle className="w-5 h-5 text-red-600 mx-auto mb-1" />, value: compareStats.falta, textColor: 'text-red-700', label: 'Em Falta no ATO', labelColor: 'text-red-600' },
               { key: 'REG_DIFF', bg: 'bg-amber-50 border-amber-200', icon: <AlertTriangle className="w-5 h-5 text-amber-600 mx-auto mb-1" />, value: compareStats.regDiff, textColor: 'text-amber-700', label: 'Registo Diferente', labelColor: 'text-amber-600' },
@@ -1246,7 +1246,7 @@ export default function TesteFlightradar24() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">
-                  Comparação FR24 vs ATO ({filteredCompareData.length}{compareStatusFilter ? ` — ${compareStatusFilter}` : ''})
+                  Comparação FlightAware vs ATO ({filteredCompareData.length}{compareStatusFilter ? ` — ${compareStatusFilter}` : ''})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1257,7 +1257,7 @@ export default function TesteFlightradar24() {
                         <th className="text-left p-2 font-medium">Voo</th>
                         <th className="text-left p-2 font-medium">Data</th>
                         <th className="text-left p-2 font-medium">Tipo</th>
-                        <th className="text-left p-2 font-medium">Reg FR24</th>
+                        <th className="text-left p-2 font-medium">Reg FA</th>
                         <th className="text-left p-2 font-medium">Reg ATO</th>
                         <th className="text-left p-2 font-medium">Status</th>
                         <th className="text-left p-2 font-medium">Ações</th>
@@ -1285,7 +1285,7 @@ export default function TesteFlightradar24() {
                                 {row.tipo}
                               </span>
                             </td>
-                            <td className="p-2 font-mono">{row.fr24Reg || '\u2014'}</td>
+                            <td className="p-2 font-mono">{row.faReg || '\u2014'}</td>
                             <td className="p-2 font-mono">{row.atoReg || '\u2014'}</td>
                             <td className="p-2">
                               <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${statusColors[row.compareStatus] || ''}`}>

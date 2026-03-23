@@ -1,16 +1,16 @@
 import { supabase } from '@/lib/supabaseClient';
 
 /**
- * Upsert FR24 flight data into the cache_voo_f_r24 table.
+ * Upsert FlightAware flight data into the cache_voo_f_r24 table.
  * Deduplicates by fr24_id using Supabase upsert.
  *
  * @param {Object} params
- * @param {Array} params.flights - Array of normalized FR24 flight objects (from getFlightradarFlights)
+ * @param {Array} params.flights - Array of normalized FlightAware flight objects
  * @param {string} [params.empresaId] - Optional empresa_id to tag records
  * @param {number} [params.cacheDays=30] - Number of days before cache expires
  * @returns {{ success: boolean, inserted: number, updated: number, skipped: number, errors: string[] }}
  */
-export async function syncFR24ToCache({ flights, empresaId, cacheDays = 30 }) {
+export async function syncFlightAwareToCache({ flights, empresaId, cacheDays = 30 }) {
   if (!flights || !Array.isArray(flights) || flights.length === 0) {
     return { success: true, inserted: 0, updated: 0, skipped: 0, errors: [] };
   }
@@ -166,4 +166,4 @@ function deriveDataVoo(flight) {
   }
 }
 
-export default syncFR24ToCache;
+export default syncFlightAwareToCache;

@@ -430,7 +430,7 @@ export default function Operacoes() {
       if (filtros.aeroporto !== 'todos') query.aeroporto_operacao = filtros.aeroporto;
 
       // Origem (created_by) filter
-      if (filtros.origem === 'fr24') query.created_by = { $ilike: '%FR24%' };
+      if (filtros.origem === 'flightaware') query.created_by = { $ilike: '%FlightAware%' };
       else if (filtros.origem === 'sistema') query.created_by = { $ilike: '%import%' };
       else if (filtros.origem === 'manual') query.created_by = { $is: null };
 
@@ -2388,7 +2388,7 @@ export default function Operacoes() {
                           id="filtro-origem"
                           options={[
                             { value: 'todos', label: t('operacoes.todos') || 'Todos' },
-                            { value: 'fr24', label: 'FR24-Import' },
+                            { value: 'flightaware', label: 'FlightAware-Import' },
                             { value: 'sistema', label: t('operacoes.sistema') || 'Sistema' },
                             { value: 'manual', label: 'Manual' }
                           ]}
@@ -2805,8 +2805,8 @@ export default function Operacoes() {
                                   </TableCell>
                                   <TableCell className="text-xs hidden lg:table-cell">{voo.passageiros_total ?? 'N/A'}</TableCell>
                                   <TableCell className="text-xs hidden lg:table-cell">
-                                    {voo.created_by === 'FR24-Import' ? (
-                                      <Badge variant="outline" className="text-[10px] border-sky-400 text-sky-600 dark:text-sky-400">FR24</Badge>
+                                    {voo.created_by === 'FR24-Import' || voo.created_by === 'FlightAware-Import' ? (
+                                      <Badge variant="outline" className="text-[10px] border-sky-400 text-sky-600 dark:text-sky-400">FA</Badge>
                                     ) : (
                                       <span className="text-slate-400 truncate max-w-[80px] inline-block">{voo.created_by || 'N/A'}</span>
                                     )}
