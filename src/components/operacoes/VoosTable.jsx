@@ -205,6 +205,7 @@ export default function VoosTable({
                 const isLinked = isVooLigado(voo);
                 const podeSerCancelado = voo.status !== 'Cancelado' && voo.status !== 'Realizado';
                 
+                const isFA = voo.created_by === 'FlightAware' || voo.origem_dados === 'FlightAware';
                 const userEmail = voo.updated_by || voo.created_by || 'N/A';
                 const userName = userEmail !== 'N/A' ? userEmail.split('@')[0] : 'N/A';
                 
@@ -223,8 +224,10 @@ export default function VoosTable({
                       {format(parseISO(voo.data_operacao), "dd MMM yyyy", { locale: pt })}
                     </TableCell>
                     <TableCell>
-                       <div className="font-medium text-slate-900">{voo.numero_voo}</div>
-                       {/* Mostrar código da companhia ou ID se não tiver código */}
+                       <div className="flex items-center gap-1">
+                         <span className="font-medium text-slate-900">{voo.numero_voo}</span>
+                         {isFA && <Badge variant="outline" className="text-[9px] border-sky-400 text-sky-600 px-1 py-0">FA</Badge>}
+                       </div>
                        <div className="text-sm text-slate-500">{voo.companhia_aerea || 'N/A'}</div>
                      </TableCell>
                     <TableCell>
@@ -235,16 +238,22 @@ export default function VoosTable({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-mono text-sm font-medium text-slate-900">{voo.registo_aeronave}</div>
+                      <div className="font-mono text-sm font-medium text-slate-900">{voo.registo_aeronave || '—'}</div>
                       <div className="text-xs text-slate-500">{voo.tipo_voo || t('voosTable.regular')}</div>
+                      {isFA && !voo.registo_aeronave && (
+                        <Badge variant="outline" className="text-[9px] border-amber-400 text-amber-700 bg-amber-50 mt-0.5">Verificar Registo</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <div className="font-mono">{voo.horario_previsto}</div>
+                      <div className="font-mono">{voo.horario_previsto || '—'}</div>
                       {voo.horario_real &&
                         <div className={`text-sm font-mono font-semibold ${voo.horario_real > voo.horario_previsto ? 'text-red-500' : 'text-green-600'}`}>
                           {voo.horario_real}
                         </div>
                       }
+                      {isFA && !voo.horario_previsto && (
+                        <Badge variant="outline" className="text-[9px] border-amber-400 text-amber-700 bg-amber-50">Verificar Horário</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">

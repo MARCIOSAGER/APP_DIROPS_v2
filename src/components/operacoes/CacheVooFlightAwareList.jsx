@@ -53,6 +53,7 @@ export default function CacheVooFlightAwareList() {
     'raw_data.actual_distance',
     'raw_data.category',
     'raw_data.flight_ended',
+    'confirmado',
     'status'
   ]);
 
@@ -125,6 +126,7 @@ export default function CacheVooFlightAwareList() {
     'raw_data.actual_distance': t('cacheFA.colDistancia'),
     'raw_data.category': t('cacheFA.colCategoria'),
     'raw_data.flight_ended': t('cacheFA.colFinalizado'),
+    'confirmado': 'Confirmado',
     'status': t('cacheFA.status')
   };
 
@@ -233,8 +235,14 @@ export default function CacheVooFlightAwareList() {
   };
 
   const voosFiltratos = cacheVoos.filter(voo => {
+    const rawData = voo.raw_data || {};
+
+    // Hide cancelled flights and flights without any actual data
+    if (rawData.cancelled) return false;
+    if (!rawData.datetime_takeoff && !rawData.datetime_landed && !rawData.datetime_scheduled_takeoff && !rawData.datetime_scheduled_landed) return false;
+
     const statusMatch = filtroStatus === 'todos' || voo.status === filtroStatus;
-    const buscaMatch = !filtroBusca || 
+    const buscaMatch = !filtroBusca ||
       voo.numero_voo?.toLowerCase().includes(filtroBusca.toLowerCase()) ||
       voo.fr24_id?.toLowerCase().includes(filtroBusca.toLowerCase());
     const aeroportoMatch = !filtroAeroporto || voo.airport_icao === filtroAeroporto;
@@ -612,6 +620,14 @@ export default function CacheVooFlightAwareList() {
                       return actualDist && circleDist ? `${actualDist}/${circleDist}` : actualDist || circleDist || '-';
                     }
                     if (col === 'raw_data.category') return rawData.category || '-';
+                    if (col === 'confirmado') {
+                      const isConfirmado = rawData.flight_ended && (rawData.datetime_takeoff || rawData.datetime_landed);
+                      return (
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${isConfirmado ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-500'}`}>
+                          {isConfirmado ? 'Sim' : 'Não'}
+                        </span>
+                      );
+                    }
                     if (col === 'raw_data.flight_ended') {
                       return (
                         <span className={rawData.flight_ended ? 'text-green-600' : 'text-slate-400'}>

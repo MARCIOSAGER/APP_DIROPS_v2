@@ -2805,7 +2805,7 @@ export default function Operacoes() {
                                   </TableCell>
                                   <TableCell className="text-xs hidden lg:table-cell">{voo.passageiros_total ?? 'N/A'}</TableCell>
                                   <TableCell className="text-xs hidden lg:table-cell">
-                                    {voo.created_by === 'FR24-Import' || voo.created_by === 'FlightAware-Import' ? (
+                                    {voo.created_by === 'FR24-Import' || voo.created_by === 'FlightAware-Import' || voo.created_by === 'FlightAware' ? (
                                       <Badge variant="outline" className="text-[10px] border-sky-400 text-sky-600 dark:text-sky-400">FA</Badge>
                                     ) : (
                                       <span className="text-slate-400 truncate max-w-[80px] inline-block">{voo.created_by || 'N/A'}</span>
