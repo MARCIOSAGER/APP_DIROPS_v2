@@ -166,8 +166,8 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
     if (!existing.posicao_stand && faStand) updates.posicao_stand = faStand;
     if (!existing.observacoes && obsLines.length > 0) updates.observacoes = obsLines.join(' | ');
     if (!existing.companhia_aerea) {
-      const airCode = flightData.operating_as || flightData.operator_iata || '';
-      if (airCode) updates.companhia_aerea = airCode.substring(0, 3);
+      const airCode = flightData.operating_as || flightData.operator_iata || 'ZZZ';
+      updates.companhia_aerea = airCode.substring(0, 3);
     }
 
     const merged = Object.keys(updates).length > 0;
@@ -203,10 +203,11 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
 
   // === Auto-create related records ===
 
-  // Airline ICAO code (3 letters)
+  // Airline ICAO code (3 letters) — default to ZZZ (Aviação Ligeira) if unknown
   const airlineIcao = flightData.operating_as
     || flightData.operator_iata
-    || (flightData.callsign || flightData.flight || '').substring(0, 3);
+    || (flightData.callsign || flightData.flight || '').substring(0, 3)
+    || 'ZZZ';
   const companhiaAerea = await ensureCompanhiaAerea(
     airlineIcao.substring(0, 3),
     flightData.operator_iata || ''
