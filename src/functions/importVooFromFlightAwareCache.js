@@ -242,13 +242,13 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
     ? (flightData.orig_icao || flightData.orig_iata || '')
     : (flightData.dest_icao_actual || flightData.dest_icao || flightData.dest_iata || '');
 
-  // Flight status
+  // Flight status — if we have actual times, the flight happened regardless of API status
   let statusVoo = 'Realizado';
   if (flightData.cancelled) statusVoo = 'Cancelado';
   else if (flightData.diverted) statusVoo = 'Desviado';
-  else if (flightData.flight_ended) statusVoo = 'Realizado';
-  else if (flightData.status?.toLowerCase().includes('en route')) statusVoo = 'Em Voo';
+  else if (horarioReal) statusVoo = 'Realizado';
   else if (flightData.status?.toLowerCase().includes('scheduled')) statusVoo = 'Agendado';
+  else if (flightData.status?.toLowerCase().includes('en route')) statusVoo = 'Em Voo';
 
   // Flight type
   let tipoVoo = 'Regular';
