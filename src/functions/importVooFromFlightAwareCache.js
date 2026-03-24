@@ -121,18 +121,84 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
 
   const numeroVoo = flightData.flight || flightData.callsign || '';
 
-  // Check for existing flight (duplicate detection)
+  // Check for existing flight (duplicate detection + merge)
   const { data: existingFlights } = await supabase
     .from('voo')
-    .select('id')
+    .select('id, horario_previsto, registo_aeronave, aeroporto_origem_destino, posicao_stand, observacoes, companhia_aerea')
     .eq('numero_voo', numeroVoo)
     .eq('data_operacao', dataOperacao)
     .eq('tipo_movimento', tipoMovimento)
     .eq('aeroporto_operacao', cacheVoo.airport_icao)
+    .is('deleted_at', null)
     .limit(1);
 
   if (existingFlights?.length > 0) {
-    return { success: true, vooId: existingFlights[0].id, message: 'Voo já existe no sistema', duplicado: true };
+    const existing = existingFlights[0];
+
+    // === Merge: fill empty fields from FlightAware data ===
+    const scheduledField = tipoMovimento === 'ARR' ? 'datetime_scheduled_landed' : 'datetime_scheduled_takeoff';
+    const actualField = tipoMovimento === 'ARR' ? 'datetime_landed' : 'datetime_takeoff';
+    const estimatedField = tipoMovimento === 'ARR' ? 'datetime_estimated_landed' : 'datetime_estimated_takeoff';
+
+    const faSta = flightData[scheduledField]
+      ? new Date(flightData[scheduledField]).toISOString().substring(11, 16) : null;
+    const faOrigemDest = tipoMovimento === 'ARR'
+      ? (flightData.orig_icao || flightData.orig_iata || '')
+      : (flightData.dest_icao_actual || flightData.dest_icao || flightData.dest_iata || '');
+    const faStand = tipoMovimento === 'ARR'
+      ? (flightData.gate_destination || '') : (flightData.gate_origin || '');
+
+    // Build observacoes from FlightAware extras
+    const obsLines = [];
+    if (flightData.gate_destination) obsLines.push(`Gate: ${flightData.gate_destination}`);
+    if (flightData.gate_origin) obsLines.push(`Gate Origem: ${flightData.gate_origin}`);
+    if (flightData.terminal_destination) obsLines.push(`Terminal: ${flightData.terminal_destination}`);
+    if (flightData.terminal_origin) obsLines.push(`Terminal Origem: ${flightData.terminal_origin}`);
+    if (flightData.runway_landed) obsLines.push(`Pista Aterragem: ${flightData.runway_landed}`);
+    if (flightData.runway_takeoff) obsLines.push(`Pista Descolagem: ${flightData.runway_takeoff}`);
+    if (flightData.codeshares_iata?.length > 0) obsLines.push(`Codeshares: ${flightData.codeshares_iata.join(', ')}`);
+    if (flightData.actual_distance) obsLines.push(`Distância: ${flightData.actual_distance} km`);
+
+    const updates = {};
+    if (!existing.horario_previsto && faSta) updates.horario_previsto = faSta;
+    if (!existing.registo_aeronave && flightData.reg) updates.registo_aeronave = flightData.reg;
+    if (!existing.aeroporto_origem_destino && faOrigemDest) updates.aeroporto_origem_destino = faOrigemDest;
+    if (!existing.posicao_stand && faStand) updates.posicao_stand = faStand;
+    if (!existing.observacoes && obsLines.length > 0) updates.observacoes = obsLines.join(' | ');
+    if (!existing.companhia_aerea) {
+      const airCode = flightData.operating_as || flightData.operator_iata || '';
+      if (airCode) updates.companhia_aerea = airCode.substring(0, 3);
+    }
+
+    const merged = Object.keys(updates).length > 0;
+    if (merged) {
+      updates.updated_date = new Date().toISOString();
+      await supabase.from('voo').update(updates).eq('id', existing.id);
+    }
+
+    // Also ensure related records exist
+    if (flightData.reg) {
+      const airlineIcao = flightData.operating_as || flightData.operator_iata || '';
+      if (airlineIcao) await ensureCompanhiaAerea(airlineIcao.substring(0, 3), flightData.operator_iata || '');
+      await ensureRegistoAeronave(flightData.reg, flightData.type, airlineIcao.substring(0, 3), empresaId);
+    }
+
+    // Update cache status
+    await supabase.from('cache_voo_f_r24').update({
+      status: merged ? 'actualizado' : 'importado',
+      updated_date: new Date().toISOString(),
+    }).eq('id', cacheVooId);
+
+    return {
+      success: true,
+      vooId: existing.id,
+      duplicado: true,
+      merged,
+      mergedFields: Object.keys(updates).filter(k => k !== 'updated_date'),
+      message: merged
+        ? `Voo actualizado com dados FlightAware (${Object.keys(updates).filter(k => k !== 'updated_date').join(', ')})`
+        : 'Voo já existe no sistema',
+    };
   }
 
   // === Auto-create related records ===

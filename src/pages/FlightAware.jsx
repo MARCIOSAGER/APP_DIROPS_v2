@@ -338,8 +338,9 @@ export default function FlightAwarePage() {
       });
 
       // Update local state
+      const newStatus = result.merged ? 'actualizado' : 'importado';
       setCachedFlights(prev => prev.map(f =>
-        f.id === cachedFlight.id ? { ...f, status: 'importado' } : f
+        f.id === cachedFlight.id ? { ...f, status: newStatus } : f
       ));
       setCacheStats(prev => prev ? {
         ...prev,
@@ -347,11 +348,14 @@ export default function FlightAwarePage() {
         pendentes: prev.pendentes - 1,
       } : prev);
 
-      if (result.duplicado) {
-        showAlert('success', `Voo ${raw.flight || cachedFlight.numero_voo} já existe no ATO. Cache atualizado.`);
+      const vooName = raw.flight || cachedFlight.numero_voo;
+      if (result.merged) {
+        showAlert('success', `Voo ${vooName} actualizado: ${result.mergedFields?.join(', ')}`);
+      } else if (result.duplicado) {
+        showAlert('success', `Voo ${vooName} já existe no ATO (sem alterações).`);
       } else {
         const linkedMsg = result.linked ? ' e vinculado' : '';
-        showAlert('success', `Voo ${raw.flight || cachedFlight.numero_voo} criado${linkedMsg} com sucesso.`);
+        showAlert('success', `Voo ${vooName} criado${linkedMsg} com sucesso.`);
       }
     } catch (err) {
       showAlert('error', `Erro ao criar voo: ${err.message}`);
