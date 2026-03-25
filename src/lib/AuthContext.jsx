@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { queryClientInstance } from '@/lib/query-client';
 
 const AuthContext = createContext();
 
@@ -119,11 +120,18 @@ export const AuthProvider = ({ children }) => {
           await loadUserProfile(session.user);
           setIsLoadingAuth(false);
         } else if (event === 'SIGNED_OUT') {
+          queryClientInstance.clear();
           setUser(null);
           setIsAuthenticated(false);
           setIsLoadingAuth(false);
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          await loadUserProfile(session.user);
+          // Guard: only reload profile if the user identity actually changed.
+          // TOKEN_REFRESHED fires every ~55 minutes (Supabase token lifetime).
+          // If the user.id is the same, the profile is unchanged — skip the DB call
+          // to prevent a ghost re-render mid-session.
+          if (session.user.id !== user?.id) {
+            await loadUserProfile(session.user);
+          }
         }
       }
     );
@@ -160,6 +168,7 @@ export const AuthProvider = ({ children }) => {
   }, [loadUserProfile]);
 
   const logout = async (shouldRedirect = true) => {
+    queryClientInstance.clear();
     setUser(null);
     setIsAuthenticated(false);
     await supabase.auth.signOut();
