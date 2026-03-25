@@ -92,7 +92,13 @@ Plans:
   1. Dashboard KPI layout uses consistent typography and spacing without misaligned cards or overlapping text
   2. Data tables in Operacoes, Faturacao, and other major pages are readable and usable on standard laptop screen widths
   3. Form modals (FormVoo, proforma, safety) have consistent field spacing, button placement, and error state styling
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Consolidate Dashboard KPI cards into single DashboardStats source of truth (UX-01)
+- [ ] 05-02-PLAN.md — Add min-w column constraints to VoosTable and Proforma table (UX-02)
+- [ ] 05-03-PLAN.md — Replace raw select with Radix Select in Safety form + standardize form button order (UX-03)
+
 **UI hint**: yes
 
 ## Progress
@@ -107,4 +113,4 @@ Note: Phase 4 depends only on Phase 1 (can start after Phase 1 completes, in par
 | 2. FlightAware UI | 1/2 | In Progress|  |
 | 3. FlightAware Automation | 0/1 | In Progress | - |
 | 4. Tech Debt | 4/4 | Complete   | 2026-03-25 |
-| 5. UX Polish | 0/? | Not started | - |
+| 5. UX Polish | 0/3 | Not started | - |
