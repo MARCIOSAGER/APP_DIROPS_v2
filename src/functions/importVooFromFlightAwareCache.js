@@ -91,7 +91,7 @@ async function ensureRegistoAeronave(registration, aircraftType, airlineIcao, em
   if (error) console.warn('Auto-create registo_aeronave failed:', error.message);
 }
 
-export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, userSelections, empresaId }) {
+export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, userSelections, empresaId, selectedFields, forceCreate }) {
   if (!cacheVooId) throw new Error('cacheVooId é obrigatório');
 
   const { data: cacheVoo, error } = await supabase
@@ -135,10 +135,10 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
     .is('deleted_at', null)
     .limit(1);
 
-  if (existingFlights?.length > 0) {
+  if (existingFlights?.length > 0 && !forceCreate) {
     const existing = existingFlights[0];
 
-    // === Merge: fill empty fields from FlightAware data ===
+    // === Build FA data snapshot ===
     const scheduledField = tipoMovimento === 'ARR' ? 'datetime_scheduled_landed' : 'datetime_scheduled_takeoff';
     const actualField = tipoMovimento === 'ARR' ? 'datetime_landed' : 'datetime_takeoff';
     const estimatedField = tipoMovimento === 'ARR' ? 'datetime_estimated_landed' : 'datetime_estimated_takeoff';
@@ -162,15 +162,34 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
     if (flightData.codeshares_iata?.length > 0) obsLines.push(`Codeshares: ${flightData.codeshares_iata.join(', ')}`);
     if (flightData.actual_distance) obsLines.push(`Distância: ${flightData.actual_distance} km`);
 
+    const airCode = flightData.operating_as || flightData.operator_iata || null;
+
+    const allPossible = {
+      horario_previsto: faSta,
+      registo_aeronave: regNormalized || null,
+      aeroporto_origem_destino: faOrigemDest || null,
+      posicao_stand: faStand || null,
+      observacoes: obsLines.length > 0 ? obsLines.join(' | ') : null,
+      companhia_aerea: airCode ? airCode.substring(0, 3) : null,
+    };
+
+    // If selectedFields NOT provided: return early with duplicate info for user to choose action
+    if (!selectedFields) {
+      return {
+        success: true,
+        duplicado: true,
+        existingVoo: existing,
+        faData: allPossible,
+        message: 'Voo duplicado encontrado — escolha uma acao',
+      };
+    }
+
+    // selectedFields IS provided: merge only chosen fields that are empty in existing voo
     const updates = {};
-    if (!existing.horario_previsto && faSta) updates.horario_previsto = faSta;
-    if (!existing.registo_aeronave && regNormalized) updates.registo_aeronave = regNormalized;
-    if (!existing.aeroporto_origem_destino && faOrigemDest) updates.aeroporto_origem_destino = faOrigemDest;
-    if (!existing.posicao_stand && faStand) updates.posicao_stand = faStand;
-    if (!existing.observacoes && obsLines.length > 0) updates.observacoes = obsLines.join(' | ');
-    if (!existing.companhia_aerea) {
-      const airCode = flightData.operating_as || flightData.operator_iata || 'ZZZ';
-      updates.companhia_aerea = airCode.substring(0, 3);
+    for (const field of selectedFields) {
+      if (allPossible[field] && !existing[field]) {
+        updates[field] = allPossible[field];
+      }
     }
 
     const merged = Object.keys(updates).length > 0;
@@ -188,7 +207,7 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
 
     // Update cache status
     await supabase.from('cache_voo_f_r24').update({
-      status: merged ? 'actualizado' : 'importado',
+      status: merged ? 'atualizado' : 'importado',
       updated_date: new Date().toISOString(),
     }).eq('id', cacheVooId);
 
@@ -199,7 +218,7 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
       merged,
       mergedFields: Object.keys(updates).filter(k => k !== 'updated_date'),
       message: merged
-        ? `Voo actualizado com dados FlightAware (${Object.keys(updates).filter(k => k !== 'updated_date').join(', ')})`
+        ? `Voo atualizado com dados FlightAware (${Object.keys(updates).filter(k => k !== 'updated_date').join(', ')})`
         : 'Voo já existe no sistema',
     };
   }

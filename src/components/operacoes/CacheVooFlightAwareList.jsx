@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { RefreshCw, Trash2, Eye, ChevronDown, ChevronUp, X, Filter, GripVertical, FileSpreadsheet } from 'lucide-react';
 import { CacheVooFlightAware } from '@/entities/CacheVooFlightAware';
 import VooFlightAwareReviewModal from './VooFlightAwareReviewModal';
+import VooFlightAwareMergeModal from './VooFlightAwareMergeModal';
+import { importVooFromFlightAwareCache } from '@/functions/importVooFromFlightAwareCache';
 import AlertModal from '@/components/shared/AlertModal';
 import SuccessModal from '@/components/shared/SuccessModal';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -36,6 +38,8 @@ export default function CacheVooFlightAwareList() {
   const [isExpanded, setIsExpanded] = useState(true);
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '', action: null });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeData, setMergeData] = useState(null);
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
   const [columnOrder, setColumnOrder] = useState([
@@ -227,6 +231,55 @@ export default function CacheVooFlightAwareList() {
     carregarDados();
   };
 
+  const handleDuplicateAction = async (action, duplicateInfo) => {
+    if (action === 'merge') {
+      // Close review modal, open merge modal
+      setShowReviewModal(false);
+      setMergeData({
+        existingVoo: duplicateInfo.existingVoo || duplicateInfo.dadosAPI,
+        faData: duplicateInfo.faData || {},
+        cacheVooId: selectedCacheVoo,
+      });
+      setShowMergeModal(true);
+    } else if (action === 'create') {
+      // Force create new flight ignoring duplicate
+      try {
+        await importVooFromFlightAwareCache({
+          cacheVooId: selectedCacheVoo,
+          forceCreate: true,
+        });
+        setShowReviewModal(false);
+        setSelectedCacheVoo(null);
+        setSuccessInfo({
+          isOpen: true,
+          title: 'Voo Criado',
+          message: 'Novo voo criado com sucesso (duplicado ignorado).',
+        });
+        carregarDados();
+      } catch (err) {
+        console.error('Erro ao criar voo:', err);
+        setAlertInfo({
+          isOpen: true,
+          type: 'error',
+          title: 'Erro',
+          message: 'Erro ao criar o voo: ' + (err.message || 'Erro desconhecido'),
+        });
+      }
+    }
+  };
+
+  const handleMergeComplete = (result) => {
+    setShowMergeModal(false);
+    setMergeData(null);
+    setSelectedCacheVoo(null);
+    setSuccessInfo({
+      isOpen: true,
+      title: 'Voo Atualizado',
+      message: result.message || `Campos atualizados: ${result.mergedFields?.join(', ') || 'nenhum'}`,
+    });
+    carregarDados();
+  };
+
   const handleSort = (column) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -352,6 +405,20 @@ export default function CacheVooFlightAwareList() {
             setSelectedCacheVoo(null);
           }}
           onConfirmImport={handleConfirmImport}
+          onDuplicateAction={handleDuplicateAction}
+        />
+      )}
+
+      {showMergeModal && mergeData && (
+        <VooFlightAwareMergeModal
+          existingVoo={mergeData.existingVoo}
+          faData={mergeData.faData}
+          cacheVooId={mergeData.cacheVooId}
+          onClose={() => {
+            setShowMergeModal(false);
+            setMergeData(null);
+          }}
+          onMergeComplete={handleMergeComplete}
         />
       )}
 
