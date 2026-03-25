@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Performance
-status: roadmap created — ready to plan Phase 6
-stopped_at: Roadmap created for v1.2 (Phases 6-10)
-last_updated: "2026-03-25T00:00:00.000Z"
+status: Ready to execute
+stopped_at: Completed 06-02-PLAN.md — CACHE-01 tenant query key isolation in useStaticData.jsx
+last_updated: "2026-03-25T18:07:19.351Z"
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
 ---
 
 # State: DIROPS-SGA
@@ -19,20 +19,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Operations teams can manage flights end-to-end in a single unified system.
-**Current focus:** Phase 06 — cache-foundation (v1.2 Performance)
+**Current focus:** Phase 06 — cache-foundation
 
 ## Current Position
 
-Phase: 6 of 10 (Cache Foundation)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-03-25 — v1.2 roadmap created (Phases 6-10)
-
-Progress: [░░░░░░░░░░] 0% (v1.2)
+Phase: 06 (cache-foundation) — EXECUTING
+Plan: 2 of 3
 
 ## Performance Metrics
 
 **Velocity (v1.1 reference):**
+
 - Total plans completed (v1.1): 12
 - Average duration: ~280s/plan
 - Total execution time: ~56 min
@@ -44,6 +41,7 @@ Progress: [░░░░░░░░░░] 0% (v1.2)
 | - | - | - | - |
 
 *Updated after each plan completion*
+| Phase 06-cache-foundation P02 | 6 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -53,6 +51,7 @@ Progress: [░░░░░░░░░░] 0% (v1.2)
 - v1.2 migration order: Phase 6 (safe foundation) → Phase 7 (query efficiency) → Phase 8 (high-traffic pages Operacoes/Home) → Phase 9 (remaining pages + resilience) → Phase 10 (DB indexes after query patterns stable)
 - Operacoes.jsx risk: Has 3-attempt custom retry logic in loadData(); Phase 8 planning must audit all mutation side effects before migrating
 - DB indexes: Phase 10 requires EXPLAIN ANALYZE before writing any migration — actual slow queries may differ from expected patterns
+- [Phase 06-cache-foundation]: Query key isolation only (no queryFn filter): empresa_id added to key only — queryFn bodies unchanged. Supabase RLS handles row-level isolation; key change prevents cache collisions between tenants in useStaticData hooks
 
 ### Pending Todos
 
@@ -65,6 +64,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25
-Stopped at: v1.2 roadmap written — next step is /gsd:plan-phase 6
+Last session: 2026-03-25T18:07:19.335Z
+Stopped at: Completed 06-02-PLAN.md — CACHE-01 tenant query key isolation in useStaticData.jsx
 Resume file: None

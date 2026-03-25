@@ -5,7 +5,7 @@
 
 ## Cache Correctness
 
-- [ ] **CACHE-01**: Cache keys include empresa_id so tenant switching shows correct data immediately
+- [x] **CACHE-01**: Cache keys include empresa_id so tenant switching shows correct data immediately
 - [ ] **CACHE-02**: Query cache is cleared on logout so no cross-user data leakage occurs
 - [ ] **CACHE-03**: Pages read user data from AuthContext instead of calling User.me() per page
 
