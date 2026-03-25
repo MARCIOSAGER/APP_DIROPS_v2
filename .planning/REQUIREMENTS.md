@@ -63,26 +63,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | — | Pending |
-| BUG-02 | — | Pending |
-| FA-01 | — | Pending |
-| FA-02 | — | Pending |
-| FA-03 | — | Pending |
-| FA-04 | — | Pending |
-| FA-05 | — | Pending |
-| FA-06 | — | Pending |
-| FA-07 | — | Pending |
-| DEBT-01 | — | Pending |
-| DEBT-02 | — | Pending |
-| UX-01 | — | Pending |
-| UX-02 | — | Pending |
-| UX-03 | — | Pending |
+| BUG-01 | Phase 1 | Pending |
+| BUG-02 | Phase 1 | Pending |
+| FA-01 | Phase 2 | Pending |
+| FA-02 | Phase 2 | Pending |
+| FA-03 | Phase 2 | Pending |
+| FA-04 | Phase 2 | Pending |
+| FA-05 | Phase 3 | Pending |
+| FA-06 | Phase 2 | Pending |
+| FA-07 | Phase 2 | Pending |
+| DEBT-01 | Phase 4 | Pending |
+| DEBT-02 | Phase 4 | Pending |
+| UX-01 | Phase 5 | Pending |
+| UX-02 | Phase 5 | Pending |
+| UX-03 | Phase 5 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14
+- Mapped to phases: 14
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-25*
-*Last updated: 2026-03-25 after initial definition*
+*Last updated: 2026-03-25 — traceability populated after roadmap creation*
