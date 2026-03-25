@@ -63,6 +63,7 @@ export default function DashboardInterno() {
   const [calculosTarifa, setCalculosTarifa] = useState([]);
   const [ordensServico, setOrdensServico] = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
+  const [serverStats, setServerStats] = useState(null);
   const [previousPeriodStats, setPreviousPeriodStats] = useState(null);
   const [selectedAeroporto, setSelectedAeroporto] = useState("todos");
   const [selectedPeriodo, setSelectedPeriodo] = useState("30");
@@ -154,13 +155,21 @@ export default function DashboardInterno() {
     try {
       const empresaId = effectiveEmpresaId || currentUser.empresa_id;
       const params = { aeroporto: selectedAeroporto, periodo: selectedPeriodo, empresaId };
-      const response = await getDashboardStats(params);
+      const [response, rpcResult] = await Promise.all([
+        getDashboardStats(params),
+        supabase.rpc('get_dashboard_stats', {
+          p_empresa_id: empresaId || null,
+          p_dias: parseInt(selectedPeriodo) || 30,
+        }).then(res => res.data).catch(err => { console.error('RPC get_dashboard_stats error:', err); return null; }),
+      ]);
       setDashboardStats(response.data);
       setPreviousPeriodStats(response.previousData);
+      setServerStats(rpcResult);
     } catch (error) {
       console.error('❌ Erro ao carregar estatísticas:', error);
       setError(error.message || t('common.error'));
       setDashboardStats(null);
+      setServerStats(null);
       setPreviousPeriodStats(null);
     } finally {
       setIsLoadingStats(false);
@@ -279,11 +288,11 @@ export default function DashboardInterno() {
   const trends = useMemo(() => {
     if (!dashboardStats || !previousPeriodStats) return {};
     return {
-      voos: calcTrend(dashboardStats.totalVoos, previousPeriodStats.totalVoos),
-      pontualidade: calcTrend(dashboardStats.taxaPontualidade, previousPeriodStats.taxaPontualidade),
-      passageiros: calcTrend(dashboardStats.passageirosPeriodo, previousPeriodStats.passageirosPeriodo),
+      voos: calcTrend(serverStats?.total_voos ?? dashboardStats.totalVoos, previousPeriodStats.totalVoos),
+      pontualidade: calcTrend(serverStats?.pontualidade ?? dashboardStats.taxaPontualidade, previousPeriodStats.taxaPontualidade),
+      passageiros: calcTrend(serverStats?.total_passageiros ?? dashboardStats.passageirosPeriodo, previousPeriodStats.passageirosPeriodo),
     };
-  }, [dashboardStats, previousPeriodStats, calcTrend]);
+  }, [dashboardStats, previousPeriodStats, serverStats, calcTrend]);
 
   // Top 10 Companhias (for single-airport enterprises like ATO)
   const [receitaPorCompanhia, setReceitaPorCompanhia] = useState(new Map());
@@ -488,6 +497,7 @@ export default function DashboardInterno() {
               inspecoes={filteredInspecoes}
               calculosTarifa={filteredCalculosTarifa}
               isLoading={isLoadingStats}
+              serverStats={serverStats}
               dashboardStats={dashboardStats}
               trends={trends}
             />
