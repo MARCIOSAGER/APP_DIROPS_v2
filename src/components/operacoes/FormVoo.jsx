@@ -28,6 +28,67 @@ import { FormRegisto } from './config/RegistosAeronaveConfig';
 // Intervalo de tolerância para considerar voos duplicados (em minutos)
 const DUPLICATE_TOLERANCE_MINUTES = 15;
 
+// Pure filter helper — exported for testability (BUG-02 fix)
+export function filterVoosArr(voos, formData, voosLigados, vooInicial) {
+  if (formData.tipo_movimento !== 'DEP') return [];
+  if (!formData.data_operacao) return [];
+
+  const depDate = new Date(formData.data_operacao);
+  const depTime = formData.horario_real || formData.horario_previsto;
+
+  let filteredVoos = voos.filter((voo) => {
+    if (voo.tipo_movimento !== 'ARR' || voo.status === 'Cancelado') {
+      return false;
+    }
+
+    const arrDate = new Date(voo.data_operacao);
+
+    // Calcular diferença em dias
+    const diffDays = Math.floor((depDate.getTime() - arrDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Voo ARR deve ser anterior ou no mesmo dia do DEP (sem limite de dias)
+    if (diffDays < 0) {
+      return false;
+    }
+
+    // Se for no mesmo dia E tiver horário DEP definido, ARR deve ser antes
+    if (diffDays === 0 && depTime) {
+      const arrTime = voo.horario_real || voo.horario_previsto;
+      if (arrTime >= depTime) {
+        return false;
+      }
+    }
+
+    // Filtrar por mesmo registo — apenas quando o registo do DEP for conhecido
+    // (condicional: quando vazio, todos os ARR elegíveis por data ficam visíveis — correto para novo DEP)
+    if (formData.registo_aeronave && voo.registo_aeronave !== formData.registo_aeronave) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Excluir voos já ligados (exceto se for edição)
+  const currentLinkedArrId = vooInicial?.id
+    ? voosLigados.find((vl) => vl.id_voo_dep === vooInicial.id)?.id_voo_arr
+    : null;
+
+  const voosJaLigadosExcludingCurrent = new Set(
+    voosLigados
+      .filter((vl) => vl.id_voo_dep !== vooInicial?.id)
+      .map((vl) => vl.id_voo_arr)
+  );
+
+  return filteredVoos
+    .filter((voo) => !voosJaLigadosExcludingCurrent.has(voo.id) || voo.id === currentLinkedArrId)
+    .sort((a, b) => {
+      // Ordenar por data e hora, mais recentes primeiro
+      const dateA = `${a.data_operacao}T${a.horario_real || a.horario_previsto}`;
+      const dateB = `${b.data_operacao}T${b.horario_real || b.horario_previsto}`;
+      return dateB.localeCompare(dateA);
+    });
+}
+
 // Cache de companhias (módulo-level, carregado uma vez)
 let _companhiasCache = null;
 let _companhiasCacheLoading = null;
@@ -354,60 +415,11 @@ export default function FormVoo({
     setMilitaryWarning(null); // Clear military warning on form load/reset
   }, [vooInicial, isOpen, tipoMovimento, voosLigados, aeroportosAcesso]);
 
-  // Buscar voos ARR disponíveis para vincular
-  const voosArrDisponíveis = useMemo(() => {
-    if (formData.tipo_movimento !== 'DEP') return [];
-    if (!formData.data_operacao) return [];
-
-    const depDate = new Date(formData.data_operacao);
-    const depTime = formData.horario_real || formData.horario_previsto;
-
-    let filteredVoos = voos.filter((voo) => {
-      if (voo.tipo_movimento !== 'ARR' || voo.status === 'Cancelado') {
-        return false;
-      }
-
-      const arrDate = new Date(voo.data_operacao);
-      
-      // Calcular diferença em dias
-      const diffDays = Math.floor((depDate.getTime() - arrDate.getTime()) / (1000 * 60 * 60 * 24));
-      
-      // Voo ARR deve ser anterior ou no mesmo dia do DEP (sem limite de dias)
-      if (diffDays < 0) {
-        return false;
-      }
-
-      // Se for no mesmo dia E tiver horário DEP definido, ARR deve ser antes
-      if (diffDays === 0 && depTime) {
-        const arrTime = voo.horario_real || voo.horario_previsto;
-        if (arrTime >= depTime) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    // Excluir voos já ligados (exceto se for edição)
-    const currentLinkedArrId = vooInicial?.id ?
-      voosLigados.find((vl) => vl.id_voo_dep === vooInicial.id)?.id_voo_arr :
-      null;
-
-    const voosJaLigadosExcludingCurrent = new Set(
-      voosLigados
-        .filter((vl) => vl.id_voo_dep !== vooInicial?.id)
-        .map((vl) => vl.id_voo_arr)
-    );
-
-    return filteredVoos
-      .filter((voo) => !voosJaLigadosExcludingCurrent.has(voo.id) || voo.id === currentLinkedArrId)
-      .sort((a, b) => {
-        // Ordenar por data e hora, mais recentes primeiro
-        const dateA = `${a.data_operacao}T${a.horario_real || a.horario_previsto}`;
-        const dateB = `${b.data_operacao}T${b.horario_real || b.horario_previsto}`;
-        return dateB.localeCompare(dateA); 
-      });
-  }, [voos, formData.tipo_movimento, formData.data_operacao, formData.horario_real, formData.horario_previsto, voosLigados, vooInicial]);
+  // Buscar voos ARR disponíveis para vincular (BUG-02: filtro por registo de aeronave)
+  const voosArrDisponíveis = useMemo(
+    () => filterVoosArr(voos, formData, voosLigados, vooInicial),
+    [voos, formData.tipo_movimento, formData.data_operacao, formData.horario_real, formData.horario_previsto, formData.registo_aeronave, voosLigados, vooInicial]
+  );
 
   // Calcular horário mínimo apenas para DEP (baseado no voo ARR ligado)
   const horarioMinimoDep = useMemo(() => {
