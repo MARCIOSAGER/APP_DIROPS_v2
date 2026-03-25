@@ -691,7 +691,7 @@ export default function FlightAwarePage() {
       while (true) {
         const { data: batch } = await supabase
           .from('voo')
-          .select('id, numero_voo, data_operacao, tipo_movimento, registo_aeronave, aeroporto_operacao')
+          .select('id, numero_voo, data_operacao, tipo_movimento, registo_aeronave, aeroporto_operacao, horario_previsto, horario_real')
           .eq('empresa_id', empresaId)
           .eq('aeroporto_operacao', airportIcao)
           .is('deleted_at', null)
@@ -757,12 +757,20 @@ export default function FlightAwarePage() {
           falta++;
         }
 
+        // Extract FA scheduled/actual times
+        const faTimeField = tipo === 'ARR'
+          ? (raw.datetime_landed || raw.datetime_estimated_landed || raw.datetime_scheduled_landed)
+          : (raw.datetime_takeoff || raw.datetime_estimated_takeoff || raw.datetime_scheduled_takeoff);
+        const faTime = faTimeField ? extractHHMM(faTimeField) : '';
+
         rows.push({
           ...f,
           tipo,
           faReg,
           faRegOriginal: raw.reg || '',
+          faTime,
           atoReg,
+          atoTime: atoVoo?.horario_real || atoVoo?.horario_previsto || '',
           atoVooId: atoVoo?.id,
           compareStatus: status,
         });
@@ -1170,6 +1178,8 @@ export default function FlightAwarePage() {
                         <th className="text-left p-2 font-medium">Voo</th>
                         <th className="text-left p-2 font-medium">Data</th>
                         <th className="text-left p-2 font-medium">Tipo</th>
+                        <th className="text-left p-2 font-medium">Hora FA</th>
+                        <th className="text-left p-2 font-medium">Hora ATO</th>
                         <th className="text-left p-2 font-medium">Reg FA</th>
                         <th className="text-left p-2 font-medium">Reg ATO</th>
                         <th className="text-left p-2 font-medium">Status</th>
@@ -1198,6 +1208,8 @@ export default function FlightAwarePage() {
                                 {row.tipo}
                               </span>
                             </td>
+                            <td className="p-2 font-mono text-slate-500">{row.faTime || '\u2014'}</td>
+                            <td className="p-2 font-mono text-slate-500">{row.atoTime || '\u2014'}</td>
                             <td className="p-2 font-mono">{row.faReg || '\u2014'}</td>
                             <td className="p-2 font-mono">{row.atoReg || '\u2014'}</td>
                             <td className="p-2">
