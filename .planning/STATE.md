@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Performance
 status: Phase complete — ready for verification
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-03-25T19:28:11.961Z"
+stopped_at: Completed 07-03-PLAN.md
+last_updated: "2026-03-25T19:29:10.260Z"
 progress:
   total_phases: 5
   completed_phases: 2
@@ -46,6 +46,7 @@ Plan: 3 of 3
 | Phase 06 P03 | 35 | 1 tasks | 23 files |
 | Phase 07-query-optimization P01 | 10 | 1 tasks | 1 files |
 | Phase 07-query-optimization P02 | 689 | 1 tasks | 1 files |
+| Phase 07-query-optimization P03 | 12 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,7 @@ Plan: 3 of 3
 - [Phase 06]: ensureUserProfilesExist called inline at component level (not in loadData) so normalized profile is synchronously available throughout component lifecycle
 - [Phase 07-query-optimization]: Default select='*' on list()/filter() keeps all existing callers backward compatible while enabling opt-in column projection
 - [Phase 07-query-optimization]: Response.previousData used for trend comparison — Edge Function already returns previous-period stats in same response, eliminating the need for a second getDashboardStats call
+- [Phase 07-query-optimization]: Impostos use filterTarifasByEmpresa same as tarifas — consistent empresa_id scoping via sync effects
 
 ### Pending Todos
 
@@ -74,6 +76,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T19:27:56.013Z
-Stopped at: Completed 07-02-PLAN.md
+Last session: 2026-03-25T19:29:10.246Z
+Stopped at: Completed 07-03-PLAN.md
 Resume file: None
