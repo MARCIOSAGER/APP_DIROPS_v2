@@ -31,27 +31,19 @@ const TrendIndicator = ({ trend }) => {
 export default function DashboardStats({ voos, ocorrencias, inspecoes, calculosTarifa, isLoading, serverStats, dashboardStats, trends }) {
   const { t } = useI18n();
   const calculateStats = () => {
-    // Use server stats if available (accurate, no pagination limit)
+    // Use server stats if available (accurate, all aggregations done in PostgreSQL)
     if (serverStats) {
-      const safetyIncidents = dashboardStats?.ocorrenciasAbertas ?? (ocorrencias ? ocorrencias.filter(o => o.status === 'aberta').length : 0);
-      const inspecoesPendentes = dashboardStats?.inspecoesPendentes ?? (inspecoes ? inspecoes.filter(i => i.status === 'em_andamento').length : 0);
-      let revenue = 0;
-      if (calculosTarifa && calculosTarifa.length > 0) {
-        revenue = calculosTarifa
-          .filter(ct => ct.tipo_tarifa !== 'Voo Isento de Tarifas')
-          .reduce((sum, ct) => sum + (ct.total_tarifa || 0), 0);
-      }
       return {
-        movements: serverStats.total_voos || 0,
-        punctuality: serverStats.pontualidade || 0,
-        revenue,
-        safetyIncidents,
-        chegadasHoje: serverStats.chegadas_hoje || 0,
-        partidasHoje: serverStats.partidas_hoje || 0,
-        passageirosHoje: serverStats.total_passageiros || 0,
-        inspecoesPendentes,
-        ligados: serverStats.ligados || 0,
-        semLink: serverStats.sem_link || 0,
+        movements: serverStats.totalVoos || 0,
+        punctuality: serverStats.taxaPontualidade || 0,
+        revenue: serverStats.totalTarifas || 0,
+        safetyIncidents: serverStats.ocorrenciasAbertas || 0,
+        chegadasHoje: serverStats.chegadasHoje || 0,
+        partidasHoje: serverStats.partidasHoje || 0,
+        passageirosHoje: serverStats.passageirosPeriodo || 0,
+        inspecoesPendentes: serverStats.inspecoesPendentes || 0,
+        ligados: serverStats.voosUnicosLigados || 0,
+        semLink: serverStats.voosSemLink || 0,
       };
     }
 
