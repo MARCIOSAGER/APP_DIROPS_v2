@@ -1326,7 +1326,7 @@ export default function FormVoo({
                   disabled={aeroportosAcesso.length === 1 && !vooInicial} />
 
                   {aeroportosAcesso.length === 0 &&
-                <p className="text-xs text-red-500">
+                <p className="text-sm text-red-500">
                       ⚠️ {t('formVoo.semAcessoAeroporto')}
                     </p>
                 }
@@ -1864,7 +1864,7 @@ export default function FormVoo({
               {t('formVoo.cancelar')}
             </Button>
           </DialogClose>
-          <Button onClick={handleSubmit} disabled={isLoading || isSubmitting} className="bg-[#169c41] hover:bg-[#128a36] text-white">
+          <Button onClick={handleSubmit} disabled={isLoading || isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
             {isLoading || isSubmitting ? t('formVoo.salvando') : vooInicial ? t('formVoo.atualizarVoo') : t('formVoo.criarVoo')}
           </Button>
         </DialogFooter>
