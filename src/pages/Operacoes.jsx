@@ -28,6 +28,10 @@ import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
 import { useAeroportos, useCompanhias, useAeronaves, useModelosAeronave, useTarifasPouso, useTarifasPermanencia, useOutrasTarifas, useImpostos } from '@/components/lib/useStaticData';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useAuth } from '@/lib/AuthContext';
+import { useVoos } from '@/hooks/useVoos';
+import { useVoosLigados } from '@/hooks/useVoosLigados';
+import { useCalculosTarifa, fetchCalculoMap } from '@/hooks/useCalculosTarifa';
+import { useQueryClient } from '@tanstack/react-query';
 
 import VoosTable from '../components/operacoes/VoosTable';
 import FormVoo from '../components/operacoes/FormVoo';
@@ -63,26 +67,6 @@ const formatCurrency = (value, currency = 'AOA') => {
   return new Intl.NumberFormat('pt-AO', { style: 'currency', currency: currency }).format(value || 0);
 };
 
-// Helper: fetch lightweight calculo map (paginated, bypasses PostgREST 1000 row limit)
-async function fetchCalculoMap(empresaId) {
-  const PAGE = 500;
-  let all = [];
-  let from = 0;
-  while (true) {
-    const { data, error } = await supabase
-      .from('calculo_tarifa')
-      .select('voo_id,voo_ligado_id,total_tarifa_usd,total_tarifa,tipo_tarifa,taxa_cambio_usd_aoa')
-      .eq('empresa_id', empresaId)
-      .range(from, from + PAGE - 1);
-    if (error) { console.error('Calculo map error:', error); break; }
-    if (!data || data.length === 0) break;
-    all = all.concat(data);
-    if (data.length < PAGE) break;
-    from += PAGE;
-  }
-  return all;
-}
-
 // Helper: filtra tarifas por empresa_id
 function filterTarifasByEmpresa(tarifas, empresaId) {
   if (!empresaId) return tarifas;
@@ -97,15 +81,12 @@ export default function Operacoes() {
    const { user } = useAuth();
    const effectiveEmpresaIdRef = useRef(effectiveEmpresaId);
    effectiveEmpresaIdRef.current = effectiveEmpresaId;
-   const [voos, setVoos] = useState([]);
-   const [voosLigados, setVoosLigados] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [todosAeroportos, setTodosAeroportos] = useState([]);
   const [companhias, setCompanhias] = useState([]);
   const [aeronaves, setAeronaves] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [modelosAeronave, setModelosAeronave] = useState([]);
-  const [calculosTarifa, setCalculosTarifa] = useState([]);
   const [tarifasPouso, setTarifasPouso] = useState([]);
   const [tarifasPermanencia, setTarifasPermanencia] = useState([]);
   const [outrasTarifas, setOutrasTarifas] = useState([]);
@@ -225,72 +206,31 @@ export default function Operacoes() {
   const { data: outrasTarifasCache = [], isLoading: isLoadingOutrasTarifas } = useOutrasTarifas();
   const { data: impostosCache = [], isLoading: isLoadingImpostos } = useImpostos();
 
-  const loadData = useCallback(async (tentativa = 1) => {
-    const MAX_TENTATIVAS = 3;
+  const empresaId = effectiveEmpresaId || user?.empresa_id;
+  const queryClient = useQueryClient();
+
+  const { data: voos = [], isLoading: isLoadingVoos } = useVoos({ empresaId });
+  const { data: voosLigados = [], isLoading: isLoadingVoosLigados } = useVoosLigados({ empresaId });
+  const { data: calculosTarifa = [], isLoading: isLoadingCalculos } = useCalculosTarifa({ empresaId });
+
+  const isLoadingAll = isLoading || isLoadingVoos || isLoadingVoosLigados || isLoadingCalculos;
+
+  const loadData = useCallback(async () => {
+    if (hasUserProfile(user, 'gestor_empresa')) {
+      window.location.href = createPageUrl('Credenciamento');
+      return;
+    }
     setIsLoading(true);
     try {
-      if (hasUserProfile(user, 'gestor_empresa')) {
-        window.location.href = createPageUrl('Credenciamento');
-        return;
-      }
-
-      // Server-side filters: empresa_id + deleted_at
-      const empId = effectiveEmpresaIdRef.current || user.empresa_id;
-      const vooFilters = { deleted_at: { $is: null } };
-      if (empId) vooFilters.empresa_id = empId;
-      const vlFilters = empId ? { empresa_id: empId } : {};
-
-      // Load data: Voos + VooLigados via entity (paginated), CalculosTarifa via lightweight RPC
-      const [
-        voosResult,
-        voosLigadosResult,
-        calculosMapResult,
-        configResult
-      ] = await Promise.allSettled([
-        Voo.filter(vooFilters, '-data_operacao', 1000),
-        VooLigado.filter(vlFilters, '-created_date'),
-        empId
-          ? fetchCalculoMap(empId)
-          : Promise.resolve([]),
-        ConfiguracaoSistema.list().catch(() => [])
-      ]);
-
-      const voosData = voosResult.status === 'fulfilled' ? voosResult.value : [];
-      const voosLigadosData = voosLigadosResult.status === 'fulfilled' ? voosLigadosResult.value : [];
-
-      // Calculo map — direct table query returns exact column names, no mapping needed
-      const calculosTarifaData = calculosMapResult.status === 'fulfilled' ? calculosMapResult.value : [];
-      const configData = configResult.status === 'fulfilled' ? configResult.value : [];
-
+      const configData = await ConfiguracaoSistema.list().catch(() => []);
       const configuracaoSistemaData = configData.length > 0 ? configData[0] : { taxa_cambio_usd_aoa: 850 };
-
-      // Data already filtered server-side — no client-side filtering needed
-      setVoos(voosData);
-      setVoosLigados(voosLigadosData);
-      setCalculosTarifa(calculosTarifaData);
       setConfiguracaoSistema(configuracaoSistemaData);
-
-      setIsLoading(false);
     } catch (error) {
-      console.error(`❌ Erro ao carregar dados (tentativa ${tentativa}):`, error);
-
-      if (tentativa < MAX_TENTATIVAS && !error.message?.includes('You must be logged in') && error.response?.status !== 403) {
-        const tempoEspera = tentativa * 2000;
-        setTimeout(() => { loadData(tentativa + 1); }, tempoEspera);
-        return;
-      }
-
-      if (error.message?.includes('You must be logged in')) {
-        alert(t('operacoes.sessao_expirada'));
-        await User.login();
-      } else if (error.response?.status === 403) {
-        alert(t('operacoes.acesso_negado'));
-        window.location.href = createPageUrl('Home');
-      }
-
+      console.error('Erro ao carregar configuracao:', error);
+    } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const refreshSpecificData = async (dataTypes = ['voos', 'voosLigados', 'calculosTarifa']) => {
     try {
@@ -497,12 +437,12 @@ export default function Operacoes() {
       } else {
         data = await Voo.filter(query, '-data_operacao');
       }
-      setVoos(data);
+      queryClient.setQueryData(['voos', empresaId], data);
       // Reload voosLigados so statusVinculacao filter works correctly
       const empIdVl = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
       if (empIdVl) {
         const vlData = await VooLigado.filter({ empresa_id: empId }, '-created_date');
-        setVoosLigados(vlData);
+        queryClient.setQueryData(['voos-ligados', empresaId], vlData);
       }
     } catch (error) {
       console.error('Erro ao filtrar voos:', error);
@@ -534,7 +474,7 @@ export default function Operacoes() {
       }
 
       const voosData = await Voo.filter(vooQuery, '-data_operacao');
-      setVoos(voosData);
+      queryClient.setQueryData(['voos', empresaId], voosData);
 
       // 2. Reload voo_ligados + calculos
       const vlFilters = empId ? { empresa_id: empId } : {};
@@ -545,8 +485,8 @@ export default function Operacoes() {
           : Promise.resolve([]),
       ]);
 
-      setVoosLigados(vlData);
-      setCalculosTarifa(calculosData);
+      queryClient.setQueryData(['voos-ligados', empresaId], vlData);
+      queryClient.setQueryData(['calculos-tarifa', empresaId], calculosData);
     } catch (error) {
       console.error('❌ Erro ao buscar voos ligados:', error);
     } finally {
@@ -2299,8 +2239,8 @@ export default function Operacoes() {
                   <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">{t('operacoes.gestao_voos_desc')}</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  <Button variant="outline" onClick={loadData} disabled={isLoading} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
-                    <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  <Button variant="outline" onClick={loadData} disabled={isLoadingAll} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
+                    <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoadingAll ? 'animate-spin' : ''}`} />
                     <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.atualizar')}</span>
                   </Button>
                   <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
@@ -2495,7 +2435,7 @@ export default function Operacoes() {
                     <VoosTable
                       voos={voosFiltrados}
                       voosLigados={voosLigados}
-                      isLoading={isLoading}
+                      isLoading={isLoadingAll}
                       onEditVoo={(voo) => handleOpenForm(voo.tipo_movimento, voo)}
                       onCancelarVoo={handleCancelarVoo}
                       onExcluirVoo={handleExcluirVoo}
@@ -2527,8 +2467,8 @@ export default function Operacoes() {
                   </CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  <Button variant="outline" onClick={loadData} disabled={isLoading} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
-                    <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  <Button variant="outline" onClick={loadData} disabled={isLoadingAll} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
+                    <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoadingAll ? 'animate-spin' : ''}`} />
                     <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.atualizar')}</span>
                   </Button>
                   <Button variant="outline" onClick={handleExportLinkedFlightsCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
@@ -2557,7 +2497,7 @@ export default function Operacoes() {
                   </div>
                 )}
 
-                {voosLigadosFiltrados.length === 0 && !isLoading ? (
+                {voosLigadosFiltrados.length === 0 && !isLoadingAll ? (
                   <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                     <p className="text-sm sm:text-base">{t('operacoes.nenhum_voo_ligado')}</p>
                   </div>
@@ -2568,7 +2508,7 @@ export default function Operacoes() {
                         voosLigados={voosLigadosFiltrados}
                         voos={voos}
                         calculosTarifa={calculosTarifa}
-                        isLoading={isLoading}
+                        isLoading={isLoadingAll}
                         onShowTariffDetails={handleShowTariffDetails}
                         onExportPDF={handleExportTariffPDF}
                         onGerarProforma={handleGerarProforma}
@@ -2578,8 +2518,8 @@ export default function Operacoes() {
                             // Buscar apenas o cálculo atualizado em vez de recarregar tudo
                             const updatedCalculo = await CalculoTarifa.filter({ voo_ligado_id: { $eq: vooLigado.id } });
                             if (updatedCalculo.length > 0) {
-                              setCalculosTarifa(prev => {
-                                const withoutOld = prev.filter(ct => ct.voo_ligado_id !== vooLigado.id);
+                              queryClient.setQueryData(['calculos-tarifa', empresaId], prev => {
+                                const withoutOld = (prev || []).filter(ct => ct.voo_ligado_id !== vooLigado.id);
                                 return [...withoutOld, ...updatedCalculo];
                               });
                             }
@@ -2842,7 +2782,7 @@ export default function Operacoes() {
                                       onClick={async () => {
                                         if (!confirm(`Eliminar voo ${voo.numero_voo} ${voo.tipo_movimento} ${voo.data_operacao}?`)) return;
                                         await Voo.update(voo.id, { deleted_at: new Date().toISOString() });
-                                        if (semLinkLoaded) loadVoosSemLink(); else setVoos(prev => prev.filter(v => v.id !== voo.id));
+                                        if (semLinkLoaded) loadVoosSemLink(); else queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
                                       }}
                                     >
                                       <Trash2 className="w-3 h-3" />
