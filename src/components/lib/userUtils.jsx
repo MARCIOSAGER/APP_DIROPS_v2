@@ -215,3 +215,17 @@ export function getEmpresaLogoByUser(user, empresas) {
   const empresa = empresas.find(e => e.id === user.empresa_id);
   return empresa?.logo_url || DEFAULT_LOGO_URL;
 }
+
+// Verifica se o utilizador tem perfil de administrador (role admin OU perfil 'administrador')
+// Substitui o padrão inline: user.role === 'admin' || user.perfis?.includes('administrador')
+export function isAdminProfile(user) {
+  if (!user) return false;
+  return user.role === 'admin' || hasUserProfile(user, 'administrador');
+}
+
+// Verifica se o utilizador tem perfil de administrador ou infraestrutura
+// Substitui: perfis.some(p => ['administrador', 'infraestrutura'].includes(p))
+export function isInfraOrAdmin(user) {
+  if (!user) return false;
+  return hasAnyUserProfile(user, ['administrador', 'infraestrutura']);
+}
