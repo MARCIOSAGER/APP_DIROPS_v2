@@ -1,88 +1,60 @@
-# Requirements: DIROPS-SGA
+# Requirements: v1.2 Performance
 
 **Defined:** 2026-03-25
 **Core Value:** Operations teams can manage flights end-to-end in a single unified system.
 
-## v1.1 Requirements
+## Cache Correctness
 
-Requirements for milestone v1.1 — Consolidacao e Polimento.
+- [ ] **CACHE-01**: Cache keys include empresa_id so tenant switching shows correct data immediately
+- [ ] **CACHE-02**: Query cache is cleared on logout so no cross-user data leakage occurs
+- [ ] **CACHE-03**: Pages read user data from AuthContext instead of calling User.me() per page
 
-### Bug Fixes
+## Query Optimization
 
-- [x] **BUG-01**: User can generate PDF "Todas as Companhias" in grouped mode without errors
-- [x] **BUG-02**: User can select "Voo de Chegada Vinculado" in FormVoo filtered by empresa, ARR flights before departure, and same registration
+- [ ] **QUERY-01**: Entity factory supports column-selective queries (not select('*') on large tables)
+- [ ] **QUERY-02**: Home dashboard uses single RPC call instead of 3 redundant stat fetches
+- [ ] **QUERY-03**: Operacoes removes duplicate tarifas fetch (useStaticData + loadData)
 
-### FlightAware
+## Cache Integration
 
-- [x] **FA-01**: User sees "Verificar Registo" badge on flights imported from FlightAware with empty registration
-- [x] **FA-02**: User sees "Verificar Horarios" badge on flights with empty horario_previsto
-- [x] **FA-03**: User sees "Dados FlightAware" badge to distinguish automatic imports from manual entries
-- [x] **FA-04**: User can filter FlightAware cache to show only "real" flights (with actual_off/actual_on, hiding cancelled)
-- [ ] **FA-05**: System automatically fetches FlightAware data daily via scheduled function
-- [x] **FA-06**: User sees warning in import modal when flight already exists (duplicate detection)
-- [x] **FA-07**: User can update existing flight with FlightAware data (merge, not just create new)
+- [ ] **INTEG-01**: High-traffic pages (Operacoes, Home) use TanStack Query hooks with proper staleTime
+- [ ] **INTEG-02**: All flight mutations trigger queryClient.invalidateQueries — no manual refresh needed
+- [ ] **INTEG-03**: Remaining pages migrated from useEffect to TanStack Query hooks
 
-### Tech Debt
+## Database Performance
 
-- [x] **DEBT-01**: All admin-only page access checks use regra_permissao instead of hardcoded profile checks
-- [x] **DEBT-02**: All user-facing strings in remaining ~120 component files support PT/EN via i18n
+- [ ] **DB-01**: Composite indexes added for primary query patterns on voo, calculo_tarifa, voo_ligado
 
-### UX/UI
+## Resilience
 
-- [x] **UX-01**: Dashboard layout, typography, and spacing follow consistent design standards
-- [x] **UX-02**: Data tables across Operacoes, Faturacao, and other pages are responsive and readable
-- [x] **UX-03**: Form modals (FormVoo, proforma, safety) have polished and consistent UX
+- [ ] **RES-01**: ErrorBoundary wraps React.lazy to recover from ChunkLoadError after deploys
+- [ ] **RES-02**: Supabase client has fetch timeout (15s) to prevent hung requests
 
-## v2 Requirements
+## Future Requirements
 
-Deferred to future milestones. Tracked but not in current roadmap.
-
-### FlightAware Advanced
-
-- **FA-08**: System validates ARR time < DEP time when creating voo_ligado
-- **FA-09**: Server-side filtering for remaining 2/10 pages
-
-### New Features
-
-- **NEW-01**: Financial dashboard with advanced analytics
-- **NEW-02**: Mobile-optimized responsive views
+- Supabase Realtime subscriptions for multi-tab sync (deferred — post-mutation invalidation solves the refresh problem first)
+- Virtual scrolling for tables with 1000+ rows (deferred — server-side pagination is sufficient)
+- Service Worker / PWA offline support (deferred — not needed for airport ops environment)
 
 ## Out of Scope
 
-| Feature | Reason |
-|---------|--------|
-| Mobile native app | Web responsive is sufficient for current users |
-| New modules (e.g., HR, inventory) | Focus is consolidation, not expansion |
-| Real-time notifications/websockets | Current email notifications sufficient |
-| OAuth/SSO login | Email/password sufficient for current scale |
-| Dark mode | Low priority compared to functional improvements |
+- Framework migration (Next.js, Remix) — React 18 + Vite 6 is sufficient
+- State management library (Redux, Zustand) — TanStack Query covers server state
+- GraphQL — Supabase REST + RPC covers all query needs
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| BUG-01 | Phase 1 | Complete |
-| BUG-02 | Phase 1 | Complete |
-| FA-01 | Phase 2 | Complete |
-| FA-02 | Phase 2 | Complete |
-| FA-03 | Phase 2 | Complete |
-| FA-04 | Phase 2 | Complete |
-| FA-05 | Phase 3 | Pending |
-| FA-06 | Phase 2 | Complete |
-| FA-07 | Phase 2 | Complete |
-| DEBT-01 | Phase 4 | Complete |
-| DEBT-02 | Phase 4 | Complete |
-| UX-01 | Phase 5 | Complete |
-| UX-02 | Phase 5 | Complete |
-| UX-03 | Phase 5 | Complete |
-
-**Coverage:**
-- v1.1 requirements: 14 total
-- Mapped to phases: 14
-- Unmapped: 0
-
----
-*Requirements defined: 2026-03-25*
-*Last updated: 2026-03-25 — traceability populated after roadmap creation*
+| REQ-ID | Phase | Plan | Status |
+|--------|-------|------|--------|
+| CACHE-01 | Phase 6 | — | Pending |
+| CACHE-02 | Phase 6 | — | Pending |
+| CACHE-03 | Phase 6 | — | Pending |
+| RES-02 | Phase 6 | — | Pending |
+| QUERY-01 | Phase 7 | — | Pending |
+| QUERY-02 | Phase 7 | — | Pending |
+| QUERY-03 | Phase 7 | — | Pending |
+| INTEG-01 | Phase 8 | — | Pending |
+| INTEG-02 | Phase 8 | — | Pending |
+| INTEG-03 | Phase 9 | — | Pending |
+| RES-01 | Phase 9 | — | Pending |
+| DB-01 | Phase 10 | — | Pending |
