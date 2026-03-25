@@ -25,7 +25,7 @@ Full details: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 **Milestone Goal:** Eliminar lentidão percebida e necessidade de refreshes manuais no sistema em produção.
 
 - [x] **Phase 6: Cache Foundation** - Tenant-safe cache keys, logout clearing, auth guard, and fetch timeout (completed 2026-03-25)
-- [ ] **Phase 7: Query Optimization** - Column-selective fetching, dashboard RPC consolidation, Operacoes deduplication
+- [x] **Phase 7: Query Optimization** - Column-selective fetching, dashboard RPC consolidation, Operacoes deduplication (completed 2026-03-25)
 - [ ] **Phase 8: Cache Integration (High-Traffic)** - TanStack Query hooks on Operacoes and Home with post-mutation invalidation
 - [ ] **Phase 9: Cache Integration (Remaining) + Resilience** - Remaining pages migrated; ErrorBoundary for lazy chunks
 - [ ] **Phase 10: Database Performance** - Composite indexes on primary query patterns
@@ -57,12 +57,12 @@ Plans:
   1. The entity factory list() and filter() methods accept a select parameter so callers can specify columns instead of receiving all 30+ columns
   2. The Home dashboard issues a single RPC call for stats data instead of three separate fetches
   3. Operacoes page fetches tarifas and impostos exactly once per session via useStaticData — no duplicate fetch from loadData()
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 07-01-PLAN.md — Add select param to _createEntity.js list() and filter()
-- [ ] 07-02-PLAN.md — Collapse Home dashboard to single Edge Function stats call
-- [ ] 07-03-PLAN.md — Wire useTarifasPouso/useTarifasPermanencia/useOutrasTarifas/useImpostos in Operacoes; remove loadData duplicates
+- [x] 07-02-PLAN.md — Collapse Home dashboard to single Edge Function stats call
+- [x] 07-03-PLAN.md — Wire useTarifasPouso/useTarifasPermanencia/useOutrasTarifas/useImpostos in Operacoes; remove loadData duplicates
 
 ### Phase 8: Cache Integration (High-Traffic)
 **Goal**: Operacoes and Home use TanStack Query for all page-level data — changes made by the user appear immediately without a manual refresh
@@ -107,7 +107,7 @@ Plans:
 | 4. Tech Debt | v1.1 | 4/4 | Complete | 2026-03-25 |
 | 5. UX Polish | v1.1 | 3/3 | Complete | 2026-03-25 |
 | 6. Cache Foundation | v1.2 | 3/3 | Complete   | 2026-03-25 |
-| 7. Query Optimization | v1.2 | 0/3 | Not started | - |
+| 7. Query Optimization | v1.2 | 3/3 | Complete   | 2026-03-25 |
 | 8. Cache Integration (High-Traffic) | v1.2 | 0/? | Not started | - |
 | 9. Cache Integration (Remaining) + Resilience | v1.2 | 0/? | Not started | - |
 | 10. Database Performance | v1.2 | 0/? | Not started | - |
