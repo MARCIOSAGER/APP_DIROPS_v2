@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,6 +7,7 @@ import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 export default function MovimentosFinanceirosChart({ data, isLoading }) {
+  const { t } = useI18n();
   if (isLoading) {
     return (
       <Card className="border-0 shadow-sm">
@@ -19,7 +21,7 @@ export default function MovimentosFinanceirosChart({ data, isLoading }) {
     <Card className="border-0 shadow-sm">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-slate-800">
-          Receitas vs. Despesas por Mês
+          {t('financeiro.revenueVsExpenses')}
         </CardTitle>
       </CardHeader>
       <CardContent>

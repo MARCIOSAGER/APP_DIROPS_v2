@@ -7,8 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import Select from '@/components/ui/select';
 import { Percent } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function FormImposto({ isOpen, onClose, onSubmit, imposto, aeroportos }) {
+  const { t } = useI18n();
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     tipo: '',
@@ -62,7 +64,7 @@ export default function FormImposto({ isOpen, onClose, onSubmit, imposto, aeropo
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{imposto ? 'Editar Imposto' : 'Novo Imposto'}</DialogTitle>
+          <DialogTitle>{imposto ? t('financeiro.editImposto') : t('financeiro.newImposto')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -160,10 +162,10 @@ export default function FormImposto({ isOpen, onClose, onSubmit, imposto, aeropo
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
+              {t('btn.cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
-              {isSubmitting ? 'A guardar...' : `${imposto ? 'Atualizar' : 'Criar'} Imposto`}
+              {isSubmitting ? t('btn.loading') : t('btn.save')}
             </Button>
           </DialogFooter>
         </form>

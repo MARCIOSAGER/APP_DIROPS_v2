@@ -7,8 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import Select from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { CobrancaServico } from '@/entities/CobrancaServico';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function FormCobrancaServico({ isOpen, onClose, categoria, tiposServico, clientes, cobrancaInicial, onSaved }) {
+  const { t } = useI18n();
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     cliente_id: '',
@@ -233,9 +235,9 @@ export default function FormCobrancaServico({ isOpen, onClose, categoria, tiposS
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>Cancelar</Button>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>{t('btn.cancel')}</Button>
           <Button onClick={handleSave} disabled={isSaving || !formData.cliente_id || !formData.tipo} className="bg-cyan-600 hover:bg-cyan-700 text-white">
-            {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 'Salvar'}
+            {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('btn.loading')}</> : t('btn.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

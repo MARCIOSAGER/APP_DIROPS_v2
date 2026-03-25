@@ -77,3 +77,12 @@ None — all data sources are wired (filter reads actual_off/actual_on from raw_
 - CacheVooFlightAwareList.jsx: atualizado in status dropdown ✓
 - CacheVooFlightAwareList.jsx: setFiltroVoosReais(false) in clear handler ✓
 - App builds without errors ✓
+
+## Self-Check: PASSED
+
+- src/components/operacoes/VoosTable.jsx: FOUND
+- src/components/operacoes/CacheVooFlightAwareList.jsx: FOUND
+- .planning/phases/02-flightaware-ui/02-01-SUMMARY.md: FOUND
+- Commit 418bb25 (Task 1): FOUND
+- Commit 46aacc3 (Task 2): FOUND
+- Commit 00377a0 (Docs): FOUND

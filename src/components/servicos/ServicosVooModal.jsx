@@ -8,6 +8,7 @@ import { Loader2, Layers, DollarSign, Trash2 } from 'lucide-react';
 import { ServicoVoo } from '@/entities/ServicoVoo';
 import { OutraTarifa } from '@/entities/OutraTarifa';
 import { useCompanyView } from '@/lib/CompanyViewContext';
+import { useI18n } from '@/components/lib/i18n';
 
 // Tipos automáticos (já calculados pelo tariffCalculations.jsx) — NÃO mostrar aqui
 // TODOS os tipos de outra_tarifa são automáticos (calculados pelo tariffCalculations.jsx)
@@ -22,6 +23,7 @@ const UNIDADE_LABELS = {
 };
 
 export default function ServicosVooModal({ isOpen, onClose, vooLigado, voos, aeroportos, tiposOutraTarifa, onServicesSaved }) {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -306,12 +308,12 @@ export default function ServicosVooModal({ isOpen, onClose, vooLigado, voos, aer
         )}
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>Cancelar</Button>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>{t('btn.cancel')}</Button>
           <Button onClick={handleSave} disabled={isSaving || isLoading} className="bg-cyan-600 hover:bg-cyan-700 text-white">
             {isSaving ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</>
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('btn.loading')}</>
             ) : (
-              <><Layers className="mr-2 h-4 w-4" /> Salvar Serviços</>
+              <><Layers className="mr-2 h-4 w-4" /> {t('btn.save')}</>
             )}
           </Button>
         </DialogFooter>

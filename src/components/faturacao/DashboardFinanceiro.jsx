@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/components/ui/use-toast';
+import { useI18n } from '@/components/lib/i18n';
 
 const COLORS = ['#059669', '#2563eb', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#be185d', '#65a30d', '#ea580c', '#4f46e5'];
 
@@ -32,6 +33,7 @@ const fmtCompact = (v) => {
 };
 
 export default function DashboardFinanceiro({ companhias, aeroportos }) {
+  const { t } = useI18n();
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [calculos, setCalculos] = useState([]);
@@ -273,7 +275,7 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
             </div>
             <div className="flex items-end">
               <Button onClick={handleBuscar} disabled={isSearching} className="bg-purple-600 hover:bg-purple-700 text-white w-full">
-                {isSearching ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando...</> : <><Search className="mr-2 h-4 w-4" /> Carregar Dados</>}
+                {isSearching ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('msg.loading')}</> : <><Search className="mr-2 h-4 w-4" /> {t('btn.search')}</>}
               </Button>
             </div>
           </div>
@@ -288,7 +290,7 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
 
       {hasSearched && !isSearching && calculos.length === 0 && (
         <Card><CardContent className="p-8 text-center text-slate-500">
-          <p className="font-medium">Nenhum dado encontrado</p>
+          <p className="font-medium">{t('msg.no_data')}</p>
           <p className="text-xs mt-1">Ajuste os filtros e tente novamente</p>
         </CardContent></Card>
       )}

@@ -32,8 +32,6 @@ const PontualidadeChart = React.lazy(() => import("../components/dashboard/Pontu
 const ReceitasChart = React.lazy(() => import("../components/dashboard/ReceitasChart"));
 const SafetyAlerts = React.lazy(() => import("../components/dashboard/SafetyAlerts"));
 
-import { Voo } from "@/entities/Voo";
-import { CalculoTarifa } from "@/entities/CalculoTarifa";
 import { OcorrenciaSafety } from "@/entities/OcorrenciaSafety";
 import { OrdemServico } from "@/entities/OrdemServico";
 import { Aeroporto } from "@/entities/Aeroporto";
@@ -44,8 +42,10 @@ import { hasUserProfile, ensureUserProfilesExist, getAeroportosPermitidos } from
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
 
-import { getDashboardStats } from '@/functions/getDashboardStats';
 import { supabase } from '@/lib/supabaseClient';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useVoos } from '@/hooks/useVoos';
+import { useCalculosTarifa } from '@/hooks/useCalculosTarifa';
 
 const formatCurrency = (value) =>
 new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(value || 0);
@@ -55,22 +55,34 @@ export default function DashboardInterno() {
   const { effectiveEmpresaId } = useCompanyView();
   const { user: authUser } = useAuth();
   const currentUser = ensureUserProfilesExist(authUser);
-  const [voos, setVoos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [ocorrenciasSafety, setOcorrenciasSafety] = useState([]);
   const [inspecoes, setInspecoes] = useState([]);
   const [voosLigados, setVoosLigados] = useState([]);
-  const [calculosTarifa, setCalculosTarifa] = useState([]);
   const [ordensServico, setOrdensServico] = useState([]);
-  const [dashboardStats, setDashboardStats] = useState(null);
-  const [serverStats, setServerStats] = useState(null);
-  const [previousPeriodStats, setPreviousPeriodStats] = useState(null);
   const [selectedAeroporto, setSelectedAeroporto] = useState("todos");
   const [selectedPeriodo, setSelectedPeriodo] = useState("30");
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [error, setError] = useState(null);
   const [loadingStatus, setLoadingStatus] = useState('Iniciando...');
+
+  const empresaId = effectiveEmpresaId || currentUser?.empresa_id;
+
+  // TanStack Query hooks — replace manual useState/useEffect fetching
+  const statsResult = useDashboardStats({
+    empresaId,
+    aeroporto: selectedAeroporto,
+    periodo: selectedPeriodo,
+  });
+  const dashboardStats = statsResult.data?.data ?? null;
+  const previousPeriodStats = statsResult.data?.previousData ?? null;
+  const serverStats = dashboardStats;
+  const isLoadingStats = statsResult.isLoading;
+
+  const { data: voos = [], isLoading: isLoadingVoos } = useVoos({ empresaId });
+  const { data: calculosTarifa = [] } = useCalculosTarifa({ empresaId });
+
+  const isLoadingAll = isLoading || isLoadingVoos;
 
 
   const loadData = useCallback(async () => {
@@ -98,30 +110,19 @@ export default function DashboardInterno() {
       setAeroportos(aeroportosFiltrados);
 
       setLoadingStatus(t('common.loading'));
-      const [voosDataResult, ocorrenciasDataResult, inspecoesDataResult, calculosTarifaResult, ordensServicoResult] = await Promise.allSettled([
-      Voo.list('-data_operacao', 500),
+      const [ocorrenciasDataResult, inspecoesDataResult, ordensServicoResult] = await Promise.allSettled([
       OcorrenciaSafety.list('-data_ocorrencia', 50),
       Inspecao.list('-data_inspecao', 50),
-      CalculoTarifa.list('-data_calculo', 1000),
       OrdemServico.list('-created_date', 10)]
       );
 
-      let voosData = voosDataResult.status === 'fulfilled' ? voosDataResult.value : [];
       let ocorrenciasData = ocorrenciasDataResult.status === 'fulfilled' ? ocorrenciasDataResult.value : [];
       let inspecoesData = inspecoesDataResult.status === 'fulfilled' ? inspecoesDataResult.value : [];
-      let calculosTarifaData = calculosTarifaResult.status === 'fulfilled' ? calculosTarifaResult.value : [];
       let ordensServicoData = ordensServicoResult.status === 'fulfilled' ? ordensServicoResult.value : [];
       setOrdensServico(ordensServicoData);
 
-      // Filtrar voos por aeroportos da empresa (mais fiável que voo.empresa_id que pode não estar preenchido)
-      const empresaId = effectiveEmpresaId || currentUser.empresa_id;
-      const icaosPermitidos = new Set(aeroportosFiltrados.map(a => a.codigo_icao));
-      const voosFiltrados = empresaId
-        ? voosData.filter(v => icaosPermitidos.has(v.aeroporto_operacao))
-        : voosData;
-      setVoos(voosFiltrados);
-
       // Ocorrências e inspeções: filtrar por aeroportos da empresa
+      const icaosPermitidos = new Set(aeroportosFiltrados.map(a => a.codigo_icao));
       const ocorrenciasFiltradas = empresaId
         ? ocorrenciasData.filter(o => icaosPermitidos.has(o.aeroporto))
         : ocorrenciasData;
@@ -133,11 +134,6 @@ export default function DashboardInterno() {
         : inspecoesData;
       setInspecoes(inspecoesFiltradas);
 
-      // Filtrar cálculos de tarifa: só os que têm voo_id dentro dos voos filtrados
-      const vooIdsFiltrados = new Set(voosFiltrados.map(v => v.id));
-      const calculosFiltrados = calculosTarifaData.filter(c => vooIdsFiltrados.has(c.voo_id));
-      setCalculosTarifa(calculosFiltrados);
-
       setLoadingStatus(t('general.success'));
     } catch (error) {
       console.error("❌ Erro ao carregar dados específicos:", error);
@@ -147,33 +143,6 @@ export default function DashboardInterno() {
       setIsLoading(false);
     }
   }, [effectiveEmpresaId]);
-
-  const loadDashboardStats = useCallback(async () => {
-    if (!currentUser) return;
-
-    setIsLoadingStats(true);
-    try {
-      const empresaId = effectiveEmpresaId || currentUser.empresa_id;
-      // Single RPC call — all aggregations done server-side in PostgreSQL, no row limits
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('get_dashboard_stats_full', {
-        p_empresa_id: empresaId || null,
-        p_aeroporto: selectedAeroporto || 'todos',
-        p_dias: parseInt(selectedPeriodo) || 30,
-      });
-      if (rpcError) throw rpcError;
-      setDashboardStats(rpcResult?.data || null);
-      setPreviousPeriodStats(rpcResult?.previousData || null);
-      setServerStats(rpcResult?.data || null);
-    } catch (error) {
-      console.error('❌ Erro ao carregar estatísticas:', error);
-      setError(error.message || t('common.error'));
-      setDashboardStats(null);
-      setServerStats(null);
-      setPreviousPeriodStats(null);
-    } finally {
-      setIsLoadingStats(false);
-    }
-  }, [selectedAeroporto, selectedPeriodo, currentUser, effectiveEmpresaId]);
 
   const checkUserAndLoadData = useCallback(async () => {
     setIsLoading(true);
@@ -218,12 +187,6 @@ export default function DashboardInterno() {
   useEffect(() => {
     checkUserAndLoadData();
   }, [checkUserAndLoadData]);
-
-  useEffect(() => {
-    if (currentUser && !isLoading) {
-      loadDashboardStats();
-    }
-  }, [selectedAeroporto, selectedPeriodo, currentUser, isLoading, loadDashboardStats]);
 
   const filteredVoos = useMemo(() => {
     return selectedAeroporto === "todos" ?
@@ -475,7 +438,7 @@ export default function DashboardInterno() {
             placeholder={t('home.periodo')} />
 
 
-          <Button onClick={() => {checkUserAndLoadData();loadDashboardStats();}} variant="outline" disabled={isLoading || isLoadingStats}>
+          <Button onClick={() => checkUserAndLoadData()} variant="outline" disabled={isLoadingAll || isLoadingStats}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading || isLoadingStats ? 'animate-spin' : ''}`} />
             {t('home.atualizar')}
           </Button>
@@ -483,7 +446,7 @@ export default function DashboardInterno() {
 
         <MonitoramentoSuperAdmin />
 
-        {isLoading ?
+        {isLoadingAll ?
         <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-4 text-slate-600 dark:text-slate-400">{loadingStatus}</p>

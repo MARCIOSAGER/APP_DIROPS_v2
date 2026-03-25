@@ -9,6 +9,7 @@ import Combobox from '@/components/ui/combobox';
 import { Textarea } from '@/components/ui/textarea';
 import { Plane, Send, Edit } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 const RWYCC_CONDITIONS = {
   "6": "DRY",
@@ -18,6 +19,7 @@ const RWYCC_CONDITIONS = {
 };
 
 export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registoInicial }) {
+  const { t } = useI18n();
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     aeroporto: '',
@@ -154,7 +156,7 @@ export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isEditing ? <Edit className="w-5 h-5 text-blue-600" /> : <Plane className="w-5 h-5 text-blue-600" />}
-            {isEditing ? 'Editar Registo GRF' : 'Novo Registo GRF'}
+            {isEditing ? t('page.grf.editRecord') : t('page.grf.newRecord')}
           </DialogTitle>
         </DialogHeader>
 
@@ -270,13 +272,13 @@ export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registo
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">Cancelar</Button>
+              <Button type="button" variant="outline">{t('btn.cancel')}</Button>
             </DialogClose>
             <Button type="submit" disabled={isSubmitting} className="bg-blue-500 hover:bg-blue-600 text-white">
-              {isSubmitting ? 'A guardar...' : (
+              {isSubmitting ? t('btn.loading') : (
                 <>
                   {isEditing ? <Edit className="w-4 h-4 mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                  {isEditing ? 'Atualizar GRF' : 'Registar GRF'}
+                  {isEditing ? t('btn.edit') : t('btn.submit')}
                 </>
               )}
             </Button>

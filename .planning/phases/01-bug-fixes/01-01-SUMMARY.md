@@ -106,3 +106,12 @@ None - no external service configuration required.
 ---
 *Phase: 01-bug-fixes*
 *Completed: 2026-03-25*
+
+## Self-Check: PASSED
+
+- FOUND: `.planning/phases/01-bug-fixes/01-01-SUMMARY.md`
+- FOUND: `src/functions/__tests__/gerarProformaPdfSimples.test.js`
+- FOUND: `src/functions/gerarProformaPdfSimples.js` (with fix applied)
+- FOUND: commit `23bada6` (test scaffold)
+- FOUND: commit `cd9fd38` (fix)
+- All 3 unit tests pass (verified via vitest run)

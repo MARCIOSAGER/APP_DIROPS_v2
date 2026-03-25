@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -7,10 +8,11 @@ import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 export default function RecentMovimentosFinanceiros({ movimentos, isLoading }) {
+  const { t } = useI18n();
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader>
-        <CardTitle className="text-lg">Movimentos Recentes</CardTitle>
+        <CardTitle className="text-lg">{t('financeiro.recentMovimentos')}</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -27,7 +29,7 @@ export default function RecentMovimentosFinanceiros({ movimentos, isLoading }) {
           </div>
         ) : movimentos.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
-            <p>Nenhum movimento registado</p>
+            <p>{t('msg.no_data')}</p>
           </div>
         ) : (
           <div className="space-y-3">

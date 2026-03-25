@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { FileText, Loader2, Copy, Check } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function AssistenteRelatorio({ isOpen, onClose, dados, contexto, tipo }) {
+  const { t } = useI18n();
   const [relatorio, setRelatorio] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -38,7 +40,7 @@ export default function AssistenteRelatorio({ isOpen, onClose, dados, contexto, 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            Assistente de Relatório
+            {t('shared.reportAssistant')}
           </DialogTitle>
         </DialogHeader>
 
@@ -81,9 +83,9 @@ export default function AssistenteRelatorio({ isOpen, onClose, dados, contexto, 
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={gerarRelatorio}>
-                Regenerar
+                {t('btn.refresh')}
               </Button>
-              <Button onClick={onClose}>Fechar</Button>
+              <Button onClick={onClose}>{t('btn.close')}</Button>
             </div>
           </div>
         )}

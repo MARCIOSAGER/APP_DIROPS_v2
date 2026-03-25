@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Pencil, Trash2, Save, X } from 'lucide-react';
 import { TipoOutraTarifa } from '@/entities/TipoOutraTarifa';
 import { toast } from '@/components/ui/use-toast';
+import { useI18n } from '@/components/lib/i18n';
 
 const UNIDADE_OPTIONS = [
   { value: 'passageiro', label: 'Por Passageiro' },
@@ -19,6 +20,7 @@ const UNIDADE_OPTIONS = [
 ];
 
 export default function GerirTiposOutraTarifaModal({ isOpen, onClose, onUpdated }) {
+  const { t } = useI18n();
   const [tipos, setTipos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -161,10 +163,10 @@ export default function GerirTiposOutraTarifaModal({ isOpen, onClose, onUpdated 
               </div>
               <div className="flex gap-2 justify-end">
                 <Button size="sm" variant="outline" onClick={() => { setIsAdding(false); setNewForm({ value: '', label: '', unidade_padrao: 'passageiro' }); }}>
-                  <X className="h-3 w-3 mr-1" /> Cancelar
+                  <X className="h-3 w-3 mr-1" /> {t('btn.cancel')}
                 </Button>
                 <Button size="sm" onClick={handleAdd}>
-                  <Save className="h-3 w-3 mr-1" /> Salvar
+                  <Save className="h-3 w-3 mr-1" /> {t('btn.save')}
                 </Button>
               </div>
             </div>

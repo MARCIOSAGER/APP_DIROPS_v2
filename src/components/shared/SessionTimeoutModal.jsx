@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Clock, LogOut, RefreshCw } from 'lucide-react';
 import { createPageUrl } from '@/utils';
+import { useI18n } from '@/components/lib/i18n';
 
 // Tempo de inatividade antes de mostrar o aviso (30 minutos em ms)
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
@@ -16,6 +17,7 @@ const STORAGE_THROTTLE = 30 * 1000;
 const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
 
 export default function SessionTimeoutModal() {
+  const { t } = useI18n();
   const [showWarning, setShowWarning] = useState(false);
   const [countdown, setCountdown] = useState(120);
   const inactivityTimer = useRef(null);
@@ -127,13 +129,13 @@ export default function SessionTimeoutModal() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-orange-600">
             <Clock className="w-5 h-5" />
-            Sessão prestes a expirar
+            {t('shared.sessionExpiring')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="text-center py-4 space-y-4">
           <p className="text-slate-600 dark:text-slate-400">
-            A sua sessão irá expirar automaticamente por inatividade.
+            {t('shared.sessionExpiringMsg')}
           </p>
 
           <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-xl py-6">
@@ -144,7 +146,7 @@ export default function SessionTimeoutModal() {
           </div>
 
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Clique em "Manter Sessão" para continuar ou será desligado automaticamente.
+            {t('shared.sessionExpiringHint')}
           </p>
         </div>
 
@@ -155,14 +157,14 @@ export default function SessionTimeoutModal() {
             onClick={logout}
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Sair agora
+            {t('shared.logoutNow')}
           </Button>
           <Button
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
             onClick={handleKeepSession}
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Manter Sessão
+            {t('shared.keepSession')}
           </Button>
         </div>
       </DialogContent>

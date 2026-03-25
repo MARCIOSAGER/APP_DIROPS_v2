@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { AlertTriangle, Link2 as LinkIcon, Plane, X, ChevronRight } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 
 const DISMISS_KEY = 'systemAlerts_dismissed';
 const DISMISS_TTL = 24 * 60 * 60 * 1000; // 24 hours
@@ -60,6 +61,7 @@ const ALERT_CONFIG = {
 };
 
 export default function SystemAlerts() {
+  const { t } = useI18n();
   const { currentUser } = useAuth();
   const { effectiveEmpresaId } = useCompanyView();
   const [alerts, setAlerts] = useState({});

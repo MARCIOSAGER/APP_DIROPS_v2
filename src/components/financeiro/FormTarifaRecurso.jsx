@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { useI18n } from '@/components/lib/i18n';
 
 const FormTarifaRecurso = ({ isOpen, onClose, onSubmit, tarifa }) => {
+  const { t } = useI18n();
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     tipo: 'pca',
@@ -166,8 +168,8 @@ const FormTarifaRecurso = ({ isOpen, onClose, onSubmit, tarifa }) => {
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? 'A guardar...' : 'Salvar'}</Button>
+            <Button type="button" variant="outline" onClick={onClose}>{t('btn.cancel')}</Button>
+            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? t('btn.loading') : t('btn.save')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -140,3 +140,15 @@ None - no external service configuration required.
 ---
 *Phase: 08-cache-integration-high-traffic*
 *Completed: 2026-03-25*
+
+## Self-Check: PASSED
+
+- FOUND: src/hooks/useVoos.js
+- FOUND: src/hooks/useVoosLigados.js
+- FOUND: src/hooks/useCalculosTarifa.js
+- FOUND: src/hooks/useDashboardStats.js
+- FOUND: .planning/phases/08-cache-integration-high-traffic/08-02-SUMMARY.md
+- FOUND commit 6f02733 (prerequisite hooks)
+- FOUND commit fb2ea17 (Task 1)
+- FOUND commit e2a3089 (Task 2)
+- pnpm build exits 0 after all changes
