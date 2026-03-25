@@ -106,8 +106,8 @@ export function createEntity(tableName) {
   return {
     // === Original methods (backward compatible) ===
 
-    async list(orderBy, limit) {
-      let query = supabase.from(tableName).select('*');
+    async list(orderBy, limit, select = '*') {
+      let query = supabase.from(tableName).select(select);
       query = applyOrder(query, orderBy);
 
       if (limit) {
@@ -120,8 +120,8 @@ export function createEntity(tableName) {
       return fetchAll(query);
     },
 
-    async filter(filters, orderBy, limit, skip) {
-      let query = supabase.from(tableName).select('*');
+    async filter(filters, orderBy, limit, skip, select = '*') {
+      let query = supabase.from(tableName).select(select);
       query = applyFilters(query, filters);
       query = applyOrder(query, orderBy);
 
