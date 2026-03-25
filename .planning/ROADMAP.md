@@ -24,7 +24,7 @@ Full details: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 
 **Milestone Goal:** Eliminar lentidão percebida e necessidade de refreshes manuais no sistema em produção.
 
-- [ ] **Phase 6: Cache Foundation** - Tenant-safe cache keys, logout clearing, auth guard, and fetch timeout
+- [x] **Phase 6: Cache Foundation** - Tenant-safe cache keys, logout clearing, auth guard, and fetch timeout (completed 2026-03-25)
 - [ ] **Phase 7: Query Optimization** - Column-selective fetching, dashboard RPC consolidation, Operacoes deduplication
 - [ ] **Phase 8: Cache Integration (High-Traffic)** - TanStack Query hooks on Operacoes and Home with post-mutation invalidation
 - [ ] **Phase 9: Cache Integration (Remaining) + Resilience** - Remaining pages migrated; ErrorBoundary for lazy chunks
@@ -42,12 +42,12 @@ Full details: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
   3. Navigating between pages does not trigger a Supabase User.me() call — profile is read from AuthContext
   4. TOKEN_REFRESHED event does not cause a visible page re-render when the user identity is unchanged
   5. Any Supabase request that hangs for more than 15 seconds fails with an error state rather than loading indefinitely
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 06-01-PLAN.md — Auth guard + logout cache clear + Supabase fetch timeout + query-client tuning
 - [x] 06-02-PLAN.md — Fix useStaticData query keys to include effectiveEmpresaId (tenant isolation)
-- [ ] 06-03-PLAN.md — Replace User.me() with useAuth().user in all 23 pages
+- [x] 06-03-PLAN.md — Replace User.me() with useAuth().user in all 23 pages
 
 ### Phase 7: Query Optimization
 **Goal**: Pages fetch only the data they need — no redundant parallel calls, no full-table selects where column subsets suffice
@@ -101,7 +101,7 @@ Plans:
 | 3. FlightAware Automation | v1.1 | 1/1 | Complete | 2026-03-25 |
 | 4. Tech Debt | v1.1 | 4/4 | Complete | 2026-03-25 |
 | 5. UX Polish | v1.1 | 3/3 | Complete | 2026-03-25 |
-| 6. Cache Foundation | v1.2 | 2/3 | In Progress|  |
+| 6. Cache Foundation | v1.2 | 3/3 | Complete   | 2026-03-25 |
 | 7. Query Optimization | v1.2 | 0/? | Not started | - |
 | 8. Cache Integration (High-Traffic) | v1.2 | 0/? | Not started | - |
 | 9. Cache Integration (Remaining) + Resilience | v1.2 | 0/? | Not started | - |

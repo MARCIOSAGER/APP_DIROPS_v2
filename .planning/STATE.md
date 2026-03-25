@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Performance
-status: Ready to execute
-stopped_at: Completed 06-01-PLAN.md — fetch timeout, query-client tuning, auth cache clearing
-last_updated: "2026-03-25T18:09:08.084Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-03-25T18:36:20.919Z"
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # State: DIROPS-SGA
@@ -43,6 +43,7 @@ Plan: 3 of 3
 *Updated after each plan completion*
 | Phase 06-cache-foundation P02 | 6 | 1 tasks | 1 files |
 | Phase 06-cache-foundation P01 | 8 | 2 tasks | 3 files |
+| Phase 06 P03 | 35 | 1 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -55,6 +56,8 @@ Plan: 3 of 3
 - [Phase 06-cache-foundation]: Query key isolation only (no queryFn filter): empresa_id added to key only — queryFn bodies unchanged. Supabase RLS handles row-level isolation; key change prevents cache collisions between tenants in useStaticData hooks
 - [Phase 06-cache-foundation]: queryClientInstance.clear() before supabase.auth.signOut() in logout() prevents race with SIGNED_OUT handler
 - [Phase 06-cache-foundation]: TOKEN_REFRESHED guard: session.user.id !== user?.id skips DB call — same user token refresh does not reload profile
+- [Phase 06]: Operacoes.jsx uses currentUser = user alias to avoid cascading prop name changes across child components
+- [Phase 06]: ensureUserProfilesExist called inline at component level (not in loadData) so normalized profile is synchronously available throughout component lifecycle
 
 ### Pending Todos
 
@@ -67,6 +70,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T18:09:08.072Z
-Stopped at: Completed 06-01-PLAN.md — fetch timeout, query-client tuning, auth cache clearing
+Last session: 2026-03-25T18:36:20.910Z
+Stopped at: Completed 06-03-PLAN.md
 Resume file: None
