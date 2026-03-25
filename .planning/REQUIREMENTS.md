@@ -11,7 +11,7 @@
 
 ## Query Optimization
 
-- [ ] **QUERY-01**: Entity factory supports column-selective queries (not select('*') on large tables)
+- [x] **QUERY-01**: Entity factory supports column-selective queries (not select('*') on large tables)
 - [ ] **QUERY-02**: Home dashboard uses single RPC call instead of 3 redundant stat fetches
 - [ ] **QUERY-03**: Operacoes removes duplicate tarifas fetch (useStaticData + loadData)
 

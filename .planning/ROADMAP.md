@@ -60,7 +60,7 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Add select param to _createEntity.js list() and filter()
+- [x] 07-01-PLAN.md — Add select param to _createEntity.js list() and filter()
 - [ ] 07-02-PLAN.md — Collapse Home dashboard to single Edge Function stats call
 - [ ] 07-03-PLAN.md — Wire useTarifasPouso/useTarifasPermanencia/useOutrasTarifas/useImpostos in Operacoes; remove loadData duplicates
 
