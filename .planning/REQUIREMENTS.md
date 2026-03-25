@@ -1,0 +1,88 @@
+# Requirements: DIROPS-SGA
+
+**Defined:** 2026-03-25
+**Core Value:** Operations teams can manage flights end-to-end in a single unified system.
+
+## v1.1 Requirements
+
+Requirements for milestone v1.1 — Consolidacao e Polimento.
+
+### Bug Fixes
+
+- [ ] **BUG-01**: User can generate PDF "Todas as Companhias" in grouped mode without errors
+- [ ] **BUG-02**: User can select "Voo de Chegada Vinculado" in FormVoo filtered by empresa, ARR flights before departure, and same registration
+
+### FlightAware
+
+- [ ] **FA-01**: User sees "Verificar Registo" badge on flights imported from FlightAware with empty registration
+- [ ] **FA-02**: User sees "Verificar Horarios" badge on flights with empty horario_previsto
+- [ ] **FA-03**: User sees "Dados FlightAware" badge to distinguish automatic imports from manual entries
+- [ ] **FA-04**: User can filter FlightAware cache to show only "real" flights (with actual_off/actual_on, hiding cancelled)
+- [ ] **FA-05**: System automatically fetches FlightAware data daily via scheduled function
+- [ ] **FA-06**: User sees warning in import modal when flight already exists (duplicate detection)
+- [ ] **FA-07**: User can update existing flight with FlightAware data (merge, not just create new)
+
+### Tech Debt
+
+- [ ] **DEBT-01**: All admin-only page access checks use regra_permissao instead of hardcoded profile checks
+- [ ] **DEBT-02**: All user-facing strings in remaining ~120 component files support PT/EN via i18n
+
+### UX/UI
+
+- [ ] **UX-01**: Dashboard layout, typography, and spacing follow consistent design standards
+- [ ] **UX-02**: Data tables across Operacoes, Faturacao, and other pages are responsive and readable
+- [ ] **UX-03**: Form modals (FormVoo, proforma, safety) have polished and consistent UX
+
+## v2 Requirements
+
+Deferred to future milestones. Tracked but not in current roadmap.
+
+### FlightAware Advanced
+
+- **FA-08**: System validates ARR time < DEP time when creating voo_ligado
+- **FA-09**: Server-side filtering for remaining 2/10 pages
+
+### New Features
+
+- **NEW-01**: Financial dashboard with advanced analytics
+- **NEW-02**: Mobile-optimized responsive views
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Mobile native app | Web responsive is sufficient for current users |
+| New modules (e.g., HR, inventory) | Focus is consolidation, not expansion |
+| Real-time notifications/websockets | Current email notifications sufficient |
+| OAuth/SSO login | Email/password sufficient for current scale |
+| Dark mode | Low priority compared to functional improvements |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| BUG-01 | — | Pending |
+| BUG-02 | — | Pending |
+| FA-01 | — | Pending |
+| FA-02 | — | Pending |
+| FA-03 | — | Pending |
+| FA-04 | — | Pending |
+| FA-05 | — | Pending |
+| FA-06 | — | Pending |
+| FA-07 | — | Pending |
+| DEBT-01 | — | Pending |
+| DEBT-02 | — | Pending |
+| UX-01 | — | Pending |
+| UX-02 | — | Pending |
+| UX-03 | — | Pending |
+
+**Coverage:**
+- v1.1 requirements: 14 total
+- Mapped to phases: 0
+- Unmapped: 14
+
+---
+*Requirements defined: 2026-03-25*
+*Last updated: 2026-03-25 after initial definition*
