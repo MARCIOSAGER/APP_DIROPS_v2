@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: FlightAware UI** - Verification badges, filters, duplicate detection, and merge on flight list
 - [ ] **Phase 3: FlightAware Automation** - Scheduled daily fetch to keep cache current without manual action
 - [x] **Phase 4: Tech Debt** - Permissions refactor and complete i18n across remaining components (completed 2026-03-25)
-- [ ] **Phase 5: UX Polish** - Dashboard, tables, and form modals consistent and polished
+- [x] **Phase 5: UX Polish** - Dashboard, tables, and form modals consistent and polished (completed 2026-03-25)
 
 ## Phase Details
 
@@ -95,7 +95,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Consolidate Dashboard KPI cards into single DashboardStats source of truth (UX-01)
+- [x] 05-01-PLAN.md — Consolidate Dashboard KPI cards into single DashboardStats source of truth (UX-01)
 - [x] 05-02-PLAN.md — Add min-w column constraints to VoosTable and Proforma table (UX-02)
 - [x] 05-03-PLAN.md — Replace raw select with Radix Select in Safety form + standardize form button order (UX-03)
 
@@ -113,4 +113,4 @@ Note: Phase 4 depends only on Phase 1 (can start after Phase 1 completes, in par
 | 2. FlightAware UI | 1/2 | In Progress|  |
 | 3. FlightAware Automation | 0/1 | In Progress | - |
 | 4. Tech Debt | 4/4 | Complete   | 2026-03-25 |
-| 5. UX Polish | 2/3 | In Progress|  |
+| 5. UX Polish | 3/3 | Complete   | 2026-03-25 |

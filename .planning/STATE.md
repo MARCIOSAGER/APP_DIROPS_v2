@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Consolidacao e Polimento
-status: Ready to execute
-stopped_at: "Completed 05-ux-polish-05-03-PLAN.md (checkpoint: human-verify)"
-last_updated: "2026-03-25T17:03:32.391Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 05-ux-polish-05-01-PLAN.md (checkpoint pending)
+last_updated: "2026-03-25T17:05:35.473Z"
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # State: DIROPS-SGA
@@ -52,6 +52,7 @@ Plan: 3 of 3
 | Phase 04-tech-debt P04-04 | 90 | 2 tasks | 35 files |
 | Phase 05-ux-polish P02 | 300 | 2 tasks | 2 files |
 | Phase 05-ux-polish P03 | 180 | 2 tasks | 3 files |
+| Phase 05-ux-polish P01 | 359 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,8 @@ Plan: 3 of 3
 - [Phase 04-tech-debt]: PontualidadeChart: converted data.name to data.nameKey pattern for runtime i18n key resolution
 - [Phase 05-ux-polish]: All 11 VoosTable columns given min-w constraints via SortableTableHeader className prop (already forwarded); all 9 Proforma columns constrained; KPI USD/AOA use truncate
 - [Phase 05-ux-polish]: FormSafetyOccurrence gravidade/status selects also replaced (all 3 raw selects removed); added manual tipo_ocorrencia validation; FormVoo save button changed to bg-blue-600 per button color standard
+- [Phase 05-ux-polish]: DashboardStats uses serverStats > dashboardStats > local voos calculation priority chain for each metric
+- [Phase 05-ux-polish]: Home.jsx outer isLoadingStats skeleton removed — DashboardStats handles isLoading internally
 
 ### Pending Todos
 
@@ -89,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T17:03:32.344Z
-Stopped at: Completed 05-ux-polish-05-03-PLAN.md (checkpoint: human-verify)
+Last session: 2026-03-25T17:05:35.461Z
+Stopped at: Completed 05-ux-polish-05-01-PLAN.md (checkpoint pending)
 Resume file: None
