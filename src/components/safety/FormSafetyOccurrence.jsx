@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Combobox from '@/components/ui/combobox';
+import Select from '@/components/ui/select';
 import { ShieldAlert, Upload, X } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { UploadFile } from '@/integrations/Core';
@@ -26,6 +27,7 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
   });
 
   const [isUploading, setIsUploading] = useState(false);
+  const [errors, setErrors] = useState({});
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
   useEffect(() => {
@@ -52,6 +54,13 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const newErrors = {};
+    if (!formData.tipo_ocorrencia) newErrors.tipo_ocorrencia = t('safety.form.tipoObrigatorio');
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors({});
     guardedSubmit(async () => {
       await onSubmit(formData);
     });
@@ -131,18 +140,14 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="tipo_ocorrencia">{t('safety.form.tipoESO')}</Label>
-              <select
+              <Select
                 id="tipo_ocorrencia"
+                options={tipoOcorrenciaOptions}
                 value={formData.tipo_ocorrencia}
-                onChange={(e) => handleChange('tipo_ocorrencia', e.target.value)}
-                className="w-full h-10 px-3 py-2 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 border-slate-200"
-                required>
-
-                <option value="" disabled>{t('safety.form.selecionarTipo')}</option>
-                {tipoOcorrenciaOptions.map((option) =>
-                <option key={option.value} value={option.value}>{option.label}</option>
-                )}
-              </select>
+                onValueChange={(value) => handleChange('tipo_ocorrencia', value)}
+                placeholder={t('safety.form.selecionarTipo')}
+              />
+              {errors.tipo_ocorrencia && <p className="text-sm text-red-500">{errors.tipo_ocorrencia}</p>}
             </div>
 
             <div className="space-y-2">
@@ -265,31 +270,24 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="gravidade">{t('safety.form.gravidade')}</Label>
-              <select
+              <Select
                 id="gravidade"
+                options={gravidadeOptions}
                 value={formData.gravidade}
-                onChange={(e) => handleChange('gravidade', e.target.value)}
-                className="w-full h-10 px-3 py-2 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 border-slate-200"
-                required>
-
-                {gravidadeOptions.map((option) =>
-                <option key={option.value} value={option.value}>{option.label}</option>
-                )}
-              </select>
+                onValueChange={(value) => handleChange('gravidade', value)}
+                placeholder={t('safety.form.gravidade')}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="status">{t('safety.form.status')}</Label>
-              <select
+              <Select
                 id="status"
+                options={statusOptions}
                 value={formData.status}
-                onChange={(e) => handleChange('status', e.target.value)}
-                className="w-full h-10 px-3 py-2 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 border-slate-200">
-
-                {statusOptions.map((option) =>
-                <option key={option.value} value={option.value}>{option.label}</option>
-                )}
-              </select>
+                onValueChange={(value) => handleChange('status', value)}
+                placeholder={t('safety.form.status')}
+              />
             </div>
           </div>
 
