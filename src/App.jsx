@@ -39,6 +39,9 @@ class ErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
   componentDidCatch(error, errorInfo) {
+    // RES-01: Handles ChunkLoadError after production deploys.
+    // Auto-reloads once (30s cooldown). Shows manual button if cooldown active.
+    // Covers all lazy routes via tree propagation from outer boundary.
     console.error('[ErrorBoundary]', error, errorInfo);
     Sentry.captureException(error, { extra: errorInfo });
     // Auto-reload on chunk load failure (stale cache after deploy)
