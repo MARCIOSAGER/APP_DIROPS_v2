@@ -63,7 +63,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. System automatically fetches FlightAware data once per day via a scheduled function
   2. Newly fetched flights appear in the cache and are available for import without the user triggering a manual fetch
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 03-01-PLAN.md — Daily FlightAware sync function + pg_cron schedule (FA-05)
 
 ### Phase 4: Tech Debt
 **Goal**: All page access checks use regra_permissao and all user-facing strings support both PT and EN
