@@ -23,7 +23,7 @@ import { TarifaPermanencia } from '@/entities/TarifaPermanencia';
 import { OutraTarifa } from '@/entities/OutraTarifa';
 import { Imposto } from '@/entities/Imposto';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
-import { User } from '@/entities/User';
+import { useAuth } from '@/lib/AuthContext';
 
 import { calculateAllTariffs } from '@/components/lib/tariffCalculations';
 import {
@@ -137,6 +137,7 @@ function delay(ms) {
 export default function ImportacaoAiaan() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
+  const { user } = useAuth();
 
   // Wizard state
   const [step, setStep] = useState(1);
@@ -460,8 +461,7 @@ export default function ImportacaoAiaan() {
     };
 
     try {
-      const user = await User.me();
-      const empresaId = effectiveEmpresaId || user.empresa_id;
+      const empresaId = effectiveEmpresaId || user?.empresa_id;
 
       // ── Phase 1: Create aircraft ─────────────────────────────
       const selectedAircraft = newAircraft.filter(a => a.selected);

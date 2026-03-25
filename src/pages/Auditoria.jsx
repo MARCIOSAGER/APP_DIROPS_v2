@@ -49,6 +49,7 @@ import { ensureUserProfilesExist, hasUserProfile, getAeroportosPermitidos, filtr
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { Empresa } from '@/entities/Empresa';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 import FormProcessoAuditoria from '../components/auditoria/FormProcessoAuditoria';
 import ConfiguracaoAuditoria from '../components/auditoria/ConfiguracaoAuditoria';
@@ -102,7 +103,8 @@ const CATEGORIAS_CONFIG = {
 export default function Auditoria() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user } = useAuth();
+  const currentUser = ensureUserProfilesExist(user);
   const [tiposAuditoria, setTiposAuditoria] = useState([]);
   const [itensAuditoria, setItensAuditoria] = useState([]);
   const [processosAuditoria, setProcessosAuditoria] = useState([]);
@@ -170,14 +172,11 @@ export default function Auditoria() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const user = await User.me();
-      setCurrentUser(ensureUserProfilesExist(user));
-
-      const isAdmin = isAdminProfile(user);
+      const isAdmin = isAdminProfile(currentUser);
       setGestaoPermission(isAdmin);
 
       // Server-side filter by empresa_id when applicable
-      const empId = effectiveEmpresaId || user.empresa_id;
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
       const processoPromise = empId
         ? ProcessoAuditoria.filter({ empresa_id: empId }, '-data_auditoria')
         : ProcessoAuditoria.list('-data_auditoria');
@@ -207,7 +206,6 @@ export default function Auditoria() {
 
     } catch (error) {
       console.error('Erro ao carregar dados ou verificar usuário:', error);
-      setCurrentUser(null);
       setGestaoPermission(false);
       setProcessosAuditoria([]);
       setAeroportos([]);

@@ -6,7 +6,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 import { Documento } from '@/entities/Documento';
 import { Aeroporto } from '@/entities/Aeroporto';
-import { User } from '@/entities/User';
 import { downloadAsCSV } from '../components/lib/export';
 import { getAeroportosPermitidos, filtrarDadosPorAcesso, isAdminProfile } from '@/components/lib/userUtils';
 
@@ -24,10 +23,11 @@ import SenhaModal from '../components/documentos/SenhaModal';
 import { validarSenhaItem } from '@/functions/validarSenhaItem';
 import { Pasta } from '@/entities/Pasta';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Documentos() {
   const { t } = useI18n();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [documentos, setDocumentos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,11 +67,8 @@ export default function Documentos() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const user = await User.me();
-      setCurrentUser(user);
-
       // Server-side filter by empresa_id when user belongs to one
-      const empId = user.empresa_id;
+      const empId = currentUser?.empresa_id;
       const documentoPromise = empId
         ? Documento.filter({ empresa_id: empId }, '-data_publicacao')
         : Documento.list('-data_publicacao');

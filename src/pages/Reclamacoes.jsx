@@ -23,12 +23,12 @@ import {
 
 import { Reclamacao } from '@/entities/Reclamacao';
 import { Aeroporto } from '@/entities/Aeroporto';
-import { User } from '@/entities/User';
 import { downloadAsCSV } from '../components/lib/export';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { getAeroportosPermitidos, filtrarDadosPorAcesso, getEmpresaLogoByUser } from '@/components/lib/userUtils';
 import { Empresa } from '@/entities/Empresa';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 import ReclamacoesStats from '../components/reclamacoes/ReclamacoesStats';
 import ReclamacoesList from '../components/reclamacoes/ReclamacoesList';
@@ -75,6 +75,7 @@ const PRIORIDADE_OPTIONS = [
 
 export default function Reclamacoes() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [reclamacoes, setReclamacoes] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,7 +90,6 @@ export default function Reclamacoes() {
   const [deleteInfo, setDeleteInfo] = useState({ isOpen: false, id: null, title: '', message: '' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '', details: [] });
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'error', title: '', message: '' }); // New state for general alerts
-  const [user, setUser] = useState(null); // New state for current user
   const [empresas, setEmpresas] = useState([]);
   const [isBuscando, setIsBuscando] = useState(false);
 
@@ -106,11 +106,8 @@ export default function Reclamacoes() {
   const loadData = useCallback(async (serverFilters) => {
     setIsLoading(true);
     try {
-      const currentUser = await User.me();
-      setUser(currentUser);
-
       // Build server-side query
-      const empId = currentUser.empresa_id;
+      const empId = user?.empresa_id;
       const query = {};
       if (empId) query.empresa_id = empId;
 
@@ -150,9 +147,9 @@ export default function Reclamacoes() {
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
 
       // FILTRO CRÍTICO: Filtrar reclamações por aeroportos do utilizador (empresa-based)
-      const reclamacoesFiltradas = filtrarDadosPorAcesso(currentUser, reclamacoesData, 'aeroporto_id', aeroportosAngola);
+      const reclamacoesFiltradas = filtrarDadosPorAcesso(user, reclamacoesData, 'aeroporto_id', aeroportosAngola);
 
-      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosAngola, currentUser.empresa_id);
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, user?.empresa_id);
       setReclamacoes(reclamacoesFiltradas);
       setAeroportos(aeroportosFiltrados);
       setEmpresas(empresasData || []);

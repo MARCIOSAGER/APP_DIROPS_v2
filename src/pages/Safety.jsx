@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 
 import { OcorrenciaSafety } from '@/entities/OcorrenciaSafety';
 import { Aeroporto } from '@/entities/Aeroporto';
-import { User } from '@/entities/User'; // Added User import
 import SafetyOccurrencesList from '../components/safety/SafetyOccurrencesList';
 import FormSafetyOccurrence from '../components/safety/FormSafetyOccurrence';
 import { downloadAsCSV } from '../components/lib/export';
@@ -20,9 +19,11 @@ import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
 import { getAeroportosPermitidos, filtrarDadosPorAcesso } from '@/components/lib/userUtils';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Safety() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [ocorrencias, setOcorrencias] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,7 +33,6 @@ export default function Safety() {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'error', title: '', message: '' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
-  const [user, setUser] = useState(null); // Added user state
   const [filtros, setFiltros] = useState({
     aeroporto: 'todos',
     gravidade: 'todos',
@@ -48,11 +48,8 @@ export default function Safety() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const currentUser = await User.me();
-      setUser(currentUser);
-
       // Server-side filter by empresa_id when applicable
-      const empId = currentUser.empresa_id;
+      const empId = user?.empresa_id;
       const ocorrenciaPromise = empId
         ? OcorrenciaSafety.filter({ empresa_id: empId }, '-data_ocorrencia')
         : OcorrenciaSafety.list('-data_ocorrencia');
@@ -65,9 +62,9 @@ export default function Safety() {
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
 
       // FILTRO CRÍTICO: Filtrar ocorrências por aeroportos do utilizador (empresa-based)
-      const filteredOcorrencias = filtrarDadosPorAcesso(currentUser, ocorrenciasData, 'aeroporto', aeroportosAngola);
+      const filteredOcorrencias = filtrarDadosPorAcesso(user, ocorrenciasData, 'aeroporto', aeroportosAngola);
 
-      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosAngola, currentUser.empresa_id);
+      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, user?.empresa_id);
       setOcorrencias(filteredOcorrencias);
       setAeroportos(aeroportosFiltrados);
       

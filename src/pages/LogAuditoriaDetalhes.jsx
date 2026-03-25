@@ -16,8 +16,8 @@ import {
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { LogAuditoria } from '@/entities/LogAuditoria';
-import { User } from '@/entities/User';
 import { hasUserProfile, isAdminProfile } from '@/components/lib/userUtils';
+import { useAuth } from '@/lib/AuthContext';
 import { useI18n } from '@/components/lib/i18n';
 
 const ACTION_COLORS = {
@@ -44,6 +44,7 @@ const MODULE_COLORS = {
 export default function LogAuditoriaDetalhesPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const logId = searchParams.get('id');
 
@@ -62,7 +63,6 @@ export default function LogAuditoriaDetalhesPage() {
     setError(null);
 
     try {
-      const user = await User.me();
       const canAccessAuditLogs = isAdminProfile(user);
 
       if (!canAccessAuditLogs) {

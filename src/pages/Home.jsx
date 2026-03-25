@@ -38,8 +38,8 @@ import { OcorrenciaSafety } from "@/entities/OcorrenciaSafety";
 import { OrdemServico } from "@/entities/OrdemServico";
 import { Aeroporto } from "@/entities/Aeroporto";
 import { Inspecao } from "@/entities/Inspecao";
-import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
+import { useAuth } from '@/lib/AuthContext';
 import { hasUserProfile, ensureUserProfilesExist, getAeroportosPermitidos } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
@@ -53,6 +53,8 @@ new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(va
 export default function DashboardInterno() {
   const { t, language } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
+  const { user: authUser } = useAuth();
+  const currentUser = ensureUserProfilesExist(authUser);
   const [voos, setVoos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [ocorrenciasSafety, setOcorrenciasSafety] = useState([]);
@@ -69,17 +71,13 @@ export default function DashboardInterno() {
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [error, setError] = useState(null);
   const [loadingStatus, setLoadingStatus] = useState('Iniciando...');
-  const [currentUser, setCurrentUser] = useState(null);
+
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       setLoadingStatus(t('common.loading'));
-      const user = await User.me();
-      const userWithProfiles = ensureUserProfilesExist(user);
-      setCurrentUser(userWithProfiles);
-
-      if (hasUserProfile(userWithProfiles, 'gestor_empresa')) {
+      if (hasUserProfile(currentUser, 'gestor_empresa')) {
         setLoadingStatus(t('layout.redirecting'));
         window.location.href = createPageUrl('Credenciamento');
         return;
@@ -88,14 +86,14 @@ export default function DashboardInterno() {
       setLoadingStatus(t('common.loading'));
       let aeroportosData = [];
       try {
-        const empresaIdFiltro = effectiveEmpresaId || userWithProfiles.empresa_id;
+        const empresaIdFiltro = effectiveEmpresaId || currentUser.empresa_id;
         aeroportosData = await (empresaIdFiltro ? Aeroporto.filter({ empresa_id: empresaIdFiltro }) : Aeroporto.list());
       } catch (err) {
         console.error('❌ Erro ao carregar aeroportos:', err);
       }
 
       // Filtrar aeroportos por empresa + permissões do utilizador
-      const aeroportosFiltrados = getAeroportosPermitidos(userWithProfiles, aeroportosData, effectiveEmpresaId);
+      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosData, effectiveEmpresaId);
 
       setAeroportos(aeroportosFiltrados);
 
@@ -116,7 +114,7 @@ export default function DashboardInterno() {
       setOrdensServico(ordensServicoData);
 
       // Filtrar voos por aeroportos da empresa (mais fiável que voo.empresa_id que pode não estar preenchido)
-      const empresaId = effectiveEmpresaId || userWithProfiles.empresa_id;
+      const empresaId = effectiveEmpresaId || currentUser.empresa_id;
       const icaosPermitidos = new Set(aeroportosFiltrados.map(a => a.codigo_icao));
       const voosFiltrados = empresaId
         ? voosData.filter(v => icaosPermitidos.has(v.aeroporto_operacao))

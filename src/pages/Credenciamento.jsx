@@ -9,7 +9,7 @@ import { Credenciamento as CredenciamentoEntity } from '@/entities/Credenciament
 import { Empresa } from '@/entities/Empresa';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { AreaAcesso } from '@/entities/AreaAcesso';
-import { User } from '@/entities/User';
+import { useAuth } from '@/lib/AuthContext';
 
 import CredenciamentoStats from '../components/credenciamento/CredenciamentoStats';
 import CredenciamentoList from '../components/credenciamento/CredenciamentoList';
@@ -23,6 +23,7 @@ import { useI18n } from '@/components/lib/i18n';
 
 export default function Credenciamento() {
   const { t } = useI18n();
+  const { user: currentUser } = useAuth();
   const [credenciamentos, setCredenciamentos] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -32,7 +33,6 @@ export default function Credenciamento() {
   const [editingCredenciamento, setEditingCredenciamento] = useState(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('credenciamentos');
-  const [currentUser, setCurrentUser] = useState(null);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, title: '', message: '' });
@@ -150,16 +150,11 @@ export default function Credenciamento() {
       setErrorMessage('');
       
       try {
-        // Primeiro, tentar carregar o utilizador atual
-        const user = await User.me();
-        setCurrentUser(user);
-
-
         // Se for gestor de empresa, usar estratégia especial
-        if (hasUserProfile(user, 'gestor_empresa')) {
-          await loadDataForCompanyManagerSafe(user);
+        if (hasUserProfile(currentUser, 'gestor_empresa')) {
+          await loadDataForCompanyManagerSafe(currentUser);
         } else {
-          await loadDataForInternalUser(user);
+          await loadDataForInternalUser(currentUser);
         }
 
       } catch (error) {
@@ -190,12 +185,9 @@ export default function Credenciamento() {
     setErrorMessage('');
     
     try {
-      // Primeiro, tentar carregar o utilizador atual
-      const user = await User.me();
-      setCurrentUser(user);
       // Se for gestor de empresa, usar estratégia especial
-      if (hasUserProfile(user, 'gestor_empresa')) {
-        await loadDataForCompanyManagerSafe(user);
+      if (hasUserProfile(currentUser, 'gestor_empresa')) {
+        await loadDataForCompanyManagerSafe(currentUser);
       } else {
         await loadDataForInternalUser();
       }

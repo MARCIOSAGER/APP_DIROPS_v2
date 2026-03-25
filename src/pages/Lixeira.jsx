@@ -11,8 +11,8 @@ import { Inspecao } from '@/entities/Inspecao';
 import { Proforma } from '@/entities/Proforma';
 import { ItemChecklist } from '@/entities/ItemChecklist';
 import { Aeroporto } from '@/entities/Aeroporto';
-import { User } from '@/entities/User';
 import { useCompanyView } from '@/lib/CompanyViewContext';
+import { useAuth } from '@/lib/AuthContext';
 import { isSuperAdmin, getAeroportosPermitidos } from '@/components/lib/userUtils';
 import ConfirmModal from '@/components/shared/ConfirmModal';
 import { useI18n } from '@/components/lib/i18n';
@@ -20,7 +20,7 @@ import { useI18n } from '@/components/lib/i18n';
 export default function Lixeira() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user } = useAuth();
   const [aeroportos, setAeroportos] = useState([]);
   const [activeTab, setActiveTab] = useState('inspecoes');
   const [isLoading, setIsLoading] = useState(true);
@@ -43,10 +43,7 @@ export default function Lixeira() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const user = await User.me();
-      setCurrentUser(user);
-
-      const empresaIdFiltro = effectiveEmpresaId || user.empresa_id;
+      const empresaIdFiltro = effectiveEmpresaId || user?.empresa_id;
       const aeroportosData = await (empresaIdFiltro ? Aeroporto.filter({ empresa_id: empresaIdFiltro }) : Aeroporto.list());
       const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData, effectiveEmpresaId);
       setAeroportos(aeroportosFiltrados);

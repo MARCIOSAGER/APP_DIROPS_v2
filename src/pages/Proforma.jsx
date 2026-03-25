@@ -38,13 +38,13 @@ import { Proforma } from '@/entities/Proforma';
 import { ProformaItem } from '@/entities/ProformaItem';
 import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 import { Aeroporto } from '@/entities/Aeroporto';
-import { User } from '@/entities/User';
 import { downloadAsCSV } from '@/components/lib/export';
 import { base44 } from '@/api/base44Client';
 import { registarCriacao } from '@/components/lib/auditoria';
 import { getAeroportosPermitidos, ensureUserProfilesExist } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 import EditarFaturaModal from '../components/faturacao/EditarFaturaModal';
 import GerarProformaConsolidadaModal from '../components/faturacao/GerarProformaConsolidadaModal';
@@ -66,11 +66,12 @@ const STATUS_CONFIG = {
 export default function ProformaPage() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
+  const { user: authUser } = useAuth();
+  const currentUser = ensureUserProfilesExist(authUser);
   const [proformas, setProformas] = useState([]);
   const [companhias, setCompanhias] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null);
 
   const [editingProforma, setEditingProforma] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -101,11 +102,8 @@ export default function ProformaPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const user = ensureUserProfilesExist(await User.me());
-      setCurrentUser(user);
-
       // Server-side empresa filter
-      const empresaIdFiltro = effectiveEmpresaId || user.empresa_id;
+      const empresaIdFiltro = effectiveEmpresaId || currentUser?.empresa_id;
       const proformaFilters = {};
       if (empresaIdFiltro) proformaFilters.empresa_id = empresaIdFiltro;
 
@@ -116,7 +114,7 @@ export default function ProformaPage() {
       ]);
 
       // Filtrar aeroportos por empresa/permissões do utilizador
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData, effectiveEmpresaId);
+      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosData, effectiveEmpresaId);
 
       setProformas(proformasData);
       setCompanhias(companhiasData);

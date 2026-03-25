@@ -20,7 +20,6 @@ import {
 
 import { RegistoGRF } from '@/entities/RegistoGRF';
 import { Aeroporto } from '@/entities/Aeroporto';
-import { User } from '@/entities/User'; // Added User import
 import { downloadAsCSV } from '../components/lib/export';
 import { filtrarDadosPorAcesso } from '@/components/lib/userUtils';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
@@ -30,9 +29,11 @@ import FormGRF from '../components/grf/FormGRF';
 import SendEmailModal from '../components/shared/SendEmailModal';
 import SuccessModal from '../components/shared/SuccessModal';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function GRFPage() { // Renamed from GRF to GRFPage
   const { t } = useI18n();
+  const { user: currentUser } = useAuth();
   const [registos, setRegistos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +43,6 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
   const [editingRegisto, setEditingRegisto] = useState(null);
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: '', title: '', message: '', showCancel: false, onConfirm: () => {}, confirmText: 'Ok' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
-  const [currentUser, setUser] = useState(null); // Added currentUser state
 
   const [filtros, setFiltros] = useState({
     aeroporto: 'todos',
@@ -57,10 +57,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const currentUser = await User.me();
-      setUser(currentUser);
-
-      const empId = currentUser.empresa_id;
+      const empId = currentUser?.empresa_id;
       const [registosData, aeroportosData] = await Promise.all([
         RegistoGRF.list('-mes', 100), // Added limit of 100
         empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list()

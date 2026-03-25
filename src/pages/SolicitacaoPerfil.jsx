@@ -11,7 +11,6 @@ import Select from '@/components/ui/select';
 import Combobox from '@/components/ui/combobox';
 import { Badge } from '@/components/ui/badge';
 
-import { User } from '@/entities/User';
 import { SolicitacaoAcesso } from '@/entities/SolicitacaoAcesso';
 import { Empresa } from '@/entities/Empresa';
 import { Aeroporto } from '@/entities/Aeroporto';
@@ -24,7 +23,6 @@ import { useAuth } from '@/lib/AuthContext';
 export default function SolicitacaoPerfil() {
   const { t } = useI18n();
   const { user: authUser, logout } = useAuth();
-  const [user, setUser] = useState(null);
   const [empresas, setEmpresas] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,16 +55,6 @@ export default function SolicitacaoPerfil() {
         return;
       }
 
-      // Carregar utilizador atual
-      const currentUser = await User.me();
-      setUser(currentUser);
-
-      // Confirmar redirect após fetch do perfil
-      if (currentUser.status === 'ativo' && Array.isArray(currentUser.perfis) && currentUser.perfis.length > 0) {
-        window.location.href = createPageUrl('Home');
-        return;
-      }
-
       // Carregar empresas e aeroportos
       const [empresasData, aeroportosData] = await Promise.all([
         Empresa.list(),
@@ -75,7 +63,7 @@ export default function SolicitacaoPerfil() {
 
       const empresasAtivas = empresasData.filter(e => e.status === 'ativa');
       setEmpresas(empresasAtivas);
-      
+
       // Filtrar apenas aeroportos de Angola
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
       setAeroportos(aeroportosAngola);
@@ -83,8 +71,8 @@ export default function SolicitacaoPerfil() {
       // Preencher dados do utilizador
       setFormData(prev => ({
         ...prev,
-        nome_completo: currentUser.full_name || '',
-        email: currentUser.email || '',
+        nome_completo: authUser?.full_name || '',
+        email: authUser?.email || '',
         empresa_solicitante_id: empresasAtivas.length === 1 ? empresasAtivas[0].id : ''
       }));
 
@@ -106,7 +94,7 @@ export default function SolicitacaoPerfil() {
     try {
       // IMPORTANTE: Verificar novamente se já existe uma solicitação pendente
       const solicitacoesExistentes = await SolicitacaoAcesso.filter({ 
-        user_id: user.id,
+        user_id: authUser?.id,
         status: 'pendente'
       });
 
@@ -138,7 +126,7 @@ export default function SolicitacaoPerfil() {
 
       // Criar solicitação
       await SolicitacaoAcesso.create({
-        user_id: user.id,
+        user_id: authUser?.id,
         nome_completo: formData.nome_completo,
         email: formData.email,
         telefone: formData.telefone,
@@ -304,7 +292,7 @@ export default function SolicitacaoPerfil() {
           </div>
           <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">{t('solic.titulo')}</h1>
           <p className="text-lg text-slate-600 dark:text-slate-400">
-            {user?.full_name ? <>{t('solic.ola')} <span className="font-semibold text-blue-600 dark:text-blue-400">{user.full_name.split(' ')[0]}</span>! {t('solic.complete')}</> : t('solic.complete')}
+            {authUser?.full_name ? <>{t('solic.ola')} <span className="font-semibold text-blue-600 dark:text-blue-400">{authUser.full_name.split(' ')[0]}</span>! {t('solic.complete')}</> : t('solic.complete')}
           </p>
         </div>
 

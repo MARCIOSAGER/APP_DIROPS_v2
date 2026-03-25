@@ -13,7 +13,6 @@ import SortableTableHeader from '@/components/shared/SortableTableHeader';
 
 import { MovimentoFinanceiro } from '@/entities/MovimentoFinanceiro';
 import { Aeroporto } from '@/entities/Aeroporto';
-import { User } from '@/entities/User';
 import MovimentosFinanceirosChart from '../components/financeiro/MovimentosFinanceirosChart';
 import FormMovimentoFinanceiro from '../components/financeiro/FormMovimentoFinanceiro';
 import { downloadAsCSV } from '../components/lib/export';
@@ -25,6 +24,7 @@ import { getAeroportosPermitidos, getEmpresaLogoByUser } from '@/components/lib/
 import { createPdfDoc, addHeader, addFooter, addTable, loadImageAsBase64 } from '@/lib/pdfTemplate';
 import { Empresa } from '@/entities/Empresa';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 const RecentMovimentosFinanceiros = ({ movimentos, t }) => (
   <Card className="border-0 shadow-sm">
@@ -53,11 +53,12 @@ const RecentMovimentosFinanceiros = ({ movimentos, t }) => (
 
 export default function FundoManeio() {
   const { t } = useI18n();
+  const { user: currentUser } = useAuth();
   const [movimentos, setMovimentos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null);
+
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMovimento, setEditingMovimento] = useState(null);
@@ -82,18 +83,15 @@ export default function FundoManeio() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const user = await User.me();
-      setCurrentUser(user);
-
       const [aeroportosData, empresasData] = await Promise.all([
-        user.empresa_id ? Aeroporto.filter({ empresa_id: user.empresa_id }) : Aeroporto.list(),
+        currentUser?.empresa_id ? Aeroporto.filter({ empresa_id: currentUser.empresa_id }) : Aeroporto.list(),
         Empresa.list()
       ]);
 
       setEmpresas(empresasData || []);
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-      const userAccessibleAeroportos = getAeroportosPermitidos(user, aeroportosAngola, user.empresa_id);
+      const userAccessibleAeroportos = getAeroportosPermitidos(currentUser, aeroportosAngola, currentUser?.empresa_id);
       setAeroportos(userAccessibleAeroportos);
 
       // Initial load with empresa_id filter

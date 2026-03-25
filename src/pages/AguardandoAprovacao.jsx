@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, CheckCircle, Mail, ArrowLeft, RefreshCw } from 'lucide-react';
-import { User } from '@/entities/User';
 import { SolicitacaoAcesso } from '@/entities/SolicitacaoAcesso';
 import { createPageUrl } from '@/utils';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function AguardandoAprovacao() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [solicitacao, setSolicitacao] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -18,14 +18,10 @@ export default function AguardandoAprovacao() {
   const loadData = async (tentativa = 1) => {
     const MAX_TENTATIVAS = 3;
     setIsLoading(true);
-    let currentUser = null;
     try {
-      currentUser = await User.me();
-      setUser(currentUser);
-
       // Buscar a solicitação pendente do utilizador (deve haver apenas uma)
-      const solicitacoes = await SolicitacaoAcesso.filter({ 
-        user_id: currentUser.id,
+      const solicitacoes = await SolicitacaoAcesso.filter({
+        user_id: user?.id,
         status: 'pendente'
       }, '-created_date', 1);
 
@@ -33,7 +29,7 @@ export default function AguardandoAprovacao() {
         setSolicitacao(solicitacoes[0]);
       } else {
         // Se não há solicitação pendente, verificar se o utilizador já foi aprovado
-        if (currentUser.perfis && Array.isArray(currentUser.perfis) && currentUser.perfis.length > 0 && currentUser.status === 'ativo') {
+        if (user?.perfis && Array.isArray(user.perfis) && user.perfis.length > 0 && user?.status === 'ativo') {
           window.location.href = createPageUrl('Home');
           return;
         }

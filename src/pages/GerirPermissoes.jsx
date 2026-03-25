@@ -18,10 +18,10 @@ import {
 } from 'lucide-react';
 
 import { RegraPermissao } from '@/entities/RegraPermissao';
-import { User } from '@/entities/User';
 import AlertModal from '../components/shared/AlertModal';
 import { hasUserProfile, isAdminProfile } from '@/components/lib/userUtils';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 // Todas as páginas disponíveis no sistema
 const PAGINAS_DISPONIVEIS = [
@@ -264,7 +264,7 @@ const PERFIL_INFO = {
 
 export default function GerirPermissoes() {
   const { t } = useI18n();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [regras, setRegras] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -279,10 +279,7 @@ export default function GerirPermissoes() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const user = await User.me();
-      setCurrentUser(user);
-
-      if (!isAdminProfile(user)) {
+      if (!isAdminProfile(currentUser)) {
         setIsLoading(false);
         return;
       }

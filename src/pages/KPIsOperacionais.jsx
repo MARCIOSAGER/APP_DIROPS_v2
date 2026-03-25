@@ -17,7 +17,6 @@ import { MedicaoKPI } from '@/entities/MedicaoKPI';
 import { ValorCampoKPI } from '@/entities/ValorCampoKPI';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
-import { User } from '@/entities/User'; // Added User import
 
 import FormMedicaoKPI from '../components/kpis/FormMedicaoKPI';
 import ConfiguracaoKPIs from '../components/kpis/ConfiguracaoKPIs';
@@ -36,6 +35,7 @@ import { createPdfDoc, addHeader, addFooter, addTable, addInfoBox, addSectionTit
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 const CATEGORIA_COLORS = {
   operacional: 'bg-blue-100 text-blue-800',
@@ -47,7 +47,7 @@ const CATEGORIA_COLORS = {
 export default function KPIsOperacionais() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
-  const [currentUser, setCurrentUser] = useState(null); // Added currentUser state
+  const { user: currentUser } = useAuth();
   const [tiposKPI, setTiposKPI] = useState([]);
   const [medicoesKPI, setMedicoesKPI] = useState([]); // Changed from medicoes to medicoesKPI
   const [aeroportos, setAeroportos] = useState([]);
@@ -103,11 +103,8 @@ export default function KPIsOperacionais() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const user = await User.me();
-      setCurrentUser(user);
-
       // Use effectiveEmpresaId (respects company view switch for superadmin)
-      const empId = effectiveEmpresaId || user.empresa_id;
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
       const medicaoPromise = empId
         ? MedicaoKPI.filter({ empresa_id: empId }, '-data_medicao')
         : MedicaoKPI.list('-data_medicao');

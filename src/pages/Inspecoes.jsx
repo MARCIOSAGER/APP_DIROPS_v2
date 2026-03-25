@@ -8,10 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Inspecao } from '@/entities/Inspecao';
 import { TipoInspecao } from '@/entities/TipoInspecao';
 import { Aeroporto } from '@/entities/Aeroporto';
-import { User } from '@/entities/User'; // Added User import
 import { getAeroportosPermitidos, filtrarDadosPorAeroportoId } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 import InspecoesList from '../components/inspecoes/InspecoesList';
 import FormInspecao from '../components/inspecoes/FormInspecao';
@@ -20,7 +20,7 @@ import TiposInspecaoConfig from '../components/inspecoes/TiposInspecaoConfig';
 export default function Inspecoes() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
-  const [currentUser, setCurrentUser] = useState(null); // Added currentUser state
+  const { user: currentUser } = useAuth();
   const [inspecoes, setInspecoes] = useState([]);
   const [tiposInspecao, setTiposInspecao] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -36,11 +36,8 @@ export default function Inspecoes() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const user = await User.me(); // Fetch current user
-      setCurrentUser(user); // Set current user
-
       // Server-side filter by empresa_id when applicable
-      const empId = effectiveEmpresaId || user.empresa_id;
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
       const inspecaoPromise = empId
         ? Inspecao.filter({ empresa_id: empId }, '-data_inspecao')
         : Inspecao.list('-data_inspecao');
@@ -52,13 +49,13 @@ export default function Inspecoes() {
       ]);
 
       // Filtrar aeroportos pela empresa e acesso do utilizador
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData, effectiveEmpresaId);
+      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosData, effectiveEmpresaId);
       setAeroportos(aeroportosFiltrados);
       setTiposInspecao(tiposData);
 
       // Filtrar inspeções canceladas e pelos aeroportos permitidos do utilizador
       const inspecoesAtivas = inspecoesData.filter(i => i.status !== 'cancelada');
-      const inspecoesFiltradas = filtrarDadosPorAeroportoId(user, inspecoesAtivas, 'aeroporto_id', aeroportosData, effectiveEmpresaId);
+      const inspecoesFiltradas = filtrarDadosPorAeroportoId(currentUser, inspecoesAtivas, 'aeroporto_id', aeroportosData, effectiveEmpresaId);
       setInspecoes(inspecoesFiltradas);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);

@@ -12,12 +12,12 @@ import {
 } from 'lucide-react';
 import { ApiKey } from '@/entities/ApiKey';
 import { ApiAccessLog } from '@/entities/ApiAccessLog';
-import { User } from '@/entities/User';
 import { isSuperAdmin } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 const AVAILABLE_ENTITIES = [
   { value: 'voo', label: 'Voos' },
@@ -62,7 +62,7 @@ async function generateApiKey() {
 export default function GestaoAPIKeys() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [keys, setKeys] = useState([]);
   const [logs, setLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,18 +95,16 @@ export default function GestaoAPIKeys() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const user = await User.me();
-      setCurrentUser(user);
       const [keysData, logsData] = await Promise.all([
         ApiKey.list('-created_date'),
         ApiAccessLog.list('-created_at'),
       ]);
 
-      const empId = effectiveEmpresaId || user?.empresa_id;
-      const filteredKeys = isSuperAdmin(user) && !effectiveEmpresaId
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
+      const filteredKeys = isSuperAdmin(currentUser) && !effectiveEmpresaId
         ? keysData
         : keysData.filter(k => k.empresa_id === empId);
-      const filteredLogs = isSuperAdmin(user) && !effectiveEmpresaId
+      const filteredLogs = isSuperAdmin(currentUser) && !effectiveEmpresaId
         ? logsData
         : logsData.filter(l => l.empresa_id === empId);
 

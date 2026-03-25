@@ -31,11 +31,12 @@ import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
 import { getAeroportosPermitidos, filtrarDadosPorAeroportoId, isSuperAdmin, isInfraOrAdmin } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Manutencao() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [ordensDeServico, setOrdensDeServico] = useState([]);
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
@@ -73,12 +74,10 @@ export default function Manutencao() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const user = await User.me();
-      setCurrentUser(user);
-      fetchEmpresaLogo(user?.empresa_id).then(b64 => setLogoBase64(b64));
+      fetchEmpresaLogo(currentUser?.empresa_id).then(b64 => setLogoBase64(b64));
 
       // Server-side filter by empresa_id when applicable
-      const empId = effectiveEmpresaId || user.empresa_id;
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
       const empFilters = empId ? { empresa_id: empId } : {};
 
       const [ordensData, ssData, aeroportosData, usersData] = await Promise.all([
@@ -90,13 +89,13 @@ export default function Manutencao() {
       setAllUsers(usersData);
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, effectiveEmpresaId);
+      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosAngola, effectiveEmpresaId);
       setAeroportos(aeroportosFiltrados);
 
-      const ordensFiltradas = filtrarDadosPorAeroportoId(user, ordensData, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId);
+      const ordensFiltradas = filtrarDadosPorAeroportoId(currentUser, ordensData, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId);
       setOrdensDeServico(ordensFiltradas);
 
-      const ssFiltradas = filtrarDadosPorAeroportoId(user, ssData, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId);
+      const ssFiltradas = filtrarDadosPorAeroportoId(currentUser, ssData, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId);
       setSolicitacoes(ssFiltradas);
     } catch (error) {
       console.error('Erro ao carregar dados de manutenção:', error);

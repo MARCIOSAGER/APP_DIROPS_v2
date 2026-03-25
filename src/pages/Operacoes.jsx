@@ -26,12 +26,12 @@ import { TarifaPouso } from '@/entities/TarifaPouso';
 import { TarifaPermanencia } from '@/entities/TarifaPermanencia';
 import { OutraTarifa } from '@/entities/OutraTarifa';
 import { Imposto } from '@/entities/Imposto';
-import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
 import { hasUserProfile, getAeroportosPermitidos, isSuperAdmin, isAdminProfile } from '@/components/lib/userUtils';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
 import { useAeroportos, useCompanhias, useAeronaves, useModelosAeronave } from '@/components/lib/useStaticData';
 import { useCompanyView } from '@/lib/CompanyViewContext';
+import { useAuth } from '@/lib/AuthContext';
 
 import VoosTable from '../components/operacoes/VoosTable';
 import FormVoo from '../components/operacoes/FormVoo';
@@ -98,6 +98,7 @@ function filterTarifasByEmpresa(tarifas, empresaId) {
 export default function Operacoes() {
    const { t, language } = useI18n();
    const { effectiveEmpresaId } = useCompanyView();
+   const { user } = useAuth();
    const effectiveEmpresaIdRef = useRef(effectiveEmpresaId);
    effectiveEmpresaIdRef.current = effectiveEmpresaId;
    const [voos, setVoos] = useState([]);
@@ -118,7 +119,7 @@ export default function Operacoes() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [tipoMovimentoForm, setTipoMovimentoForm] = useState('ARR');
   const [editingVoo, setEditingVoo] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
+  const currentUser = user;
   const [vooArrToLink, setVooArrToLink] = useState(null);
   const [tariffDetailsData, setTariffDetailsData] = useState(null);
   const [gerarProformaCalculo, setGerarProformaCalculo] = useState(null);
@@ -228,9 +229,6 @@ export default function Operacoes() {
     const MAX_TENTATIVAS = 3;
     setIsLoading(true);
     try {
-      const user = await User.me();
-      setCurrentUser(user);
-
       if (hasUserProfile(user, 'gestor_empresa')) {
         window.location.href = createPageUrl('Credenciamento');
         return;

@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Save, RefreshCw, Settings, Mail, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { User } from '@/entities/User';
 import AlertModal from '@/components/shared/AlertModal';
+import { useAuth } from '@/lib/AuthContext';
 import SuccessModal from '@/components/shared/SuccessModal';
 import { createPageUrl } from '@/utils';
 import { emailTemplates } from '@/lib/emailTemplates';
@@ -15,6 +15,7 @@ import { isAdminProfile } from '@/components/lib/userUtils';
 
 export default function ConfiguracoesGerais() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [configId, setConfigId] = useState(null);
@@ -45,8 +46,6 @@ export default function ConfiguracoesGerais() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const user = await User.me();
-
       if (!isAdminProfile(user)) {
         setAlertInfo({
           isOpen: true,

@@ -34,9 +34,9 @@ import GerirTiposOutraTarifaModal from '../components/financeiro/GerirTiposOutra
 import AlertModal from '../components/shared/AlertModal';
 import { registarExclusao } from '../components/lib/auditoria';
 import { getAeroportosPermitidos } from '@/components/lib/userUtils';
-import { User } from '@/entities/User';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 // Helper: filtra tarifas por empresa_id
 function filterTarifasByEmpresa(tarifas, empresaId) {
@@ -49,6 +49,7 @@ function filterTarifasByEmpresa(tarifas, empresaId) {
 export default function ConfiguracaoTarifas() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
+  const { user } = useAuth();
   const [tarifasPouso, setTarifasPouso] = useState([]);
   const [tarifasPermanencia, setTarifasPermanencia] = useState([]);
   const [outrasTarifas, setOutrasTarifas] = useState([]);
@@ -92,8 +93,6 @@ export default function ConfiguracaoTarifas() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const user = await User.me();
-
       const [
         aeroportosData,
         tarifasPousoData,

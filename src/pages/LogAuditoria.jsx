@@ -19,9 +19,9 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 import { LogAuditoria } from '@/entities/LogAuditoria';
-import { User } from '@/entities/User';
 import { hasUserProfile, isAdminProfile } from '@/components/lib/userUtils'; // Importar a função de utilitário
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 const ACTION_COLORS = {
   criar: 'bg-green-100 text-green-800',
@@ -47,11 +47,11 @@ const MODULE_COLORS = {
 export default function LogAuditoriaPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const { user } = useAuth();
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
   const [hasAccess, setHasAccess] = useState(false);
 
   // Filtros
@@ -73,10 +73,6 @@ export default function LogAuditoriaPage() {
     setError(null);
 
     try {
-      // Primeiro verificar se o utilizador está autenticado
-      const user = await User.me();
-      setCurrentUser(user);
-
       // Verificar se tem permissões para ver logs de auditoria
       // USAR A FUNÇÃO SEGURA hasUserProfile
       const canAccessAuditLogs = isAdminProfile(user);
