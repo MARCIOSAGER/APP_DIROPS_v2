@@ -73,7 +73,7 @@ Plans:
   2. After saving any flight mutation, the Home dashboard KPIs reflect the updated count on next navigation without a manual refresh
   3. Navigating away from Operacoes and back shows cached data instantly while a background refetch runs silently
   4. Operacoes and Home data fetches are deduplicated — both pages consume the same cached query result rather than each issuing their own network call
-**Plans:** 3 plans
+**Plans:** 0/3 plans executed
 
 Plans:
 - [ ] 08-01-PLAN.md — Create useVoos, useVoosLigados, useCalculosTarifa, useDashboardStats hooks
@@ -119,6 +119,6 @@ Plans:
 | 5. UX Polish | v1.1 | 3/3 | Complete | 2026-03-25 |
 | 6. Cache Foundation | v1.2 | 3/3 | Complete   | 2026-03-25 |
 | 7. Query Optimization | v1.2 | 3/3 | Complete   | 2026-03-25 |
-| 8. Cache Integration (High-Traffic) | v1.2 | 0/3 | Not started | - |
+| 8. Cache Integration (High-Traffic) | v1.2 | 0/3 | Planned    |  |
 | 9. Cache Integration (Remaining) + Resilience | v1.2 | 0/3 | Not started | - |
 | 10. Database Performance | v1.2 | 0/? | Not started | - |

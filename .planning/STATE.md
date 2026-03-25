@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Performance
-status: Ready to plan
-stopped_at: Completed 07-03-PLAN.md
-last_updated: "2026-03-25T19:30:15.282Z"
+status: Ready to execute
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-03-25T20:46:33.929Z"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 6
+  total_plans: 13
   completed_plans: 6
 ---
 
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Operations teams can manage flights end-to-end in a single unified system.
-**Current focus:** Phase 07 — query-optimization
+**Current focus:** Phase 08 — cache-integration-high-traffic
 
 ## Current Position
 
-Phase: 8
-Plan: Not started
+Phase: 08 (cache-integration-high-traffic) — EXECUTING
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Plan: Not started
 | Phase 07-query-optimization P01 | 10 | 1 tasks | 1 files |
 | Phase 07-query-optimization P02 | 689 | 1 tasks | 1 files |
 | Phase 07-query-optimization P03 | 12 | 2 tasks | 2 files |
+| Phase 08-cache-integration-high-traffic P01 | 446 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,9 @@ Plan: Not started
 - [Phase 07-query-optimization]: Default select='*' on list()/filter() keeps all existing callers backward compatible while enabling opt-in column projection
 - [Phase 07-query-optimization]: Response.previousData used for trend comparison — Edge Function already returns previous-period stats in same response, eliminating the need for a second getDashboardStats call
 - [Phase 07-query-optimization]: Impostos use filterTarifasByEmpresa same as tarifas — consistent empresa_id scoping via sync effects
+- [Phase 08-cache-integration-high-traffic]: staleTime 0 for operational hooks (voos/voosLigados/calculos), staleTime 5 min for aggregate stats (dashboard) — operational data must always reflect server state on mount
+- [Phase 08-cache-integration-high-traffic]: fetchCalculoMap exported separately from useCalculosTarifa so Plans 02/03 can call it imperatively after mutations without triggering full re-render cycle
+- [Phase 08-cache-integration-high-traffic]: useDashboardStats returns full response object (not destructured): callers access both .data and .previousData at call site
 
 ### Pending Todos
 
@@ -76,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T19:29:10.246Z
-Stopped at: Completed 07-03-PLAN.md
+Last session: 2026-03-25T20:46:33.900Z
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None

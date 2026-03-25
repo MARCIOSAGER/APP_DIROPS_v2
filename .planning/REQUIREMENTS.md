@@ -17,8 +17,8 @@
 
 ## Cache Integration
 
-- [ ] **INTEG-01**: High-traffic pages (Operacoes, Home) use TanStack Query hooks with proper staleTime
-- [ ] **INTEG-02**: All flight mutations trigger queryClient.invalidateQueries — no manual refresh needed
+- [x] **INTEG-01**: High-traffic pages (Operacoes, Home) use TanStack Query hooks with proper staleTime
+- [x] **INTEG-02**: All flight mutations trigger queryClient.invalidateQueries — no manual refresh needed
 - [ ] **INTEG-03**: Remaining pages migrated from useEffect to TanStack Query hooks
 
 ## Database Performance
