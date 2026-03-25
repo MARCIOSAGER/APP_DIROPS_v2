@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Consolidacao e Polimento
-status: Ready to plan
-stopped_at: Completed 01-bug-fixes/01-02-PLAN.md
-last_updated: "2026-03-25T13:04:12.947Z"
+status: Ready to execute
+stopped_at: Completed 02-flightaware-ui 02-01-PLAN.md
+last_updated: "2026-03-25T14:17:07.640Z"
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # State: DIROPS-SGA
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Operations teams can manage flights end-to-end in a single unified system.
-**Current focus:** Phase 01 — bug-fixes
+**Current focus:** Phase 02 — flightaware-ui
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 02 (flightaware-ui) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -43,6 +43,7 @@ Plan: Not started
 *Updated after each plan completion*
 | Phase 01-bug-fixes P01 | 4 | 2 tasks | 2 files |
 | Phase 01-bug-fixes P02 | 10 | 2 tasks | 3 files |
+| Phase 02-flightaware-ui P01 | 245s | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -54,6 +55,8 @@ Plan: Not started
 - regra_permissao: administrador (27 pages), operacoes (17 pages) as of migration 049
 - [Phase 01-bug-fixes]: Use destructured parameter (returnBase64 = false) instead of arguments[0] in ESM async functions
 - [Phase 01-bug-fixes]: filterVoosArr extracted as named export for testability; registration filter conditional on non-empty registo_aeronave; individual formData.* fields used in dep array to match existing style
+- [Phase 02-flightaware-ui]: Use pure CSS/Tailwind peer checkbox pattern for real flights toggle — avoids new Radix Switch dependency
+- [Phase 02-flightaware-ui]: voosReaisMatch uses actual_off/actual_on fields from raw_data per D-06 spec for FlightAware real flight detection
 
 ### Pending Todos
 
@@ -65,6 +68,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T12:56:16.058Z
-Stopped at: Completed 01-bug-fixes/01-02-PLAN.md
+Last session: 2026-03-25T14:17:07.633Z
+Stopped at: Completed 02-flightaware-ui 02-01-PLAN.md
 Resume file: None

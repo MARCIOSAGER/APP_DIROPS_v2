@@ -14,10 +14,10 @@ Requirements for milestone v1.1 — Consolidacao e Polimento.
 
 ### FlightAware
 
-- [ ] **FA-01**: User sees "Verificar Registo" badge on flights imported from FlightAware with empty registration
-- [ ] **FA-02**: User sees "Verificar Horarios" badge on flights with empty horario_previsto
-- [ ] **FA-03**: User sees "Dados FlightAware" badge to distinguish automatic imports from manual entries
-- [ ] **FA-04**: User can filter FlightAware cache to show only "real" flights (with actual_off/actual_on, hiding cancelled)
+- [x] **FA-01**: User sees "Verificar Registo" badge on flights imported from FlightAware with empty registration
+- [x] **FA-02**: User sees "Verificar Horarios" badge on flights with empty horario_previsto
+- [x] **FA-03**: User sees "Dados FlightAware" badge to distinguish automatic imports from manual entries
+- [x] **FA-04**: User can filter FlightAware cache to show only "real" flights (with actual_off/actual_on, hiding cancelled)
 - [ ] **FA-05**: System automatically fetches FlightAware data daily via scheduled function
 - [ ] **FA-06**: User sees warning in import modal when flight already exists (duplicate detection)
 - [ ] **FA-07**: User can update existing flight with FlightAware data (merge, not just create new)
@@ -65,10 +65,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | BUG-01 | Phase 1 | Complete |
 | BUG-02 | Phase 1 | Complete |
-| FA-01 | Phase 2 | Pending |
-| FA-02 | Phase 2 | Pending |
-| FA-03 | Phase 2 | Pending |
-| FA-04 | Phase 2 | Pending |
+| FA-01 | Phase 2 | Complete |
+| FA-02 | Phase 2 | Complete |
+| FA-03 | Phase 2 | Complete |
+| FA-04 | Phase 2 | Complete |
 | FA-05 | Phase 3 | Pending |
 | FA-06 | Phase 2 | Pending |
 | FA-07 | Phase 2 | Pending |

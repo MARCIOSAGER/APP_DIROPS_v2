@@ -51,7 +51,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Badges (Dados FlightAware, Verificar Registo/Horario) + real-flights toggle filter (FA-01, FA-02, FA-03, FA-04)
+- [x] 02-01-PLAN.md — Badges (Dados FlightAware, Verificar Registo/Horario) + real-flights toggle filter (FA-01, FA-02, FA-03, FA-04)
 - [ ] 02-02-PLAN.md — Duplicate detection warning + field-level merge modal (FA-06, FA-07)
 
 **UI hint**: yes
@@ -95,7 +95,7 @@ Note: Phase 4 depends only on Phase 1 (can start after Phase 1 completes, in par
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Bug Fixes | 1/2 | In Progress|  |
-| 2. FlightAware UI | 0/? | Not started | - |
+| 2. FlightAware UI | 1/2 | In Progress|  |
 | 3. FlightAware Automation | 0/? | Not started | - |
 | 4. Tech Debt | 0/? | Not started | - |
 | 5. UX Polish | 0/? | Not started | - |
