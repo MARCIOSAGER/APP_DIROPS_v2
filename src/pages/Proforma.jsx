@@ -537,7 +537,7 @@ export default function ProformaPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-slate-600 dark:text-slate-400">{t('proforma.kpi_total_usd')}</p>
-                  <p className="text-green-700 text-sm font-bold" title={`${formatCurrency(kpiData.totalValorUSD, 'USD')} US$`}>
+                  <p className="text-green-700 text-sm font-bold truncate" title={`${formatCurrency(kpiData.totalValorUSD, 'USD')} US$`}>
                     {formatCurrency(kpiData.totalValorUSD, 'USD')} US$
                   </p>
                 </div>
@@ -553,7 +553,7 @@ export default function ProformaPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-slate-600 dark:text-slate-400">{t('proforma.kpi_total_aoa')}</p>
-                  <p className="text-emerald-700 text-sm font-bold" title={`${formatCurrency(kpiData.totalValorAOA)} Kz`}>
+                  <p className="text-emerald-700 text-sm font-bold truncate" title={`${formatCurrency(kpiData.totalValorAOA)} Kz`}>
                     {formatCurrency(kpiData.totalValorAOA)} Kz
                   </p>
                 </div>
@@ -704,27 +704,27 @@ export default function ProformaPage() {
               <Table>
                 <TableHeader className="bg-slate-50 dark:bg-slate-950">
                   <TableRow>
-                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('numero_proforma')}>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[130px]" onClick={() => handleSort('numero_proforma')}>
                       {t('proforma.col_number')}
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('data_emissao')}>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[100px]" onClick={() => handleSort('data_emissao')}>
                       {t('proforma.col_issue_date')}
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('data_vencimento')}>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[100px]" onClick={() => handleSort('data_vencimento')}>
                       {t('proforma.col_due_date')}
                     </TableHead>
-                    <TableHead>{t('proforma.col_company')}</TableHead>
-                    <TableHead>{t('proforma.col_airport')}</TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('valor_total_usd')}>
+                    <TableHead className="min-w-[130px]">{t('proforma.col_company')}</TableHead>
+                    <TableHead className="min-w-[100px]">{t('proforma.col_airport')}</TableHead>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[110px]" onClick={() => handleSort('valor_total_usd')}>
                       {t('proforma.col_value_usd')}
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('valor_total_aoa')}>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[110px]" onClick={() => handleSort('valor_total_aoa')}>
                       {t('proforma.col_value_aoa')}
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('status')}>
+                    <TableHead className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 min-w-[90px]" onClick={() => handleSort('status')}>
                       {t('proforma.col_status')}
                     </TableHead>
-                    <TableHead className="text-right">{t('proforma.col_actions')}</TableHead>
+                    <TableHead className="text-right min-w-[80px]">{t('proforma.col_actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
