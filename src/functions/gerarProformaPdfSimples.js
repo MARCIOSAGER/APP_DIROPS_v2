@@ -622,6 +622,7 @@ export async function gerarRelatorioFaturacaoPdf({
   calculos, companhia, aeroporto, periodo_inicio, periodo_fim,
   voos, voosLigados, proformasMap,
   groupedByCompanhia, // optional: array of { nome, calculos: rawCalcArray[] } for "Todas as Companhias"
+  returnBase64 = false, // when true, returns { base64, filename } instead of saving the file
 }) {
   const { fetchEmpresaLogo } = await import('@/lib/pdfTemplate');
 
@@ -749,7 +750,7 @@ export async function gerarRelatorioFaturacaoPdf({
   const filename = `Extrato_Facturacao_${compNome}_${periodo_inicio || ''}_${periodo_fim || ''}_${dataStr}.pdf`;
 
   // If returnBase64 requested, return the PDF as base64 + filename (for email)
-  if (arguments[0]?.returnBase64) {
+  if (returnBase64) {
     const base64 = doc.output('datauristring').split(',')[1];
     return { base64, filename };
   }
