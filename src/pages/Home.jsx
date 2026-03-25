@@ -5,13 +5,8 @@ import Select from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Plane,
-  Clock,
   DollarSign,
-  ShieldAlert,
-  TrendingUp,
-  TrendingDown,
   MapPin,
-  Users,
   RefreshCw,
   AlertTriangle,
   Timer,
@@ -24,6 +19,7 @@ import {
   Search,
   Activity } from
 "lucide-react";
+import DashboardStats from '@/components/dashboard/DashboardStats';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -404,18 +400,6 @@ export default function DashboardInterno() {
       .slice(0, 5);
   }, [filteredVoos, filteredInspecoes, ordensServico]);
 
-  // Trend indicator component
-  const TrendIndicator = ({ trend }) => {
-    if (!trend) return null;
-    const isUp = trend.direction === 'up';
-    return (
-      <span className={`inline-flex items-center gap-0.5 text-[9px] font-medium ${isUp ? 'text-green-600' : 'text-red-600'}`}>
-        {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-        {trend.pct}%
-      </span>
-    );
-  };
-
   if (error) {
     return (
       <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
@@ -512,127 +496,16 @@ export default function DashboardInterno() {
           </div> :
 
         <>
-            {isLoadingStats ?
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3">
-                {Array(8).fill(0).map((_, i) =>
-            <Card key={i} className="border-0 shadow-sm">
-                    <CardHeader className="pb-2 px-4 pt-4">
-                      <Skeleton className="h-6 w-6 rounded" />
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <Skeleton className="h-6 w-16 mb-2" />
-                      <Skeleton className="h-3 w-24 mb-1" />
-                      <Skeleton className="h-2 w-20" />
-                    </CardContent>
-                  </Card>
-            )}
-              </div> :
-          dashboardStats &&
-          <>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-                  <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950">
-                        <Plane className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{serverStats?.total_voos ?? dashboardStats?.totalVoos ?? 0}</span>
-                        <TrendIndicator trend={trends.voos} />
-                      </div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.total_voos')}</p>
-                      {(serverStats?.ligados > 0 || dashboardStats?.voosUnicosLigados > 0) &&
-                  <p className="text-[9px] text-slate-400">
-                          {serverStats?.ligados ?? dashboardStats?.voosUnicosLigados ?? 0} {t('home.ligados')}, {serverStats?.sem_link ?? dashboardStats?.voosSemLink ?? 0} {t('home.sem_link')}
-                        </p>
-                  }
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950">
-                        <Plane className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{serverStats?.chegadas_hoje ?? dashboardStats?.chegadasHoje ?? 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.chegadas_hoje')}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-950">
-                        <Plane className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{serverStats?.partidas_hoje ?? dashboardStats?.partidasHoje ?? 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.partidas_hoje')}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-green-50 dark:bg-green-950">
-                        <Clock className="h-4 w-4 text-green-600 dark:text-green-400" />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{(serverStats?.pontualidade ?? dashboardStats?.taxaPontualidade ?? 0).toFixed(1)}%</span>
-                        <TrendIndicator trend={trends.pontualidade} />
-                      </div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.pontualidade')}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className={`p-1.5 rounded-lg ${(dashboardStats?.ocorrenciasAbertas || 0) > 0 ? 'bg-red-50 dark:bg-red-950' : 'bg-gray-50 dark:bg-gray-900'}`}>
-                        <ShieldAlert className={`h-4 w-4 ${(dashboardStats?.ocorrenciasAbertas || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.ocorrenciasAbertas || 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.ocorrencias_abertas')}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-yellow-50 dark:bg-yellow-950">
-                        <ClipboardCheck className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <div className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">{dashboardStats?.inspecoesPendentes || 0}</div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.inspecoes_pendentes')}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 pt-4">
-                      <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950">
-                        <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                          {(() => {
-                            const pax = serverStats?.total_passageiros ?? dashboardStats?.passageirosPeriodo ?? 0;
-                            return pax > 0 ? `${(pax / 1000).toFixed(1)}K` : '0';
-                          })()}
-                        </span>
-                        <TrendIndicator trend={trends.passageiros} />
-                      </div>
-                      <p className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1.5 line-clamp-2">{t('home.passageiros_periodo')}</p>
-                    </CardContent>
-                  </Card>
-                </div>
+            <DashboardStats
+              voos={filteredVoos}
+              ocorrencias={filteredOcorrencias}
+              inspecoes={filteredInspecoes}
+              calculosTarifa={filteredCalculosTarifa}
+              isLoading={isLoadingStats}
+              serverStats={serverStats}
+              dashboardStats={dashboardStats}
+              trends={trends}
+            />
 
                 {dashboardStats && (dashboardStats.voosLigados || 0) > 0 &&
             <Card className="border-slate-200 dark:border-slate-700">
@@ -825,8 +698,6 @@ export default function DashboardInterno() {
                     </CardContent>
                   </Card>
             }
-              </>
-          }
 
             <React.Suspense fallback={
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
