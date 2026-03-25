@@ -93,7 +93,7 @@ Plans:
 Plans:
 - [ ] 09-01-PLAN.md — Create useEntityQuery factory hook; migrate FundoManeio and Safety to useQuery
 - [ ] 09-02-PLAN.md — Migrate Documentos, Inspecoes, and Proforma to useQuery
-- [ ] 09-03-PLAN.md — Verify and document RES-01 ErrorBoundary in App.jsx; human verification checkpoint
+- [x] 09-03-PLAN.md — Verify and document RES-01 ErrorBoundary in App.jsx; human verification checkpoint
 
 ### Phase 10: Database Performance
 **Goal**: Primary query patterns on voo, calculo_tarifa, and voo_ligado hit indexes instead of sequential scans — measurably faster at the database layer

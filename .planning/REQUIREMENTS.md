@@ -27,7 +27,7 @@
 
 ## Resilience
 
-- [ ] **RES-01**: ErrorBoundary wraps React.lazy to recover from ChunkLoadError after deploys
+- [x] **RES-01**: ErrorBoundary wraps React.lazy to recover from ChunkLoadError after deploys
 - [x] **RES-02**: Supabase client has fetch timeout (15s) to prevent hung requests
 
 ## Future Requirements
