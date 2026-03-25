@@ -15,7 +15,8 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 const statusColors = {
   pendente: { bg: 'bg-yellow-50', text: 'text-yellow-800', badge: 'bg-yellow-100 text-yellow-800' },
   importado: { bg: 'bg-green-50', text: 'text-green-800', badge: 'bg-green-100 text-green-800' },
-  rejeitado: { bg: 'bg-red-50', text: 'text-red-800', badge: 'bg-red-100 text-red-800' }
+  rejeitado: { bg: 'bg-red-50', text: 'text-red-800', badge: 'bg-red-100 text-red-800' },
+  atualizado: { bg: 'bg-blue-50', text: 'text-blue-800', badge: 'bg-blue-100 text-blue-800' }
 };
 
 export default function CacheVooFlightAwareList() {
@@ -28,6 +29,7 @@ export default function CacheVooFlightAwareList() {
   const [filtroDataInicio, setFiltroDataInicio] = useState('');
   const [filtroDataFim, setFiltroDataFim] = useState('');
   const [filtroAeroporto, setFiltroAeroporto] = useState('');
+  const [filtroVoosReais, setFiltroVoosReais] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedCacheVoo, setSelectedCacheVoo] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -248,7 +250,10 @@ export default function CacheVooFlightAwareList() {
     const aeroportoMatch = !filtroAeroporto || voo.airport_icao === filtroAeroporto;
     const dataInicioMatch = !filtroDataInicio || voo.data_voo >= filtroDataInicio;
     const dataFimMatch = !filtroDataFim || voo.data_voo <= filtroDataFim;
-    return statusMatch && buscaMatch && aeroportoMatch && dataInicioMatch && dataFimMatch;
+    const voosReaisMatch = !filtroVoosReais || (
+      (rawData.actual_off || rawData.actual_on) && !rawData.cancelled
+    );
+    return statusMatch && buscaMatch && aeroportoMatch && dataInicioMatch && dataFimMatch && voosReaisMatch;
   });
 
   const voosOrdenados = React.useMemo(() => {
@@ -438,7 +443,21 @@ export default function CacheVooFlightAwareList() {
                   <option value="pendente">{t('cacheFA.pendente')}</option>
                   <option value="importado">{t('cacheFA.importado')}</option>
                   <option value="rejeitado">{t('cacheFA.rejeitado')}</option>
+                  <option value="atualizado">{t('cacheFA.atualizado') || 'Atualizado'}</option>
                 </select>
+              </div>
+
+              <div className="flex items-center gap-2 pt-5">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filtroVoosReais}
+                    onChange={(e) => setFiltroVoosReais(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                  <span className="ms-2 text-xs sm:text-sm font-medium text-slate-700">Apenas voos reais</span>
+                </label>
               </div>
 
               <Button
@@ -450,6 +469,7 @@ export default function CacheVooFlightAwareList() {
                   setFiltroDataInicio('');
                   setFiltroDataFim('');
                   setFiltroAeroporto('');
+                  setFiltroVoosReais(false);
                 }}
                 className="text-xs sm:text-sm px-2"
               >
