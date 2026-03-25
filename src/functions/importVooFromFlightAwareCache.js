@@ -103,6 +103,9 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
 
   const flightData = cacheVoo.raw_data;
 
+  // Normalize registration: remove hyphens (system standard is without hyphens)
+  const regNormalized = (flightData.reg || '').replace(/-/g, '').toUpperCase();
+
   // Determine movement type
   let tipoMovimento = 'DEP';
   if (flightData.movement_type) {
@@ -161,7 +164,7 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
 
     const updates = {};
     if (!existing.horario_previsto && faSta) updates.horario_previsto = faSta;
-    if (!existing.registo_aeronave && flightData.reg) updates.registo_aeronave = flightData.reg;
+    if (!existing.registo_aeronave && regNormalized) updates.registo_aeronave = regNormalized;
     if (!existing.aeroporto_origem_destino && faOrigemDest) updates.aeroporto_origem_destino = faOrigemDest;
     if (!existing.posicao_stand && faStand) updates.posicao_stand = faStand;
     if (!existing.observacoes && obsLines.length > 0) updates.observacoes = obsLines.join(' | ');
@@ -291,7 +294,7 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
     aeroporto_operacao: cacheVoo.airport_icao,
     aeroporto_origem_destino: origemDestino,
     companhia_aerea: companhiaAerea.substring(0, 3),
-    registo_aeronave: flightData.reg || '',
+    registo_aeronave: regNormalized,
     horario_previsto: horarioPrevisto,
     horario_real: horarioReal,
     status: statusVoo,
@@ -342,7 +345,7 @@ export async function importVooFromFlightAwareCache({ cacheVooId, suggestions, u
       .eq('aeroporto_operacao', cacheVoo.airport_icao)
       .eq('tipo_movimento', pairTipo)
       .eq('data_operacao', dataOperacao)
-      .eq('registo_aeronave', flightData.reg)
+      .eq('registo_aeronave', regNormalized)
       .is('deleted_at', null)
       .is('voo_ligado_id', null)
       .neq('id', voo.id)
