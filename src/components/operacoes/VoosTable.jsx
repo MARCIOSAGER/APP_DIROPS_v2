@@ -226,7 +226,7 @@ export default function VoosTable({
                     <TableCell>
                        <div className="flex items-center gap-1">
                          <span className="font-medium text-slate-900">{voo.numero_voo}</span>
-                         {isFA && <Badge variant="outline" className="text-[9px] border-sky-400 text-sky-600 px-1 py-0">FA</Badge>}
+                         {isFA && <Badge variant="outline" className="text-[9px] border-blue-400 text-blue-700 bg-blue-50 px-1 py-0">Dados FlightAware</Badge>}
                        </div>
                        <div className="text-sm text-slate-500">{voo.companhia_aerea || 'N/A'}</div>
                      </TableCell>
