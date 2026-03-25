@@ -88,11 +88,12 @@ Plans:
   1. Remaining pages that previously used raw useEffect fetches now reflect mutations without manual refresh
   2. After a production deploy, navigating to any lazy-loaded page that fails to load its chunk shows a recoverable error state rather than a blank screen
   3. Refreshing the page after a ChunkLoadError restores the page successfully
-**Plans:** 1 plan
+**Plans:** 3 plans
 
 Plans:
-- [ ] 10-01-PLAN.md — Write & apply migration 055: composite indexes for voo and calculo_tarifa
-**UI hint**: yes
+- [ ] 09-01-PLAN.md — Create useEntityQuery factory hook; migrate FundoManeio and Safety to useQuery
+- [ ] 09-02-PLAN.md — Migrate Documentos, Inspecoes, and Proforma to useQuery
+- [ ] 09-03-PLAN.md — Verify and document RES-01 ErrorBoundary in App.jsx; human verification checkpoint
 
 ### Phase 10: Database Performance
 **Goal**: Primary query patterns on voo, calculo_tarifa, and voo_ligado hit indexes instead of sequential scans — measurably faster at the database layer
@@ -118,6 +119,6 @@ Plans:
 | 5. UX Polish | v1.1 | 3/3 | Complete | 2026-03-25 |
 | 6. Cache Foundation | v1.2 | 3/3 | Complete   | 2026-03-25 |
 | 7. Query Optimization | v1.2 | 3/3 | Complete   | 2026-03-25 |
-| 8. Cache Integration (High-Traffic) | v1.2 | 0/? | Not started | - |
-| 9. Cache Integration (Remaining) + Resilience | v1.2 | 0/? | Not started | - |
+| 8. Cache Integration (High-Traffic) | v1.2 | 0/3 | Not started | - |
+| 9. Cache Integration (Remaining) + Resilience | v1.2 | 0/3 | Not started | - |
 | 10. Database Performance | v1.2 | 0/? | Not started | - |
