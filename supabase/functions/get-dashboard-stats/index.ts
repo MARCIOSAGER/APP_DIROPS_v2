@@ -68,10 +68,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Build voo filter
+    // Build voo filter (count: 'exact' returns true row count in response header)
     let vooQuery = supabase
       .from("voo")
-      .select("id,data_operacao,tipo_movimento,aeroporto_operacao,horario_previsto,horario_real,status,passageiros_total,carga_kg")
+      .select("id,data_operacao,tipo_movimento,aeroporto_operacao,horario_previsto,horario_real,status,passageiros_total,carga_kg", { count: 'exact' })
       .gte("data_operacao", dataInicioStr)
       .is("deleted_at", null);
 
@@ -92,6 +92,7 @@ Deno.serve(async (req) => {
       ]);
 
     const voos: any[] = voosResult.data || [];
+    const totalVoosExact: number = voosResult.count ?? voos.length; // exact count from DB, not limited by .limit()
     const voosLigados: any[] = voosLigadosResult.data || [];
     const calculos: any[] = calculosResult.data || [];
     const ocorrencias: any[] = ocorrenciasResult.data || [];
@@ -100,8 +101,8 @@ Deno.serve(async (req) => {
     // --- Compute stats ---
     const vooIds = new Set(voos.map((v: any) => v.id));
 
-    // Basic counts
-    const totalVoos = voos.length;
+    // Basic counts (use exact count from DB header, not array length)
+    const totalVoos = totalVoosExact;
     const voosHoje = voos.filter((v: any) => v.data_operacao === hoje);
     const chegadasHoje = voosHoje.filter((v: any) => v.tipo_movimento === "ARR").length;
     const partidasHoje = voosHoje.filter((v: any) => v.tipo_movimento === "DEP").length;
