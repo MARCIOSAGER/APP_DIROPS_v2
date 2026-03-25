@@ -232,80 +232,6 @@ export default function Operacoes() {
     }
   }, [user]);
 
-  const refreshSpecificData = async (dataTypes = ['voos', 'voosLigados', 'calculosTarifa']) => {
-    try {
-      const promises = [];
-
-      if (dataTypes.includes('voos')) {
-        promises.push(Voo.list('-data_operacao', 1000).then(data => ({ type: 'voos', data })));
-      }
-      if (dataTypes.includes('voosLigados')) {
-        promises.push(VooLigado.list('-created_date', 1000).then(data => ({ type: 'voosLigados', data })));
-      }
-      if (dataTypes.includes('calculosTarifa')) {
-        const empIdCalc = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-        promises.push(CalculoTarifa.filter(empIdCalc ? { empresa_id: empIdCalc } : {}, '-data_calculo').then(data => ({ type: 'calculosTarifa', data })));
-      }
-      if (dataTypes.includes('companhias')) {
-        promises.push(CompanhiaAerea.list().then(data => ({ type: 'companhias', data })));
-      }
-      if (dataTypes.includes('aeroportos')) {
-        const empresaIdFiltroAero = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-        promises.push((empresaIdFiltroAero ? Aeroporto.filter({ empresa_id: empresaIdFiltroAero }) : Aeroporto.list()).then(data => ({ type: 'aeroportos', data })));
-      }
-      if (dataTypes.includes('aeronaves')) {
-        promises.push(RegistoAeronave.list().then(data => ({ type: 'aeronaves', data })));
-      }
-      if (dataTypes.includes('modelos')) {
-        promises.push(ModeloAeronave.list().then(data => ({ type: 'modelos', data })));
-      }
-
-
-      const results = await Promise.allSettled(promises);
-
-      results.forEach((result) => {
-        if (result.status === 'fulfilled') {
-          const { type, data } = result.value;
-          switch (type) {
-            case 'voos': {
-              const empresaIdFiltro = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-              const voosFilt = data.filter(v => !v.deleted_at);
-              setVoos(empresaIdFiltro ? voosFilt.filter(v => v.empresa_id === empresaIdFiltro) : voosFilt);
-              break;
-            }
-            case 'voosLigados': {
-              const empresaIdFiltro = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-              setVoosLigados(empresaIdFiltro ? data.filter(vl => vl.empresa_id === empresaIdFiltro) : data);
-              break;
-            }
-            case 'calculosTarifa':
-              setCalculosTarifa(data);
-              break;
-            case 'companhias':
-              setCompanhias(data);
-              break;
-            case 'aeroportos':
-              setTodosAeroportos(data);
-              const allAngolanAeroportos = data.filter(a => a.pais === 'AO');
-              setAeroportos(getAeroportosPermitidos(currentUser, allAngolanAeroportos, effectiveEmpresaIdRef.current));
-              break;
-            case 'aeronaves':
-              setAeronaves(data);
-              break;
-            case 'modelos':
-              setModelosAeronave(data);
-              break;
-            default:
-              break;
-          }
-        }
-      });
-
-    } catch (error) {
-      console.error('❌ Erro na atualização específica:', error);
-    }
-  };
-
   useEffect(() => {
     loadData();
   }, [loadData, effectiveEmpresaId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -558,7 +484,9 @@ export default function Operacoes() {
         message: `Linkados: ${linked}, Tarifas calculadas: ${calculated}`
       });
       // Reload both main data and sem link tab
-      await loadData();
+      queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+      queryClient.invalidateQueries({ queryKey: ['voos-ligados', empresaId] });
+      queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
       await loadVoosSemLink();
     } catch (error) {
       console.error('Erro no link automático:', error);
@@ -606,7 +534,9 @@ export default function Operacoes() {
       });
 
       // Reload
-      await loadData();
+      queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+      queryClient.invalidateQueries({ queryKey: ['voos-ligados', empresaId] });
+      queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
       await loadVoosSemLink();
     } catch (error) {
       console.error('Erro ao linkar manualmente:', error);
@@ -1019,7 +949,9 @@ export default function Operacoes() {
       setEditingVoo(null);
       setVooArrToLink(null);
 
-      await refreshSpecificData(['voos', 'voosLigados', 'calculosTarifa']);
+      queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+      queryClient.invalidateQueries({ queryKey: ['voos-ligados', empresaId] });
+      queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
 
       setSuccessInfo({
         isOpen: true,
@@ -1050,7 +982,7 @@ export default function Operacoes() {
         setAlertInfo(prev => ({ ...prev, isOpen: false }));
         try {
           await Voo.update(voo.id, { ...voo, status: 'Cancelado', updated_by: currentUser?.email || 'sistema' });
-          await refreshSpecificData(['voos']);
+          queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
           setSuccessInfo({
             isOpen: true,
             title: t('operacoes.voo_cancelado'),
@@ -1110,7 +1042,9 @@ export default function Operacoes() {
           deleted_by: currentUser?.email || 'sistema'
         });
 
-        await refreshSpecificData(['voos', 'voosLigados', 'calculosTarifa']);
+        queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+        queryClient.invalidateQueries({ queryKey: ['voos-ligados', empresaId] });
+        queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
 
         setSuccessInfo({
           isOpen: true,
@@ -1183,7 +1117,7 @@ export default function Operacoes() {
         setAlertInfo(prev => ({ ...prev, isOpen: false }));
         try {
           await Voo.delete(voo.id);
-          await refreshSpecificData(['voos']);
+          queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
           setSuccessInfo({
             isOpen: true,
             title: t('operacoes.voo_excluido'),
@@ -1239,7 +1173,9 @@ export default function Operacoes() {
         // Excluir o VooLigado
         await VooLigado.delete(vooLigado.id);
 
-        await refreshSpecificData(['voos', 'voosLigados', 'calculosTarifa']);
+        queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+        queryClient.invalidateQueries({ queryKey: ['voos-ligados', empresaId] });
+        queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
 
         setSuccessInfo({
           isOpen: true,
@@ -1431,7 +1367,9 @@ export default function Operacoes() {
           errorCount: errorCount
         }));
 
-        await refreshSpecificData(['calculosTarifa', 'voosLigados', 'voos']);
+        queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+        queryClient.invalidateQueries({ queryKey: ['voos-ligados', empresaId] });
+        queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
 
         setTimeout(() => {
           setProgressModal(prev => ({ ...prev, isOpen: false }));
@@ -1475,7 +1413,7 @@ export default function Operacoes() {
       };
 
       await CalculoTarifa.update(calculo.id, novoCalculoData);
-      await refreshSpecificData(['calculosTarifa']);
+      queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
 
       setSuccessInfo({
         isOpen: true,
@@ -1643,7 +1581,8 @@ export default function Operacoes() {
 
       setIsGerarProformaModalOpen(false);
       setGerarProformaCalculo(null);
-      await refreshSpecificData(['calculosTarifa', 'voosLigados']);
+      queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
+      queryClient.invalidateQueries({ queryKey: ['voos-ligados', empresaId] });
 
     } catch (error) {
       console.error('Erro ao gerar proforma:', error);
@@ -1675,7 +1614,7 @@ export default function Operacoes() {
     setIsRecursosVooModalOpen(false);
     try {
       await _recalculateSingleTariff(vooLigado);
-      await refreshSpecificData(['calculosTarifa']);
+      queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
     } catch (err) {
       console.error('Erro ao recalcular após salvar recursos:', err);
     }
@@ -1916,7 +1855,8 @@ export default function Operacoes() {
       origem: 'todos'
     });
     setIsFiltering(false);
-        loadData(); // Recarregar com os 1000 últimos voos
+    queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+    queryClient.invalidateQueries({ queryKey: ['voos-ligados', empresaId] });
   };
 
   const clearFiltersLigados = () => {
@@ -1932,7 +1872,9 @@ export default function Operacoes() {
       busca: ''
     });
     setIsFilteringLigados(false);
-    loadData();
+    queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+    queryClient.invalidateQueries({ queryKey: ['voos-ligados', empresaId] });
+    queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
   };
 
   const voosFiltrados = useMemo(() => {
@@ -2880,15 +2822,15 @@ export default function Operacoes() {
                   </TabsList>
 
                   <TabsContent value="aeroportos" className="mt-4 sm:mt-6">
-                    <AeroportosConfig aeroportos={todosAeroportos} onReload={() => refreshSpecificData(['aeroportos'])} />
+                    <AeroportosConfig aeroportos={todosAeroportos} onReload={() => queryClient.invalidateQueries({ queryKey: ['aeroportos', empresaId] })} />
                   </TabsContent>
 
                   <TabsContent value="companhias" className="mt-4 sm:mt-6">
-                    <CompanhiasConfig companhias={companhias} onUpdate={() => refreshSpecificData(['companhias'])} />
+                    <CompanhiasConfig companhias={companhias} onUpdate={() => queryClient.invalidateQueries({ queryKey: ['companhias', empresaId] })} />
                   </TabsContent>
 
                   <TabsContent value="modelos" className="mt-4 sm:mt-6">
-                    <ModelosAeronaveConfig modelos={modelosAeronave} onReload={() => refreshSpecificData(['modelos'])} />
+                    <ModelosAeronaveConfig modelos={modelosAeronave} onReload={() => queryClient.invalidateQueries({ queryKey: ['modelos', empresaId] })} />
                   </TabsContent>
 
                   <TabsContent value="registos" className="mt-4 sm:mt-6">
@@ -2896,7 +2838,7 @@ export default function Operacoes() {
                       registos={aeronaves}
                       modelos={modelosAeronave}
                       companhias={companhiasCache.length > 0 ? companhiasCache : companhias}
-                      onReload={() => refreshSpecificData(['aeronaves'])}
+                      onReload={() => queryClient.invalidateQueries({ queryKey: ['aeronaves', empresaId] })}
                     />
                   </TabsContent>
                 </Tabs>
@@ -2922,7 +2864,10 @@ export default function Operacoes() {
           currentUser={currentUser}
           linkedArrVoo={vooArrToLink}
           setAlertInfo={setAlertInfo}
-          onRefreshData={() => refreshSpecificData(['voos', 'voosLigados'])}
+          onRefreshData={() => {
+            queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+            queryClient.invalidateQueries({ queryKey: ['voos-ligados', empresaId] });
+          }}
           modelos={modelosAeronave}
         />
       )}
@@ -3036,7 +2981,11 @@ export default function Operacoes() {
       <LixeiraVoosModal
         isOpen={isLixeiraModalOpen}
         onClose={() => setIsLixeiraModalOpen(false)}
-        onSuccess={() => refreshSpecificData(['voos', 'voosLigados', 'calculosTarifa'])}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+          queryClient.invalidateQueries({ queryKey: ['voos-ligados', empresaId] });
+          queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
+        }}
         companhias={companhias}
         aeroportos={todosAeroportos}
         voosLigados={voosLigados}
