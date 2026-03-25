@@ -24,8 +24,8 @@ Requirements for milestone v1.1 — Consolidacao e Polimento.
 
 ### Tech Debt
 
-- [ ] **DEBT-01**: All admin-only page access checks use regra_permissao instead of hardcoded profile checks
-- [ ] **DEBT-02**: All user-facing strings in remaining ~120 component files support PT/EN via i18n
+- [x] **DEBT-01**: All admin-only page access checks use regra_permissao instead of hardcoded profile checks
+- [x] **DEBT-02**: All user-facing strings in remaining ~120 component files support PT/EN via i18n
 
 ### UX/UI
 
@@ -72,8 +72,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FA-05 | Phase 3 | Pending |
 | FA-06 | Phase 2 | Complete |
 | FA-07 | Phase 2 | Complete |
-| DEBT-01 | Phase 4 | Pending |
-| DEBT-02 | Phase 4 | Pending |
+| DEBT-01 | Phase 4 | Complete |
+| DEBT-02 | Phase 4 | Complete |
 | UX-01 | Phase 5 | Pending |
 | UX-02 | Phase 5 | Pending |
 | UX-03 | Phase 5 | Pending |
