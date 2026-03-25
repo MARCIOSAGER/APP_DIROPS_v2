@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { validateAndSuggestFlightAwareCrossCheck } from '@/functions/validateAndSuggestFlightAwareCrossCheck';
 import VooFlightAwareComparisonRow from './VooFlightAwareComparisonRow';
 import { useI18n } from '@/components/lib/i18n';
 
-export default function VooFlightAwareReviewModal({ cacheVooId, vooData, onClose, onConfirmImport }) {
+export default function VooFlightAwareReviewModal({ cacheVooId, vooData, onClose, onConfirmImport, onDuplicateAction }) {
   const { t } = useI18n();
   const [suggestions, setSuggestions] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,13 +89,41 @@ export default function VooFlightAwareReviewModal({ cacheVooId, vooData, onClose
             <>
               {/* Voo Duplicado */}
               {suggestions.voo_duplicado && (
-                <VooFlightAwareComparisonRow
-                  title={t('vooFAReview.vooDuplicado')}
-                  suggestion={suggestions.voo_duplicado}
-                  dadosAPI={suggestions.voo_duplicado.dadosAPI}
-                  onSelectionChange={handleSelectionChange}
-                  isDuplicateFlight={true}
-                />
+                <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-amber-900">Voo ja existe no sistema</p>
+                      <p className="text-sm text-amber-700 mt-1">
+                        Foi encontrado um voo com o mesmo numero, data e tipo de movimento.
+                        Escolha como proceder:
+                      </p>
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => onDuplicateAction('merge', suggestions.voo_duplicado)}
+                        >
+                          Atualizar Existente
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onDuplicateAction('create', suggestions.voo_duplicado)}
+                        >
+                          Criar Novo
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={onClose}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* Resumo do Voo */}
@@ -198,21 +226,23 @@ export default function VooFlightAwareReviewModal({ cacheVooId, vooData, onClose
             </>
           )}
 
-          <div className="flex gap-3 justify-end pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={onClose}
-            >
-              {t('vooFAReview.cancelar')}
-            </Button>
-            <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => onConfirmImport(processedSuggestions, userSelections)}
-              disabled={isLoading}
-            >
-              {t('vooFAReview.confirmarImportacao')}
-            </Button>
-          </div>
+          {!suggestions?.voo_duplicado && (
+            <div className="flex gap-3 justify-end pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={onClose}
+              >
+                {t('vooFAReview.cancelar')}
+              </Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => onConfirmImport(processedSuggestions, userSelections)}
+                disabled={isLoading}
+              >
+                {t('vooFAReview.confirmarImportacao')}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
