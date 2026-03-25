@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Consolidacao e Polimento
 status: Ready to execute
-stopped_at: Checkpoint 05-02-PLAN.md — awaiting human verify
-last_updated: "2026-03-25T17:01:00.882Z"
+stopped_at: "Completed 05-ux-polish-05-03-PLAN.md (checkpoint: human-verify)"
+last_updated: "2026-03-25T17:03:32.391Z"
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # State: DIROPS-SGA
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 05 (ux-polish) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Plan: 2 of 3
 | Phase 04-tech-debt P03 | 950s | 2 tasks | 5 files |
 | Phase 04-tech-debt P04-04 | 90 | 2 tasks | 35 files |
 | Phase 05-ux-polish P02 | 300 | 2 tasks | 2 files |
+| Phase 05-ux-polish P03 | 180 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,7 @@ Plan: 2 of 3
 - [Phase 04-tech-debt]: financeiro/DashboardFinanceiro.jsx does not exist — applied i18n changes to faturacao/DashboardFinanceiro.jsx
 - [Phase 04-tech-debt]: PontualidadeChart: converted data.name to data.nameKey pattern for runtime i18n key resolution
 - [Phase 05-ux-polish]: All 11 VoosTable columns given min-w constraints via SortableTableHeader className prop (already forwarded); all 9 Proforma columns constrained; KPI USD/AOA use truncate
+- [Phase 05-ux-polish]: FormSafetyOccurrence gravidade/status selects also replaced (all 3 raw selects removed); added manual tipo_ocorrencia validation; FormVoo save button changed to bg-blue-600 per button color standard
 
 ### Pending Todos
 
@@ -87,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T17:01:00.874Z
-Stopped at: Checkpoint 05-02-PLAN.md — awaiting human verify
+Last session: 2026-03-25T17:03:32.344Z
+Stopped at: Completed 05-ux-polish-05-03-PLAN.md (checkpoint: human-verify)
 Resume file: None
