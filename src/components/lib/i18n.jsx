@@ -5725,6 +5725,33 @@ const translations = {
     'formVoo.adicionarNovoAeroporto': 'Adicionar Novo Aeroporto',
     'formVoo.adicionarNovaCompanhia': 'Adicionar Nova Companhia Aérea',
     'formVoo.adicionarNovoRegisto': 'Adicionar Novo Registo de Aeronave',
+
+    // ==================== FlightAware Page (extra keys) ====================
+    'flightaware.tabCompare': 'Comparação',
+    'flightaware.verificarPendentes': 'Verificar Pendentes',
+    'flightaware.criarTodosPendentes': 'Criar Todos Pendentes',
+    'flightaware.comparar': 'Comparar',
+
+    // ==================== Monitoramento Page ====================
+    'monitoramento.title': 'Monitoramento',
+    'monitoramento.subtitle': 'Performance e saúde do sistema em tempo real',
+    'monitoramento.webVitals': 'Web Vitals — Utilizadores Reais',
+    'monitoramento.dataAppears': 'Os dados aparecem à medida que os utilizadores navegam no app.',
+    'monitoramento.performancePorPagina': 'Performance por Página',
+
+    // ==================== Importação AIAAN Page ====================
+    'importacao.title': 'Importação AIAAN',
+    'importacao.subtitle': 'Importar dados de voos a partir de ficheiros Excel do sistema AIAAN',
+    'importacao.step_upload': 'Upload',
+    'importacao.step_mapeamentos': 'Mapeamentos',
+    'importacao.step_preview': 'Pré-visualização',
+    'importacao.step_execucao': 'Execução',
+
+    // ==================== Guia do Utilizador Page ====================
+    'guia.title': 'Guia do Utilizador',
+    'guia.subtitle': 'Documentação completa do sistema DIROPS',
+    'guia.buscarPlaceholder': 'Pesquisar no guia...',
+    'guia.indiceRapido': 'Índice Rápido',
   },
   en: {
     // Layout
@@ -11476,6 +11503,33 @@ const translations = {
     'formVoo.adicionarNovoAeroporto': 'Add New Airport',
     'formVoo.adicionarNovaCompanhia': 'Add New Airline',
     'formVoo.adicionarNovoRegisto': 'Add New Aircraft Registration',
+
+    // ==================== FlightAware Page (extra keys) ====================
+    'flightaware.tabCompare': 'Compare',
+    'flightaware.verificarPendentes': 'Verify Pending',
+    'flightaware.criarTodosPendentes': 'Create All Pending',
+    'flightaware.comparar': 'Compare',
+
+    // ==================== Monitoramento Page ====================
+    'monitoramento.title': 'Monitoring',
+    'monitoramento.subtitle': 'System performance and health in real time',
+    'monitoramento.webVitals': 'Web Vitals — Real Users',
+    'monitoramento.dataAppears': 'Data appears as users navigate the app.',
+    'monitoramento.performancePorPagina': 'Performance by Page',
+
+    // ==================== Importação AIAAN Page ====================
+    'importacao.title': 'AIAAN Import',
+    'importacao.subtitle': 'Import flight data from AIAAN system Excel files',
+    'importacao.step_upload': 'Upload',
+    'importacao.step_mapeamentos': 'Mappings',
+    'importacao.step_preview': 'Preview',
+    'importacao.step_execucao': 'Execution',
+
+    // ==================== Guia do Utilizador Page ====================
+    'guia.title': 'User Guide',
+    'guia.subtitle': 'Complete DIROPS system documentation',
+    'guia.buscarPlaceholder': 'Search guide...',
+    'guia.indiceRapido': 'Quick Index',
   }
 };
 
