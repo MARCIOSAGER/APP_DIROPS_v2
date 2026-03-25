@@ -69,9 +69,10 @@ export const FormRegisto = ({ registo, onSave, onCancel, modelos, companhias, is
     guardedSubmit(async () => {
       // NOVO: Garantir que todos os campos numéricos sejam números válidos
       const dataToSave = {
-        ...formData,
         registo: registoNormalizado,
         registo_normalizado: registoNormalizado,
+        id_modelo_aeronave: formData.id_modelo_aeronave,
+        id_companhia_aerea: formData.id_companhia_aerea,
         // Converter strings vazias ou valores inválidos para 0
         mtow_kg: mtowValue,
         total_assentos: parseFloat(formData.total_assentos) || 0,
