@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Fix PDF returnBase64 arguments anti-pattern (BUG-01)
+- [x] 01-01-PLAN.md — Fix PDF returnBase64 arguments anti-pattern (BUG-01)
 - [ ] 01-02-PLAN.md — Add registration filter to voosArrDisponíveis in FormVoo (BUG-02)
 
 ### Phase 2: FlightAware UI
@@ -89,7 +89,7 @@ Note: Phase 4 depends only on Phase 1 (can start after Phase 1 completes, in par
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Bug Fixes | 0/2 | Not started | - |
+| 1. Bug Fixes | 1/2 | In Progress|  |
 | 2. FlightAware UI | 0/? | Not started | - |
 | 3. FlightAware Automation | 0/? | Not started | - |
 | 4. Tech Debt | 0/? | Not started | - |
