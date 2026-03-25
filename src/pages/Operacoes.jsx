@@ -22,14 +22,10 @@ import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 import { RegistoAeronave } from '@/entities/RegistoAeronave';
 import { ModeloAeronave } from '@/entities/ModeloAeronave';
 import { CalculoTarifa } from '@/entities/CalculoTarifa';
-import { TarifaPouso } from '@/entities/TarifaPouso';
-import { TarifaPermanencia } from '@/entities/TarifaPermanencia';
-import { OutraTarifa } from '@/entities/OutraTarifa';
-import { Imposto } from '@/entities/Imposto';
 import { createPageUrl } from '@/utils';
 import { hasUserProfile, getAeroportosPermitidos, isSuperAdmin, isAdminProfile } from '@/components/lib/userUtils';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
-import { useAeroportos, useCompanhias, useAeronaves, useModelosAeronave } from '@/components/lib/useStaticData';
+import { useAeroportos, useCompanhias, useAeronaves, useModelosAeronave, useTarifasPouso, useTarifasPermanencia, useOutrasTarifas, useImpostos } from '@/components/lib/useStaticData';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -224,6 +220,10 @@ export default function Operacoes() {
   const { data: companhiasCache = [], isLoading: isLoadingCompanhias } = useCompanhias();
   const { data: aeronavesCache = [], isLoading: isLoadingAeronaves } = useAeronaves();
   const { data: modelosCache = [], isLoading: isLoadingModelos } = useModelosAeronave();
+  const { data: tarifasPousoCache = [], isLoading: isLoadingTarifasPouso } = useTarifasPouso();
+  const { data: tarifasPermanenciaCache = [], isLoading: isLoadingTarifasPermanencia } = useTarifasPermanencia();
+  const { data: outrasTarifasCache = [], isLoading: isLoadingOutrasTarifas } = useOutrasTarifas();
+  const { data: impostosCache = [], isLoading: isLoadingImpostos } = useImpostos();
 
   const loadData = useCallback(async (tentativa = 1) => {
     const MAX_TENTATIVAS = 3;
@@ -245,10 +245,6 @@ export default function Operacoes() {
         voosResult,
         voosLigadosResult,
         calculosMapResult,
-        tarifasPousoResult,
-        tarifasPermanenciaResult,
-        outrasTarifasResult,
-        impostosResult,
         configResult
       ] = await Promise.allSettled([
         Voo.filter(vooFilters, '-data_operacao', 1000),
@@ -256,10 +252,6 @@ export default function Operacoes() {
         empId
           ? fetchCalculoMap(empId)
           : Promise.resolve([]),
-        TarifaPouso.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
-        TarifaPermanencia.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
-        OutraTarifa.filter(empId ? { empresa_id: empId } : {}).catch(() => []),
-        Imposto.list().catch(() => []),
         ConfiguracaoSistema.list().catch(() => [])
       ]);
 
@@ -268,10 +260,6 @@ export default function Operacoes() {
 
       // Calculo map — direct table query returns exact column names, no mapping needed
       const calculosTarifaData = calculosMapResult.status === 'fulfilled' ? calculosMapResult.value : [];
-      const tarifasPousoData = tarifasPousoResult.status === 'fulfilled' ? tarifasPousoResult.value : [];
-      const tarifasPermanenciaData = tarifasPermanenciaResult.status === 'fulfilled' ? tarifasPermanenciaResult.value : [];
-      const outrasTarifasData = outrasTarifasResult.status === 'fulfilled' ? outrasTarifasResult.value : [];
-      const impostosData = impostosResult.status === 'fulfilled' ? impostosResult.value : [];
       const configData = configResult.status === 'fulfilled' ? configResult.value : [];
 
       const configuracaoSistemaData = configData.length > 0 ? configData[0] : { taxa_cambio_usd_aoa: 850 };
@@ -280,10 +268,6 @@ export default function Operacoes() {
       setVoos(voosData);
       setVoosLigados(voosLigadosData);
       setCalculosTarifa(calculosTarifaData);
-      setTarifasPouso(filterTarifasByEmpresa(tarifasPousoData, empId));
-      setTarifasPermanencia(filterTarifasByEmpresa(tarifasPermanenciaData, empId));
-      setOutrasTarifas(filterTarifasByEmpresa(outrasTarifasData, empId));
-      setImpostos(filterTarifasByEmpresa(impostosData, empId));
       setConfiguracaoSistema(configuracaoSistemaData);
 
       setIsLoading(false);
@@ -408,6 +392,34 @@ export default function Operacoes() {
   useEffect(() => {
     if (modelosCache.length > 0) setModelosAeronave(modelosCache);
   }, [modelosCache]);
+
+  useEffect(() => {
+    if (tarifasPousoCache.length > 0) {
+      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      setTarifasPouso(filterTarifasByEmpresa(tarifasPousoCache, empId));
+    }
+  }, [tarifasPousoCache, currentUser]);
+
+  useEffect(() => {
+    if (tarifasPermanenciaCache.length > 0) {
+      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      setTarifasPermanencia(filterTarifasByEmpresa(tarifasPermanenciaCache, empId));
+    }
+  }, [tarifasPermanenciaCache, currentUser]);
+
+  useEffect(() => {
+    if (outrasTarifasCache.length > 0) {
+      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      setOutrasTarifas(filterTarifasByEmpresa(outrasTarifasCache, empId));
+    }
+  }, [outrasTarifasCache, currentUser]);
+
+  useEffect(() => {
+    if (impostosCache.length > 0) {
+      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      setImpostos(filterTarifasByEmpresa(impostosCache, empId));
+    }
+  }, [impostosCache, currentUser]);
 
   // Server-side filter: build query from all filtros and reload voos
   const handleBuscarVoos = useCallback(async () => {
