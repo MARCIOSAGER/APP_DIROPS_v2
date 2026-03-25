@@ -7,6 +7,7 @@ import { Folder, Lock, Shield, Eye, EyeOff } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import Select from '@/components/ui/select';
+import { useI18n } from '@/components/lib/i18n';
 
 const CORES_PASTAS = [
 '#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#84cc16'];
@@ -23,6 +24,7 @@ const PERFIL_OPTIONS = [
 
 
 export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = null, aeroportos = [], pastaPai = null }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
@@ -256,10 +258,10 @@ export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = nu
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
+              {t('btn.cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting} className="bg-blue-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow h-9 hover:bg-blue-700">
-              {isSubmitting ? 'A guardar...' : `${pastaInitial ? 'Atualizar' : 'Criar'} Pasta`}
+              {isSubmitting ? t('btn.loading') : (pastaInitial ? t('page.documentos.updateFolder') : t('page.documentos.createFolder'))}
             </Button>
           </DialogFooter>
         </form>

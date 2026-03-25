@@ -10,6 +10,7 @@ import { base44 } from '@/api/base44Client';
 import { sanitizeFilename } from '@/lib/sanitize';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { analisarDocumento } from '@/functions/analisarDocumento';
+import { useI18n } from '@/components/lib/i18n';
 
 const CATEGORIA_OPTIONS = [
 { value: 'manual_operacoes', label: 'Manual de Operações' },
@@ -38,6 +39,7 @@ const CONFIDENCIALIDADE_CONFIG = {
 };
 
 export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, documentoInitial = null }) {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     titulo: '',
     categoria: '',
@@ -195,7 +197,7 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
-            {documentoInitial ? 'Editar Documento' : 'Novo Documento'}
+            {documentoInitial ? t('page.documentos.editDoc') : t('page.documentos.newDoc')}
           </DialogTitle>
         </DialogHeader>
 
@@ -491,7 +493,7 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
               disabled={isUploading || isAnalyzing || isSubmitting} className="bg-blue-600 text-slate-50 px-8 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow h-9 hover:bg-blue-700">
 
 
-              {isSubmitting ? 'A guardar...' : documentoInitial ? 'Actualizar Documento' : 'Criar Documento'}
+              {isSubmitting ? t('btn.loading') : documentoInitial ? t('page.documentos.updateDoc') : t('page.documentos.createDoc')}
             </Button>
           </DialogFooter>
         </form>

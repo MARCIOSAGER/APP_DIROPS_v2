@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,6 +7,7 @@ import { format, parseISO, subDays, startOfDay } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 export default function ReceitasChart({ voos, calculosTarifa, isLoading }) {
+  const { t } = useI18n();
   const chartData = React.useMemo(() => {
     if (!voos.length || !calculosTarifa || calculosTarifa.length === 0) {
       return Array.from({ length: 7 }, (_, i) => {
@@ -62,10 +64,10 @@ export default function ReceitasChart({ voos, calculosTarifa, isLoading }) {
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2">
             <div className="w-2 h-6 bg-emerald-600 rounded-full" />
-            Receitas Diárias (Kz)
+            {t('dashboard.revenueChart')}
           </CardTitle>
           <div className="text-right">
-            <p className="text-sm text-slate-500">Total (7 dias)</p>
+            <p className="text-sm text-slate-500">{t('dashboard.total7days')}</p>
             <p className="text-lg font-bold text-emerald-600">
               {new Intl.NumberFormat('pt-AO').format(totalRevenue)} Kz
             </p>
@@ -101,8 +103,8 @@ export default function ReceitasChart({ voos, calculosTarifa, isLoading }) {
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                 }}
                 formatter={(value) => [
-                  `${new Intl.NumberFormat('pt-AO').format(value)} Kz`, 
-                  'Receita'
+                  `${new Intl.NumberFormat('pt-AO').format(value)} Kz`,
+                  t('dashboard.revenue')
                 ]}
                 labelFormatter={(label, payload) => {
                   if (payload && payload[0]) {

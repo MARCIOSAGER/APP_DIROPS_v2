@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import Select from '@/components/ui/select';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 
 export default function MoverDocumentoModal({ isOpen, onClose, onMove, documento, pastas }) {
+  const { t } = useI18n();
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [novaPastaId, setNovaPastaId] = useState(documento?.pasta_id || null);
 
@@ -34,7 +36,7 @@ export default function MoverDocumentoModal({ isOpen, onClose, onMove, documento
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold">{isBulk ? `Mover ${bulkIds.length} Documentos` : 'Mover Documento'}</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">{isBulk ? `${t('page.documentos.move')} ${bulkIds.length} ${t('page.documentos.documents')}` : t('page.documentos.moveDocument')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -62,7 +64,7 @@ export default function MoverDocumentoModal({ isOpen, onClose, onMove, documento
           {/* Botão */}
           <div className="flex justify-end pt-2">
             <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white px-8">
-              {isSubmitting ? 'A mover...' : (isBulk ? 'Mover Documentos' : 'Mover Documento')}
+              {isSubmitting ? t('btn.loading') : (isBulk ? `${t('page.documentos.move')} ${t('page.documentos.documents')}` : t('page.documentos.moveDocument'))}
             </Button>
           </div>
         </form>

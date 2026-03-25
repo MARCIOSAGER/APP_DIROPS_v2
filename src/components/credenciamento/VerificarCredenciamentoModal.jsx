@@ -6,8 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertCircle } from 'lucide-react';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function VerificarCredenciamentoModal({ isOpen, onClose, credenciamento, onSuccess }) {
+  const { t } = useI18n();
   const [observacoes, setObservacoes] = useState('');
   const [checklist, setChecklist] = useState({
     documentos: false,
@@ -142,9 +144,9 @@ export default function VerificarCredenciamentoModal({ isOpen, onClose, credenci
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">Cancelar</Button>
+            <Button type="button" variant="outline">{t('btn.cancel')}</Button>
           </DialogClose>
-          <Button type="button" onClick={handleConfirmar} disabled={!allChecked}>Confirmar Verificação</Button>
+          <Button type="button" onClick={handleConfirmar} disabled={!allChecked}>{t('btn.confirm')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

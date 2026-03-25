@@ -10,6 +10,7 @@ import { Plus, Trash2, Building, Save, MapPin, FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useI18n } from '@/components/lib/i18n';
 
 import { Empresa } from '@/entities/Empresa';
 import { AreaAcesso } from '@/entities/AreaAcesso';
@@ -18,6 +19,7 @@ import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
 import SuccessModal from '../shared/SuccessModal';
 
 export default function ConfiguracaoCredenciamento({ initialEmpresas, initialAreasAcesso, onUpdate }) {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState('empresas');
   const [empresasList, setEmpresasList] = useState([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -349,7 +351,7 @@ export default function ConfiguracaoCredenciamento({ initialEmpresas, initialAre
         </CardContent>
         <CardFooter>
           <Button onClick={handleSaveGlobalConfig} disabled={isSavingGlobal}>
-            {isSavingGlobal ? 'A guardar...' : 'Guardar Configurações Gerais'}
+            {isSavingGlobal ? t('btn.loading') : t('btn.save')}
           </Button>
         </CardFooter>
       </Card>
@@ -371,7 +373,7 @@ export default function ConfiguracaoCredenciamento({ initialEmpresas, initialAre
                 </CardTitle>
                 <Button onClick={() => { setIsFormOpen(true); setEditingEmpresa(null); }}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Nova Empresa
+                  {t('btn.new_empresa')}
                 </Button>
               </div>
             </CardHeader>

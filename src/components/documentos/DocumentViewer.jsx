@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Download, ExternalLink, FileText, Calendar, Shield } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { useI18n } from '@/components/lib/i18n';
 
 const CATEGORIA_CONFIG = {
   manual_operacoes: { color: 'bg-blue-100 text-blue-800', label: 'Manual de Operações' },
@@ -22,6 +23,7 @@ const STATUS_CONFIG = {
 };
 
 export default function DocumentViewer({ isOpen, onClose, documento, aeroportos }) {
+  const { t } = useI18n();
   const [isDownloading, setIsDownloading] = useState(false);
   const [signedUrl, setSignedUrl] = useState(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
@@ -257,11 +259,11 @@ export default function DocumentViewer({ isOpen, onClose, documento, aeroportos 
                   disabled={isDownloading}
                 >
                   {isDownloading ? (
-                    'Processando...'
+                    t('btn.processing')
                   ) : (
                     <>
                       <Download className="w-4 h-4 mr-1" />
-                      {documento.adicionar_marca_dagua ? 'Download (c/ marca)' : 'Download'}
+                      {t('btn.download')}
                     </>
                   )}
                 </Button>

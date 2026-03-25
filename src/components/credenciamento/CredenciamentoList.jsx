@@ -15,6 +15,7 @@ import { Credenciamento } from '@/entities/Credenciamento';
 import { User } from '@/entities/User';
 import { SendEmail } from '@/integrations/Core';
 import { hasUserProfile } from '@/components/lib/userUtils'; // Added import
+import { useI18n } from '@/components/lib/i18n';
 
 import CredenciamentoDetailModal from './CredenciamentoDetailModal';
 import VerificarCredenciamentoModal from './VerificarCredenciamentoModal';
@@ -72,6 +73,7 @@ export default function CredenciamentoList({
   onEdit,
   currentUser
 }) {
+  const { t } = useI18n();
   const [filters, setFilters] = useState(() => {
     const initialFilters = {
       search: '',
@@ -563,7 +565,7 @@ export default function CredenciamentoList({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
-              <Label>Pesquisar</Label>
+              <Label>{t('btn.search')}</Label>
               <Input
                 placeholder="Protocolo, nome ou matrícula..."
                 value={filters.search}
@@ -624,11 +626,11 @@ export default function CredenciamentoList({
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleBulkExport} className="text-blue-700 border-blue-300">
                   <FileDown className="w-4 h-4 mr-2" />
-                  Exportar Selecionados
+                  {t('btn.export_csv')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setSelectedCredenciamentos([])} className="text-blue-700 border-blue-300">
                   <X className="w-4 h-4 mr-2" />
-                  Limpar Seleção
+                  {t('label.clear_selection')}
                 </Button>
               </div>
             </div>
@@ -650,7 +652,7 @@ export default function CredenciamentoList({
           ) : filteredCredenciamentos.length === 0 ? (
             <div className="text-center py-8">
               <Shield className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-              <p className="text-slate-500">Nenhum credenciamento encontrado</p>
+              <p className="text-slate-500">{t('label.no_results')}</p>
             </div>
           ) : (
             <div className="space-y-4">

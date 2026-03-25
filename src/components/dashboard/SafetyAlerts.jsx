@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShieldAlert, AlertTriangle, Info } from "lucide-react";
@@ -14,6 +15,7 @@ const SEVERITY_CONFIG = {
 };
 
 export default function SafetyAlerts({ ocorrencias, isLoading }) {
+  const { t } = useI18n();
   const recentOccurrences = ocorrencias
     .sort((a, b) => new Date(b.data_ocorrencia) - new Date(a.data_ocorrencia))
     .slice(0, 5);
@@ -26,7 +28,7 @@ export default function SafetyAlerts({ ocorrencias, isLoading }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <div className="w-2 h-6 bg-red-600 rounded-full" />
-          Alertas de Segurança
+          {t('dashboard.safetyAlerts')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -44,7 +46,7 @@ export default function SafetyAlerts({ ocorrencias, isLoading }) {
                 <div className="flex items-center gap-2">
                   <ShieldAlert className="h-4 w-4 text-red-600" />
                   <div>
-                    <p className="text-xs text-red-600 font-medium">Críticas</p>
+                    <p className="text-xs text-red-600 font-medium">{t('safety.criticas')}</p>
                     <p className="text-lg font-bold text-red-700">{criticalCount}</p>
                   </div>
                 </div>
@@ -54,7 +56,7 @@ export default function SafetyAlerts({ ocorrencias, isLoading }) {
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-orange-600" />
                   <div>
-                    <p className="text-xs text-orange-600 font-medium">Em Aberto</p>
+                    <p className="text-xs text-orange-600 font-medium">{t('dashboard.openOccurrences')}</p>
                     <p className="text-lg font-bold text-orange-700">{openCount}</p>
                   </div>
                 </div>
@@ -63,12 +65,12 @@ export default function SafetyAlerts({ ocorrencias, isLoading }) {
 
             {/* Recent Occurrences */}
             <div className="space-y-3">
-              <h4 className="font-medium text-slate-700">Ocorrências Recentes</h4>
+              <h4 className="font-medium text-slate-700">{t('dashboard.recentOccurrences')}</h4>
               
               {recentOccurrences.length === 0 ? (
                 <div className="text-center text-slate-500 py-4">
                   <ShieldAlert className="h-8 w-8 mx-auto mb-2 text-slate-300" />
-                  <p className="text-sm">Nenhuma ocorrência registrada</p>
+                  <p className="text-sm">{t('safety.noResults')}</p>
                 </div>
               ) : (
                 recentOccurrences.map((ocorrencia) => {

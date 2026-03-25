@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,6 +7,7 @@ import { format, parseISO, subDays, startOfDay } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 export default function MovimentosChart({ voos, isLoading }) {
+  const { t } = useI18n();
   const chartData = React.useMemo(() => {
     if (!voos.length) return [];
 
@@ -39,7 +41,7 @@ export default function MovimentosChart({ voos, isLoading }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <div className="w-2 h-6 bg-blue-600 rounded-full" />
-          Movimentos por Dia (Últimos 7 dias)
+          {t('dashboard.movementsChart')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -73,8 +75,8 @@ export default function MovimentosChart({ voos, isLoading }) {
                   return label;
                 }}
               />
-              <Bar dataKey="ARR" fill="#3b82f6" name="Chegadas" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="DEP" fill="#06b6d4" name="Partidas" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="ARR" fill="#3b82f6" name={t('dashboard.arrivals')} radius={[2, 2, 0, 0]} />
+              <Bar dataKey="DEP" fill="#06b6d4" name={t('dashboard.departures')} radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

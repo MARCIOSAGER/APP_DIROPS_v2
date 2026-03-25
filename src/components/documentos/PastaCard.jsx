@@ -1,9 +1,11 @@
 import React from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent } from '@/components/ui/card';
 import { FolderOpen, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function PastaCard({ pasta, numSubpastas, numDocumentos, onOpen, onEdit, onDelete, canDelete = true }) {
+  const { t } = useI18n();
   return (
     <Card 
       className="group hover:shadow-md transition-all cursor-pointer border border-slate-200 bg-white overflow-hidden"

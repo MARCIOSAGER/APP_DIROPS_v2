@@ -7,8 +7,10 @@ import { base44 } from '@/api/base44Client';
 import { Documento } from '@/entities/Documento';
 import { analisarDocumento } from '@/functions/analisarDocumento';
 import { sanitizeFilename } from '@/lib/sanitize';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto, currentUser = null }) {
+  const { t } = useI18n();
   const [files, setFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState([]);
@@ -129,7 +131,7 @@ export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="w-5 h-5 text-blue-600" />
-            Upload em Massa com IA
+            {t('page.documentos.bulkUpload')}
           </DialogTitle>
         </DialogHeader>
 
@@ -197,21 +199,21 @@ export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto
 
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={onClose} disabled={isProcessing}>
-              Cancelar
+              {t('btn.cancel')}
             </Button>
-            <Button 
-              onClick={processarDocumentos} 
+            <Button
+              onClick={processarDocumentos}
               disabled={files.length === 0 || isProcessing}
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processando...
+                  {t('btn.processing')}
                 </>
               ) : (
                 <>
                   <Upload className="w-4 h-4 mr-2" />
-                  Processar Documentos
+                  {t('btn.upload')}
                 </>
               )}
             </Button>

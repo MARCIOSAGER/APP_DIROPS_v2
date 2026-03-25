@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,7 @@ import { Plus, X, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function GerenciarAcessoModal({ isOpen, onClose, documento, onSave }) {
+  const { t } = useI18n();
   const [usuarios, setUsuarios] = useState(documento?.usuarios_acesso_explicito || []);
   const [novoEmail, setNovoEmail] = useState('');
   const [erro, setErro] = useState('');
@@ -62,7 +64,7 @@ export default function GerenciarAcessoModal({ isOpen, onClose, documento, onSav
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-blue-600" />
-            <DialogTitle>Gerenciar Acesso ao Documento</DialogTitle>
+            <DialogTitle>{t('page.documentos.manageAccess')}</DialogTitle>
           </div>
         </DialogHeader>
 
@@ -161,10 +163,10 @@ export default function GerenciarAcessoModal({ isOpen, onClose, documento, onSav
           {/* Botões de Ação */}
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
-              Cancelar
+              {t('btn.cancel')}
             </Button>
             <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
-              Salvar Alterações
+              {t('btn.save')}
             </Button>
           </div>
         </div>

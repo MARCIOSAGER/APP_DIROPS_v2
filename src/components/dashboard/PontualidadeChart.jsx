@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +12,7 @@ const COLORS = {
 };
 
 export default function PontualidadeChart({ voos, isLoading }) {
+  const { t } = useI18n();
   const data = React.useMemo(() => {
     if (!voos.length) return [];
 
@@ -35,9 +37,9 @@ export default function PontualidadeChart({ voos, isLoading }) {
     });
 
     return [
-      { name: 'Pontuais', value: pontual, color: COLORS.pontual },
-      { name: 'Atrasados', value: atrasado, color: COLORS.atrasado },
-      { name: 'Muito Atrasados', value: muito_atrasado, color: COLORS.muito_atrasado }
+      { nameKey: 'dashboard.onTime', value: pontual, color: COLORS.pontual },
+      { nameKey: 'dashboard.delayed', value: atrasado, color: COLORS.atrasado },
+      { nameKey: 'dashboard.veryDelayed', value: muito_atrasado, color: COLORS.muito_atrasado }
     ].filter(item => item.value > 0);
   }, [voos]);
   const total = data.reduce((sum, item) => sum + item.value, 0);
@@ -47,7 +49,7 @@ export default function PontualidadeChart({ voos, isLoading }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <div className="w-2 h-6 bg-green-600 rounded-full" />
-          Pontualidade dos Voos
+          {t('dashboard.punctualityChart')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -78,8 +80,8 @@ export default function PontualidadeChart({ voos, isLoading }) {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip 
-                  formatter={(value) => [`${value} voos`, 'Quantidade']}
+                <Tooltip
+                  formatter={(value) => [`${value} ${t('dashboard.flights')}`, t('dashboard.quantity')]}
                   contentStyle={{
                     backgroundColor: 'white',
                     border: '1px solid #e2e8f0',
@@ -92,20 +94,20 @@ export default function PontualidadeChart({ voos, isLoading }) {
             
             <div className="flex flex-wrap gap-2 justify-center mt-4">
               {data.map((item, index) => (
-                <Badge 
-                  key={index} 
-                  variant="outline" 
+                <Badge
+                  key={index}
+                  variant="outline"
                   className="border-2"
                   style={{ borderColor: item.color, color: item.color }}
                 >
-                  {item.name}: {((item.value / total) * 100).toFixed(1)}%
+                  {t(item.nameKey)}: {((item.value / total) * 100).toFixed(1)}%
                 </Badge>
               ))}
             </div>
           </>
         ) : (
           <div className="text-center text-slate-500 py-8">
-            Sem dados de pontualidade disponíveis
+            {t('dashboard.noPunctualityData')}
           </div>
         )}
       </CardContent>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,6 +17,7 @@ const STATUS_CONFIG = {
 };
 
 export default function RecentFlights({ voos, isLoading }) {
+  const { t } = useI18n();
   const recentFlights = voos
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
     .slice(0, 8);
@@ -25,7 +27,7 @@ export default function RecentFlights({ voos, isLoading }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <div className="w-2 h-6 bg-blue-600 rounded-full" />
-          Voos Recentes
+          {t('dashboard.recentFlights')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -47,17 +49,17 @@ export default function RecentFlights({ voos, isLoading }) {
         ) : recentFlights.length === 0 ? (
           <div className="text-center text-slate-500 py-8">
             <Plane className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-            <p>Nenhum voo registrado recentemente</p>
+            <p>{t('dashboard.noRecentFlights')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-slate-200">
-                  <TableHead className="text-slate-600">Voo</TableHead>
-                  <TableHead className="text-slate-600">Rota</TableHead>
-                  <TableHead className="text-slate-600">Horário</TableHead>
-                  <TableHead className="text-slate-600">Status</TableHead>
+                  <TableHead className="text-slate-600">{t('dashboard.colFlight')}</TableHead>
+                  <TableHead className="text-slate-600">{t('dashboard.colRoute')}</TableHead>
+                  <TableHead className="text-slate-600">{t('dashboard.colSchedule')}</TableHead>
+                  <TableHead className="text-slate-600">{t('label.status')}</TableHead>
                   <TableHead className="text-slate-600">PAX</TableHead>
                 </TableRow>
               </TableHeader>

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { 
-  Plane, 
-  Clock, 
-  DollarSign, 
-  ShieldAlert, 
-  TrendingUp, 
+import {
+  Plane,
+  Clock,
+  DollarSign,
+  ShieldAlert,
+  TrendingUp,
   TrendingDown,
   Minus,
   PlaneLanding,
@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from 'date-fns';
+import { useI18n } from '@/components/lib/i18n';
 
 export default function DashboardStats({ voos, ocorrencias, inspecoes, calculosTarifa, isLoading, serverStats }) {
+  const { t } = useI18n();
   const calculateStats = () => {
     // Use server stats if available (accurate, no pagination limit)
     if (serverStats) {
@@ -116,34 +118,34 @@ export default function DashboardStats({ voos, ocorrencias, inspecoes, calculosT
 
   const statsData = [
     {
-      title: "Total de Voos",
+      title: t('dashboard.totalFlights'),
       value: stats.movements,
       icon: Plane,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
-      trend: "+12% vs. semana anterior",
+      trend: t('dashboard.trendVsLastWeek'),
       trendDirection: "up"
     },
     {
-      title: "Chegadas Hoje",
+      title: t('dashboard.arrivalsToday'),
       value: stats.chegadasHoje,
       icon: PlaneLanding,
       color: "text-sky-600",
       bgColor: "bg-sky-50",
-      trend: "+5% vs. ontem",
+      trend: t('dashboard.trendVsYesterday'),
       trendDirection: "up"
     },
     {
-      title: "Partidas Hoje",
+      title: t('dashboard.departuresToday'),
       value: stats.partidasHoje,
       icon: PlaneTakeoff,
       color: "text-cyan-600",
       bgColor: "bg-cyan-50",
-      trend: "+8% vs. ontem",
+      trend: t('dashboard.trendVsYesterday'),
       trendDirection: "up"
     },
     {
-      title: "Taxa de Pontualidade",
+      title: t('dashboard.punctualityRate'),
       value: `${stats.punctuality.toFixed(1)}%`,
       icon: Clock,
       color: "text-green-600",
@@ -152,44 +154,44 @@ export default function DashboardStats({ voos, ocorrencias, inspecoes, calculosT
       trendDirection: stats.punctuality >= 85 ? "up" : "down"
     },
     {
-      title: "Receita (Kz)",
-      value: new Intl.NumberFormat('pt-AO', { 
+      title: t('dashboard.revenue'),
+      value: new Intl.NumberFormat('pt-AO', {
         notation: 'compact',
         compactDisplay: 'short'
       }).format(stats.revenue),
       icon: DollarSign,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
-      trend: "+15% vs. semana anterior",
+      trend: t('dashboard.trendVsLastWeek'),
       trendDirection: "up"
     },
     {
-      title: "Ocorrências Abertas",
+      title: t('dashboard.openOccurrences'),
       value: stats.safetyIncidents,
       icon: ShieldAlert,
       color: stats.safetyIncidents > 0 ? "text-red-600" : "text-gray-600",
       bgColor: stats.safetyIncidents > 0 ? "bg-red-50" : "bg-gray-50",
-      trend: "-2 vs. semana anterior",
+      trend: t('dashboard.trendVsLastWeek'),
       trendDirection: "down"
     },
     {
-      title: "Inspeções Pendentes",
+      title: t('dashboard.pendingInspections'),
       value: stats.inspecoesPendentes,
       icon: ClipboardList,
       color: "text-yellow-600",
       bgColor: "bg-yellow-50",
-      trend: "+1 vs. ontem",
+      trend: t('dashboard.trendVsYesterday'),
       trendDirection: "up"
     },
     {
-      title: "Passageiros Hoje",
-      value: stats.passageirosHoje > 0 
-        ? `${(stats.passageirosHoje / 1000).toFixed(1)}K` 
+      title: t('dashboard.passengersToday'),
+      value: stats.passageirosHoje > 0
+        ? `${(stats.passageirosHoje / 1000).toFixed(1)}K`
         : '0',
       icon: Users,
       color: "text-indigo-600",
       bgColor: "bg-indigo-50",
-      trend: "+18% vs. ontem",
+      trend: t('dashboard.trendVsYesterday'),
       trendDirection: "up"
     }
   ];

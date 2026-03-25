@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +7,7 @@ import { Search, Loader2, Sparkles } from 'lucide-react';
 
 
 export default function BuscaInteligente({ documentos, onResultados }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
@@ -27,7 +29,7 @@ export default function BuscaInteligente({ documentos, onResultados }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Sparkles className="w-5 h-5 text-purple-600" />
-          Busca Inteligente com IA
+          {t('page.documentos.smartSearch')}
         </CardTitle>
       </CardHeader>
       <CardContent>
