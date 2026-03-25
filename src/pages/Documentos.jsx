@@ -82,12 +82,12 @@ export default function Documentos() {
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
 
       // Filtrar aeroportos pelos aeroportos de acesso do utilizador (empresa-based)
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, user.empresa_id);
+      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosAngola, currentUser.empresa_id);
       setAeroportos(aeroportosFiltrados);
 
       // Filtrar documentos pelos aeroportos de acesso do utilizador
       // Documentos sem aeroporto específico são "gerais" e visíveis para todos
-      const docsFiltradosPorAcesso = filtrarDadosPorAcesso(user, documentosData, 'aeroporto', aeroportosAngola);
+      const docsFiltradosPorAcesso = filtrarDadosPorAcesso(currentUser, documentosData, 'aeroporto', aeroportosAngola);
       // Incluir documentos gerais (sem aeroporto) que não entraram no filtro
       const docsGerais = documentosData.filter(doc => !doc.aeroporto);
       const documentosFiltrados = [...new Map([...docsFiltradosPorAcesso, ...docsGerais].map(d => [d.id, d])).values()];

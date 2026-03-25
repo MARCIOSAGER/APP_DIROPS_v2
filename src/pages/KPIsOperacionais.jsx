@@ -119,13 +119,13 @@ export default function KPIsOperacionais() {
       const aeroportosAngola = aeroportosData.filter((a) => a.pais === 'AO');
 
       // Filtrar aeroportos pelos aeroportos de acesso do utilizador (empresa-based)
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, empId);
+      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosAngola, empId);
       setAeroportos(aeroportosFiltrados);
       setTiposKPI(tiposData);
       setCompanhias(companhiasData);
 
       // Filtrar medições pelos aeroportos de acesso do utilizador (empresa-based)
-      const medicoesFiltradas = filtrarDadosPorAcesso(user, medicoesData, 'aeroporto_id', aeroportosAngola);
+      const medicoesFiltradas = filtrarDadosPorAcesso(currentUser, medicoesData, 'aeroporto_id', aeroportosAngola);
       setMedicoesKPI(medicoesFiltradas); // Set the filtered measurements
     } catch (error) {
       console.error("Erro ao carregar dados dos KPIs:", error);
