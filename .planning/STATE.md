@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Performance
 status: Ready to execute
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-25T20:46:33.929Z"
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-03-25T21:18:12.165Z"
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 13
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # State: DIROPS-SGA
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 08 (cache-integration-high-traffic) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Plan: 2 of 3
 | Phase 07-query-optimization P02 | 689 | 1 tasks | 1 files |
 | Phase 07-query-optimization P03 | 12 | 2 tasks | 2 files |
 | Phase 08-cache-integration-high-traffic P01 | 446 | 2 tasks | 4 files |
+| Phase 08-cache-integration-high-traffic P02 | 1557 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,9 @@ Plan: 2 of 3
 - [Phase 08-cache-integration-high-traffic]: staleTime 0 for operational hooks (voos/voosLigados/calculos), staleTime 5 min for aggregate stats (dashboard) — operational data must always reflect server state on mount
 - [Phase 08-cache-integration-high-traffic]: fetchCalculoMap exported separately from useCalculosTarifa so Plans 02/03 can call it imperatively after mutations without triggering full re-render cycle
 - [Phase 08-cache-integration-high-traffic]: useDashboardStats returns full response object (not destructured): callers access both .data and .previousData at call site
+- [Phase 08-cache-integration-high-traffic]: Plan 01 hooks missing — created as prerequisite blocking deviation before Plan 02 migration
+- [Phase 08-cache-integration-high-traffic]: handleBuscarVoos/handleBuscarLigados use queryClient.setQueryData to override cache with filtered search results
+- [Phase 08-cache-integration-high-traffic]: Mutation pattern established: await entity.mutate → queryClient.invalidateQueries({ queryKey: ['key', empresaId] })
 
 ### Pending Todos
 
@@ -80,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T20:46:33.900Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-03-25T21:18:12.147Z
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None
