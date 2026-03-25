@@ -2026,8 +2026,15 @@ export default function Operacoes() {
 
     // Sort
     const sorted = [...filtered].sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
+      let aValue, bValue;
+
+      if (sortField === 'updated_date') {
+        aValue = a.updated_date || a.created_date || '';
+        bValue = b.updated_date || b.created_date || '';
+      } else {
+        aValue = a[sortField];
+        bValue = b[sortField];
+      }
 
       if (aValue === null || aValue === undefined) return sortDirection === 'asc' ? -1 : 1;
       if (bValue === null || bValue === undefined) return sortDirection === 'asc' ? 1 : -1;
@@ -2136,6 +2143,12 @@ export default function Operacoes() {
           const calculoB = calculosTarifa.find(ct => ct.voo_ligado_id === b.id || ct.voo_id === depVooB?.id);
           aValue = calculoA?.total_tarifa || 0;
           bValue = calculoB?.total_tarifa || 0;
+          break;
+        case 'updated_date':
+          const calcA = calculosTarifa.find(ct => ct.voo_ligado_id === a.id || ct.voo_id === depVooA?.id);
+          const calcB = calculosTarifa.find(ct => ct.voo_ligado_id === b.id || ct.voo_id === depVooB?.id);
+          aValue = calcA?.updated_date || depVooA?.updated_date || '';
+          bValue = calcB?.updated_date || depVooB?.updated_date || '';
           break;
         default:
           aValue = '';

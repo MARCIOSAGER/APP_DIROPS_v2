@@ -174,7 +174,7 @@ export default function VoosTable({
                 onSort={handleSort}
               />
               <SortableTableHeader
-                field="updated_by"
+                field="updated_date"
                 label={t('voosTable.atualizadoPor')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
