@@ -115,6 +115,13 @@ None - all logic is fully wired. The `filterVoosArr` function is a real implemen
 - Test infrastructure improvement (vitest env vars) benefits any future tests that import components with Supabase dependencies
 - No blockers for subsequent plans
 
+## Self-Check: PASSED
+
+- FOUND: `src/components/operacoes/__tests__/FormVooVoosArr.test.js`
+- FOUND: `src/components/operacoes/FormVoo.jsx` (with filterVoosArr export)
+- FOUND: commit `e3b5d73` (test RED)
+- FOUND: commit `c4b8ba9` (feat GREEN)
+
 ---
 *Phase: 01-bug-fixes*
 *Completed: 2026-03-25*
