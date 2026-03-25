@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 1: Bug Fixes** - Resolve critical PDF and FormVoo linking errors blocking users
 - [ ] **Phase 2: FlightAware UI** - Verification badges, filters, duplicate detection, and merge on flight list
 - [ ] **Phase 3: FlightAware Automation** - Scheduled daily fetch to keep cache current without manual action
-- [ ] **Phase 4: Tech Debt** - Permissions refactor and complete i18n across remaining components
+- [x] **Phase 4: Tech Debt** - Permissions refactor and complete i18n across remaining components (completed 2026-03-25)
 - [ ] **Phase 5: UX Polish** - Dashboard, tables, and form modals consistent and polished
 
 ## Phase Details
@@ -82,7 +82,7 @@ Plans:
 - [x] 04-01-PLAN.md — Add isAdminProfile helper + replace hardcoded role checks in 11 pages (DEBT-01)
 - [x] 04-02-PLAN.md — i18n for 10 high-traffic operational pages (DEBT-02)
 - [x] 04-03-PLAN.md — i18n for 21 remaining pages (DEBT-02)
-- [ ] 04-04-PLAN.md — i18n for 34 domain components — dashboard, documentos, financeiro, servicos, shared (DEBT-02)
+- [x] 04-04-PLAN.md — i18n for 34 domain components — dashboard, documentos, financeiro, servicos, shared (DEBT-02)
 
 ### Phase 5: UX Polish
 **Goal**: Dashboard, data tables, and form modals present information consistently and are usable on common screen sizes
@@ -106,5 +106,5 @@ Note: Phase 4 depends only on Phase 1 (can start after Phase 1 completes, in par
 | 1. Bug Fixes | 1/2 | In Progress|  |
 | 2. FlightAware UI | 1/2 | In Progress|  |
 | 3. FlightAware Automation | 0/1 | In Progress | - |
-| 4. Tech Debt | 0/4 | Not started | - |
+| 4. Tech Debt | 4/4 | Complete   | 2026-03-25 |
 | 5. UX Polish | 0/? | Not started | - |
