@@ -48,7 +48,12 @@ Plans:
   3. FlightAware automatic imports are visually distinguished from manual entries with a "Dados FlightAware" badge
   4. User can toggle a filter on the FlightAware cache to show only real flights (actual_off/actual_on present, cancelled hidden)
   5. Import modal shows a warning when the selected flight already exists in the system, and user can choose to update the existing flight with FlightAware data instead of creating a duplicate
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Badges (Dados FlightAware, Verificar Registo/Horario) + real-flights toggle filter (FA-01, FA-02, FA-03, FA-04)
+- [ ] 02-02-PLAN.md — Duplicate detection warning + field-level merge modal (FA-06, FA-07)
+
 **UI hint**: yes
 
 ### Phase 3: FlightAware Automation
