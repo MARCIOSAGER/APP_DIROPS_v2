@@ -128,6 +128,7 @@ export default function VoosTable({
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
+                className="min-w-[70px]"
               />
               <SortableTableHeader
                 field="data_operacao"
@@ -135,6 +136,7 @@ export default function VoosTable({
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
+                className="min-w-[90px]"
               />
               <SortableTableHeader
                 field="numero_voo"
@@ -142,22 +144,25 @@ export default function VoosTable({
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
+                className="min-w-[80px]"
               />
-              <TableHead>{t('voosTable.rota')}</TableHead>
+              <TableHead className="min-w-[120px]">{t('voosTable.rota')}</TableHead>
               <SortableTableHeader
                 field="registo_aeronave"
                 label={t('voosTable.registo')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
+                className="min-w-[90px]"
               />
-              <TableHead>{t('voosTable.horarioPrevReal')}</TableHead>
+              <TableHead className="min-w-[120px]">{t('voosTable.horarioPrevReal')}</TableHead>
               <SortableTableHeader
                 field="passageiros_total"
                 label={t('voosTable.passageiros')}
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
+                className="min-w-[90px]"
               />
               <SortableTableHeader
                 field="carga_kg"
@@ -165,6 +170,7 @@ export default function VoosTable({
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
+                className="min-w-[80px]"
               />
               <SortableTableHeader
                 field="status"
@@ -172,6 +178,7 @@ export default function VoosTable({
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
+                className="min-w-[100px]"
               />
               <SortableTableHeader
                 field="updated_date"
@@ -179,8 +186,9 @@ export default function VoosTable({
                 currentSortField={sortField}
                 currentSortDirection={sortDirection}
                 onSort={handleSort}
+                className="min-w-[120px]"
               />
-              <TableHead className="text-right">{t('voosTable.acoes')}</TableHead>
+              <TableHead className="text-right min-w-[60px]">{t('voosTable.acoes')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -221,9 +229,9 @@ export default function VoosTable({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-slate-600 whitespace-nowrap">
-                      {format(parseISO(voo.data_operacao), "dd MMM yyyy", { locale: pt })}
+                      <span className="whitespace-nowrap">{format(parseISO(voo.data_operacao), "dd MMM yyyy", { locale: pt })}</span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                        <div className="flex items-center gap-1">
                          <span className="font-medium text-slate-900">{voo.numero_voo}</span>
                          {isFA && <Badge variant="outline" className="text-[9px] border-blue-400 text-blue-700 bg-blue-50 px-1 py-0">Dados FlightAware</Badge>}
