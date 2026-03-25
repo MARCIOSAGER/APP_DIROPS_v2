@@ -761,6 +761,7 @@ export default function FlightAwarePage() {
           ...f,
           tipo,
           faReg,
+          faRegOriginal: raw.reg || '',
           atoReg,
           atoVooId: atoVoo?.id,
           compareStatus: status,
@@ -809,7 +810,7 @@ export default function FlightAwarePage() {
     if (!row.atoVooId) return;
     setComparingIds(prev => new Set([...prev, row.id]));
     try {
-      await Voo.update(row.atoVooId, { registo_aeronave: row.faReg });
+      await Voo.update(row.atoVooId, { registo_aeronave: row.faRegOriginal || row.faReg });
       setCompareData(prev => prev.map(r =>
         r.id === row.id ? { ...r, compareStatus: 'OK', atoReg: row.faReg } : r
       ));
