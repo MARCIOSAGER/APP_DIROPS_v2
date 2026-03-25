@@ -21,6 +21,7 @@ import PlaceholderManagement from '@/components/configuracoes/PlaceholderManagem
 import ZAPIAtendimentoChat from '@/components/configuracoes/ZAPIAtendimentoChat';
 import ZAPIGruposRegistrados from '@/components/configuracoes/ZAPIGruposRegistrados';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
+import { isAdminProfile } from '@/components/lib/userUtils';
 
 const EVENTOS_DISPONIVEIS = [
   { value: 'voo_ligado_criado', label: '✈️ Voo Ligado Criado' },
@@ -290,7 +291,7 @@ export default function GestaoNotificacoes() {
       const user = await UserEntity.me();
       setCurrentUser(user);
 
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
+      if (!isAdminProfile(user)) {
         setAlertInfo({
           isOpen: true,
           type: 'error',

@@ -20,7 +20,7 @@ import {
 import { RegraPermissao } from '@/entities/RegraPermissao';
 import { User } from '@/entities/User';
 import AlertModal from '../components/shared/AlertModal';
-import { hasUserProfile } from '@/components/lib/userUtils';
+import { hasUserProfile, isAdminProfile } from '@/components/lib/userUtils';
 import { useI18n } from '@/components/lib/i18n';
 
 // Todas as páginas disponíveis no sistema
@@ -282,7 +282,7 @@ export default function GerirPermissoes() {
       const user = await User.me();
       setCurrentUser(user);
 
-      if (!hasUserProfile(user, 'administrador')) {
+      if (!isAdminProfile(user)) {
         setIsLoading(false);
         return;
       }
@@ -423,7 +423,7 @@ export default function GerirPermissoes() {
 
   }
 
-  if (!currentUser || !hasUserProfile(currentUser, 'administrador')) {
+  if (!currentUser || !isAdminProfile(currentUser)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 p-4">
         <Card className="max-w-md">

@@ -28,7 +28,7 @@ import { OutraTarifa } from '@/entities/OutraTarifa';
 import { Imposto } from '@/entities/Imposto';
 import { User } from '@/entities/User';
 import { createPageUrl } from '@/utils';
-import { hasUserProfile, getAeroportosPermitidos, isSuperAdmin } from '@/components/lib/userUtils';
+import { hasUserProfile, getAeroportosPermitidos, isSuperAdmin, isAdminProfile } from '@/components/lib/userUtils';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
 import { useAeroportos, useCompanhias, useAeronaves, useModelosAeronave } from '@/components/lib/useStaticData';
 import { useCompanyView } from '@/lib/CompanyViewContext';
@@ -2297,7 +2297,7 @@ export default function Operacoes() {
                     <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span className="hidden sm:inline ml-2 text-sm">Excel</span>
                   </Button>
-                  {(currentUser?.role === 'admin' || currentUser?.perfis?.includes('administrador')) && (
+                  {isAdminProfile(currentUser) && (
                     <Button variant="outline" onClick={() => setIsLixeiraModalOpen(true)} className="border-yellow-300 dark:border-yellow-600 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-950 h-8 sm:h-10 px-2 sm:px-4">
                       <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.lixeira')}</span>

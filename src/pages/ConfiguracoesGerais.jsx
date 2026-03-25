@@ -11,6 +11,7 @@ import SuccessModal from '@/components/shared/SuccessModal';
 import { createPageUrl } from '@/utils';
 import { emailTemplates } from '@/lib/emailTemplates';
 import { useI18n } from '@/components/lib/i18n';
+import { isAdminProfile } from '@/components/lib/userUtils';
 
 export default function ConfiguracoesGerais() {
   const { t } = useI18n();
@@ -46,7 +47,7 @@ export default function ConfiguracoesGerais() {
     try {
       const user = await User.me();
 
-      if (user.role !== 'admin' && !(user.perfis && user.perfis.includes('administrador'))) {
+      if (!isAdminProfile(user)) {
         setAlertInfo({
           isOpen: true,
           type: 'error',

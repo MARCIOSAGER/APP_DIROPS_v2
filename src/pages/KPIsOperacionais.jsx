@@ -28,7 +28,7 @@ import DashboardKPIs from '../components/kpis/DashboardKPIs';
 import { downloadAsExcel } from '@/components/lib/export';
 import AlertModal from '@/components/shared/AlertModal';
 import SuccessModal from '@/components/shared/SuccessModal';
-import { getAeroportosPermitidos, filtrarDadosPorAcesso } from '@/components/lib/userUtils';
+import { getAeroportosPermitidos, filtrarDadosPorAcesso, isAdminProfile } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import SendEmailModal from '@/components/shared/SendEmailModal';
 import { registarExclusao, registarExportacao } from '@/components/lib/auditoria';
@@ -924,7 +924,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <Settings className="w-4 h-4 mr-2" />
               {t('kpis.configurarKPIs')}
             </Button>
-            {(currentUser?.role === 'admin' || (currentUser?.perfis && currentUser.perfis.includes('administrador'))) && (
+            {isAdminProfile(currentUser) && (
               <Button variant="outline" onClick={() => setIsDiagnosticoOpen(true)} className="border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950">
                 <AlertTriangle className="w-4 h-4 mr-2" />
                 {t('kpis.verificarDuplicacoes')}

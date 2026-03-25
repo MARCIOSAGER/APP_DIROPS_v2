@@ -8,7 +8,7 @@ import { Documento } from '@/entities/Documento';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
 import { downloadAsCSV } from '../components/lib/export';
-import { getAeroportosPermitidos, filtrarDadosPorAcesso } from '@/components/lib/userUtils';
+import { getAeroportosPermitidos, filtrarDadosPorAcesso, isAdminProfile } from '@/components/lib/userUtils';
 
 import DocumentosList from '../components/documentos/DocumentosList';
 import FormDocumento from '../components/documentos/FormDocumento';
@@ -471,7 +471,7 @@ export default function Documentos() {
 
   const canDeleteFolder = (pasta) => {
     if (!currentUser) return false;
-    if (currentUser.role === 'admin' || (currentUser.perfis && currentUser.perfis.includes('administrador'))) return true;
+    if (isAdminProfile(currentUser)) return true;
     return pasta.created_by === currentUser.email;
   };
 

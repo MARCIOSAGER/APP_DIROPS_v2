@@ -34,7 +34,7 @@ import { User as UserEntity } from '@/entities/User';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { Empresa } from '@/entities/Empresa';
 import { downloadAsCSV } from '../components/lib/export';
-import { hasUserProfile } from '@/components/lib/userUtils';
+import { hasUserProfile, isAdminProfile } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/components/lib/i18n';
@@ -127,7 +127,7 @@ export default function GestaoAcessos() {
       const user = await UserEntity.me();
       setCurrentUser(user);
 
-      if (!user || !hasUserProfile(user, 'administrador')) {
+      if (!user || !isAdminProfile(user)) {
         setIsLoading(false);
         return;
       }
@@ -384,7 +384,7 @@ export default function GestaoAcessos() {
   }, [loadData]); // Now loadData is a dependency of useEffect
 
   // Agora os retornos condicionais podem ser usados com segurança
-  if (!isLoading && currentUser && !hasUserProfile(currentUser, 'administrador')) {
+  if (!isLoading && currentUser && !isAdminProfile(currentUser)) {
     return <AccessDenied />;
   }
 

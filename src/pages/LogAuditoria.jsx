@@ -20,7 +20,7 @@ import { pt } from 'date-fns/locale';
 
 import { LogAuditoria } from '@/entities/LogAuditoria';
 import { User } from '@/entities/User';
-import { hasUserProfile } from '@/components/lib/userUtils'; // Importar a função de utilitário
+import { hasUserProfile, isAdminProfile } from '@/components/lib/userUtils'; // Importar a função de utilitário
 import { useI18n } from '@/components/lib/i18n';
 
 const ACTION_COLORS = {
@@ -79,7 +79,7 @@ export default function LogAuditoriaPage() {
 
       // Verificar se tem permissões para ver logs de auditoria
       // USAR A FUNÇÃO SEGURA hasUserProfile
-      const canAccessAuditLogs = user.role === 'admin' || hasUserProfile(user, 'administrador');
+      const canAccessAuditLogs = isAdminProfile(user);
 
       if (!canAccessAuditLogs) {
         setHasAccess(false);

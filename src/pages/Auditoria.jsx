@@ -45,7 +45,7 @@ import { User } from '@/entities/User';
 import { PlanoAcaoCorretiva } from '@/entities/PlanoAcaoCorretiva';
 import { ItemPAC } from '@/entities/ItemPAC'; // New import for ItemPAC
 
-import { ensureUserProfilesExist, hasUserProfile, getAeroportosPermitidos, filtrarDadosPorAcesso, getEmpresaLogoByUser } from '../components/lib/userUtils';
+import { ensureUserProfilesExist, hasUserProfile, getAeroportosPermitidos, filtrarDadosPorAcesso, getEmpresaLogoByUser, isAdminProfile } from '../components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { Empresa } from '@/entities/Empresa';
 import { useI18n } from '@/components/lib/i18n';
@@ -173,7 +173,7 @@ export default function Auditoria() {
       const user = await User.me();
       setCurrentUser(ensureUserProfilesExist(user));
 
-      const isAdmin = user?.role === 'admin' || hasUserProfile(user, 'administrador');
+      const isAdmin = isAdminProfile(user);
       setGestaoPermission(isAdmin);
 
       // Server-side filter by empresa_id when applicable
