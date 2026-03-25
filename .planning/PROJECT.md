@@ -46,8 +46,8 @@ Operations teams can manage flights end-to-end — from arrival through departur
 
 ### Active
 
-- [ ] Fix PDF "Todas as Companhias" grouped mode error
-- [ ] Fix FormVoo "Voo de Chegada Vinculado" dropdown filter
+- [x] Fix PDF "Todas as Companhias" grouped mode error — Phase 1
+- [x] Fix FormVoo "Voo de Chegada Vinculado" dropdown filter — Phase 1
 - [ ] FlightAware verification badges on flight list
 - [ ] FlightAware filter for "real" flights in cache
 - [ ] FlightAware automatic daily fetch (cron/scheduled)
@@ -109,4 +109,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-25 after milestone v1.1 initialization*
+*Last updated: 2026-03-25 after Phase 1 completion (Bug Fixes)*
