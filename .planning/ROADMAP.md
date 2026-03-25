@@ -66,7 +66,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 03-01-PLAN.md � Daily FlightAware sync function + pg_cron schedule (FA-05)
+- [ ] 03-01-PLAN.md — Daily FlightAware sync function + pg_cron schedule (FA-05)
 
 ### Phase 4: Tech Debt
 **Goal**: All page access checks use regra_permissao and all user-facing strings support both PT and EN
@@ -76,7 +76,13 @@ Plans:
   1. No page in the app uses hardcoded profile role checks — all access gates query regra_permissao
   2. Switching the app to EN displays English strings in all previously Portuguese-only components (~120 files)
   3. Adding a new role to regra_permissao automatically grants or restricts access to all guarded pages without code changes
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Add isAdminProfile helper + replace hardcoded role checks in 11 pages (DEBT-01)
+- [ ] 04-02-PLAN.md — i18n for 10 high-traffic operational pages (DEBT-02)
+- [ ] 04-03-PLAN.md — i18n for 21 remaining pages (DEBT-02)
+- [ ] 04-04-PLAN.md — i18n for 34 domain components — dashboard, documentos, financeiro, servicos, shared (DEBT-02)
 
 ### Phase 5: UX Polish
 **Goal**: Dashboard, data tables, and form modals present information consistently and are usable on common screen sizes
@@ -99,6 +105,6 @@ Note: Phase 4 depends only on Phase 1 (can start after Phase 1 completes, in par
 |-------|----------------|--------|-----------|
 | 1. Bug Fixes | 1/2 | In Progress|  |
 | 2. FlightAware UI | 1/2 | In Progress|  |
-| 3. FlightAware Automation | 0/? | Not started | - |
-| 4. Tech Debt | 0/? | Not started | - |
+| 3. FlightAware Automation | 0/1 | Not started | - |
+| 4. Tech Debt | 0/4 | Not started | - |
 | 5. UX Polish | 0/? | Not started | - |
