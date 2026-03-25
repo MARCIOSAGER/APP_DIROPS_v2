@@ -768,7 +768,7 @@ export default function Reclamacoes() {
                       disabled={isBuscando}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 text-xs sm:text-sm"
                     >
-                      {isBuscando ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Buscando...</> : <><Filter className="w-4 h-4 mr-2" /> Buscar</>}
+                      {isBuscando ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('flightaware.searching')}</> : <><Filter className="w-4 h-4 mr-2" /> {t('btn.search')}</>}
                     </Button>
                     <Button variant="outline" onClick={clearAllFilters} className="flex-1 text-xs sm:text-sm">
                       <X className="w-4 h-4 mr-2" /> {t('reclamacoes.limparFiltros')}

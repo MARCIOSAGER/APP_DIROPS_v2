@@ -28,7 +28,7 @@ import ConfigNotificacoesManutencao from '../components/manutencao/ConfigNotific
 import SuccessModal from '../components/shared/SuccessModal';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
-import { getAeroportosPermitidos, filtrarDadosPorAeroportoId, isSuperAdmin } from '@/components/lib/userUtils';
+import { getAeroportosPermitidos, filtrarDadosPorAeroportoId, isSuperAdmin, isInfraOrAdmin } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
 
@@ -65,7 +65,7 @@ export default function Manutencao() {
   const canManage = useMemo(() => {
     if (!currentUser?.perfis) return false;
     if (isSuperAdmin(currentUser)) return true;
-    return currentUser.perfis.some(p => ['administrador', 'infraestrutura'].includes(p));
+    return isInfraOrAdmin(currentUser);
   }, [currentUser]);
 
   useEffect(() => { loadData(); }, [effectiveEmpresaId]);
@@ -123,7 +123,7 @@ export default function Manutencao() {
         .filter(u => {
           if (empId && u.empresa_id !== empId) return false;
           if (u.status === 'inativo') return false;
-          return u.perfis?.some(p => ['administrador', 'infraestrutura'].includes(p));
+          return isInfraOrAdmin(u);
         })
         .map(u => u.email)
         .filter(Boolean);
@@ -474,10 +474,10 @@ export default function Manutencao() {
                   </div>
                   <div className="flex items-end gap-2 mt-2">
                     <Button onClick={handleBuscarOS} disabled={isSearchingOS} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                      {isSearchingOS ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Buscando...</> : <><Search className="w-4 h-4 mr-2" /> Buscar</>}
+                      {isSearchingOS ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('flightaware.searching')}</> : <><Search className="w-4 h-4 mr-2" /> {t('btn.search')}</>}
                     </Button>
                     <Button variant="outline" onClick={() => { setFiltrosOS({ busca: '', status: 'todos', prioridade: 'todos', aeroporto: 'todos', categoria: 'todos' }); loadData(); }}>
-                      <X className="w-4 h-4 mr-2" /> Limpar
+                      <X className="w-4 h-4 mr-2" /> {t('operacoes.limpar')}
                     </Button>
                   </div>
                 </div>
