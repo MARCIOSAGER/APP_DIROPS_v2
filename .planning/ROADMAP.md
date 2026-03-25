@@ -81,7 +81,7 @@ Plans:
 Plans:
 - [x] 04-01-PLAN.md — Add isAdminProfile helper + replace hardcoded role checks in 11 pages (DEBT-01)
 - [x] 04-02-PLAN.md — i18n for 10 high-traffic operational pages (DEBT-02)
-- [ ] 04-03-PLAN.md — i18n for 21 remaining pages (DEBT-02)
+- [x] 04-03-PLAN.md — i18n for 21 remaining pages (DEBT-02)
 - [ ] 04-04-PLAN.md — i18n for 34 domain components — dashboard, documentos, financeiro, servicos, shared (DEBT-02)
 
 ### Phase 5: UX Polish
