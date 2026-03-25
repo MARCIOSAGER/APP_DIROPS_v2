@@ -33,6 +33,7 @@ import {
 } from '@/components/operacoes/importAiaanMappings';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { createPageUrl } from '@/utils';
+import { useI18n } from '@/components/lib/i18n';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -134,6 +135,7 @@ function delay(ms) {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function ImportacaoAiaan() {
+  const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
 
   // Wizard state
@@ -715,10 +717,10 @@ export default function ImportacaoAiaan() {
 
   const renderStepIndicator = () => {
     const steps = [
-      { num: 1, label: 'Upload' },
-      { num: 2, label: 'Mapeamentos' },
-      { num: 3, label: 'Pré-visualização' },
-      { num: 4, label: 'Execução' },
+      { num: 1, label: t('importacao.step_upload') },
+      { num: 2, label: t('importacao.step_mapeamentos') },
+      { num: 3, label: t('importacao.step_preview') },
+      { num: 4, label: t('importacao.step_execucao') },
     ];
 
     return (
@@ -822,7 +824,7 @@ export default function ImportacaoAiaan() {
             onClick={() => setStep(2)}
             disabled={!parseSummary}
           >
-            Próximo
+            {t('btn.next')}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
@@ -990,10 +992,10 @@ export default function ImportacaoAiaan() {
         <div className="flex justify-between">
           <Button variant="outline" onClick={() => setStep(1)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
+            {t('btn.back')}
           </Button>
           <Button onClick={() => setStep(3)}>
-            Próximo
+            {t('btn.next')}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
@@ -1280,10 +1282,10 @@ export default function ImportacaoAiaan() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <FileSpreadsheet className="w-6 h-6" />
-            Importacao AIAAN
+            {t('importacao.title')}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Importar dados de voos a partir de ficheiros Excel do sistema AIAAN
+            {t('importacao.subtitle')}
           </p>
         </div>
         <Button
@@ -1291,7 +1293,7 @@ export default function ImportacaoAiaan() {
           onClick={() => window.location.href = createPageUrl('Operacoes')}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
+          {t('btn.back')}
         </Button>
       </div>
 

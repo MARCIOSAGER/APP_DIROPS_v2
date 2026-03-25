@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabaseClient";
 import MonitoramentoSuperAdmin from '@/components/suporte/MonitoramentoSuperAdmin';
+import { useI18n } from '@/components/lib/i18n';
 import {
   Activity, RefreshCw, Gauge, Clock, BarChart2, Globe, Smartphone,
   Wifi, AlertCircle, CheckCircle, TrendingUp, TrendingDown
@@ -147,6 +148,7 @@ const PERIODS = [
 ];
 
 export default function Monitoramento() {
+  const { t } = useI18n();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('7');
@@ -188,10 +190,10 @@ export default function Monitoramento() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Activity className="w-6 h-6 text-blue-600" />
-            Monitoramento
+            {t('monitoramento.title')}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-            Performance e saúde do sistema em tempo real
+            {t('monitoramento.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -206,7 +208,7 @@ export default function Monitoramento() {
           </select>
           <Button variant="outline" size="sm" onClick={fetchVitals} disabled={loading}>
             <RefreshCw className={`w-3 h-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
-            Atualizar
+            {t('btn.refresh')}
           </Button>
         </div>
       </div>
@@ -218,7 +220,7 @@ export default function Monitoramento() {
       <div>
         <h2 className="text-base font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
           <Gauge className="w-4 h-4 text-blue-600" />
-          Web Vitals — Utilizadores Reais
+          {t('monitoramento.webVitals')}
           <Badge variant="outline" className="text-xs font-normal">
             {records.length} amostras
           </Badge>
@@ -232,8 +234,8 @@ export default function Monitoramento() {
           <Card>
             <CardContent className="py-10 text-center text-slate-400">
               <Gauge className="w-8 h-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Sem dados ainda.</p>
-              <p className="text-xs mt-1">Os dados aparecem à medida que os utilizadores navegam no app.</p>
+              <p className="text-sm">{t('msg.no_data')}</p>
+              <p className="text-xs mt-1">{t('monitoramento.dataAppears')}</p>
             </CardContent>
           </Card>
         ) : (
@@ -248,7 +250,7 @@ export default function Monitoramento() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Performance por Página
+                  {t('monitoramento.performancePorPagina')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0 pb-2">

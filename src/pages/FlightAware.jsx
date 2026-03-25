@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { importVooFromFlightAwareCache } from '@/functions/importVooFromFlightAwareCache';
 import { useAuth } from '@/lib/AuthContext';
 import { useCompanyView } from '@/lib/CompanyViewContext';
+import { useI18n } from '@/components/lib/i18n';
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -230,6 +231,7 @@ function FlightTable({ flights, airportIcao, showActions, onCreateVoo, onIgnore,
 // ─── Main Component ─────────────────────────────────────────
 
 export default function FlightAwarePage() {
+  const { t } = useI18n();
   const { currentUser } = useAuth();
   const { effectiveEmpresaId } = useCompanyView();
 
@@ -878,7 +880,7 @@ export default function FlightAwarePage() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4">
       <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
         <Plane className="w-6 h-6 text-sky-500" />
-        FlightAware — Gestão de Voos
+        {t('flightaware.title')}
       </h1>
 
       <AlertBanner alert={alert} onDismiss={() => setAlert(null)} />
@@ -887,15 +889,15 @@ export default function FlightAwarePage() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="cache" className="text-xs sm:text-sm">
             <Database className="w-4 h-4 mr-1.5" />
-            Cache FlightAware
+            {t('flightaware.tabHistory')}
           </TabsTrigger>
           <TabsTrigger value="api" className="text-xs sm:text-sm">
             <Search className="w-4 h-4 mr-1.5" />
-            Buscar API
+            {t('flightaware.tabSearch')}
           </TabsTrigger>
           <TabsTrigger value="compare" className="text-xs sm:text-sm">
             <ArrowRightLeft className="w-4 h-4 mr-1.5" />
-            Comparação
+            {t('flightaware.tabCompare')}
           </TabsTrigger>
         </TabsList>
 
@@ -905,7 +907,7 @@ export default function FlightAwarePage() {
             {...filterProps}
             onSearch={loadCache}
             loading={cacheLoading}
-            buttonLabel="Buscar Cache"
+            buttonLabel={t('flightaware.search')}
             extraFilters={
               <>
                 <div>
@@ -987,7 +989,7 @@ export default function FlightAwarePage() {
                   {verifyingPending
                     ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     : <Eye className="w-4 h-4 mr-2" />}
-                  Verificar Pendentes ({pendingCount})
+                  {t('flightaware.verificarPendentes')} ({pendingCount})
                 </Button>
                 <Button
                   onClick={createAllPending}
@@ -997,7 +999,7 @@ export default function FlightAwarePage() {
                   {bulkCreating
                     ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     : <PlusCircle className="w-4 h-4 mr-2" />}
-                  Criar Todos Pendentes ({pendingCount})
+                  {t('flightaware.criarTodosPendentes')} ({pendingCount})
                 </Button>
               </>
             )}
@@ -1053,7 +1055,7 @@ export default function FlightAwarePage() {
             <Card className="bg-slate-50 border-dashed">
               <CardContent className="pt-8 pb-8 text-center text-slate-500">
                 <Database className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                <p>Selecione o período e clique "Buscar Cache"</p>
+                <p>{t('flightaware.noFlights')}</p>
               </CardContent>
             </Card>
           )}
@@ -1075,7 +1077,7 @@ export default function FlightAwarePage() {
             {...filterProps}
             onSearch={fetchFlightAwareAPI}
             loading={apiLoading}
-            buttonLabel="Buscar FlightAware API"
+            buttonLabel={t('flightaware.search')}
           />
 
           {apiProgress && (
@@ -1134,7 +1136,7 @@ export default function FlightAwarePage() {
             {...filterProps}
             onSearch={runComparison}
             loading={compareLoading}
-            buttonLabel="Comparar"
+            buttonLabel={t('flightaware.comparar')}
             buttonIcon={ArrowRightLeft}
           />
 

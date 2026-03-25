@@ -6,6 +6,7 @@ import {
   Users, FileText, MessageSquare, Settings, ChevronDown, ChevronRight,
   BarChart3, Wrench, Bell, Search, Layers
 } from "lucide-react";
+import { useI18n } from '@/components/lib/i18n';
 
 const sections = [
   {
@@ -179,6 +180,7 @@ const sections = [
 ];
 
 export default function GuiaUtilizador() {
+  const { t } = useI18n();
   const [abertos, setAbertos] = useState({ dashboard: true });
   const [busca, setBusca] = useState("");
 
@@ -199,10 +201,10 @@ export default function GuiaUtilizador() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
           <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          Guia do Utilizador
+          {t('guia.title')}
         </h1>
         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          Documentação completa do sistema DIROPS
+          {t('guia.subtitle')}
         </p>
       </div>
 
@@ -211,7 +213,7 @@ export default function GuiaUtilizador() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
-          placeholder="Pesquisar no guia..."
+          placeholder={t('guia.buscarPlaceholder')}
           value={busca}
           onChange={e => setBusca(e.target.value)}
           className="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -222,7 +224,7 @@ export default function GuiaUtilizador() {
       {!busca && (
         <Card className="mb-6 border-slate-200 dark:border-slate-700">
           <CardContent className="p-4">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Índice Rápido</p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">{t('guia.indiceRapido')}</p>
             <div className="flex flex-wrap gap-2">
               {sections.map(s => (
                 <button
@@ -247,7 +249,7 @@ export default function GuiaUtilizador() {
         {secoesFiltradas.length === 0 && (
           <div className="text-center py-12 text-slate-400">
             <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
-            <p>Nenhum resultado encontrado para "{busca}"</p>
+            <p>{t('label.no_results')}</p>
           </div>
         )}
 
