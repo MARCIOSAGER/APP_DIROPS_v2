@@ -30,7 +30,7 @@ Requirements for milestone v1.1 — Consolidacao e Polimento.
 ### UX/UI
 
 - [ ] **UX-01**: Dashboard layout, typography, and spacing follow consistent design standards
-- [ ] **UX-02**: Data tables across Operacoes, Faturacao, and other pages are responsive and readable
+- [x] **UX-02**: Data tables across Operacoes, Faturacao, and other pages are responsive and readable
 - [ ] **UX-03**: Form modals (FormVoo, proforma, safety) have polished and consistent UX
 
 ## v2 Requirements
@@ -75,7 +75,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEBT-01 | Phase 4 | Complete |
 | DEBT-02 | Phase 4 | Complete |
 | UX-01 | Phase 5 | Pending |
-| UX-02 | Phase 5 | Pending |
+| UX-02 | Phase 5 | Complete |
 | UX-03 | Phase 5 | Pending |
 
 **Coverage:**
