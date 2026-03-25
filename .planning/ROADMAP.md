@@ -66,7 +66,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 03-01-PLAN.md — Daily FlightAware sync function + pg_cron schedule (FA-05)
+- [~] 03-01-PLAN.md — Daily FlightAware sync function + pg_cron schedule (FA-05) [awaiting human-verify]
 
 ### Phase 4: Tech Debt
 **Goal**: All page access checks use regra_permissao and all user-facing strings support both PT and EN
@@ -105,6 +105,6 @@ Note: Phase 4 depends only on Phase 1 (can start after Phase 1 completes, in par
 |-------|----------------|--------|-----------|
 | 1. Bug Fixes | 1/2 | In Progress|  |
 | 2. FlightAware UI | 1/2 | In Progress|  |
-| 3. FlightAware Automation | 0/1 | Not started | - |
+| 3. FlightAware Automation | 0/1 | In Progress | - |
 | 4. Tech Debt | 0/4 | Not started | - |
 | 5. UX Polish | 0/? | Not started | - |

@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Consolidacao e Polimento
-status: Ready to plan
-stopped_at: Completed 02-flightaware-ui 02-02-PLAN.md — waiting for checkpoint verification
-last_updated: "2026-03-25T14:31:22.507Z"
+status: Executing Phase 03
+stopped_at: "03-01 Tasks 1-2 complete — waiting for human-verify checkpoint (Supabase SQL editor)"
+last_updated: "2026-03-25T14:58:00Z"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 4
+  total_plans: 9
   completed_plans: 4
 ---
 
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Operations teams can manage flights end-to-end in a single unified system.
-**Current focus:** Phase 02 — flightaware-ui
+**Current focus:** Phase 03 — flightaware-automation
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
+Phase: 03 (flightaware-automation) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -45,6 +45,7 @@ Plan: Not started
 | Phase 01-bug-fixes P02 | 10 | 2 tasks | 3 files |
 | Phase 02-flightaware-ui P01 | 245s | 2 tasks | 2 files |
 | Phase 02-flightaware-ui P02 | 420s | 2 tasks | 4 files |
+| Phase 03-flightaware-automation P01 | ~60s | 2/3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -61,6 +62,7 @@ Plan: Not started
 - [Phase 02-flightaware-ui]: importVooFromFlightAwareCache returns early with existingVoo+faData when no selectedFields (backward compat)
 - [Phase 02-flightaware-ui]: forceCreate=true bypasses duplicate check entirely to support Criar Novo flow
 - [Phase 02-flightaware-ui]: Merge only fills empty fields (never overwrites) — enforced via !existing[field] check per D-11
+- [Phase 03-flightaware-automation]: NULLIF guards used before date casting in upsert to handle empty-string datetime fields from fetch_fr24()
 
 ### Pending Todos
 
@@ -72,6 +74,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T14:27:36.360Z
-Stopped at: Completed 02-flightaware-ui 02-02-PLAN.md — waiting for checkpoint verification
+Last session: 2026-03-25T14:58:00Z
+Stopped at: "03-01 Tasks 1-2 complete — waiting for human-verify checkpoint (Supabase SQL editor)"
 Resume file: None
