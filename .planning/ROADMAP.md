@@ -88,7 +88,10 @@ Plans:
   1. Remaining pages that previously used raw useEffect fetches now reflect mutations without manual refresh
   2. After a production deploy, navigating to any lazy-loaded page that fails to load its chunk shows a recoverable error state rather than a blank screen
   3. Refreshing the page after a ChunkLoadError restores the page successfully
-**Plans**: TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 10-01-PLAN.md — Write & apply migration 055: composite indexes for voo and calculo_tarifa
 **UI hint**: yes
 
 ### Phase 10: Database Performance
@@ -99,7 +102,10 @@ Plans:
   1. EXPLAIN ANALYZE on the Operacoes primary voo query shows an index scan on empresa_id + deleted_at + data_operacao rather than a sequential scan
   2. EXPLAIN ANALYZE on the fetchCalculoMap query shows an index scan on calculo_tarifa(empresa_id, voo_id) rather than a sequential scan
   3. A new migration file is applied that adds the composite indexes without breaking existing queries or RLS policies
-**Plans**: TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 10-01-PLAN.md — Write & apply migration 055: composite indexes for voo and calculo_tarifa
 
 ## Progress
 
