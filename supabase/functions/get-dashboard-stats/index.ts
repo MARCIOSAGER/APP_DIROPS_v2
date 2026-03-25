@@ -81,14 +81,14 @@ Deno.serve(async (req) => {
       vooQuery = vooQuery.in("aeroporto_operacao", empresaIcaos);
     }
 
-    // Run all queries in parallel
+    // Run all queries in parallel (limit 10000 to avoid PostgREST 1000-row default cap)
     const [voosResult, voosLigadosResult, calculosResult, ocorrenciasResult, inspecoesResult] =
       await Promise.all([
-        vooQuery,
-        supabase.from("voo_ligado").select("id,id_voo_arr,id_voo_dep,tempo_permanencia_min,empresa_id"),
-        supabase.from("calculo_tarifa").select("voo_id,total_tarifa"),
-        supabase.from("ocorrencia_safety").select("id,status,aeroporto,empresa_id"),
-        supabase.from("inspecao").select("id,status,aeroporto_id,empresa_id"),
+        vooQuery.limit(10000),
+        supabase.from("voo_ligado").select("id,id_voo_arr,id_voo_dep,tempo_permanencia_min,empresa_id").limit(10000),
+        supabase.from("calculo_tarifa").select("voo_id,total_tarifa").limit(10000),
+        supabase.from("ocorrencia_safety").select("id,status,aeroporto,empresa_id").limit(10000),
+        supabase.from("inspecao").select("id,status,aeroporto_id,empresa_id").limit(10000),
       ]);
 
     const voos: any[] = voosResult.data || [];
@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
       voosDobroQuery = voosDobroQuery.in("aeroporto_operacao", empresaIcaos);
     }
 
-    const { data: voosDobro } = await voosDobroQuery;
+    const { data: voosDobro } = await voosDobroQuery.limit(10000);
     const vd = voosDobro || [];
     const vdIds = new Set(vd.map((v: any) => v.id));
     const voosLigadosDobro = voosLigados.filter(
