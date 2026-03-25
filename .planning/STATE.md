@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Consolidacao e Polimento
-status: Ready to execute
-stopped_at: Completed 02-flightaware-ui 02-01-PLAN.md
-last_updated: "2026-03-25T14:17:07.640Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 02-flightaware-ui 02-02-PLAN.md — waiting for checkpoint verification
+last_updated: "2026-03-25T14:27:36.368Z"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # State: DIROPS-SGA
@@ -44,6 +44,7 @@ Plan: 2 of 2
 | Phase 01-bug-fixes P01 | 4 | 2 tasks | 2 files |
 | Phase 01-bug-fixes P02 | 10 | 2 tasks | 3 files |
 | Phase 02-flightaware-ui P01 | 245s | 2 tasks | 2 files |
+| Phase 02-flightaware-ui P02 | 420s | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -57,6 +58,9 @@ Plan: 2 of 2
 - [Phase 01-bug-fixes]: filterVoosArr extracted as named export for testability; registration filter conditional on non-empty registo_aeronave; individual formData.* fields used in dep array to match existing style
 - [Phase 02-flightaware-ui]: Use pure CSS/Tailwind peer checkbox pattern for real flights toggle — avoids new Radix Switch dependency
 - [Phase 02-flightaware-ui]: voosReaisMatch uses actual_off/actual_on fields from raw_data per D-06 spec for FlightAware real flight detection
+- [Phase 02-flightaware-ui]: importVooFromFlightAwareCache returns early with existingVoo+faData when no selectedFields (backward compat)
+- [Phase 02-flightaware-ui]: forceCreate=true bypasses duplicate check entirely to support Criar Novo flow
+- [Phase 02-flightaware-ui]: Merge only fills empty fields (never overwrites) — enforced via !existing[field] check per D-11
 
 ### Pending Todos
 
@@ -68,6 +72,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T14:17:07.633Z
-Stopped at: Completed 02-flightaware-ui 02-01-PLAN.md
+Last session: 2026-03-25T14:27:36.360Z
+Stopped at: Completed 02-flightaware-ui 02-02-PLAN.md — waiting for checkpoint verification
 Resume file: None

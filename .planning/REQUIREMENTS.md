@@ -19,8 +19,8 @@ Requirements for milestone v1.1 — Consolidacao e Polimento.
 - [x] **FA-03**: User sees "Dados FlightAware" badge to distinguish automatic imports from manual entries
 - [x] **FA-04**: User can filter FlightAware cache to show only "real" flights (with actual_off/actual_on, hiding cancelled)
 - [ ] **FA-05**: System automatically fetches FlightAware data daily via scheduled function
-- [ ] **FA-06**: User sees warning in import modal when flight already exists (duplicate detection)
-- [ ] **FA-07**: User can update existing flight with FlightAware data (merge, not just create new)
+- [x] **FA-06**: User sees warning in import modal when flight already exists (duplicate detection)
+- [x] **FA-07**: User can update existing flight with FlightAware data (merge, not just create new)
 
 ### Tech Debt
 
@@ -70,8 +70,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FA-03 | Phase 2 | Complete |
 | FA-04 | Phase 2 | Complete |
 | FA-05 | Phase 3 | Pending |
-| FA-06 | Phase 2 | Pending |
-| FA-07 | Phase 2 | Pending |
+| FA-06 | Phase 2 | Complete |
+| FA-07 | Phase 2 | Complete |
 | DEBT-01 | Phase 4 | Pending |
 | DEBT-02 | Phase 4 | Pending |
 | UX-01 | Phase 5 | Pending |

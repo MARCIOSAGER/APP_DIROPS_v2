@@ -52,7 +52,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Badges (Dados FlightAware, Verificar Registo/Horario) + real-flights toggle filter (FA-01, FA-02, FA-03, FA-04)
-- [ ] 02-02-PLAN.md — Duplicate detection warning + field-level merge modal (FA-06, FA-07)
+- [x] 02-02-PLAN.md — Duplicate detection warning + field-level merge modal (FA-06, FA-07)
 
 **UI hint**: yes
 
