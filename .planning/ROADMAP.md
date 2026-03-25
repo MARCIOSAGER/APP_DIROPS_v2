@@ -42,7 +42,12 @@ Full details: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
   3. Navigating between pages does not trigger a Supabase User.me() call — profile is read from AuthContext
   4. TOKEN_REFRESHED event does not cause a visible page re-render when the user identity is unchanged
   5. Any Supabase request that hangs for more than 15 seconds fails with an error state rather than loading indefinitely
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Auth guard + logout cache clear + Supabase fetch timeout + query-client tuning
+- [ ] 06-02-PLAN.md — Fix useStaticData query keys to include effectiveEmpresaId (tenant isolation)
+- [ ] 06-03-PLAN.md — Replace User.me() with useAuth().user in all 23 pages
 
 ### Phase 7: Query Optimization
 **Goal**: Pages fetch only the data they need — no redundant parallel calls, no full-table selects where column subsets suffice
@@ -96,7 +101,7 @@ Full details: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 | 3. FlightAware Automation | v1.1 | 1/1 | Complete | 2026-03-25 |
 | 4. Tech Debt | v1.1 | 4/4 | Complete | 2026-03-25 |
 | 5. UX Polish | v1.1 | 3/3 | Complete | 2026-03-25 |
-| 6. Cache Foundation | v1.2 | 0/? | Not started | - |
+| 6. Cache Foundation | v1.2 | 0/3 | Not started | - |
 | 7. Query Optimization | v1.2 | 0/? | Not started | - |
 | 8. Cache Integration (High-Traffic) | v1.2 | 0/? | Not started | - |
 | 9. Cache Integration (Remaining) + Resilience | v1.2 | 0/? | Not started | - |
