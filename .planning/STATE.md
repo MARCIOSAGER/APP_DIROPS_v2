@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Performance
 status: Ready to execute
-stopped_at: Completed 06-02-PLAN.md — CACHE-01 tenant query key isolation in useStaticData.jsx
-last_updated: "2026-03-25T18:07:19.351Z"
+stopped_at: Completed 06-01-PLAN.md — fetch timeout, query-client tuning, auth cache clearing
+last_updated: "2026-03-25T18:09:08.084Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # State: DIROPS-SGA
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 06 (cache-foundation) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -42,6 +42,7 @@ Plan: 2 of 3
 
 *Updated after each plan completion*
 | Phase 06-cache-foundation P02 | 6 | 1 tasks | 1 files |
+| Phase 06-cache-foundation P01 | 8 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -52,6 +53,8 @@ Plan: 2 of 3
 - Operacoes.jsx risk: Has 3-attempt custom retry logic in loadData(); Phase 8 planning must audit all mutation side effects before migrating
 - DB indexes: Phase 10 requires EXPLAIN ANALYZE before writing any migration — actual slow queries may differ from expected patterns
 - [Phase 06-cache-foundation]: Query key isolation only (no queryFn filter): empresa_id added to key only — queryFn bodies unchanged. Supabase RLS handles row-level isolation; key change prevents cache collisions between tenants in useStaticData hooks
+- [Phase 06-cache-foundation]: queryClientInstance.clear() before supabase.auth.signOut() in logout() prevents race with SIGNED_OUT handler
+- [Phase 06-cache-foundation]: TOKEN_REFRESHED guard: session.user.id !== user?.id skips DB call — same user token refresh does not reload profile
 
 ### Pending Todos
 
@@ -64,6 +67,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T18:07:19.335Z
-Stopped at: Completed 06-02-PLAN.md — CACHE-01 tenant query key isolation in useStaticData.jsx
+Last session: 2026-03-25T18:09:08.072Z
+Stopped at: Completed 06-01-PLAN.md — fetch timeout, query-client tuning, auth cache clearing
 Resume file: None

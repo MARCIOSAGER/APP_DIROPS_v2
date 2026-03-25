@@ -6,7 +6,7 @@
 ## Cache Correctness
 
 - [x] **CACHE-01**: Cache keys include empresa_id so tenant switching shows correct data immediately
-- [ ] **CACHE-02**: Query cache is cleared on logout so no cross-user data leakage occurs
+- [x] **CACHE-02**: Query cache is cleared on logout so no cross-user data leakage occurs
 - [ ] **CACHE-03**: Pages read user data from AuthContext instead of calling User.me() per page
 
 ## Query Optimization
@@ -28,7 +28,7 @@
 ## Resilience
 
 - [ ] **RES-01**: ErrorBoundary wraps React.lazy to recover from ChunkLoadError after deploys
-- [ ] **RES-02**: Supabase client has fetch timeout (15s) to prevent hung requests
+- [x] **RES-02**: Supabase client has fetch timeout (15s) to prevent hung requests
 
 ## Future Requirements
 
