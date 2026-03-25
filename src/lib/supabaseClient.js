@@ -10,4 +10,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     lock: async (_name, _acquireTimeout, fn) => await fn(),
   },
+  global: {
+    fetch: (url, options = {}) =>
+      fetch(url, { ...options, signal: AbortSignal.timeout(15000) }),
+  },
 });
