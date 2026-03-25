@@ -32,7 +32,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. User can generate PDF report in "Todas as Companhias" grouped mode and receives a valid file without error
   2. User opening FormVoo sees "Voo de Chegada Vinculado" dropdown populated with ARR flights filtered by empresa, date before departure, and same registration
   3. Selecting a linked arrival flight saves correctly and displays the association in the flight detail view
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Fix PDF returnBase64 arguments anti-pattern (BUG-01)
+- [ ] 01-02-PLAN.md — Add registration filter to voosArrDisponíveis in FormVoo (BUG-02)
 
 ### Phase 2: FlightAware UI
 **Goal**: Users can identify FlightAware-sourced flights, spot missing data, detect duplicates, and update existing flights from the import flow
@@ -85,7 +89,7 @@ Note: Phase 4 depends only on Phase 1 (can start after Phase 1 completes, in par
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Bug Fixes | 0/? | Not started | - |
+| 1. Bug Fixes | 0/2 | Not started | - |
 | 2. FlightAware UI | 0/? | Not started | - |
 | 3. FlightAware Automation | 0/? | Not started | - |
 | 4. Tech Debt | 0/? | Not started | - |
