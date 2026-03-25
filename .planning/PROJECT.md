@@ -8,11 +8,17 @@ Airport management system (DIROPS-SGA) for managing flights, invoicing, safety, 
 
 Operations teams can manage flights end-to-end — from arrival through departure, invoicing, and reporting — in a single unified system.
 
-## Current State
+## Current Milestone: v1.2 Performance
 
-**Shipped:** v1.1 Consolidacao e Polimento (2026-03-25)
+**Goal:** Eliminar lentidão percebida e necessidade de refreshes manuais no sistema em produção.
 
-All 5 phases complete: bug fixes, FlightAware UI + automation, permissions refactor, i18n coverage, UX polish. System is stable in production with daily automated FlightAware sync.
+**Target features:**
+- Investigar e resolver bottlenecks de carregamento (queries lentas, re-renders, fetches desnecessários)
+- Implementar caching/invalidação inteligente para evitar refreshes manuais
+- Lazy loading de componentes e dados pesados
+- Otimizar queries Supabase (indexes, select fields, pagination)
+
+**Previous:** v1.1 Consolidacao e Polimento (shipped 2026-03-25)
 
 ## Requirements
 
@@ -51,7 +57,11 @@ All 5 phases complete: bug fixes, FlightAware UI + automation, permissions refac
 
 ### Active
 
-(None — planning next milestone)
+- [ ] Identify and resolve slow page loads and query bottlenecks
+- [ ] Eliminate need for manual page refreshes to see updated data
+- [ ] Implement smart caching and cache invalidation
+- [ ] Lazy load heavy components and routes
+- [ ] Optimize Supabase queries (indexes, field selection, pagination)
 
 ### Out of Scope
 
@@ -112,4 +122,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-25 after v1.1 milestone (Consolidacao e Polimento)*
+*Last updated: 2026-03-25 after starting v1.2 milestone (Performance)*
