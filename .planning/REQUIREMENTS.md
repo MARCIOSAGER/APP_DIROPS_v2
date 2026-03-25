@@ -53,7 +53,7 @@
 | QUERY-01 | Phase 7 | — | Pending |
 | QUERY-02 | Phase 7 | — | Pending |
 | QUERY-03 | Phase 7 | — | Pending |
-| INTEG-01 | Phase 8 | — | Pending |
+| INTEG-01 | Phase 8 | 08-03 | Complete |
 | INTEG-02 | Phase 8 | — | Pending |
 | INTEG-03 | Phase 9 | — | Pending |
 | RES-01 | Phase 9 | — | Pending |

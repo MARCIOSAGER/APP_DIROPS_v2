@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Performance
 status: Ready to execute
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-25T20:46:33.929Z"
+stopped_at: Completed 08-03-PLAN.md
+last_updated: "2026-03-25T22:05:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 13
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # State: DIROPS-SGA
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 08 (cache-integration-high-traffic) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3 (COMPLETE)
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Plan: 2 of 3
 | Phase 07-query-optimization P02 | 689 | 1 tasks | 1 files |
 | Phase 07-query-optimization P03 | 12 | 2 tasks | 2 files |
 | Phase 08-cache-integration-high-traffic P01 | 446 | 2 tasks | 4 files |
+| Phase 08-cache-integration-high-traffic P03 | 15 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Plan: 2 of 3
 - [Phase 08-cache-integration-high-traffic]: staleTime 0 for operational hooks (voos/voosLigados/calculos), staleTime 5 min for aggregate stats (dashboard) — operational data must always reflect server state on mount
 - [Phase 08-cache-integration-high-traffic]: fetchCalculoMap exported separately from useCalculosTarifa so Plans 02/03 can call it imperatively after mutations without triggering full re-render cycle
 - [Phase 08-cache-integration-high-traffic]: useDashboardStats returns full response object (not destructured): callers access both .data and .previousData at call site
+- [Phase 08-03]: useCalculosTarifa kept in Home.jsx — ReceitasChart needs raw calculo_tarifa rows for revenue-over-time chart, not covered by RPC aggregate
+- [Phase 08-03]: getDashboardStats.js updated to RPC — hook must call same get_dashboard_stats_full as Home.jsx was already using directly (fix for stale Edge Function reference)
 
 ### Pending Todos
 
@@ -80,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T20:46:33.900Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-03-25T22:05:00.000Z
+Stopped at: Completed 08-03-PLAN.md
 Resume file: None
