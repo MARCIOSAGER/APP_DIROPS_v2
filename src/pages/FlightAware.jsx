@@ -49,6 +49,40 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function FiltersBar({ airportIcao, setAirportIcao, startDate, setStartDate, endDate, setEndDate, onSearch, loading, extraFilters, buttonLabel = 'Buscar', buttonIcon: BtnIcon = Search }) {
+  return (
+    <Card>
+      <CardContent className="pt-4 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Aeroporto (ICAO)</label>
+            <Input
+              value={airportIcao}
+              onChange={(e) => setAirportIcao(e.target.value.toUpperCase())}
+              placeholder="FNBJ"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Data Início</label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Data Fim</label>
+            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          </div>
+          {extraFilters}
+          <div className="flex items-end">
+            <Button onClick={onSearch} disabled={loading} className="w-full bg-sky-600 hover:bg-sky-700 text-white">
+              {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <BtnIcon className="w-4 h-4 mr-2" />}
+              {buttonLabel}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function splitInto6hBlocks(startDate, endDate) {
   const blocks = [];
   let current = new Date(startDate + 'T00:00:00Z');
@@ -255,41 +289,8 @@ export default function FlightAwarePage() {
     return found?.codigo_iata || found?.codigo_icao || icaoCode;
   }
 
-  // ─── Shared Filters UI ─────────────────────────────────────
-
-  function FiltersBar({ onSearch, loading, extraFilters, buttonLabel = 'Buscar', buttonIcon: BtnIcon = Search }) {
-    return (
-      <Card>
-        <CardContent className="pt-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Aeroporto (ICAO)</label>
-              <Input
-                value={airportIcao}
-                onChange={(e) => setAirportIcao(e.target.value.toUpperCase())}
-                placeholder="FNBJ"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Data Início</label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Data Fim</label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-            </div>
-            {extraFilters}
-            <div className="flex items-end">
-              <Button onClick={onSearch} disabled={loading} className="w-full bg-sky-600 hover:bg-sky-700 text-white">
-                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <BtnIcon className="w-4 h-4 mr-2" />}
-                {buttonLabel}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // ─── Shared filter props ─────────────────────────────────────
+  const filterProps = { airportIcao, setAirportIcao, startDate, setStartDate, endDate, setEndDate };
 
   // ═══════════════════════════════════════════════════════════
   // TAB 1: CACHE FLIGHTAWARE
@@ -310,7 +311,7 @@ export default function FlightAwarePage() {
 
       // Stats
       const total = data.length;
-      const importados = data.filter(f => f.status === 'importado').length;
+      const importados = data.filter(f => f.status === 'importado' || f.status === 'actualizado').length;
       const pendentes = data.filter(f => f.status === 'pendente').length;
       const ignorados = data.filter(f => f.status === 'ignorado').length;
       setCacheStats({ total, importados, pendentes, ignorados });
@@ -683,19 +684,29 @@ export default function FlightAwarePage() {
       if (endDate) cacheFilters.data_voo = { ...cacheFilters.data_voo, $lte: endDate };
       const cacheData = await CacheVooFlightAware.filter(cacheFilters, '-data_voo');
 
-      // Load voos ATO
-      const { data: voos } = await supabase
-        .from('voo')
-        .select('id, numero_voo, data_operacao, tipo_movimento, registo_aeronave, aeroporto_operacao')
-        .eq('empresa_id', empresaId)
-        .eq('aeroporto_operacao', airportIcao)
-        .is('deleted_at', null)
-        .gte('data_operacao', startDate)
-        .lte('data_operacao', endDate);
+      // Load voos ATO (paginated to avoid Supabase 1000-row limit)
+      let allVoos = [];
+      const PAGE_SIZE = 1000;
+      let from = 0;
+      while (true) {
+        const { data: batch } = await supabase
+          .from('voo')
+          .select('id, numero_voo, data_operacao, tipo_movimento, registo_aeronave, aeroporto_operacao')
+          .eq('empresa_id', empresaId)
+          .eq('aeroporto_operacao', airportIcao)
+          .is('deleted_at', null)
+          .gte('data_operacao', startDate)
+          .lte('data_operacao', endDate)
+          .range(from, from + PAGE_SIZE - 1);
+        if (!batch || batch.length === 0) break;
+        allVoos = allVoos.concat(batch);
+        if (batch.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
 
       // Build voo map: key = numero_voo + data + tipo
       const vooMap = new Map();
-      (voos || []).forEach(v => {
+      allVoos.forEach(v => {
         const key = `${(v.numero_voo || '').toUpperCase()}_${v.data_operacao}_${v.tipo_movimento}`;
         vooMap.set(key, v);
       });
@@ -708,11 +719,25 @@ export default function FlightAwarePage() {
 
       cacheData.forEach(f => {
         const raw = f.raw_data || {};
-        const isArr = isArrival(raw, airportIcao);
-        const tipo = isArr ? 'ARR' : 'DEP';
-        const flightNum = (raw.flight || f.numero_voo || '').toUpperCase();
+        // Use movement_type from RPC if available, otherwise calculate from destination
+        const tipo = raw.movement_type || (isArrival(raw, airportIcao) ? 'ARR' : 'DEP');
+        const flightNum = (raw.flight || raw.callsign || f.numero_voo || '').toUpperCase();
         const key = `${flightNum}_${f.data_voo}_${tipo}`;
-        const atoVoo = vooMap.get(key);
+        let atoVoo = vooMap.get(key);
+
+        // Fallback: try matching with import-calculated date (from timestamps)
+        if (!atoVoo) {
+          const dtRelevante = tipo === 'ARR'
+            ? (raw.datetime_landed || raw.datetime_scheduled_landed || raw.datetime_takeoff)
+            : (raw.datetime_takeoff || raw.datetime_scheduled_takeoff || raw.datetime_landed);
+          if (dtRelevante) {
+            const dataCalc = new Date(dtRelevante).toISOString().split('T')[0];
+            if (dataCalc !== f.data_voo) {
+              atoVoo = vooMap.get(`${flightNum}_${dataCalc}_${tipo}`);
+            }
+          }
+        }
+
         const faReg = normalizeReg(raw.reg);
 
         let status;
@@ -832,7 +857,7 @@ export default function FlightAwarePage() {
     const list = filteredCachedFlights;
     return {
       total: list.length,
-      importados: list.filter(f => f.status === 'importado').length,
+      importados: list.filter(f => f.status === 'importado' || f.status === 'actualizado').length,
       pendentes: list.filter(f => f.status === 'pendente').length,
       ignorados: list.filter(f => f.status === 'ignorado').length,
     };
@@ -868,6 +893,7 @@ export default function FlightAwarePage() {
         {/* ═══ TAB 1: CACHE ═══ */}
         <TabsContent value="cache" className="space-y-4">
           <FiltersBar
+            {...filterProps}
             onSearch={loadCache}
             loading={cacheLoading}
             buttonLabel="Buscar Cache"
@@ -1037,6 +1063,7 @@ export default function FlightAwarePage() {
           </Card>
 
           <FiltersBar
+            {...filterProps}
             onSearch={fetchFlightAwareAPI}
             loading={apiLoading}
             buttonLabel="Buscar FlightAware API"
@@ -1095,6 +1122,7 @@ export default function FlightAwarePage() {
         {/* ═══ TAB 3: COMPARAÇÃO ═══ */}
         <TabsContent value="compare" className="space-y-4">
           <FiltersBar
+            {...filterProps}
             onSearch={runComparison}
             loading={compareLoading}
             buttonLabel="Comparar"
