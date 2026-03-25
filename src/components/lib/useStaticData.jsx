@@ -84,3 +84,14 @@ export function useOutrasTarifas() {
     refetchOnWindowFocus: false,
   });
 }
+
+export function useImpostos() {
+  const { effectiveEmpresaId } = useCompanyView();
+  return useQuery({
+    queryKey: ['impostos', effectiveEmpresaId],
+    queryFn: () => import('@/entities/Imposto').then(({ Imposto }) => Imposto.list()),
+    staleTime: STATIC_CACHE_TIME,
+    gcTime: STATIC_CACHE_TIME * 2,
+    refetchOnWindowFocus: false,
+  });
+}
