@@ -1217,7 +1217,7 @@ export default function FlightAwarePage() {
                                   Criar Voo
                                 </Button>
                               )}
-                              {row.compareStatus === 'REG_DIFF' && (
+                              {row.compareStatus === 'REG_DIFF' && row.faReg && (
                                 <Button
                                   size="sm"
                                   className="h-6 text-xs bg-amber-600 hover:bg-amber-700"
