@@ -1062,17 +1062,24 @@ export default function FormVoo({
   };
 
   // Funções para lazy loading de registos
-  const searchRegistos = async (searchTerm) => {
+  const searchRegistos = async (searchTerm, allCompanies = false) => {
     try {
-      if (!formData.companhia_aerea) return [];
+      if (!formData.companhia_aerea && !allCompanies) return [];
 
-      // Find company in cache first, fallback to prop
-      const allCompanhias = await loadCompanhiasCache();
-      const companhiaSelecionada = allCompanhias.find(c => c.codigo_icao === formData.companhia_aerea)
-        || companhias.find(c => c.codigo_icao === formData.companhia_aerea);
-      if (!companhiaSelecionada) return [];
+      let results;
+      if (allCompanies) {
+        // Search across all companies (used for DEP registration change)
+        if (!searchTerm) return [];
+        results = await RegistoAeronave.filter({ registo: { $like: `%${searchTerm}%` } });
+      } else {
+        // Find company in cache first, fallback to prop
+        const allCompanhias = await loadCompanhiasCache();
+        const companhiaSelecionada = allCompanhias.find(c => c.codigo_icao === formData.companhia_aerea)
+          || companhias.find(c => c.codigo_icao === formData.companhia_aerea);
+        if (!companhiaSelecionada) return [];
+        results = await RegistoAeronave.filter({ id_companhia_aerea: companhiaSelecionada.id });
+      }
 
-      const results = await RegistoAeronave.filter({ id_companhia_aerea: companhiaSelecionada.id });
       const searchLower = (searchTerm || '').toLowerCase();
       return results
         .filter(r => !searchLower || r.registo?.toLowerCase().includes(searchLower))
@@ -1600,7 +1607,7 @@ export default function FormVoo({
                           placeholder={t('formVoo.pesquisarRegisto')}
                           searchPlaceholder={t('formVoo.procurarRegisto')}
                           noResultsMessage={t('formVoo.nenhumRegisto')}
-                          onSearch={searchRegistos}
+                          onSearch={(term) => searchRegistos(term, true)}
                           getInitialOption={getRegistoInicial}
                           minSearchLength={1}
                           className={errors.registo_dep ? 'border-red-500' : ''}
