@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Consolidacao e Polimento
-status: Ready to execute
-stopped_at: Completed 01-bug-fixes 01-01-PLAN.md
-last_updated: "2026-03-25T12:52:38.117Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 01-bug-fixes/01-02-PLAN.md
+last_updated: "2026-03-25T12:56:16.062Z"
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # State: DIROPS-SGA
@@ -42,6 +42,7 @@ Plan: 2 of 2
 
 *Updated after each plan completion*
 | Phase 01-bug-fixes P01 | 4 | 2 tasks | 2 files |
+| Phase 01-bug-fixes P02 | 10 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -52,6 +53,7 @@ Plan: 2 of 2
 - i18n partially complete — nav + major pages done, ~120 components remaining
 - regra_permissao: administrador (27 pages), operacoes (17 pages) as of migration 049
 - [Phase 01-bug-fixes]: Use destructured parameter (returnBase64 = false) instead of arguments[0] in ESM async functions
+- [Phase 01-bug-fixes]: filterVoosArr extracted as named export for testability; registration filter conditional on non-empty registo_aeronave; individual formData.* fields used in dep array to match existing style
 
 ### Pending Todos
 
@@ -63,6 +65,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T12:52:38.088Z
-Stopped at: Completed 01-bug-fixes 01-01-PLAN.md
+Last session: 2026-03-25T12:56:16.058Z
+Stopped at: Completed 01-bug-fixes/01-02-PLAN.md
 Resume file: None

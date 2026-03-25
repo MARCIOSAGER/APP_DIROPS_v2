@@ -10,7 +10,7 @@ Requirements for milestone v1.1 — Consolidacao e Polimento.
 ### Bug Fixes
 
 - [x] **BUG-01**: User can generate PDF "Todas as Companhias" in grouped mode without errors
-- [ ] **BUG-02**: User can select "Voo de Chegada Vinculado" in FormVoo filtered by empresa, ARR flights before departure, and same registration
+- [x] **BUG-02**: User can select "Voo de Chegada Vinculado" in FormVoo filtered by empresa, ARR flights before departure, and same registration
 
 ### FlightAware
 
@@ -64,7 +64,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | BUG-01 | Phase 1 | Complete |
-| BUG-02 | Phase 1 | Pending |
+| BUG-02 | Phase 1 | Complete |
 | FA-01 | Phase 2 | Pending |
 | FA-02 | Phase 2 | Pending |
 | FA-03 | Phase 2 | Pending |

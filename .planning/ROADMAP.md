@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md — Fix PDF returnBase64 arguments anti-pattern (BUG-01)
-- [ ] 01-02-PLAN.md — Add registration filter to voosArrDisponíveis in FormVoo (BUG-02)
+- [x] 01-02-PLAN.md — Add registration filter to voosArrDisponíveis in FormVoo (BUG-02)
 
 ### Phase 2: FlightAware UI
 **Goal**: Users can identify FlightAware-sourced flights, spot missing data, detect duplicates, and update existing flights from the import flow
