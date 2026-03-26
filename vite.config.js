@@ -19,32 +19,37 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'favicon-32.png', 'DIROPS_Logo.png'],
+      includeAssets: ['favicon.ico', 'favicon-16x16.png', 'favicon-32.png', 'apple-touch-icon-180x180.png'],
       manifest: {
         name: 'DIROPS-SGA - Sistema de Gestão Aeroportuária',
         short_name: 'DIROPS-SGA',
         description: 'Sistema de Gestão Aeroportuária - Direcção de Operações',
-        theme_color: '#1e40af',
+        theme_color: '#004A99',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',
         scope: '/',
         icons: [
           {
-            src: 'favicon-32.png',
-            sizes: '32x32',
+            src: 'pwa-64x64.png',
+            sizes: '64x64',
             type: 'image/png'
           },
           {
-            src: 'favicon.png',
+            src: 'pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'DIROPS_Logo.png',
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: 'maskable-icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'maskable'
           }
         ]
       },
