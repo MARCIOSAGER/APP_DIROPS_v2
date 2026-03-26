@@ -29,11 +29,11 @@ if (!fs.existsSync(DATA_DIR)) {
 async function fetchEntity(entityName) {
   const url = `${BASE44_API_URL}/api/apps/${BASE44_APP_ID}/entities/${entityName}`;
   let allRows = [];
-  let page = 1;
-  const pageSize = 100;
+  const pageSize = 500;
+  let skip = 0;
 
   while (true) {
-    const res = await fetch(`${url}?page=${page}&page_size=${pageSize}`, {
+    const res = await fetch(`${url}?limit=${pageSize}&skip=${skip}`, {
       headers: {
         'api_key': BASE44_API_KEY,
         'Content-Type': 'application/json',
@@ -46,15 +46,16 @@ async function fetchEntity(entityName) {
     }
 
     const data = await res.json();
-    const rows = data.rows || data.results || data.data || data;
+    const rows = Array.isArray(data) ? data : (data.rows || data.results || data.data || []);
 
     if (!Array.isArray(rows) || rows.length === 0) break;
 
     allRows = allRows.concat(rows);
-    console.log(`  ${entityName}: pagina ${page} (${rows.length} registros)`);
+    const page = Math.floor(skip / pageSize) + 1;
+    console.log(`  ${entityName}: pagina ${page} (${rows.length} registros, total ${allRows.length})`);
 
     if (rows.length < pageSize) break;
-    page++;
+    skip += pageSize;
   }
 
   return allRows;

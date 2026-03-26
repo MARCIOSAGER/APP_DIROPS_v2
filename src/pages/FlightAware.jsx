@@ -89,7 +89,8 @@ function splitInto6hBlocks(startDate, endDate) {
   let current = new Date(startDate + 'T00:00:00Z');
   const end = new Date(endDate + 'T23:59:59Z');
   while (current < end) {
-    const blockEnd = new Date(Math.min(current.getTime() + 6 * 3600 * 1000, end.getTime()));
+    // 24h blocks (was 6h — reduces API calls by 4x)
+    const blockEnd = new Date(Math.min(current.getTime() + 24 * 3600 * 1000, end.getTime()));
     blocks.push({
       from: current.toISOString().replace('.000Z', 'Z').replace('Z', ''),
       to: blockEnd.toISOString().replace('.000Z', 'Z').replace('Z', ''),
@@ -520,6 +521,46 @@ export default function FlightAwarePage() {
     abortRef.current = false;
 
     try {
+      // Limit: max 7 days per search to control API costs
+      const daysDiff = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
+      if (daysDiff > 7) {
+        showAlert('error', 'Máximo 7 dias por busca. Para períodos maiores, use o sync diário automático.');
+        setApiLoading(false);
+        return;
+      }
+
+      // Cache-first: check if we already have data for this period
+      const { data: cachedFlights } = await supabase
+        .from('cache_voo_f_r24')
+        .select('fr24_id, numero_voo, data_voo, airport_icao, status, raw_data, updated_date')
+        .eq('airport_icao', airportIcao)
+        .gte('data_voo', startDate)
+        .lte('data_voo', endDate);
+
+      if (cachedFlights?.length > 0) {
+        // Check freshness — if cache updated within 30 min, serve from cache
+        const newestCache = cachedFlights.reduce((a, b) =>
+          new Date(a.updated_date) > new Date(b.updated_date) ? a : b
+        );
+        const cacheAge = Date.now() - new Date(newestCache.updated_date).getTime();
+        const CACHE_FRESH_MS = 30 * 60 * 1000; // 30 min
+
+        if (cacheAge < CACHE_FRESH_MS) {
+          const deduped = cachedFlights.map(r => ({
+            fr24_id: r.fr24_id,
+            numero_voo: r.numero_voo,
+            data_voo: r.data_voo,
+            airport_icao: r.airport_icao,
+            status: r.status,
+            raw_data: r.raw_data,
+          }));
+          setApiResults(deduped);
+          showAlert('success', `${deduped.length} voos encontrados no cache (atualizado há ${Math.round(cacheAge / 60000)} min). Nenhuma chamada API feita.`);
+          setApiLoading(false);
+          return;
+        }
+      }
+
       // Check last sync to avoid re-fetching
       const syncKey = `FR24_LAST_SYNC_${airportIcao}`;
       const { data: lastSyncData } = await supabase.from('api_config').select('valor').eq('chave', syncKey).single();
@@ -1068,7 +1109,7 @@ export default function FlightAwarePage() {
               <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
               <p className="text-xs text-amber-700">
                 FlightAware AeroAPI (Plano Standard): 5 req/s, acesso histórico, 500k results/mês.
-                Intervalos maiores que 1 dia são divididos em blocos de 6h.
+                Máximo 7 dias por busca. Intervalos divididos em blocos de 24h. Dados recentes servidos do cache.
               </p>
             </CardContent>
           </Card>

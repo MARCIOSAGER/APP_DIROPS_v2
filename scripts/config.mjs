@@ -97,3 +97,12 @@ export const SKIP_ENTITIES = [
   'LogAuditoria',      // Logs serao gerados novamente
   'LogAcessoDocumento', // Logs serao gerados novamente
 ];
+
+// --- Mapeamento de empresa_id ---
+// Base44 ObjectId -> Supabase UUID
+export const EMPRESA_ID_MAP = {
+  '68936b4a2ac9eb3b4275c239': '128bc692-3fae-4825-9c55-40565dbedcfb', // SGA
+};
+
+// Empresa padrao para registros sem empresa_id
+export const DEFAULT_EMPRESA_ID = '128bc692-3fae-4825-9c55-40565dbedcfb'; // SGA

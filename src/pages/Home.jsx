@@ -38,7 +38,7 @@ import { Aeroporto } from "@/entities/Aeroporto";
 import { Inspecao } from "@/entities/Inspecao";
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
-import { hasUserProfile, ensureUserProfilesExist, getAeroportosPermitidos } from '@/components/lib/userUtils';
+import { hasUserProfile, ensureUserProfilesExist, getAeroportosPermitidos, isSuperAdmin } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
 
@@ -444,7 +444,7 @@ export default function DashboardInterno() {
           </Button>
         </div>
 
-        <MonitoramentoSuperAdmin />
+        {isSuperAdmin(currentUser) && <MonitoramentoSuperAdmin />}
 
         {isLoadingAll ?
         <div className="text-center py-12">

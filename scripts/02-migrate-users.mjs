@@ -8,18 +8,18 @@
 //
 // O que faz:
 // 1. Le users.json exportado do Base44
-// 2. Cria usuario no Supabase Auth (via Admin API)
-// 3. Envia email de convite para definir senha
-// 4. Cria perfil na tabela 'users' vinculado ao auth_id
+// 2. Cria usuario no Supabase Auth (via Admin API) com senha temporaria
+// 3. Cria perfil na tabela 'users' vinculado ao auth_id (status='pendente')
+// 4. NAO envia email — o envio de convite e feito depois pela UI (Gestao de Acessos)
 //
-// IMPORTANTE: Cada usuario recebera um email para definir a senha!
+// IMPORTANTE: Users sao criados com status 'pendente' — activacao manual depois!
 // ============================================================
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, BASE44_API_URL } from './config.mjs';
+import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, BASE44_API_URL, EMPRESA_ID_MAP, DEFAULT_EMPRESA_ID } from './config.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, 'data');
@@ -56,9 +56,18 @@ function extractProfile(base44User) {
     || profile.email?.split('@')[0]
     || '';
 
-  // Status padrao
+  // Mapear empresa_id do Base44 (ObjectId) para Supabase (UUID)
+  const rawEmpresa = profile.empresa_id || profile.empresa || base44User.empresa_id;
+  if (rawEmpresa && typeof rawEmpresa === 'string') {
+    profile.empresa_id = EMPRESA_ID_MAP[rawEmpresa] || DEFAULT_EMPRESA_ID;
+  } else {
+    profile.empresa_id = DEFAULT_EMPRESA_ID;
+  }
+  delete profile.empresa; // campo nao existe na tabela users
+
+  // Status padrao — pendente ate activacao manual
   if (!profile.status) {
-    profile.status = 'ativo';
+    profile.status = 'pendente';
   }
 
   // Perfis como array
@@ -101,17 +110,17 @@ async function migrateUser(base44User, index, total) {
       console.log(`${label} - ja existe no Auth, pulando criacao`);
       authUser = existing;
     } else {
-      // 2. Criar usuario no Supabase Auth via invite
-      // Isso envia um email de convite automaticamente
-      const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
-        data: {
-          full_name: profile.full_name,
-        },
-        redirectTo: `${SUPABASE_URL.replace('.supabase.co', '')}/login`,
+      // 2. Criar usuario no Supabase Auth SEM enviar email
+      // Usa createUser com senha temporaria — o convite sera enviado depois pela UI
+      const tempPassword = `Temp_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      const { data, error } = await supabase.auth.admin.createUser({
+        email,
+        password: tempPassword,
+        email_confirm: false, // NAO confirma email automaticamente
+        user_metadata: { full_name: profile.full_name },
       });
 
       if (error) {
-        // Se der conflito (ja existe), busca o existente
         if (error.message?.includes('already been registered') || error.status === 422) {
           console.log(`${label} - ja registrado, buscando...`);
           const { data: listData } = await supabase.auth.admin.listUsers();
@@ -124,7 +133,7 @@ async function migrateUser(base44User, index, total) {
         }
       } else {
         authUser = data.user;
-        console.log(`${label} - convite enviado!`);
+        console.log(`${label} - criado (sem email, status pendente)`);
       }
     }
 

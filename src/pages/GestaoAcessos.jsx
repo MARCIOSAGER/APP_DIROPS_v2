@@ -26,7 +26,9 @@ import {
   Filter,    // New icon for filter section
   X,         // New icon for clearing filters
   Check,     // New icon for combobox selection
-  ChevronsUpDown // New icon for combobox trigger
+  ChevronsUpDown, // New icon for combobox trigger
+  Send,      // Send invite
+  Loader2    // Loading spinner
 } from 'lucide-react';
 
 import { SolicitacaoAcesso } from '@/entities/SolicitacaoAcesso';
@@ -38,6 +40,8 @@ import { hasUserProfile, isAdminProfile } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/components/lib/i18n';
+import { supabase } from '@/lib/supabaseClient';
+import { sendEmailDirect } from '@/functions/sendEmailDirect';
 
 import AprovarAcessoModal from '../components/gestao/AprovarAcessoModal';
 import EditUserModal from '../components/gestao/EditUserModal';
@@ -722,6 +726,93 @@ export default function GestaoAcessos() {
     }
   };
 
+  const [sendingInvite, setSendingInvite] = useState(null); // email of user being invited
+  const [sendingBatch, setSendingBatch] = useState(false);
+
+  const handleEnviarConvite = async (user) => {
+    if (!user?.email) return;
+    setSendingInvite(user.email);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/AlterarSenha`,
+      });
+      if (error) throw error;
+
+      // Update status to ativo if pendente
+      if (user.status === 'pendente') {
+        await UserEntity.update(user.id, { status: 'ativo' });
+      }
+
+      setAlertInfo({
+        isOpen: true,
+        type: 'success',
+        title: 'Convite Enviado',
+        message: `Email de definição de senha enviado para ${user.email}.`,
+      });
+      loadData();
+    } catch (error) {
+      console.error('Erro ao enviar convite:', error);
+      setAlertInfo({
+        isOpen: true,
+        type: 'error',
+        title: 'Erro ao Enviar Convite',
+        message: `Erro: ${error.message}`,
+      });
+    } finally {
+      setSendingInvite(null);
+    }
+  };
+
+  const handleEnviarConvitesBatch = async () => {
+    const usersToInvite = filteredUsers.filter(
+      u => u.email && u.created_by === 'importacao_base44'
+    );
+    if (usersToInvite.length === 0) {
+      setAlertInfo({
+        isOpen: true,
+        type: 'info',
+        title: 'Sem Convites',
+        message: 'Nenhum utilizador importado encontrado para enviar convite.',
+      });
+      return;
+    }
+
+    const confirmMsg = `Enviar convite de definição de senha para ${usersToInvite.length} utilizadores?\n\nCada um receberá um email para criar a sua senha.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setSendingBatch(true);
+    let sent = 0;
+    let errors = 0;
+
+    for (const user of usersToInvite) {
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+          redirectTo: `${window.location.origin}/AlterarSenha`,
+        });
+        if (error) throw error;
+
+        if (user.status === 'pendente') {
+          await UserEntity.update(user.id, { status: 'ativo' });
+        }
+        sent++;
+      } catch (err) {
+        errors++;
+        console.error(`Erro convite ${user.email}:`, err.message);
+      }
+      // Rate limit
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    setSendingBatch(false);
+    setAlertInfo({
+      isOpen: true,
+      type: errors === 0 ? 'success' : 'warning',
+      title: 'Convites Enviados',
+      message: `${sent} convites enviados com sucesso. ${errors > 0 ? `${errors} erros.` : ''}`,
+    });
+    loadData();
+  };
+
   const handleExportUsersCSV = () => {
     const dataToExport = filteredUsers.map(user => {
       const perfisText = Array.isArray(user.perfis) ? 
@@ -1070,6 +1161,15 @@ export default function GestaoAcessos() {
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
+                      onClick={handleEnviarConvitesBatch}
+                      disabled={sendingBatch || filteredUsers.filter(u => u.created_by === 'importacao_base44').length === 0}
+                      className="border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950"
+                    >
+                      {sendingBatch ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                      Enviar Convites ({filteredUsers.filter(u => u.created_by === 'importacao_base44').length})
+                    </Button>
+                    <Button
+                      variant="outline"
                       onClick={handleExportUsersCSV}
                       disabled={filteredUsers.length === 0}
                     >
@@ -1392,13 +1492,23 @@ export default function GestaoAcessos() {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                onClick={() => handleEnviarConvite(user)}
+                                disabled={sendingInvite === user.email}
+                                className="text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                                title="Enviar email de definição de senha"
+                              >
+                                {sendingInvite === user.email ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Send className="w-3 h-3 mr-1" />}
+                                Convite
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
                                 onClick={() => handleOpenEditUserModal(user)}
                                 className="text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950"
                               >
                                 <Edit className="w-3 h-3 mr-1" />
                                 {t('acessos.editar')}
                               </Button>
-                              {/* Não permitir excluir o próprio utilizador */}
                               {user.id !== currentUser?.id && (
                                 <Button
                                   size="sm"

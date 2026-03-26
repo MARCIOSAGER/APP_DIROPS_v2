@@ -21,6 +21,8 @@ import {
   SUPABASE_SERVICE_ROLE_KEY,
   ENTITY_TABLE_MAP,
   SKIP_ENTITIES,
+  EMPRESA_ID_MAP,
+  DEFAULT_EMPRESA_ID,
 } from './config.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -101,6 +103,21 @@ function cleanRecord(record) {
     cleaned.base44_id = cleaned.id;
     delete cleaned.id;
   }
+
+  // Mapear empresa_id do Base44 (ObjectId) para Supabase (UUID)
+  if (cleaned.empresa_id && typeof cleaned.empresa_id === 'string' && !isUUID(cleaned.empresa_id)) {
+    cleaned.empresa_id = EMPRESA_ID_MAP[cleaned.empresa_id] || DEFAULT_EMPRESA_ID;
+  }
+  // Mapear empresa_solicitante_id (solicitacao_acesso)
+  if (cleaned.empresa_solicitante_id && typeof cleaned.empresa_solicitante_id === 'string' && !isUUID(cleaned.empresa_solicitante_id)) {
+    cleaned.empresa_solicitante_id = EMPRESA_ID_MAP[cleaned.empresa_solicitante_id] || DEFAULT_EMPRESA_ID;
+  }
+
+  // Remover campos que referenciam IDs Base44 (serao remapeados)
+  // created_by_id e user_id sao ObjectIds do Base44 — nao existem no Supabase
+  delete cleaned.created_by_id;
+  delete cleaned.user_id;
+  delete cleaned.is_sample;
 
   // Garantir created_date
   if (!cleaned.created_date) {

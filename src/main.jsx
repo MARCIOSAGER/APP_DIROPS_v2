@@ -23,7 +23,7 @@ window.addEventListener('unhandledrejection', (event) => {
     }
   }
 
-  if (window.__SENTRY__) {
+  if (window.__SENTRY__ && typeof window.__SENTRY__ === 'object') {
     import('@sentry/react').then(Sentry => Sentry.captureException(event.reason));
   }
 });
@@ -59,7 +59,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
         /^https:\/\/app\.marciosager\.com/,
       ],
     });
-    window.__SENTRY__ = true;
+    // window.__SENTRY__ is set by Sentry.init() internally — do not overwrite
   });
 }
 

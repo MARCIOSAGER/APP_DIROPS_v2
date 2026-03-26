@@ -10,7 +10,8 @@ import { getFlightAwareFIDS } from '@/functions/getFlightAwareFlights';
 import { supabase } from '@/lib/supabaseClient';
 import { format } from 'date-fns';
 
-const AUTO_REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minutes
+const AUTO_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes (was 3min — saves ~90% API calls)
+const CACHE_MAX_AGE_MS = 15 * 60 * 1000; // 15 min — serve from DB cache if fresher
 
 // FIDS status color mapping
 function getStatusInfo(flight) {
@@ -219,13 +220,55 @@ export default function FIDSPanel({ aeroportos = [] }) {
     ? aeroportosFiltrados
     : aeroportos.filter(a => a.isSGA === true);
 
-  const fetchFIDS = useCallback(async () => {
+  const fetchFIDS = useCallback(async (forceApi = false) => {
     if (!selectedAirport) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
+      // Cache-first: check DB for recent flights before calling API
+      if (!forceApi) {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: cached } = await supabase
+          .from('cache_voo_f_r24')
+          .select('*')
+          .eq('airport_icao', selectedAirport)
+          .gte('data_voo', today)
+          .order('updated_date', { ascending: false })
+          .limit(1);
+
+        if (cached?.length > 0) {
+          const cacheAge = Date.now() - new Date(cached[0].updated_date).getTime();
+          if (cacheAge < CACHE_MAX_AGE_MS) {
+            // Serve from cache — no API call
+            const { data: allCached } = await supabase
+              .from('cache_voo_f_r24')
+              .select('raw_data')
+              .eq('airport_icao', selectedAirport)
+              .gte('data_voo', today);
+
+            if (allCached?.length > 0) {
+              const cachedArrivals = [];
+              const cachedDepartures = [];
+              allCached.forEach(r => {
+                const f = r.raw_data;
+                if (!f) return;
+                if (f.movement_type === 'ARR') cachedArrivals.push(f);
+                else if (f.movement_type === 'DEP') cachedDepartures.push(f);
+              });
+              if (cachedArrivals.length > 0 || cachedDepartures.length > 0) {
+                setArrivals(cachedArrivals);
+                setDepartures(cachedDepartures);
+                setLastUpdated(cached[0].updated_date);
+                setIsLoading(false);
+                return;
+              }
+            }
+          }
+        }
+      }
+
       const result = await getFlightAwareFIDS({ airportIcao: selectedAirport });
 
       if (result.success) {
@@ -390,7 +433,7 @@ export default function FIDSPanel({ aeroportos = [] }) {
           )}
           <span>Chegadas: {arrivals.length}</span>
           <span>Partidas: {departures.length}</span>
-          {autoRefresh && <span className="text-green-400">● Auto-refresh: 3min</span>}
+          {autoRefresh && <span className="text-green-400">● Auto-refresh: 15min</span>}
           <span className="ml-auto text-[9px] opacity-50">Powered by FlightAware AeroAPI</span>
         </div>
       </div>
