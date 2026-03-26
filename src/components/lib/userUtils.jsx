@@ -100,8 +100,12 @@ export function getAeroportosPermitidos(user, todosAeroportos, effectiveEmpresaI
     aeroportosEmpresa = todosAeroportos.filter(a => a.empresa_id === user.empresa_id);
   }
 
-  // Admin da empresa → vê todos os aeroportos da empresa
+  // Admin da empresa → se tem aeroportos_acesso definidos, respeitar; senão vê todos da empresa
   if (isEmpresaAdmin(user)) {
+    if (user.aeroportos_acesso && Array.isArray(user.aeroportos_acesso) && user.aeroportos_acesso.length > 0) {
+      const adminIcaoCodes = new Set(user.aeroportos_acesso.map(code => code.trim().toUpperCase()));
+      return aeroportosEmpresa.filter(a => adminIcaoCodes.has(a.codigo_icao?.trim().toUpperCase()));
+    }
     return aeroportosEmpresa;
   }
 
