@@ -28,7 +28,7 @@ Full details: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 - [x] **Phase 7: Query Optimization** - Column-selective fetching, dashboard RPC consolidation, Operacoes deduplication (completed 2026-03-25)
 - [ ] **Phase 8: Cache Integration (High-Traffic)** - TanStack Query hooks on Operacoes and Home with post-mutation invalidation
 - [ ] **Phase 9: Cache Integration (Remaining) + Resilience** - Remaining pages migrated; ErrorBoundary for lazy chunks
-- [ ] **Phase 10: Database Performance** - Composite indexes on primary query patterns
+- [x] **Phase 10: Database Performance** - Composite indexes on primary query patterns (completed 2026-03-26)
 
 ## Phase Details
 
@@ -103,7 +103,7 @@ Plans:
   1. EXPLAIN ANALYZE on the Operacoes primary voo query shows an index scan on empresa_id + deleted_at + data_operacao rather than a sequential scan
   2. EXPLAIN ANALYZE on the fetchCalculoMap query shows an index scan on calculo_tarifa(empresa_id, voo_id) rather than a sequential scan
   3. A new migration file is applied that adds the composite indexes without breaking existing queries or RLS policies
-**Plans:** 0/1 plans executed
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 10-01-PLAN.md — Write & apply migration 055: composite indexes for voo and calculo_tarifa
@@ -121,4 +121,4 @@ Plans:
 | 7. Query Optimization | v1.2 | 3/3 | Complete   | 2026-03-25 |
 | 8. Cache Integration (High-Traffic) | v1.2 | 1/3 | In Progress|  |
 | 9. Cache Integration (Remaining) + Resilience | v1.2 | 1/3 | In Progress|  |
-| 10. Database Performance | v1.2 | 0/1 | Planned    |  |
+| 10. Database Performance | v1.2 | 0/1 | Complete    | 2026-03-26 |
