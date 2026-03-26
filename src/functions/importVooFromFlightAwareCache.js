@@ -66,6 +66,17 @@ async function ensureRegistoAeronave(registration, aircraftType, airlineIcao, em
     }
   }
 
+  // Do not auto-create registrations without a valid model/MTOW
+  // These would produce incomplete records (MTOW=0, no model)
+  if (!modeloId || !mtow || mtow < 1000) {
+    console.warn(
+      `[FlightAware] Registo "${registration}" não criado automaticamente: ` +
+      `modelo ICAO "${aircraftType || '?'}" não encontrado ou MTOW inválido. ` +
+      `Crie manualmente em Operações > Registos.`
+    );
+    return;
+  }
+
   // Look up companhia_aerea
   let companhiaId = null;
   if (airlineIcao) {
