@@ -35,6 +35,15 @@ const translations = {
     'layout.loginRequired': 'É necessário fazer login para aceder a esta página.',
     'layout.login': 'Fazer Login',
     'layout.redirecting': 'A redirecionar...',
+    'layout.skipToContent': 'Ir para conteúdo',
+
+    // Navigation categories
+    'nav.cat_operacoes': 'Operações',
+    'nav.cat_financeiro': 'Financeiro',
+    'nav.cat_safety': 'Safety & Qualidade',
+    'nav.cat_analytics': 'Relatórios',
+    'nav.cat_docs': 'Documentos',
+    'nav.cat_admin': 'Administração',
 
     // Navigation
     'nav.dashboard': 'Dashboard',
@@ -5832,6 +5841,15 @@ const translations = {
     'layout.loginRequired': 'You must log in to access this page.',
     'layout.login': 'Login',
     'layout.redirecting': 'Redirecting...',
+    'layout.skipToContent': 'Skip to content',
+
+    // Navigation categories
+    'nav.cat_operacoes': 'Operations',
+    'nav.cat_financeiro': 'Finance',
+    'nav.cat_safety': 'Safety & Quality',
+    'nav.cat_analytics': 'Reports',
+    'nav.cat_docs': 'Documents',
+    'nav.cat_admin': 'Administration',
 
     // Navigation
     'nav.dashboard': 'Dashboard',
