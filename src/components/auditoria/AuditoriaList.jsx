@@ -39,7 +39,7 @@ const STATUS_CONFIG = {
   aprovada: { label: 'Aprovada', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' }
 };
 
-export default function AuditoriaList({
+function AuditoriaList({
   processosAuditoria = [],
   tiposAuditoria = [],
   aeroportos = [],
@@ -308,3 +308,4 @@ export default function AuditoriaList({
     </>
   );
 }
+export default React.memo(AuditoriaList);

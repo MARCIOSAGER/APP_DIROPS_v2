@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react'
-import * as Sentry from '@sentry/react'
+// Sentry loaded dynamically in main.jsx (A-02)
 import './App.css'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -43,7 +43,7 @@ class ErrorBoundary extends React.Component {
     // Auto-reloads once (30s cooldown). Shows manual button if cooldown active.
     // Covers all lazy routes via tree propagation from outer boundary.
     console.error('[ErrorBoundary]', error, errorInfo);
-    Sentry.captureException(error, { extra: errorInfo });
+    import('@sentry/react').then(Sentry => Sentry.captureException(error, { extra: errorInfo })).catch(() => {});
     // Auto-reload on chunk load failure (stale cache after deploy)
     const msg = error?.message || '';
     if (msg.includes('Failed to fetch dynamically imported module') || msg.includes('Importing a module script failed')) {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ const STATUS_CONFIG = {
   Cancelado: { color: 'bg-red-100 text-red-800 border-red-200', icon: Ban }
 };
 
-export default function VoosTable({
+function VoosTable({
   voos,
   voosLigados,
   isLoading,
@@ -422,3 +422,4 @@ export default function VoosTable({
     </div>
   );
 }
+export default memo(VoosTable);

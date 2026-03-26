@@ -39,7 +39,7 @@ const getTipoOperacao = (voo, todosAeroportos) => {
   return 'Doméstico';
 };
 
-export default function VoosLigadosTable({
+function VoosLigadosTable({
   voosLigados,
   voos,
   calculosTarifa,
@@ -715,3 +715,5 @@ export default function VoosLigadosTable({
     </div>
   );
 }
+
+export default React.memo(VoosLigadosTable);

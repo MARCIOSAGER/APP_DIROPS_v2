@@ -37,7 +37,7 @@ const STATUS_CONFIG = {
   rejeitada: { color: 'bg-red-100 text-red-800', icon: XCircle }
 };
 
-export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, isLoading, onReload }) {
+function InspecoesList({ inspecoes, tiposInspecao, aeroportos, isLoading, onReload }) {
   const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -798,3 +798,4 @@ export default function InspecoesList({ inspecoes, tiposInspecao, aeroportos, is
     </div>
   );
 }
+export default React.memo(InspecoesList);

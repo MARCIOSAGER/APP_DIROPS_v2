@@ -1,6 +1,5 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import * as Sentry from '@sentry/react'
 import App from '@/App.jsx'
 import '@/index.css'
 
@@ -12,7 +11,6 @@ window.addEventListener('unhandledrejection', (event) => {
   if (msg.includes('Failed to fetch dynamically imported module') || msg.includes('Importing a module script failed')) {
     const lastReload = sessionStorage.getItem('chunk_reload_at');
     const now = Date.now();
-    // Only reload once per 30s to avoid infinite loop
     if (!lastReload || now - parseInt(lastReload) > 30000) {
       sessionStorage.setItem('chunk_reload_at', String(now));
       if (navigator.serviceWorker) {
@@ -25,8 +23,8 @@ window.addEventListener('unhandledrejection', (event) => {
     }
   }
 
-  if (window.Sentry) {
-    Sentry.captureException(event.reason);
+  if (window.__SENTRY__) {
+    import('@sentry/react').then(Sentry => Sentry.captureException(event.reason));
   }
 });
 
@@ -42,22 +40,26 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// A-02: Lazy-load Sentry after first paint (~30KB saved from critical path)
 if (import.meta.env.VITE_SENTRY_DSN) {
-  Sentry.init({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
-    environment: import.meta.env.MODE,
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration(),
-    ],
-    tracesSampleRate: 1.0,
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-    tracePropagationTargets: [
-      'localhost',
-      /^https:\/\/glernwcsuwcyzwsnelad\.supabase\.co/,
-      /^https:\/\/app\.marciosager\.com/,
-    ],
+  import('@sentry/react').then(Sentry => {
+    Sentry.init({
+      dsn: import.meta.env.VITE_SENTRY_DSN,
+      environment: import.meta.env.MODE,
+      integrations: [
+        Sentry.browserTracingIntegration(),
+        Sentry.replayIntegration(),
+      ],
+      tracesSampleRate: 1.0,
+      replaysSessionSampleRate: 0.1,
+      replaysOnErrorSampleRate: 1.0,
+      tracePropagationTargets: [
+        'localhost',
+        /^https:\/\/glernwcsuwcyzwsnelad\.supabase\.co/,
+        /^https:\/\/app\.marciosager\.com/,
+      ],
+    });
+    window.__SENTRY__ = true;
   });
 }
 

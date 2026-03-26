@@ -60,7 +60,7 @@ const AREA_RESPONSAVEL_CONFIG = {
   sem_direcionamento: 'Sem Direcionamento',
 };
 
-export default function ReclamacoesList({
+function ReclamacoesList({
   reclamacoes,
   aeroportos,
   isLoading,
@@ -292,3 +292,4 @@ export default function ReclamacoesList({
     </div>
   );
 }
+export default React.memo(ReclamacoesList);

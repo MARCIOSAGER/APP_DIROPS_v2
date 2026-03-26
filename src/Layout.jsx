@@ -508,7 +508,7 @@ function LayoutContent({ children, currentPageName }) {
               <Menu className="h-6 w-6" />
             </Button>
           )}
-          <img src={logoUrl} alt="Logo" className="h-[100px] max-w-[180px] object-contain" />
+          <img src={logoUrl} alt="Logo" width={180} height={100} className="h-[100px] max-w-[180px] object-contain" />
         </div>
         {!isRootPage && (
           <Button type="button" variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="select-none" aria-label="Abrir menu">
@@ -521,7 +521,7 @@ function LayoutContent({ children, currentPageName }) {
         <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setSidebarOpen(false)}></div>
         <div className="relative w-72 h-full bg-white dark:bg-slate-900 shadow-xl flex flex-col">
           <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <img src={logoUrl} alt="Logo" className="h-[120px] max-w-[200px] object-contain mx-auto" />
+            <img src={logoUrl} alt="Logo" width={200} height={120} className="h-[120px] max-w-[200px] object-contain mx-auto" />
             <Button type="button" variant="ghost" size="icon" onClick={() => setSidebarOpen(false)} aria-label="Fechar menu"><X className="h-5 w-5" /></Button>
           </div>
 
@@ -638,7 +638,7 @@ function LayoutContent({ children, currentPageName }) {
         <div className="hidden lg:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 h-screen sticky top-0">
           <div className="p-4 border-b border-slate-200 dark:border-slate-700">
             <div className="flex justify-center">
-              <img src={logoUrl} alt="Logo" className="h-[120px] max-w-[200px] object-contain" />
+              <img src={logoUrl} alt="Logo" width={200} height={120} className="h-[120px] max-w-[200px] object-contain" />
             </div>
           </div>
           <nav className="flex-grow p-3 space-y-0.5 overflow-y-auto" aria-label="Menu principal">
