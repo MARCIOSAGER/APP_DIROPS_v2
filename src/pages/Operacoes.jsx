@@ -1463,12 +1463,11 @@ export default function Operacoes() {
 
     try {
       const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-      const proformas = await Proforma.list();
-      const proformaExistente = proformas.find(f =>
-        f.calculo_tarifa_id === calculo.id &&
-        f.status !== 'cancelada' &&
-        (!empId || f.empresa_id === empId)
-      );
+      // D-01: Use .filter() instead of .list() — fetch only matching records
+      const filterQuery = { calculo_tarifa_id: calculo.id, status: { $ne: 'cancelada' } };
+      if (empId) filterQuery.empresa_id = empId;
+      const proformasMatch = await Proforma.filter(filterQuery);
+      const proformaExistente = proformasMatch?.[0];
 
       if (proformaExistente) {
         setAlertInfo({
@@ -1490,14 +1489,12 @@ export default function Operacoes() {
   const handleConfirmarGerarProforma = async (dadosProforma) => {
     try {
       const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-      const proformas = await Proforma.list();
       const ano = new Date().getFullYear();
       const prefixoProforma = `PF-${ano}-`;
-      // Numeração sequencial por empresa
-      const proformasDoAno = proformas.filter(f =>
-        f.numero_proforma?.startsWith(prefixoProforma) &&
-        (!empId || f.empresa_id === empId)
-      );
+      // D-01: Fetch only this year's proformas (not ALL) using server-side filter
+      const filterQuery = { numero_proforma: { $like: `${prefixoProforma}%` } };
+      if (empId) filterQuery.empresa_id = empId;
+      const proformasDoAno = await Proforma.filter(filterQuery);
       const ultimaProformaDoAno = proformasDoAno.length > 0
         ? proformasDoAno.sort((a, b) => {
             const numA = parseInt(a.numero_proforma.split('-')[2]);

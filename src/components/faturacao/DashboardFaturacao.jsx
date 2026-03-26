@@ -176,7 +176,8 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       }
 
       // Build proforma map
-      const proformasData = await Proforma.list();
+      // D-02: Filter server-side instead of fetching ALL proformas
+      const proformasData = await Proforma.filter({ status: { $ne: 'cancelada' } });
       const pfMap = new Map();
       proformasData.forEach(p => {
         if (p.calculo_tarifa_id && p.status !== 'cancelada' && p.numero_proforma) {
