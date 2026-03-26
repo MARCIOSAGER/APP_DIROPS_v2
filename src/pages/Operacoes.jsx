@@ -82,16 +82,10 @@ export default function Operacoes() {
    const { user } = useAuth();
    const effectiveEmpresaIdRef = useRef(effectiveEmpresaId);
    effectiveEmpresaIdRef.current = effectiveEmpresaId;
-  const [aeroportos, setAeroportos] = useState([]);
-  const [todosAeroportos, setTodosAeroportos] = useState([]);
-  const [companhias, setCompanhias] = useState([]);
-  const [aeronaves, setAeronaves] = useState([]);
+  // R-01: Derived from TanStack cache via useMemo (no duplicate useState)
+  // const [aeroportos/todosAeroportos/companhias/aeronaves] removed — see useMemo below
   const [allUsers, setAllUsers] = useState([]);
-  const [modelosAeronave, setModelosAeronave] = useState([]);
-  const [tarifasPouso, setTarifasPouso] = useState([]);
-  const [tarifasPermanencia, setTarifasPermanencia] = useState([]);
-  const [outrasTarifas, setOutrasTarifas] = useState([]);
-  const [impostos, setImpostos] = useState([]);
+  // const [modelosAeronave/tarifas/impostos] removed — see useMemo below
   const [configuracaoSistema, setConfiguracaoSistema] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -237,56 +231,22 @@ export default function Operacoes() {
     loadData();
   }, [loadData, effectiveEmpresaId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sincronizar dados estáticos com os caches (useStaticData hooks)
-  useEffect(() => {
-    if (aeroportosCache.length > 0) {
-      setTodosAeroportos(aeroportosCache);
-      const allAngolan = aeroportosCache.filter(a => a.pais === 'AO');
-      if (currentUser) {
-        setAeroportos(getAeroportosPermitidos(currentUser, allAngolan, effectiveEmpresaIdRef.current));
-      }
-    }
+  // R-01: Derive data from TanStack cache via useMemo (eliminates 8 useEffect + 9 useState double-renders)
+  const todosAeroportos = useMemo(() => aeroportosCache || [], [aeroportosCache]);
+  const aeroportos = useMemo(() => {
+    if (!aeroportosCache?.length || !currentUser) return [];
+    const allAngolan = aeroportosCache.filter(a => a.pais === 'AO');
+    return getAeroportosPermitidos(currentUser, allAngolan, effectiveEmpresaIdRef.current);
   }, [aeroportosCache, currentUser]);
+  const companhias = useMemo(() => companhiasCache || [], [companhiasCache]);
+  const aeronaves = useMemo(() => aeronavesCache || [], [aeronavesCache]);
+  const modelosAeronave = useMemo(() => modelosCache || [], [modelosCache]);
 
-  useEffect(() => {
-    if (companhiasCache.length > 0) setCompanhias(companhiasCache);
-  }, [companhiasCache]);
-
-  useEffect(() => {
-    if (aeronavesCache.length > 0) setAeronaves(aeronavesCache);
-  }, [aeronavesCache]);
-
-  useEffect(() => {
-    if (modelosCache.length > 0) setModelosAeronave(modelosCache);
-  }, [modelosCache]);
-
-  useEffect(() => {
-    if (tarifasPousoCache.length > 0) {
-      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-      setTarifasPouso(filterTarifasByEmpresa(tarifasPousoCache, empId));
-    }
-  }, [tarifasPousoCache, currentUser]);
-
-  useEffect(() => {
-    if (tarifasPermanenciaCache.length > 0) {
-      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-      setTarifasPermanencia(filterTarifasByEmpresa(tarifasPermanenciaCache, empId));
-    }
-  }, [tarifasPermanenciaCache, currentUser]);
-
-  useEffect(() => {
-    if (outrasTarifasCache.length > 0) {
-      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-      setOutrasTarifas(filterTarifasByEmpresa(outrasTarifasCache, empId));
-    }
-  }, [outrasTarifasCache, currentUser]);
-
-  useEffect(() => {
-    if (impostosCache.length > 0) {
-      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
-      setImpostos(filterTarifasByEmpresa(impostosCache, empId));
-    }
-  }, [impostosCache, currentUser]);
+  const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+  const tarifasPouso = useMemo(() => filterTarifasByEmpresa(tarifasPousoCache || [], empId), [tarifasPousoCache, empId]);
+  const tarifasPermanencia = useMemo(() => filterTarifasByEmpresa(tarifasPermanenciaCache || [], empId), [tarifasPermanenciaCache, empId]);
+  const outrasTarifas = useMemo(() => filterTarifasByEmpresa(outrasTarifasCache || [], empId), [outrasTarifasCache, empId]);
+  const impostos = useMemo(() => filterTarifasByEmpresa(impostosCache || [], empId), [impostosCache, empId]);
 
   // Server-side filter: build query from all filtros and reload voos
   const handleBuscarVoos = useCallback(async () => {
