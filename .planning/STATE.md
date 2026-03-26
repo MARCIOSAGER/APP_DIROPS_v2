@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Performance
-status: Ready to plan
-stopped_at: Completed 09-02-PLAN.md
-last_updated: "2026-03-26T06:50:06.499Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 10-01-PLAN.md (auth gate on migration apply)
+last_updated: "2026-03-26T07:19:28.385Z"
 progress:
   total_phases: 5
   completed_phases: 2
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** Operations teams can manage flights end-to-end in a single unified system.
-**Current focus:** Phase 09 — cache-integration-remaining-resilience
+**Current focus:** Phase 10 — database-performance
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
+Phase: 10 (database-performance) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Plan: Not started
 | Phase 09-cache-integration-remaining-resilience P03 | 278 | 1 tasks | 1 files |
 | Phase 09 P01 | 692 | 2 tasks | 3 files |
 | Phase 09-cache-integration-remaining-resilience P02 | 32 | 2 tasks | 3 files |
+| Phase 10-database-performance P01 | 1500 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,8 @@ Plan: Not started
 - [Phase 09]: makeEntityQuery factory: staleTime:0 for operational pages, handleBuscar uses setQueryData to override cache with filtered results
 - [Phase 09-cache-integration-remaining-resilience]: Pastas (Pasta entity) uses separate useQuery(['pastas', empresaId]) with staleTime 0 — no useStaticData hook and operational data that can change
 - [Phase 09-cache-integration-remaining-resilience]: TipoInspecao in Inspecoes.jsx uses staleTime 5min — reference data (rarely changes), consistent with useStaticData pattern
+- [Phase 10-database-performance]: Migration 055 uses CREATE INDEX CONCURRENTLY to avoid table locks on production — each statement run as separate API call
+- [Phase 10-database-performance]: 3-column composite (empresa_id, deleted_at, data_operacao DESC) covers Operacoes WHERE + ORDER BY; calculo_tarifa composite (empresa_id, voo_id) enables index-only scan for fetchCalculoMap
 
 ### Pending Todos
 
@@ -91,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T06:47:24.677Z
-Stopped at: Completed 09-02-PLAN.md
+Last session: 2026-03-26T07:19:28.362Z
+Stopped at: Completed 10-01-PLAN.md (auth gate on migration apply)
 Resume file: None

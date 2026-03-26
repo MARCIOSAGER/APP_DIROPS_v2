@@ -23,7 +23,7 @@
 
 ## Database Performance
 
-- [ ] **DB-01**: Composite indexes added for primary query patterns on voo, calculo_tarifa, voo_ligado
+- [x] **DB-01**: Composite indexes added for primary query patterns on voo, calculo_tarifa, voo_ligado
 
 ## Resilience
 
