@@ -230,10 +230,10 @@ export default function ZAPIAtendimentoChat({ onError, onSuccess }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" aria-label="Ligar">
                         <Phone className="w-5 h-5" />
                       </Button>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" aria-label="Mais opções">
                         <MoreVertical className="w-5 h-5" />
                       </Button>
                     </div>

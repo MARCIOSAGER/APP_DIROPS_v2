@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Link as LinkIcon, Edit, MoreVertical, Trash2, XCircle, ChevronLeft, ChevronRight, Users, Package, Plane } from 'lucide-react';
+import { ArrowRight, Link as LinkIcon, Edit, MoreVertical, Trash2, XCircle, ChevronLeft, ChevronRight, Users, Package, Plane, Clock, CheckCircle2, Ban } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import {
@@ -17,9 +17,9 @@ import Select from '@/components/ui/select';
 import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_CONFIG = {
-  Programado: { color: 'bg-blue-100 text-blue-800 border-blue-200' },
-  Realizado: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-  Cancelado: { color: 'bg-red-100 text-red-800 border-red-200' }
+  Programado: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Clock },
+  Realizado: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle2 },
+  Cancelado: { color: 'bg-red-100 text-red-800 border-red-200', icon: Ban }
 };
 
 export default function VoosTable({
@@ -276,7 +276,10 @@ export default function VoosTable({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`${statusConfig.color} border font-medium`}>{voo.status}</Badge>
+                      <Badge variant="outline" className={`${statusConfig.color} border font-medium flex items-center gap-1`}>
+                        {statusConfig.icon && <statusConfig.icon className="w-3 h-3" />}
+                        {voo.status}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm text-slate-600 max-w-[150px] truncate" title={userEmail}>

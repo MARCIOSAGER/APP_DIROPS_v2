@@ -326,10 +326,11 @@ export default function DocumentosList({ documentos, aeroportos, isLoading, onRe
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8 text-slate-600 hover:text-slate-900"
+                              aria-label="Mais opções"
                             >
                               <MoreVertical className="w-4 h-4" />
                             </Button>

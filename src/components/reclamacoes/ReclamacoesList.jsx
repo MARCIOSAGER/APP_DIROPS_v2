@@ -12,7 +12,14 @@ import {
   Phone,
   AlertTriangle,
   Trash2,
-  Mail
+  Mail,
+  Inbox,
+  Search,
+  Wrench,
+  MessageCircle,
+  ArrowUpRight,
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
 import { useI18n } from '@/components/lib/i18n';
 import { format } from 'date-fns';
@@ -25,13 +32,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const STATUS_CONFIG = {
-  recebida: { label: 'Recebida', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  em_analise: { label: 'Em Análise', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
-  em_tratamento: { label: 'Em Tratamento', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
-  aguardando_feedback: { label: 'Aguardando Feedback', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
-  redirecionada: { label: 'Redirecionada', color: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' },
-  concluida: { label: 'Concluída', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  rejeitada: { label: 'Rejeitada', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
+  recebida: { label: 'Recebida', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', icon: Inbox },
+  em_analise: { label: 'Em Análise', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', icon: Search },
+  em_tratamento: { label: 'Em Tratamento', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200', icon: Wrench },
+  aguardando_feedback: { label: 'Aguardando Feedback', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200', icon: MessageCircle },
+  redirecionada: { label: 'Redirecionada', color: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200', icon: ArrowUpRight },
+  concluida: { label: 'Concluída', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', icon: CheckCircle2 },
+  rejeitada: { label: 'Rejeitada', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', icon: XCircle },
 };
 
 const PRIORIDADE_CONFIG = {
@@ -161,7 +168,8 @@ export default function ReclamacoesList({
                     <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">
                       {reclamacao.titulo}
                     </h3>
-                    <Badge className={statusConfig.color}>
+                    <Badge className={`${statusConfig.color} flex items-center gap-1`}>
+                      {statusConfig.icon && <statusConfig.icon className="w-3 h-3" />}
                       {statusConfig.label}
                     </Badge>
                     {reclamacao.prioridade !== 'media' && (

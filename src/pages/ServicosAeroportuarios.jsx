@@ -269,7 +269,7 @@ export default function ServicosAeroportuarios() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><MoreVertical className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" aria-label={t('servicos.maisOpcoes') || 'Mais opções'}><MoreVertical className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleEditCobranca(c, cat)}>

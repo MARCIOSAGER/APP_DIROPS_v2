@@ -2,9 +2,10 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, ChevronDown, BarChart3, ArrowLeft, BookMarked, Sparkles, Building2, Layers, Trash2, Key, Moon, Sun, FileSpreadsheet
+  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, ChevronDown, ChevronRight, BarChart3, ArrowLeft, BookMarked, Sparkles, Building2, Layers, Trash2, Key, Moon, Sun, FileSpreadsheet
 } from "lucide-react";
 import BottomTabs from '@/components/shared/BottomTabs';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { useI18n } from '@/components/lib/i18n';
 import { Button } from "@/components/ui/button";
 import { User as UserEntity } from '@/entities/User';
@@ -40,36 +41,90 @@ const PERFIL_PERMISSIONS_DEFAULT = {
   safety: ['Home', 'Safety', 'Inspecoes', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte']
 };
 
+// Flat list for permission checks, redirects, and BottomTabs
 function getNavigationItems(t) {
+  const groups = getNavigationGroups(t);
+  const flat = [];
+  groups.forEach(g => {
+    if (g.items) g.items.forEach(i => flat.push(i));
+    else flat.push(g);
+  });
+  return flat;
+}
+
+// Grouped navigation for sidebar
+function getNavigationGroups(t) {
   return [
     { title: t('nav.dashboard'), url: createPageUrl("Home"), icon: Home, color: "text-blue-600", pageKey: "Home" },
-    { title: t('nav.operacoes'), url: createPageUrl("Operacoes"), icon: Plane, color: "text-green-600", pageKey: "Operacoes" },
-    { title: 'Importação AIAAN', url: createPageUrl("ImportacaoAiaan"), icon: FileSpreadsheet, color: "text-amber-600", pageKey: "ImportacaoAiaan" },
-    { title: t('nav.fundo_maneio'), url: createPageUrl("FundoManeio"), icon: DollarSign, color: "text-emerald-600", pageKey: "FundoManeio" },
-    { title: t('nav.config_tarifas'), url: createPageUrl("ConfiguracaoTarifas"), icon: Settings2, color: "text-blue-600", pageKey: "ConfiguracaoTarifas" },
-    { title: t('nav.proformas'), url: createPageUrl("Proforma"), icon: FileText, color: "text-blue-600", pageKey: "Proforma" },
-    { title: t('nav.servicos_aeroportuarios'), url: createPageUrl("ServicosAeroportuarios"), icon: Layers, color: "text-cyan-600", pageKey: "ServicosAeroportuarios" },
-    { title: t('nav.safety'), url: createPageUrl("Safety"), icon: Shield, color: "text-red-600", pageKey: "Safety" },
-    { title: t('nav.inspecoes'), url: createPageUrl("Inspecoes"), icon: ClipboardCheck, color: "text-purple-600", pageKey: "Inspecoes" },
-    { title: t('nav.kpis'), url: createPageUrl("KPIsOperacionais"), icon: BarChart3, color: "text-teal-600", pageKey: "KPIsOperacionais" },
-    { title: t('nav.powerbi'), url: createPageUrl("PowerBi"), icon: BarChart3, color: "text-purple-600", pageKey: "PowerBi" },
-    { title: t('nav.manutencao'), url: createPageUrl("Manutencao"), icon: Wrench, color: "text-orange-600", pageKey: "Manutencao" },
-    { title: t('nav.auditoria'), url: createPageUrl("Auditoria"), icon: FileSearch, color: "text-indigo-600", pageKey: "Auditoria" },
-    { title: t('nav.reclamacoes'), url: createPageUrl("Reclamacoes"), icon: MessageSquare, color: "text-pink-600", pageKey: "Reclamacoes" },
-    { title: t('nav.credenciamento'), url: "https://credenciamentosga.marciosager.com/", icon: UserCheck, color: "text-teal-600", pageKey: "Credenciamento", external: true },
-    { title: t('nav.gestao_empresas'), url: createPageUrl("GestaoEmpresas"), icon: Building2, color: "text-blue-800", pageKey: "GestaoEmpresas" },
-    { title: t('nav.gestao_acessos'), url: createPageUrl("GestaoAcessos"), icon: Users, color: "text-yellow-600", pageKey: "GestaoAcessos" },
-    { title: t('nav.gerir_permissoes'), url: createPageUrl("GerirPermissoes"), icon: Shield, color: "text-red-600", pageKey: "GerirPermissoes" },
-    { title: t('nav.gestao_notificacoes'), url: createPageUrl("GestaoNotificacoes"), icon: Bell, color: "text-indigo-600", pageKey: "GestaoNotificacoes" },
-    { title: t('nav.config_gerais'), url: createPageUrl("ConfiguracoesGerais"), icon: Settings, color: "text-slate-600", pageKey: "ConfiguracoesGerais" },
-    { title: t('nav.grf'), url: createPageUrl("GRF"), icon: Activity, color: "text-sky-600", pageKey: "GRF" },
-    { title: t('nav.documentos'), url: createPageUrl("Documentos"), icon: FileText, color: "text-cyan-600", pageKey: "Documentos" },
-    { title: t('nav.historico_acesso'), url: createPageUrl("HistoricoAcessoDocumentos"), icon: FileSearch, color: "text-slate-600", pageKey: "HistoricoAcessoDocumentos" },
-    { title: t('nav.lixeira'), url: createPageUrl("Lixeira"), icon: Trash2, color: "text-slate-500", pageKey: "Lixeira" },
-    { title: t('nav.api_keys'), url: createPageUrl("GestaoAPIKeys"), icon: Key, color: "text-amber-600", pageKey: "GestaoAPIKeys" },
-    { title: 'Monitoramento', url: createPageUrl("Monitoramento"), icon: Activity, color: "text-blue-600", pageKey: "Monitoramento" },
-    { title: 'FlightAware', url: createPageUrl("FlightAware"), icon: Plane, color: "text-sky-500", pageKey: "FlightAware" },
-    { title: t('nav.log_auditoria'), url: createPageUrl("LogAuditoria"), icon: Shield, color: "text-slate-500", pageKey: "LogAuditoria" },
+    {
+      category: t('nav.cat_operacoes') || 'Operações',
+      icon: Plane,
+      color: "text-green-600",
+      items: [
+        { title: t('nav.operacoes'), url: createPageUrl("Operacoes"), icon: Plane, color: "text-green-600", pageKey: "Operacoes" },
+        { title: 'Importação AIAAN', url: createPageUrl("ImportacaoAiaan"), icon: FileSpreadsheet, color: "text-amber-600", pageKey: "ImportacaoAiaan" },
+        { title: 'FlightAware', url: createPageUrl("FlightAware"), icon: Plane, color: "text-sky-500", pageKey: "FlightAware" },
+        { title: t('nav.servicos_aeroportuarios'), url: createPageUrl("ServicosAeroportuarios"), icon: Layers, color: "text-cyan-600", pageKey: "ServicosAeroportuarios" },
+        { title: t('nav.grf'), url: createPageUrl("GRF"), icon: Activity, color: "text-sky-600", pageKey: "GRF" },
+      ],
+    },
+    {
+      category: t('nav.cat_financeiro') || 'Financeiro',
+      icon: DollarSign,
+      color: "text-emerald-600",
+      items: [
+        { title: t('nav.fundo_maneio'), url: createPageUrl("FundoManeio"), icon: DollarSign, color: "text-emerald-600", pageKey: "FundoManeio" },
+        { title: t('nav.config_tarifas'), url: createPageUrl("ConfiguracaoTarifas"), icon: Settings2, color: "text-blue-600", pageKey: "ConfiguracaoTarifas" },
+        { title: t('nav.proformas'), url: createPageUrl("Proforma"), icon: FileText, color: "text-blue-600", pageKey: "Proforma" },
+      ],
+    },
+    {
+      category: t('nav.cat_safety') || 'Safety & Qualidade',
+      icon: Shield,
+      color: "text-red-600",
+      items: [
+        { title: t('nav.safety'), url: createPageUrl("Safety"), icon: Shield, color: "text-red-600", pageKey: "Safety" },
+        { title: t('nav.inspecoes'), url: createPageUrl("Inspecoes"), icon: ClipboardCheck, color: "text-purple-600", pageKey: "Inspecoes" },
+        { title: t('nav.auditoria'), url: createPageUrl("Auditoria"), icon: FileSearch, color: "text-indigo-600", pageKey: "Auditoria" },
+        { title: t('nav.reclamacoes'), url: createPageUrl("Reclamacoes"), icon: MessageSquare, color: "text-pink-600", pageKey: "Reclamacoes" },
+        { title: t('nav.manutencao'), url: createPageUrl("Manutencao"), icon: Wrench, color: "text-orange-600", pageKey: "Manutencao" },
+      ],
+    },
+    {
+      category: t('nav.cat_analytics') || 'Relatórios',
+      icon: BarChart3,
+      color: "text-teal-600",
+      items: [
+        { title: t('nav.kpis'), url: createPageUrl("KPIsOperacionais"), icon: BarChart3, color: "text-teal-600", pageKey: "KPIsOperacionais" },
+        { title: t('nav.powerbi'), url: createPageUrl("PowerBi"), icon: BarChart3, color: "text-purple-600", pageKey: "PowerBi" },
+      ],
+    },
+    {
+      category: t('nav.cat_docs') || 'Documentos',
+      icon: FileText,
+      color: "text-cyan-600",
+      items: [
+        { title: t('nav.documentos'), url: createPageUrl("Documentos"), icon: FileText, color: "text-cyan-600", pageKey: "Documentos" },
+        { title: t('nav.historico_acesso'), url: createPageUrl("HistoricoAcessoDocumentos"), icon: FileSearch, color: "text-slate-600", pageKey: "HistoricoAcessoDocumentos" },
+        { title: t('nav.credenciamento'), url: "https://credenciamentosga.marciosager.com/", icon: UserCheck, color: "text-teal-600", pageKey: "Credenciamento", external: true },
+      ],
+    },
+    {
+      category: t('nav.cat_admin') || 'Administração',
+      icon: Settings,
+      color: "text-slate-600",
+      items: [
+        { title: t('nav.gestao_empresas'), url: createPageUrl("GestaoEmpresas"), icon: Building2, color: "text-blue-800", pageKey: "GestaoEmpresas" },
+        { title: t('nav.gestao_acessos'), url: createPageUrl("GestaoAcessos"), icon: Users, color: "text-yellow-600", pageKey: "GestaoAcessos" },
+        { title: t('nav.gerir_permissoes'), url: createPageUrl("GerirPermissoes"), icon: Shield, color: "text-red-600", pageKey: "GerirPermissoes" },
+        { title: t('nav.gestao_notificacoes'), url: createPageUrl("GestaoNotificacoes"), icon: Bell, color: "text-indigo-600", pageKey: "GestaoNotificacoes" },
+        { title: t('nav.config_gerais'), url: createPageUrl("ConfiguracoesGerais"), icon: Settings, color: "text-slate-600", pageKey: "ConfiguracoesGerais" },
+        { title: t('nav.api_keys'), url: createPageUrl("GestaoAPIKeys"), icon: Key, color: "text-amber-600", pageKey: "GestaoAPIKeys" },
+        { title: 'Monitoramento', url: createPageUrl("Monitoramento"), icon: Activity, color: "text-blue-600", pageKey: "Monitoramento" },
+        { title: t('nav.log_auditoria'), url: createPageUrl("LogAuditoria"), icon: Shield, color: "text-slate-500", pageKey: "LogAuditoria" },
+        { title: t('nav.lixeira'), url: createPageUrl("Lixeira"), icon: Trash2, color: "text-slate-500", pageKey: "Lixeira" },
+      ],
+    },
     { title: t('nav.guia_utilizador'), url: createPageUrl("GuiaUtilizador"), icon: BookMarked, color: "text-blue-500", pageKey: "GuiaUtilizador" },
     { title: t('nav.suporte'), url: createPageUrl("Suporte"), icon: MessageSquare, color: "text-purple-500", pageKey: "Suporte" },
   ];
@@ -323,6 +378,30 @@ function LayoutContent({ children, currentPageName }) {
     return navigationItems.filter(item => hasAccessToPage(user, item.pageKey, permissions));
   }, [user, permissions, isLoadingPermissions, navigationItems]);
 
+  // Grouped navigation for sidebar (filtered by access)
+  const navigationGroups = React.useMemo(() => getNavigationGroups(t), [t, language]);
+  const filteredNavigationGroups = React.useMemo(() => {
+    if (!user || !user.perfis || !Array.isArray(user.perfis)) return [];
+    if (isLoadingPermissions) return [];
+    return navigationGroups
+      .map(group => {
+        if (group.items) {
+          const visibleItems = group.items.filter(item => hasAccessToPage(user, item.pageKey, permissions));
+          if (visibleItems.length === 0) return null;
+          return { ...group, items: visibleItems };
+        }
+        return hasAccessToPage(user, group.pageKey, permissions) ? group : null;
+      })
+      .filter(Boolean);
+  }, [user, permissions, isLoadingPermissions, navigationGroups]);
+
+  // Track which category is active (has current page)
+  const activeCategoryIndex = React.useMemo(() => {
+    return filteredNavigationGroups.findIndex(group =>
+      group.items?.some(item => item.url === location.pathname)
+    );
+  }, [filteredNavigationGroups, location.pathname]);
+
   if (isLoadingUser || isLoadingPermissions) {
     return <div className="flex items-center justify-center h-screen bg-slate-50"><p className="text-lg">{t('layout.loading')}</p></div>;
   }
@@ -386,6 +465,7 @@ function LayoutContent({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100">
+      <a href="#main-content" className="skip-link">{t('layout.skipToContent') || 'Ir para conteúdo'}</a>
       <style>{`
         :root {
           --primary: #004A99;
@@ -445,32 +525,61 @@ function LayoutContent({ children, currentPageName }) {
             <Button type="button" variant="ghost" size="icon" onClick={() => setSidebarOpen(false)} aria-label="Fechar menu"><X className="h-5 w-5" /></Button>
           </div>
 
-          <nav className="p-4 space-y-2 flex-grow overflow-y-auto">
-            {filteredNavigationItems.map((item) => (
-              item.external ? (
-                <a
-                  key={item.pageKey}
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900`}
-                >
-                  <item.icon className={`w-5 h-5 ${item.color}`} />
-                  <span>{item.title}</span>
-                </a>
-              ) : (
+          <nav className="p-3 space-y-0.5 flex-grow overflow-y-auto" aria-label="Menu principal">
+            {filteredNavigationGroups.map((group, idx) => {
+              if (group.items) {
+                const isActive = activeCategoryIndex === idx;
+                return (
+                  <Collapsible key={group.category} defaultOpen={isActive}>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors group">
+                      <span className="flex items-center gap-2">
+                        <group.icon className={`w-4 h-4 ${group.color}`} />
+                        {group.category}
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-0.5 mt-0.5">
+                      {group.items.map((item) => (
+                        item.external ? (
+                          <a
+                            key={item.pageKey}
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setSidebarOpen(false)}
+                            className="flex items-center gap-3 pl-9 pr-3 py-2.5 rounded-lg transition-all duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
+                          >
+                            <item.icon className={`w-4 h-4 ${item.color}`} />
+                            <span className="text-sm">{item.title}</span>
+                          </a>
+                        ) : (
+                          <Link
+                            key={item.pageKey}
+                            to={item.url}
+                            onClick={() => setSidebarOpen(false)}
+                            className={`flex items-center gap-3 pl-9 pr-3 py-2.5 rounded-lg transition-all duration-200 ${location.pathname === item.url ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                          >
+                            <item.icon className={`w-4 h-4 ${location.pathname !== item.url ? item.color : ''}`} />
+                            <span className="text-sm">{item.title}</span>
+                          </Link>
+                        )
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              }
+              return (
                 <Link
-                  key={item.pageKey}
-                  to={item.url}
+                  key={group.pageKey}
+                  to={group.url}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${location.pathname === item.url ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${location.pathname === group.url ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
                 >
-                  <item.icon className={`w-5 h-5 ${location.pathname !== item.url ? item.color : ''}`} />
-                  <span>{item.title}</span>
+                  <group.icon className={`w-5 h-5 ${location.pathname !== group.url ? group.color : ''}`} />
+                  <span className="text-sm font-medium">{group.title}</span>
                 </Link>
-              )
-            ))}
+              );
+            })}
           </nav>
 
           <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-2">
@@ -532,30 +641,59 @@ function LayoutContent({ children, currentPageName }) {
               <img src={logoUrl} alt="Logo" className="h-[120px] max-w-[200px] object-contain" />
             </div>
           </div>
-          <nav className="flex-grow p-4 space-y-1 overflow-y-auto">
-            {filteredNavigationItems.map((item) => (
-              item.external ? (
-                <a
-                  key={item.pageKey}
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200`}
-                >
-                  <item.icon className={`w-5 h-5 ${item.color}`} />
-                  <span className="text-sm font-medium">{item.title}</span>
-                </a>
-              ) : (
+          <nav className="flex-grow p-3 space-y-0.5 overflow-y-auto" aria-label="Menu principal">
+            {filteredNavigationGroups.map((group, idx) => {
+              if (group.items) {
+                const isActive = activeCategoryIndex === idx;
+                return (
+                  <Collapsible key={group.category} defaultOpen={isActive}>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors group">
+                      <span className="flex items-center gap-2">
+                        <group.icon className={`w-4 h-4 ${group.color}`} />
+                        {group.category}
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-0.5 mt-0.5">
+                      {group.items.map((item) => (
+                        item.external ? (
+                          <a
+                            key={item.pageKey}
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 pl-9 pr-3 py-2 rounded-lg transition-all duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
+                          >
+                            <item.icon className={`w-4 h-4 ${item.color}`} />
+                            <span className="text-sm">{item.title}</span>
+                          </a>
+                        ) : (
+                          <Link
+                            key={item.pageKey}
+                            to={item.url}
+                            className={`flex items-center gap-3 pl-9 pr-3 py-2 rounded-lg transition-all duration-200 ${location.pathname === item.url ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                          >
+                            <item.icon className={`w-4 h-4 ${location.pathname !== item.url ? item.color : ''}`} />
+                            <span className="text-sm">{item.title}</span>
+                          </Link>
+                        )
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              }
+              // Top-level item (Dashboard, Guia, Suporte)
+              return (
                 <Link
-                  key={item.pageKey}
-                  to={item.url}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${location.pathname === item.url ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                  key={group.pageKey}
+                  to={group.url}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${location.pathname === group.url ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
                 >
-                  <item.icon className={`w-5 h-5 ${location.pathname !== item.url ? item.color : ''}`} />
-                  <span className="text-sm font-medium">{item.title}</span>
+                  <group.icon className={`w-5 h-5 ${location.pathname !== group.url ? group.color : ''}`} />
+                  <span className="text-sm font-medium">{group.title}</span>
                 </Link>
-              )
-            ))}
+              );
+            })}
           </nav>
           <div className="p-4 border-t border-slate-200 dark:border-slate-700">
             <div className="text-center text-xs text-slate-400 dark:text-slate-500">
@@ -707,7 +845,7 @@ function LayoutContent({ children, currentPageName }) {
               <SystemAlerts />
             </React.Suspense>
           )}
-          <main className="p-4 md:p-6 lg:p-8">{children}</main>
+          <main id="main-content" className="p-4 md:p-6 lg:p-8">{children}</main>
           <BottomTabs />
           <React.Suspense fallback={null}>
             <ChatbotIA />
