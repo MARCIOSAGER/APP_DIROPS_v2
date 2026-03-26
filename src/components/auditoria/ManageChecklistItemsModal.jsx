@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 import { ItemAuditoria } from '@/entities/ItemAuditoria';
-import * as XLSX from 'xlsx';
+// XLSX loaded dynamically (~300KB saving from initial bundle)
 import AlertModal from '../shared/AlertModal';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { useI18n } from '@/components/lib/i18n';
@@ -189,7 +189,8 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
     }
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
+    const XLSX = await import('xlsx');
     const data = [
       ['numero', 'item', 'referencia_norma', 'exemplo_situacao', 'categoria'],
       [1, 'Exemplo de item de auditoria', 'NTA 22A.903.c)', 'Exemplo de situação', 'resposta_emergencia']
@@ -210,7 +211,8 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
     XLSX.writeFile(wb, 'modelo_itens_auditoria.xlsx');
   };
 
-  const downloadItems = () => {
+  const downloadItems = async () => {
+    const XLSX = await import('xlsx');
     if (items.length === 0) {
       setUploadMessage({ type: 'error', text: 'Não há itens para descarregar.' });
       return;
@@ -266,6 +268,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
     try {
       const reader = new FileReader();
       reader.onload = async (e) => {
+        const XLSX = await import('xlsx');
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
         const worksheetName = workbook.SheetNames[0];

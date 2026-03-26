@@ -10,14 +10,22 @@ import { useI18n } from '@/components/lib/i18n';
  */
 export default function AppUpdateBanner() {
   const { t } = useI18n();
+  const intervalRef = React.useRef(null);
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW({
     onRegisteredSW(swUrl, r) {
-      // Check for updates every 5 minutes
+      // Check for updates every 5 minutes (M-01 fix: store ref for cleanup)
       if (r) {
-        setInterval(() => r.update(), 5 * 60 * 1000);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = setInterval(() => r.update(), 5 * 60 * 1000);
       }
     }
   });
+
+  React.useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   if (!needRefresh) return null;
 

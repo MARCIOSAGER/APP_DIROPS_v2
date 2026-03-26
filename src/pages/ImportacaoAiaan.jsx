@@ -10,7 +10,7 @@ import {
   ArrowLeft, ArrowRight, Plane, PlaneLanding, PlaneTakeoff, Link2,
   Calculator, Loader2, RefreshCw, MapPin, Building2, Eye, ChevronDown, ChevronUp
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
+// XLSX loaded dynamically (~300KB saving from initial bundle)
 
 import { Voo } from '@/entities/Voo';
 import { VooLigado } from '@/entities/VooLigado';
@@ -83,10 +83,10 @@ function parseTime(val) {
 /**
  * Parse Excel date value to YYYY-MM-DD string.
  */
-function parseDate(val) {
+function parseDate(val, XLSX) {
   if (isEmpty(val)) return null;
 
-  if (typeof val === 'number') {
+  if (typeof val === 'number' && XLSX?.SSF) {
     // Excel serial date
     const d = XLSX.SSF.parse_date_code(val);
     if (d) {
@@ -206,8 +206,9 @@ export default function ImportacaoAiaan() {
     setParseSummary(null);
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx');
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array', cellDates: false });
 
@@ -254,7 +255,7 @@ export default function ImportacaoAiaan() {
     const dates = [];
 
     for (const row of rows) {
-      const dateStr = parseDate(row[0]);
+      const dateStr = parseDate(row[0], XLSX);
       if (!dateStr) continue;
 
       const ata = parseTime(row[5]);

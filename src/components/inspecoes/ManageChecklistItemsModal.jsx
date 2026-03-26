@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, Save, X, Loader2, Download, Upload } from 'lucide-react';
-import * as XLSX from 'xlsx';
+// XLSX loaded dynamically (~300KB saving from initial bundle)
 import AlertModal from '@/components/shared/AlertModal';
 import ConfirmModal from '@/components/shared/ConfirmModal';
 
@@ -120,7 +120,8 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleDownloadTemplate = () => {
+  const handleDownloadTemplate = async () => {
+    const XLSX = await import('xlsx');
     const data = [
       ['ordem', 'item', 'criterio', 'categoria'],
       [1, 'Verificar estado do pavimento', 'Sem fissuras ou deformações visíveis', 'Pista'],
@@ -147,6 +148,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
 
     setIsSubmitting(true);
     try {
+      const XLSX = await import('xlsx');
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
