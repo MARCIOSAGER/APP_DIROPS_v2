@@ -38,30 +38,31 @@ import FormVoo from '../components/operacoes/FormVoo';
 import { downloadAsExcel } from '../components/lib/export';
 import { calculateAllTariffs } from '../components/lib/tariffCalculations';
 
-import AeroportosConfig from '../components/operacoes/config/AeroportosConfig';
-import CompanhiasConfig from '../components/operacoes/config/CompanhiasConfig';
-import ModelosAeronaveConfig from '../components/operacoes/config/ModelosAeronaveConfig';
-import RegistosAeronaveConfig from '../components/operacoes/config/RegistosAeronaveConfig';
+// Lazy-loaded modals and config panels (B-02: reduce initial chunk ~15 components)
+const AeroportosConfig = React.lazy(() => import('../components/operacoes/config/AeroportosConfig'));
+const CompanhiasConfig = React.lazy(() => import('../components/operacoes/config/CompanhiasConfig'));
+const ModelosAeronaveConfig = React.lazy(() => import('../components/operacoes/config/ModelosAeronaveConfig'));
+const RegistosAeronaveConfig = React.lazy(() => import('../components/operacoes/config/RegistosAeronaveConfig'));
 import VoosLigadosTable from '../components/operacoes/VoosLigadosTable';
-import TariffDetailsModal from '../components/operacoes/TariffDetailsModal';
+const TariffDetailsModal = React.lazy(() => import('../components/operacoes/TariffDetailsModal'));
 import VoosLigadosFilters from '../components/operacoes/VoosLigadosFilters';
 
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
-import CancelarProformaModal from '../components/shared/CancelarProformaModal';
-import ProgressModal from '../components/operacoes/ProgressModal';
+const CancelarProformaModal = React.lazy(() => import('../components/shared/CancelarProformaModal'));
+const ProgressModal = React.lazy(() => import('../components/operacoes/ProgressModal'));
 
-import GerarFaturaModal from '../components/faturacao/GerarFaturaModal';
+const GerarFaturaModal = React.lazy(() => import('../components/faturacao/GerarFaturaModal'));
 import { Proforma } from '@/entities/Proforma';
 import { base44 } from '@/api/base44Client';
 import { registarCriacao } from '../components/lib/auditoria';
-import AlterarCambioModal from '../components/operacoes/AlterarCambioModal';
-import RecursosVooModal from '../components/operacoes/RecursosVooModal';
-import UploadDocumentoVooModal from '../components/operacoes/UploadDocumentoVooModal';
-import LixeiraVoosModal from '../components/operacoes/LixeiraVoosModal';
-import DocumentosVooModal from '../components/operacoes/DocumentosVooModal';
-import UploadMultiplosDocumentosModal from '../components/operacoes/UploadMultiplosDocumentosModal';
-import FIDSPanel from '../components/operacoes/FIDSPanel';
+const AlterarCambioModal = React.lazy(() => import('../components/operacoes/AlterarCambioModal'));
+const RecursosVooModal = React.lazy(() => import('../components/operacoes/RecursosVooModal'));
+const UploadDocumentoVooModal = React.lazy(() => import('../components/operacoes/UploadDocumentoVooModal'));
+const LixeiraVoosModal = React.lazy(() => import('../components/operacoes/LixeiraVoosModal'));
+const DocumentosVooModal = React.lazy(() => import('../components/operacoes/DocumentosVooModal'));
+const UploadMultiplosDocumentosModal = React.lazy(() => import('../components/operacoes/UploadMultiplosDocumentosModal'));
+const FIDSPanel = React.lazy(() => import('../components/operacoes/FIDSPanel'));
 
 const formatCurrency = (value, currency = 'AOA') => {
   return new Intl.NumberFormat('pt-AO', { style: 'currency', currency: currency }).format(value || 0);
@@ -2803,7 +2804,9 @@ export default function Operacoes() {
           </TabsContent>
 
           <TabsContent value="fids" className="space-y-4 sm:space-y-6">
-            <FIDSPanel aeroportos={todosAeroportos} />
+            <React.Suspense fallback={<div className="p-8 text-center text-slate-400">A carregar...</div>}>
+              <FIDSPanel aeroportos={todosAeroportos} />
+            </React.Suspense>
           </TabsContent>
 
           <TabsContent value="configuracoes" className="space-y-4 sm:space-y-6">
@@ -2822,24 +2825,32 @@ export default function Operacoes() {
                   </TabsList>
 
                   <TabsContent value="aeroportos" className="mt-4 sm:mt-6">
-                    <AeroportosConfig aeroportos={todosAeroportos} onReload={() => queryClient.invalidateQueries({ queryKey: ['aeroportos', empresaId] })} />
+                    <React.Suspense fallback={<div className="p-8 text-center text-slate-400">A carregar...</div>}>
+                      <AeroportosConfig aeroportos={todosAeroportos} onReload={() => queryClient.invalidateQueries({ queryKey: ['aeroportos', empresaId] })} />
+                    </React.Suspense>
                   </TabsContent>
 
                   <TabsContent value="companhias" className="mt-4 sm:mt-6">
-                    <CompanhiasConfig companhias={companhias} onUpdate={() => queryClient.invalidateQueries({ queryKey: ['companhias', empresaId] })} />
+                    <React.Suspense fallback={<div className="p-8 text-center text-slate-400">A carregar...</div>}>
+                      <CompanhiasConfig companhias={companhias} onUpdate={() => queryClient.invalidateQueries({ queryKey: ['companhias', empresaId] })} />
+                    </React.Suspense>
                   </TabsContent>
 
                   <TabsContent value="modelos" className="mt-4 sm:mt-6">
-                    <ModelosAeronaveConfig modelos={modelosAeronave} onReload={() => queryClient.invalidateQueries({ queryKey: ['modelos', empresaId] })} />
+                    <React.Suspense fallback={<div className="p-8 text-center text-slate-400">A carregar...</div>}>
+                      <ModelosAeronaveConfig modelos={modelosAeronave} onReload={() => queryClient.invalidateQueries({ queryKey: ['modelos', empresaId] })} />
+                    </React.Suspense>
                   </TabsContent>
 
                   <TabsContent value="registos" className="mt-4 sm:mt-6">
+                    <React.Suspense fallback={<div className="p-8 text-center text-slate-400">A carregar...</div>}>
                     <RegistosAeronaveConfig
                       registos={aeronaves}
                       modelos={modelosAeronave}
                       companhias={companhiasCache.length > 0 ? companhiasCache : companhias}
                       onReload={() => queryClient.invalidateQueries({ queryKey: ['aeronaves', empresaId] })}
                     />
+                    </React.Suspense>
                   </TabsContent>
                 </Tabs>
               </CardContent>
@@ -2848,6 +2859,7 @@ export default function Operacoes() {
         </Tabs>
       </div>
 
+      <React.Suspense fallback={null}>
       {isFormOpen && (
         <FormVoo
           isOpen={isFormOpen}
@@ -3034,6 +3046,7 @@ export default function Operacoes() {
           }}
         />
       )}
+      </React.Suspense>
     </div>
   );
 }

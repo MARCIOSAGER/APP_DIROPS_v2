@@ -99,7 +99,6 @@ export default defineConfig({
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-dates': ['date-fns'],
           'vendor-xlsx': ['xlsx'],
-          'vendor-motion': ['framer-motion'],
         },
       },
     },
