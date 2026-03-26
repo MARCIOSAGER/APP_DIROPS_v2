@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
 
   const loadUserProfile = useCallback(async (authUser) => {
     try {
-      console.debug('[AUTH] Loading profile for:', authUser.email);
+      // Auth debug logging removed for security (M-05)
       let { data: profile, error } = await supabase
         .from('users')
         .select('*')
@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
 
       if (error?.code === 'PGRST116') {
         // Genuine new user — auto-create profile (first login)
-        console.debug('[AUTH] No profile found, creating one for:', authUser.email);
+        // No profile found, auto-creating
         const { data: newProfile, error: createError } = await supabase
           .from('users')
           .insert({
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
       if (!userData.role) {
         userData.role = (Array.isArray(userData.perfis) && userData.perfis.includes('administrador')) ? 'admin' : 'user';
       }
-      console.debug('[AUTH] Profile loaded:', { email: userData.email, status: userData.status, perfis: userData.perfis, role: userData.role });
+      // Profile loaded successfully
       setUser(userData);
       setIsAuthenticated(true);
     } catch (err) {
@@ -77,9 +77,7 @@ export const AuthProvider = ({ children }) => {
 
     const init = async () => {
       try {
-        console.debug('[AUTH] Checking session...');
         const { data: { session }, error } = await supabase.auth.getSession();
-        console.debug('[AUTH] Session result:', !!session, error?.message || 'ok');
 
         if (cancelled) return;
 
@@ -95,7 +93,7 @@ export const AuthProvider = ({ children }) => {
         }
       } finally {
         if (!cancelled) {
-          console.debug('[AUTH] Init complete, setting isLoadingAuth=false');
+          // Init complete
           setIsLoadingAuth(false);
         }
       }
@@ -113,7 +111,7 @@ export const AuthProvider = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.debug('[AUTH] State change:', event);
+        // Auth state change handled
         if (cancelled) return;
 
         if (event === 'SIGNED_IN' && session?.user) {
@@ -139,7 +137,7 @@ export const AuthProvider = ({ children }) => {
     // Re-check session when tab becomes visible again (after hibernate/suspend)
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && !cancelled) {
-        console.debug('[AUTH] Tab became visible, refreshing session...');
+        // Tab became visible, refreshing session
         try {
           const { data: { session }, error } = await supabase.auth.getSession();
           if (cancelled) return;

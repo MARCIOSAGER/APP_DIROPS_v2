@@ -32,6 +32,29 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // C-01 FIX: Require authenticated user (JWT verification)
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(
+      JSON.stringify({ error: "Autenticação obrigatória." }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const supabaseAuth = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!
+  );
+  const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser(
+    authHeader.replace("Bearer ", "")
+  );
+  if (authError || !authUser) {
+    return new Response(
+      JSON.stringify({ error: "Token inválido ou expirado." }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   const clientIp = req.headers.get("x-forwarded-for") || "unknown";
   if (!checkRateLimit(clientIp)) {
     return new Response(
@@ -89,7 +112,7 @@ Deno.serve(async (req) => {
         pass: smtp.smtp_password,
       } : undefined,
       tls: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: true,
       },
       connectionTimeout: 10000,
       socketTimeout: 10000,

@@ -1151,7 +1151,7 @@ export default function GestaoNotificacoes() {
       if (forcarReenvio) {
         try {
           // Encontrar e apagar registos do histórico para este utilizador e regra
-          const historicoAntigo = await base44.asServiceRole.entities.HistoricoNotificacao.filter({
+          const historicoAntigo = await base44.entities.HistoricoNotificacao.filter({
             user_id: currentUser?.id,
             email_destinatario: testeData.email || currentUser?.email
           });
@@ -1159,7 +1159,7 @@ export default function GestaoNotificacoes() {
           if (historicoAntigo && historicoAntigo.length > 0) {
             for (const record of historicoAntigo) {
               try {
-                await base44.asServiceRole.entities.HistoricoNotificacao.delete(record.id);
+                await base44.entities.HistoricoNotificacao.delete(record.id);
               } catch (e) {
                 console.error('Erro ao apagar registado:', e);
               }

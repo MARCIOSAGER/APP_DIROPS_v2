@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
 import { createEntity } from '@/entities/_createEntity';
 import { invokeFunction } from '@/functions/_invokeFunction';
-import { safeRedirectUrl } from '@/lib/sanitize';
+import { safeRedirectUrl, sanitizeFilename, validateFileType } from '@/lib/sanitize';
 
 const entityCache = {};
 function getEntity(name) {
@@ -56,7 +56,8 @@ export const base44 = {
     },
   },
   entities: entitiesProxy,
-  asServiceRole: { entities: entitiesProxy },
+  // H-01: asServiceRole removed — was misleading (used same anon key, not service_role)
+  // Use base44.entities directly instead
   functions: {
     async invoke(functionName, params = {}) {
       return invokeFunction(functionName, params);
@@ -71,7 +72,11 @@ export const base44 = {
         return invokeFunction('invokeLLM', params);
       },
       async UploadFile({ file }) {
-        const fileName = `${Date.now()}_${file.name}`;
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        if (file.size > MAX_FILE_SIZE) throw new Error('Ficheiro excede o limite de 10MB.');
+        const validation = await validateFileType(file);
+        if (!validation.valid) throw new Error(validation.reason);
+        const fileName = `${Date.now()}_${sanitizeFilename(file.name)}`;
         const { data, error } = await supabase.storage
           .from('uploads')
           .upload(fileName, file);
@@ -82,7 +87,11 @@ export const base44 = {
         return { url: urlData.publicUrl, path: data.path };
       },
       async UploadPrivateFile({ file }) {
-        const fileName = `${Date.now()}_${file.name}`;
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        if (file.size > MAX_FILE_SIZE) throw new Error('Ficheiro excede o limite de 10MB.');
+        const validation = await validateFileType(file);
+        if (!validation.valid) throw new Error(validation.reason);
+        const fileName = `${Date.now()}_${sanitizeFilename(file.name)}`;
         const { data, error } = await supabase.storage
           .from('private-uploads')
           .upload(fileName, file);
