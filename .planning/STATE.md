@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Performance
-status: Ready to execute
-stopped_at: Completed 09-03-PLAN.md
-last_updated: "2026-03-25T21:30:55.751Z"
+status: Ready to plan
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-03-26T06:50:06.499Z"
 progress:
   total_phases: 5
   completed_phases: 2
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 
 ## Current Position
 
-Phase: 09 (cache-integration-remaining-resilience) — EXECUTING
-Plan: 2 of 3
+Phase: 10
+Plan: Not started
 
 ## Performance Metrics
 
@@ -50,6 +50,8 @@ Plan: 2 of 3
 | Phase 08-cache-integration-high-traffic P01 | 446 | 2 tasks | 4 files |
 | Phase 08-cache-integration-high-traffic P02 | 1557 | 2 tasks | 5 files |
 | Phase 09-cache-integration-remaining-resilience P03 | 278 | 1 tasks | 1 files |
+| Phase 09 P01 | 692 | 2 tasks | 3 files |
+| Phase 09-cache-integration-remaining-resilience P02 | 32 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -74,6 +76,9 @@ Plan: 2 of 3
 - [Phase 08-cache-integration-high-traffic]: handleBuscarVoos/handleBuscarLigados use queryClient.setQueryData to override cache with filtered search results
 - [Phase 08-cache-integration-high-traffic]: Mutation pattern established: await entity.mutate → queryClient.invalidateQueries({ queryKey: ['key', empresaId] })
 - [Phase 09-cache-integration-remaining-resilience]: ErrorBoundary outer placement in App() covers AuthenticatedApp inner Suspense via React tree propagation — no duplicate boundary needed for RES-01
+- [Phase 09]: makeEntityQuery factory: staleTime:0 for operational pages, handleBuscar uses setQueryData to override cache with filtered results
+- [Phase 09-cache-integration-remaining-resilience]: Pastas (Pasta entity) uses separate useQuery(['pastas', empresaId]) with staleTime 0 — no useStaticData hook and operational data that can change
+- [Phase 09-cache-integration-remaining-resilience]: TipoInspecao in Inspecoes.jsx uses staleTime 5min — reference data (rarely changes), consistent with useStaticData pattern
 
 ### Pending Todos
 
@@ -86,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T21:30:55.726Z
-Stopped at: Completed 09-03-PLAN.md
+Last session: 2026-03-26T06:47:24.677Z
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None
