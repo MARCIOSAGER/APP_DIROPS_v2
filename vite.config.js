@@ -8,7 +8,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    pool: 'threads',
+    pool: 'forks',
+    poolOptions: { forks: { maxForks: 2 } },
     setupFiles: ['./src/test/setup.js'],
     include: ['src/**/__tests__/**/*.test.{js,jsx}'],
     env: {
