@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, FileText, Upload, FileDown, BookOpen, BarChart2, FolderUp, Home, ChevronRight, FolderPlus, Grid3x3, List } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Documento } from '@/entities/Documento';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { downloadAsCSV } from '../components/lib/export';
 import { getAeroportosPermitidos, filtrarDadosPorAcesso, isAdminProfile } from '@/components/lib/userUtils';
+import { useDocumentos } from '@/hooks/useDocumentos';
 
 import DocumentosList from '../components/documentos/DocumentosList';
 import FormDocumento from '../components/documentos/FormDocumento';
@@ -28,14 +30,33 @@ import { useAuth } from '@/lib/AuthContext';
 export default function Documentos() {
   const { t } = useI18n();
   const { user: currentUser } = useAuth();
-  const [documentos, setDocumentos] = useState([]);
+  const queryClient = useQueryClient();
+
+  const empId = currentUser?.empresa_id;
+
+  // Primary data via TanStack Query
+  const { data: documentosRaw = [], isLoading: isQueryLoading } = useDocumentos({ empresaId: empId });
+
+  // Secondary data: aeroportos, pastas (kept as useState per instructions)
   const [aeroportos, setAeroportos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [aeroportosAngola, setAeroportosAngola] = useState([]);
+  const [pastas, setPastas] = useState([]);
+  const [secondaryLoaded, setSecondaryLoaded] = useState(false);
+
+  // Derive filtered documentos from query data + aeroportos
+  const documentos = useMemo(() => {
+    if (!secondaryLoaded) return [];
+    const docsFiltradosPorAcesso = filtrarDadosPorAcesso(currentUser, documentosRaw, 'aeroporto', aeroportosAngola);
+    const docsGerais = documentosRaw.filter(doc => !doc.aeroporto);
+    return [...new Map([...docsFiltradosPorAcesso, ...docsGerais].map(d => [d.id, d])).values()];
+  }, [documentosRaw, secondaryLoaded, aeroportosAngola, currentUser]);
+
+  const isLoading = isQueryLoading && !secondaryLoaded;
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDocumento, setEditingDocumento] = useState(null);
   const [isUploadMassaOpen, setIsUploadMassaOpen] = useState(false);
   const [buscaInteligente, setBuscaInteligente] = useState(null);
-  const [pastas, setPastas] = useState([]);
   const [pastaAtual, setPastaAtual] = useState(null);
   const [caminhoPasta, setCaminhoPasta] = useState([]);
   const [isFormPastaOpen, setIsFormPastaOpen] = useState(false);
@@ -54,50 +75,39 @@ export default function Documentos() {
   const [documentoParaGerenciar, setDocumentoParaGerenciar] = useState(null);
   const [vooLigadoFilter, setVooLigadoFilter] = useState(null);
 
+  // Load secondary data + URL params on mount
   useEffect(() => {
-    // Verificar se há parâmetro de filtro na URL
     const urlParams = new URLSearchParams(window.location.search);
     const vooLigadoId = urlParams.get('voo_ligado_id');
     if (vooLigadoId) {
       setVooLigadoFilter(vooLigadoId);
     }
-    loadData();
+
+    (async () => {
+      try {
+        const [aeroportosData, pastasData] = await Promise.all([
+          empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
+          Pasta.list()
+        ]);
+        const angolan = aeroportosData.filter(a => a.pais === 'AO');
+        setAeroportosAngola(angolan);
+        setAeroportos(getAeroportosPermitidos(currentUser, angolan, currentUser?.empresa_id));
+        setPastas(pastasData);
+        setSecondaryLoaded(true);
+      } catch (error) {
+        console.error("Erro ao carregar dados secundários:", error);
+      }
+    })();
   }, []);
 
   const loadData = async () => {
-    setIsLoading(true);
+    queryClient.invalidateQueries({ queryKey: ['documentos', empId] });
+    // Also refresh pastas
     try {
-      // Server-side filter by empresa_id when user belongs to one
-      const empId = currentUser?.empresa_id;
-      const documentoPromise = empId
-        ? Documento.filter({ empresa_id: empId }, '-data_publicacao')
-        : Documento.list('-data_publicacao');
-
-      const [documentosData, aeroportosData, pastasData] = await Promise.all([
-        documentoPromise,
-        empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
-        Pasta.list()
-      ]);
-
-      const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-
-      // Filtrar aeroportos pelos aeroportos de acesso do utilizador (empresa-based)
-      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosAngola, currentUser.empresa_id);
-      setAeroportos(aeroportosFiltrados);
-
-      // Filtrar documentos pelos aeroportos de acesso do utilizador
-      // Documentos sem aeroporto específico são "gerais" e visíveis para todos
-      const docsFiltradosPorAcesso = filtrarDadosPorAcesso(currentUser, documentosData, 'aeroporto', aeroportosAngola);
-      // Incluir documentos gerais (sem aeroporto) que não entraram no filtro
-      const docsGerais = documentosData.filter(doc => !doc.aeroporto);
-      const documentosFiltrados = [...new Map([...docsFiltradosPorAcesso, ...docsGerais].map(d => [d.id, d])).values()];
-
-      setDocumentos(documentosFiltrados);
+      const pastasData = await Pasta.list();
       setPastas(pastasData);
     } catch (error) {
-      console.error("Erro ao carregar documentos:", error);
-    } finally {
-      setIsLoading(false);
+      console.error("Erro ao carregar pastas:", error);
     }
   };
 

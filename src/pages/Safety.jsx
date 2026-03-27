@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Filter, FileDown, FileText, Mail, Search, Loader2, X } from 'lucide-react';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input';
 
 import { OcorrenciaSafety } from '@/entities/OcorrenciaSafety';
 import { Aeroporto } from '@/entities/Aeroporto';
+import { useOcorrencias } from '@/hooks/useOcorrencias';
 import SafetyOccurrencesList from '../components/safety/SafetyOccurrencesList';
 import FormSafetyOccurrence from '../components/safety/FormSafetyOccurrence';
 import { downloadAsCSV } from '../components/lib/export';
@@ -24,9 +26,28 @@ import { useAuth } from '@/lib/AuthContext';
 export default function Safety() {
   const { t } = useI18n();
   const { user } = useAuth();
-  const [ocorrencias, setOcorrencias] = useState([]);
+  const queryClient = useQueryClient();
+
+  // Primary data via TanStack Query
+  const empId = user?.empresa_id;
+  const { data: ocorrenciasRaw = [], isLoading: isQueryLoading, refetch } = useOcorrencias({ empresaId: empId });
+
+  // Secondary data: aeroportos (kept as useState per instructions)
   const [aeroportos, setAeroportos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [aeroportosLoaded, setAeroportosLoaded] = useState(false);
+
+  // Derive filtered ocorrencias from query data + aeroportos
+  const ocorrencias_derived = useMemo(() => {
+    if (!aeroportosLoaded) return [];
+    const aeroportosAngola = aeroportos.filter(a => a.pais === 'AO');
+    return filtrarDadosPorAcesso(user, ocorrenciasRaw, 'aeroporto', aeroportosAngola);
+  }, [ocorrenciasRaw, aeroportos, aeroportosLoaded, user]);
+
+  // State that can be overridden by server-side search (handleBuscar)
+  const [searchOverride, setSearchOverride] = useState(null);
+  const ocorrencias = searchOverride !== null ? searchOverride : ocorrencias_derived;
+  const isLoading = isQueryLoading && !aeroportosLoaded;
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOcorrencia, setEditingOcorrencia] = useState(null);
   const [selectedOcorrencias, setSelectedOcorrencias] = useState([]);
@@ -41,39 +62,27 @@ export default function Safety() {
     dataFim: ''
   });
 
+  // Load aeroportos on mount
   useEffect(() => {
-    loadData();
+    (async () => {
+      try {
+        const aeroportosData = empId
+          ? await Aeroporto.filter({ empresa_id: empId })
+          : await Aeroporto.list();
+        const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
+        const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, user?.empresa_id);
+        setAeroportos(aeroportosFiltrados);
+        setAeroportosLoaded(true);
+      } catch (error) {
+        console.error("Erro ao carregar aeroportos:", error);
+        setAlertInfo({ isOpen: true, title: t('safety.erro_carregamento'), message: t('safety.erro_carregamento_msg') });
+      }
+    })();
   }, []);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      // Server-side filter by empresa_id when applicable
-      const empId = user?.empresa_id;
-      const ocorrenciaPromise = empId
-        ? OcorrenciaSafety.filter({ empresa_id: empId }, '-data_ocorrencia')
-        : OcorrenciaSafety.list('-data_ocorrencia');
-
-      const [ocorrenciasData, aeroportosData] = await Promise.all([
-        ocorrenciaPromise,
-        empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list()
-      ]);
-
-      const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-
-      // FILTRO CRÍTICO: Filtrar ocorrências por aeroportos do utilizador (empresa-based)
-      const filteredOcorrencias = filtrarDadosPorAcesso(user, ocorrenciasData, 'aeroporto', aeroportosAngola);
-
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, user?.empresa_id);
-      setOcorrencias(filteredOcorrencias);
-      setAeroportos(aeroportosFiltrados);
-      
-    } catch (error) {
-      console.error("Erro ao carregar dados de safety:", error);
-      setAlertInfo({ isOpen: true, title: t('safety.erro_carregamento'), message: t('safety.erro_carregamento_msg') });
-    } finally {
-      setIsLoading(false);
-    }
+  const loadData = () => {
+    setSearchOverride(null);
+    queryClient.invalidateQueries({ queryKey: ['ocorrencias', empId] });
   };
 
   const handleEdit = (occurrence) => {
@@ -90,7 +99,7 @@ export default function Safety() {
       }
       setIsFormOpen(false);
       setEditingOcorrencia(null);
-      loadData();
+      queryClient.invalidateQueries({ queryKey: ['ocorrencias', empId] });
       setSuccessInfo({ isOpen: true, title: t('safety.ocorrencia_salva'), message: t('safety.ocorrencia_salva_msg') });
     } catch (error) {
       console.error("Erro ao salvar ocorrência:", error);
@@ -111,7 +120,7 @@ export default function Safety() {
         
         try {
           await OcorrenciaSafety.delete(ocorrencia.id);
-          loadData();
+          queryClient.invalidateQueries({ queryKey: ['ocorrencias', empId] });
           setSuccessInfo({
             isOpen: true,
             title: t('safety.ocorrencia_excluida'),
@@ -121,7 +130,7 @@ export default function Safety() {
           console.error('Erro ao excluir ocorrência:', error);
           
           if (error.response?.status === 404) {
-            loadData();
+            queryClient.invalidateQueries({ queryKey: ['ocorrencias', empId] });
             setAlertInfo({
               isOpen: true,
               type: 'info',
@@ -160,7 +169,7 @@ export default function Safety() {
         '-data_ocorrencia'
       );
       const aeroportosAngola = aeroportos.filter(a => a.pais === 'AO');
-      setOcorrencias(filtrarDadosPorAcesso(user, data, 'aeroporto', aeroportosAngola));
+      setSearchOverride(filtrarDadosPorAcesso(user, data, 'aeroporto', aeroportosAngola));
     } catch (error) {
       console.error('Erro ao buscar:', error);
     } finally {
@@ -491,7 +500,7 @@ export default function Safety() {
                 <Button onClick={handleBuscar} disabled={isSearching} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                   {isSearching ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Buscando...</> : <><Search className="w-4 h-4 mr-2" /> Buscar</>}
                 </Button>
-                <Button variant="outline" onClick={() => { setFiltros({ aeroporto: 'todos', gravidade: 'todos', status: 'todos', dataInicio: '', dataFim: '' }); loadData(); }}>
+                <Button variant="outline" onClick={() => { setFiltros({ aeroporto: 'todos', gravidade: 'todos', status: 'todos', dataInicio: '', dataFim: '' }); setSearchOverride(null); }}>
                   <X className="w-4 h-4 mr-2" /> Limpar
                 </Button>
               </div>

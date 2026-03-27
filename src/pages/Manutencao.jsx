@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, FileDown, Filter, ClipboardList, Wrench, Settings, Search, Loader2, X } from 'lucide-react';
@@ -12,6 +13,7 @@ import { OrdemServico } from '@/entities/OrdemServico';
 import { SolicitacaoServico } from '@/entities/SolicitacaoServico';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { User } from '@/entities/User';
+import { useOrdensServico } from '@/hooks/useOrdensServico';
 import { createPdfDoc, addHeader, addFooter, addTable, fetchEmpresaLogo } from '@/lib/pdfTemplate';
 
 import ManutencaoStats from '../components/manutencao/ManutencaoStats';
@@ -37,10 +39,36 @@ export default function Manutencao() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const { user: currentUser } = useAuth();
-  const [ordensDeServico, setOrdensDeServico] = useState([]);
-  const [solicitacoes, setSolicitacoes] = useState([]);
+  const queryClient = useQueryClient();
+
+  const empId = effectiveEmpresaId || currentUser?.empresa_id;
+
+  // Primary data via TanStack Query
+  const { data: queryData, isLoading: isQueryLoading } = useOrdensServico({ empresaId: empId });
+  const ordensRaw = queryData?.ordensData ?? [];
+  const ssRaw = queryData?.ssData ?? [];
+
+  // Secondary data: aeroportos, users (kept as useState per instructions)
   const [aeroportos, setAeroportos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [aeroportosAngola, setAeroportosAngola] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [secondaryLoaded, setSecondaryLoaded] = useState(false);
+  const [logoBase64, setLogoBase64] = useState(null);
+  const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
+
+  // Derived data from query + aeroportos
+  const ordensDeServico = useMemo(() => {
+    if (!secondaryLoaded) return [];
+    return filtrarDadosPorAeroportoId(currentUser, ordensRaw, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId);
+  }, [ordensRaw, secondaryLoaded, aeroportosAngola, currentUser, effectiveEmpresaId]);
+
+  const solicitacoes = useMemo(() => {
+    if (!secondaryLoaded) return [];
+    return filtrarDadosPorAeroportoId(currentUser, ssRaw, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId);
+  }, [ssRaw, secondaryLoaded, aeroportosAngola, currentUser, effectiveEmpresaId]);
+
+  const isLoading = isQueryLoading && !secondaryLoaded;
+
   const [activeTab, setActiveTab] = useState('solicitacoes');
 
   // OS state
@@ -53,14 +81,13 @@ export default function Manutencao() {
   const [responderOrdem, setResponderOrdem] = useState(null);
   const [responderAcao, setResponderAcao] = useState('aceitar');
 
+  // Search override for OS (handleBuscarOS)
+  const [ordensSearchOverride, setOrdensSearchOverride] = useState(null);
+
   // SS state
   const [isFormSSOpen, setIsFormSSOpen] = useState(false);
   const [analisarSS, setAnalisarSS] = useState(null);
   const [detailSS, setDetailSS] = useState(null);
-
-  const [allUsers, setAllUsers] = useState([]);
-  const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
-  const [logoBase64, setLogoBase64] = useState(null);
 
   // Permissões: administrador e infraestrutura podem gerir
   const canManage = useMemo(() => {
@@ -69,39 +96,29 @@ export default function Manutencao() {
     return isInfraOrAdmin(currentUser);
   }, [currentUser]);
 
-  useEffect(() => { loadData(); }, [effectiveEmpresaId]);
+  // Load secondary data (aeroportos, users, logo)
+  useEffect(() => {
+    (async () => {
+      try {
+        fetchEmpresaLogo(currentUser?.empresa_id).then(b64 => setLogoBase64(b64));
+        const [aeroportosData, usersData] = await Promise.all([
+          empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
+          empId ? User.filter({ empresa_id: empId }) : User.list()
+        ]);
+        setAllUsers(usersData);
+        const angolan = aeroportosData.filter(a => a.pais === 'AO');
+        setAeroportosAngola(angolan);
+        setAeroportos(getAeroportosPermitidos(currentUser, angolan, effectiveEmpresaId));
+        setSecondaryLoaded(true);
+      } catch (error) {
+        console.error('Erro ao carregar dados secundários de manutenção:', error);
+      }
+    })();
+  }, [effectiveEmpresaId]);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      fetchEmpresaLogo(currentUser?.empresa_id).then(b64 => setLogoBase64(b64));
-
-      // Server-side filter by empresa_id when applicable
-      const empId = effectiveEmpresaId || currentUser?.empresa_id;
-      const empFilters = empId ? { empresa_id: empId } : {};
-
-      const [ordensData, ssData, aeroportosData, usersData] = await Promise.all([
-        empId ? OrdemServico.filter(empFilters, '-data_abertura') : OrdemServico.list('-data_abertura'),
-        empId ? SolicitacaoServico.filter(empFilters, '-created_date') : SolicitacaoServico.list('-created_date'),
-        (empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list()),
-        empId ? User.filter({ empresa_id: empId }) : User.list()
-      ]);
-      setAllUsers(usersData);
-
-      const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosAngola, effectiveEmpresaId);
-      setAeroportos(aeroportosFiltrados);
-
-      const ordensFiltradas = filtrarDadosPorAeroportoId(currentUser, ordensData, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId);
-      setOrdensDeServico(ordensFiltradas);
-
-      const ssFiltradas = filtrarDadosPorAeroportoId(currentUser, ssData, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId);
-      setSolicitacoes(ssFiltradas);
-    } catch (error) {
-      console.error('Erro ao carregar dados de manutenção:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const loadData = () => {
+    setOrdensSearchOverride(null);
+    queryClient.invalidateQueries({ queryKey: ['ordens-servico', empId] });
   };
 
   // --- Email helpers ---
@@ -284,13 +301,15 @@ export default function Manutencao() {
     }
   };
 
+  const [isExporting, setIsExporting] = useState(false);
+
   const handleExportPDF = async () => {
-    setIsLoading(true);
+    setIsExporting(true);
     try {
       const ordensParaExportar = selectedOrdens.length > 0
         ? ordensDeServico.filter(os => selectedOrdens.includes(os.id))
         : filteredOrdens;
-      if (ordensParaExportar.length === 0) { setIsLoading(false); return; }
+      if (ordensParaExportar.length === 0) { setIsExporting(false); return; }
       const doc = await createPdfDoc({ orientation: 'portrait' });
       let y = addHeader(doc, { title: 'Relatório de Ordens de Serviço', logoBase64, date: new Date().toLocaleDateString('pt-AO'), meta: [`Total: ${ordensParaExportar.length}`] });
       const columns = [
@@ -309,7 +328,7 @@ export default function Manutencao() {
     } catch (error) {
       console.error("Erro ao exportar PDF:", error);
     } finally {
-      setIsLoading(false);
+      setIsExporting(false);
     }
   };
 
@@ -318,7 +337,6 @@ export default function Manutencao() {
   const handleBuscarOS = async () => {
     setIsSearchingOS(true);
     try {
-      const empId = effectiveEmpresaId || currentUser?.empresa_id;
       const query = {};
       if (empId) query.empresa_id = empId;
       if (filtrosOS.status !== 'todos') query.status = filtrosOS.status;
@@ -331,8 +349,8 @@ export default function Manutencao() {
         Object.keys(query).length > 0 ? query : {},
         '-data_abertura'
       );
-      const aeroportosAngola = aeroportos.filter(a => a.pais === 'AO');
-      setOrdensDeServico(filtrarDadosPorAeroportoId(currentUser, data, 'aeroporto_id', aeroportosAngola, effectiveEmpresaId));
+      const angolan = aeroportos.filter(a => a.pais === 'AO');
+      setOrdensSearchOverride(filtrarDadosPorAeroportoId(currentUser, data, 'aeroporto_id', angolan, effectiveEmpresaId));
     } catch (error) {
       console.error('Erro ao buscar:', error);
     } finally {
@@ -341,7 +359,7 @@ export default function Manutencao() {
   };
 
   // Server-side filtered — no client-side filtering needed
-  const filteredOrdens = ordensDeServico;
+  const filteredOrdens = ordensSearchOverride !== null ? ordensSearchOverride : ordensDeServico;
 
   // --- SS Stats ---
   const ssStats = useMemo(() => ({
@@ -448,7 +466,7 @@ export default function Manutencao() {
                     <Filter className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     {t('manutencao.filtrosExportacao')}
                   </CardTitle>
-                  <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={isLoading}>
+                  <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={isExporting}>
                     <FileDown className="w-4 h-4 mr-2" />
                     {t('manutencao.exportarPDF')} ({selectedOrdens.length > 0 ? selectedOrdens.length : filteredOrdens.length})
                   </Button>
@@ -476,7 +494,7 @@ export default function Manutencao() {
                     <Button onClick={handleBuscarOS} disabled={isSearchingOS} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                       {isSearchingOS ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('flightaware.searching')}</> : <><Search className="w-4 h-4 mr-2" /> {t('btn.search')}</>}
                     </Button>
-                    <Button variant="outline" onClick={() => { setFiltrosOS({ busca: '', status: 'todos', prioridade: 'todos', aeroporto: 'todos', categoria: 'todos' }); loadData(); }}>
+                    <Button variant="outline" onClick={() => { setFiltrosOS({ busca: '', status: 'todos', prioridade: 'todos', aeroporto: 'todos', categoria: 'todos' }); setOrdensSearchOverride(null); }}>
                       <X className="w-4 h-4 mr-2" /> {t('operacoes.limpar')}
                     </Button>
                   </div>

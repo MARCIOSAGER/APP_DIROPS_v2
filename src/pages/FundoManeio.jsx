@@ -11,8 +11,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { MovimentoFinanceiro } from '@/entities/MovimentoFinanceiro';
 import { Aeroporto } from '@/entities/Aeroporto';
+import { useMovimentosFinanceiros } from '@/hooks/useMovimentosFinanceiros';
 const MovimentosFinanceirosChart = React.lazy(() => import('../components/financeiro/MovimentosFinanceirosChart'));
 import FormMovimentoFinanceiro from '../components/financeiro/FormMovimentoFinanceiro';
 import { downloadAsCSV } from '../components/lib/export';
@@ -54,11 +56,29 @@ const RecentMovimentosFinanceiros = ({ movimentos, t }) => (
 export default function FundoManeio() {
   const { t } = useI18n();
   const { user: currentUser } = useAuth();
-  const [movimentos, setMovimentos] = useState([]);
+  const queryClient = useQueryClient();
+
+  const empId = currentUser?.empresa_id;
+
+  // Primary data via TanStack Query
+  const { data: movimentosRaw = [], isLoading: isQueryLoading } = useMovimentosFinanceiros({ empresaId: empId });
+
+  // Secondary data: aeroportos, empresas (kept as useState per instructions)
   const [aeroportos, setAeroportos] = useState([]);
   const [empresas, setEmpresas] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [secondaryLoaded, setSecondaryLoaded] = useState(false);
 
+  // Derive filtered movimentos from query data + aeroportos
+  const movimentos_derived = useMemo(() => {
+    if (!secondaryLoaded) return [];
+    const userAccessibleAirportIds = aeroportos.map(a => a.id);
+    return movimentosRaw.filter(m => userAccessibleAirportIds.includes(m.aeroporto_id));
+  }, [movimentosRaw, aeroportos, secondaryLoaded]);
+
+  // Search override for handleBuscar
+  const [searchOverride, setSearchOverride] = useState(null);
+  const movimentos = searchOverride !== null ? searchOverride : movimentos_derived;
+  const isLoading = isQueryLoading && !secondaryLoaded;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMovimento, setEditingMovimento] = useState(null);
@@ -80,40 +100,36 @@ export default function FundoManeio() {
   const [sortField, setSortField] = useState('data');
   const [sortDirection, setSortDirection] = useState('desc');
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [aeroportosData, empresasData] = await Promise.all([
-        currentUser?.empresa_id ? Aeroporto.filter({ empresa_id: currentUser.empresa_id }) : Aeroporto.list(),
-        Empresa.list()
-      ]);
-
-      setEmpresas(empresasData || []);
-
-      const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-      const userAccessibleAeroportos = getAeroportosPermitidos(currentUser, aeroportosAngola, currentUser?.empresa_id);
-      setAeroportos(userAccessibleAeroportos);
-
-      // Initial load with empresa_id filter
-      const query = {};
-      if (user.empresa_id) query.empresa_id = user.empresa_id;
-      const movimentosData = await MovimentoFinanceiro.filter(query, '-data');
-      const userAccessibleAirportIds = userAccessibleAeroportos.map(a => a.id);
-      setMovimentos(movimentosData.filter(m => userAccessibleAirportIds.includes(m.aeroporto_id)));
-    } catch (error) {
-      console.error("Erro ao carregar dados do fundo de maneio:", error);
-      setAlertInfo({ isOpen: true, type: 'error', title: t('fundo.error_load_title'), message: t('fundo.error_load_msg') });
-    } finally {
-      setIsLoading(false);
-    }
+  // Load secondary data on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const [aeroportosData, empresasData] = await Promise.all([
+          empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
+          Empresa.list()
+        ]);
+        setEmpresas(empresasData || []);
+        const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
+        const userAccessibleAeroportos = getAeroportosPermitidos(currentUser, aeroportosAngola, empId);
+        setAeroportos(userAccessibleAeroportos);
+        setSecondaryLoaded(true);
+      } catch (error) {
+        console.error("Erro ao carregar dados do fundo de maneio:", error);
+        setAlertInfo({ isOpen: true, type: 'error', title: t('fundo.error_load_title'), message: t('fundo.error_load_msg') });
+      }
+    })();
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  const loadData = useCallback(() => {
+    setSearchOverride(null);
+    queryClient.invalidateQueries({ queryKey: ['movimentos-financeiros', empId] });
+  }, [empId, queryClient]);
+
+  const [isSearching, setIsSearching] = useState(false);
 
   const handleBuscar = async () => {
-    setIsLoading(true);
+    setIsSearching(true);
     try {
-      const empId = currentUser?.empresa_id;
       const query = {};
       if (empId) query.empresa_id = empId;
       if (filtros.aeroporto !== 'todos') query.aeroporto_id = filtros.aeroporto;
@@ -127,12 +143,12 @@ export default function FundoManeio() {
 
       // Still respect airport-level access
       const userAccessibleAirportIds = aeroportos.map(a => a.id);
-      setMovimentos(data.filter(m => userAccessibleAirportIds.includes(m.aeroporto_id)));
+      setSearchOverride(data.filter(m => userAccessibleAirportIds.includes(m.aeroporto_id)));
     } catch (err) {
       console.error('Erro ao buscar movimentos:', err);
       setAlertInfo({ isOpen: true, type: 'error', title: t('fundo.error_load_title'), message: t('fundo.error_load_msg') });
     } finally {
-      setIsLoading(false);
+      setIsSearching(false);
     }
   };
 
@@ -195,21 +211,9 @@ export default function FundoManeio() {
     setFiltros(prev => ({ ...prev, [field]: value }));
   };
 
-  const clearFilters = async () => {
+  const clearFilters = () => {
     setFiltros({ aeroporto: 'todos', dataInicio: '', dataFim: '', categoria: 'todos', tipo: 'todos', busca: '' });
-    // Re-fetch without filters
-    setIsLoading(true);
-    try {
-      const query = {};
-      if (currentUser?.empresa_id) query.empresa_id = currentUser.empresa_id;
-      const data = await MovimentoFinanceiro.filter(query, '-data');
-      const userAccessibleAirportIds = aeroportos.map(a => a.id);
-      setMovimentos(data.filter(m => userAccessibleAirportIds.includes(m.aeroporto_id)));
-    } catch (err) {
-      console.error('Erro ao limpar filtros:', err);
-    } finally {
-      setIsLoading(false);
-    }
+    setSearchOverride(null);
   };
 
   const hasActiveFilters = filtros.dataInicio !== '' || filtros.dataFim !== '' ||

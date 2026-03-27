@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, ClipboardCheck, FileText, CheckCircle, Clock } from 'lucide-react';
@@ -12,6 +13,7 @@ import { getAeroportosPermitidos, filtrarDadosPorAeroportoId } from '@/component
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
+import { useInspecoes } from '@/hooks/useInspecoes';
 
 import InspecoesList from '../components/inspecoes/InspecoesList';
 import FormInspecao from '../components/inspecoes/FormInspecao';
@@ -21,47 +23,51 @@ export default function Inspecoes() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const { user: currentUser } = useAuth();
-  const [inspecoes, setInspecoes] = useState([]);
+  const queryClient = useQueryClient();
+
+  const empId = effectiveEmpresaId || currentUser?.empresa_id;
+
+  // Primary data via TanStack Query
+  const { data: inspecoesRaw = [], isLoading: isQueryLoading } = useInspecoes({ empresaId: empId });
+
+  // Secondary data: aeroportos, tiposInspecao (kept as useState per instructions)
   const [tiposInspecao, setTiposInspecao] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [aeroportosAll, setAeroportosAll] = useState([]);
+  const [secondaryLoaded, setSecondaryLoaded] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTipo, setSelectedTipo] = useState(null);
   const [activeTab, setActiveTab] = useState('inspecoes');
 
+  // Derived filtered inspecoes
+  const inspecoes = useMemo(() => {
+    if (!secondaryLoaded) return [];
+    const inspecoesAtivas = inspecoesRaw.filter(i => i.status !== 'cancelada');
+    return filtrarDadosPorAeroportoId(currentUser, inspecoesAtivas, 'aeroporto_id', aeroportosAll, effectiveEmpresaId);
+  }, [inspecoesRaw, secondaryLoaded, aeroportosAll, currentUser, effectiveEmpresaId]);
+
+  const isLoading = isQueryLoading && !secondaryLoaded;
+
+  // Load secondary data
   useEffect(() => {
-    loadData();
+    (async () => {
+      try {
+        const [tiposData, aeroportosData] = await Promise.all([
+          TipoInspecao.list(),
+          empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list()
+        ]);
+        setAeroportosAll(aeroportosData);
+        setAeroportos(getAeroportosPermitidos(currentUser, aeroportosData, effectiveEmpresaId));
+        setTiposInspecao(tiposData);
+        setSecondaryLoaded(true);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+      }
+    })();
   }, [effectiveEmpresaId]);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      // Server-side filter by empresa_id when applicable
-      const empId = effectiveEmpresaId || currentUser?.empresa_id;
-      const inspecaoPromise = empId
-        ? Inspecao.filter({ empresa_id: empId }, '-data_inspecao')
-        : Inspecao.list('-data_inspecao');
-
-      const [inspecoesData, tiposData, aeroportosData] = await Promise.all([
-        inspecaoPromise,
-        TipoInspecao.list(),
-        (empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list())
-      ]);
-
-      // Filtrar aeroportos pela empresa e acesso do utilizador
-      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosData, effectiveEmpresaId);
-      setAeroportos(aeroportosFiltrados);
-      setTiposInspecao(tiposData);
-
-      // Filtrar inspeções canceladas e pelos aeroportos permitidos do utilizador
-      const inspecoesAtivas = inspecoesData.filter(i => i.status !== 'cancelada');
-      const inspecoesFiltradas = filtrarDadosPorAeroportoId(currentUser, inspecoesAtivas, 'aeroporto_id', aeroportosData, effectiveEmpresaId);
-      setInspecoes(inspecoesFiltradas);
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const loadData = () => {
+    queryClient.invalidateQueries({ queryKey: ['inspecoes', empId] });
   };
 
   const handleNovaInspecao = (tipo) => {

@@ -21,8 +21,10 @@ import {
   Loader2
 } from 'lucide-react';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { Reclamacao } from '@/entities/Reclamacao';
 import { Aeroporto } from '@/entities/Aeroporto';
+import { useReclamacoes } from '@/hooks/useReclamacoes';
 import { downloadAsCSV } from '../components/lib/export';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { getAeroportosPermitidos, filtrarDadosPorAcesso, getEmpresaLogoByUser } from '@/components/lib/userUtils';
@@ -76,9 +78,30 @@ const PRIORIDADE_OPTIONS = [
 export default function Reclamacoes() {
   const { t } = useI18n();
   const { user } = useAuth();
-  const [reclamacoes, setReclamacoes] = useState([]);
+  const queryClient = useQueryClient();
+
+  const empId = user?.empresa_id;
+
+  // Primary data via TanStack Query
+  const { data: reclamacoesRaw = [], isLoading: isQueryLoading } = useReclamacoes({ empresaId: empId });
+
+  // Secondary data: aeroportos, empresas (kept as useState per instructions)
   const [aeroportos, setAeroportos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [aeroportosAngola, setAeroportosAngola] = useState([]);
+  const [empresas, setEmpresas] = useState([]);
+  const [secondaryLoaded, setSecondaryLoaded] = useState(false);
+
+  // Derive filtered reclamacoes from query data + aeroportos
+  const reclamacoes_derived = useMemo(() => {
+    if (!secondaryLoaded) return [];
+    return filtrarDadosPorAcesso(user, reclamacoesRaw, 'aeroporto_id', aeroportosAngola);
+  }, [reclamacoesRaw, secondaryLoaded, aeroportosAngola, user]);
+
+  // Search override for handleBuscar with server-side filters
+  const [searchOverride, setSearchOverride] = useState(null);
+  const reclamacoes = searchOverride !== null ? searchOverride : reclamacoes_derived;
+  const isLoading = isQueryLoading && !secondaryLoaded;
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -89,9 +112,9 @@ export default function Reclamacoes() {
   const [reclamacaoParaProtocolo, setReclamacaoParaProtocolo] = useState(null);
   const [deleteInfo, setDeleteInfo] = useState({ isOpen: false, id: null, title: '', message: '' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '', details: [] });
-  const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'error', title: '', message: '' }); // New state for general alerts
-  const [empresas, setEmpresas] = useState([]);
+  const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'error', title: '', message: '' });
   const [isBuscando, setIsBuscando] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const [filtros, setFiltros] = useState({
     busca: '',
@@ -103,73 +126,64 @@ export default function Reclamacoes() {
     dataFim: ''
   });
 
-  const loadData = useCallback(async (serverFilters) => {
-    setIsLoading(true);
-    try {
-      // Build server-side query
-      const empId = user?.empresa_id;
-      const query = {};
-      if (empId) query.empresa_id = empId;
-
-      // Apply server-side filters when provided
-      if (serverFilters) {
-        if (serverFilters.status && serverFilters.status !== 'todos') {
-          query.status = serverFilters.status;
-        }
-        if (serverFilters.areaResponsavel && serverFilters.areaResponsavel !== 'todos') {
-          query.area_responsavel = serverFilters.areaResponsavel;
-        }
-        if (serverFilters.aeroporto && serverFilters.aeroporto !== 'todos') {
-          query.aeroporto_id = serverFilters.aeroporto;
-        }
-        if (serverFilters.prioridade && serverFilters.prioridade !== 'todos') {
-          query.prioridade = serverFilters.prioridade;
-        }
-        if (serverFilters.dataInicio) {
-          query.data_recebimento = { ...query.data_recebimento, $gte: serverFilters.dataInicio };
-        }
-        if (serverFilters.dataFim) {
-          query.data_recebimento = { ...query.data_recebimento, $lte: serverFilters.dataFim };
-        }
+  // Load secondary data on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const [aeroportosData, empresasData] = await Promise.all([
+          empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
+          Empresa.list()
+        ]);
+        const angolan = aeroportosData.filter(a => a.pais === 'AO');
+        setAeroportosAngola(angolan);
+        setAeroportos(getAeroportosPermitidos(user, angolan, user?.empresa_id));
+        setEmpresas(empresasData || []);
+        setSecondaryLoaded(true);
+      } catch (error) {
+        console.error("Erro ao carregar dados de reclamações:", error);
+        setAlertInfo({
+          isOpen: true,
+          type: 'error',
+          title: 'Erro de Carregamento',
+          message: 'Erro ao carregar dados. Tente recarregar a página.'
+        });
       }
-
-      const hasFilters = Object.keys(query).length > 0;
-      const reclamacaoPromise = hasFilters
-        ? Reclamacao.filter(query, '-data_recebimento')
-        : Reclamacao.list('-data_recebimento');
-
-      const [reclamacoesData, aeroportosData, empresasData] = await Promise.all([
-        reclamacaoPromise,
-        empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
-        Empresa.list()
-      ]);
-
-      const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-
-      // FILTRO CRÍTICO: Filtrar reclamações por aeroportos do utilizador (empresa-based)
-      const reclamacoesFiltradas = filtrarDadosPorAcesso(user, reclamacoesData, 'aeroporto_id', aeroportosAngola);
-
-      const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosAngola, user?.empresa_id);
-      setReclamacoes(reclamacoesFiltradas);
-      setAeroportos(aeroportosFiltrados);
-      setEmpresas(empresasData || []);
-
-    } catch (error) {
-      console.error("Erro ao carregar dados de reclamações:", error);
-      setAlertInfo({
-        isOpen: true,
-        type: 'error',
-        title: 'Erro de Carregamento',
-        message: 'Erro ao carregar dados. Tente recarregar a página.'
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    })();
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const loadData = useCallback(async (serverFilters) => {
+    if (!serverFilters) {
+      // No filters: just invalidate the query cache
+      setSearchOverride(null);
+      queryClient.invalidateQueries({ queryKey: ['reclamacoes', empId] });
+      return;
+    }
+
+    // With server-side filters: perform a manual filtered fetch
+    setIsBuscando(true);
+    try {
+      const query = {};
+      if (empId) query.empresa_id = empId;
+      if (serverFilters.status && serverFilters.status !== 'todos') query.status = serverFilters.status;
+      if (serverFilters.areaResponsavel && serverFilters.areaResponsavel !== 'todos') query.area_responsavel = serverFilters.areaResponsavel;
+      if (serverFilters.aeroporto && serverFilters.aeroporto !== 'todos') query.aeroporto_id = serverFilters.aeroporto;
+      if (serverFilters.prioridade && serverFilters.prioridade !== 'todos') query.prioridade = serverFilters.prioridade;
+      if (serverFilters.dataInicio) query.data_recebimento = { ...query.data_recebimento, $gte: serverFilters.dataInicio };
+      if (serverFilters.dataFim) query.data_recebimento = { ...query.data_recebimento, $lte: serverFilters.dataFim };
+
+      const hasFilters = Object.keys(query).length > 0;
+      const reclamacoesData = hasFilters
+        ? await Reclamacao.filter(query, '-data_recebimento')
+        : await Reclamacao.list('-data_recebimento');
+
+      const filtradas = filtrarDadosPorAcesso(user, reclamacoesData, 'aeroporto_id', aeroportosAngola);
+      setSearchOverride(filtradas);
+    } catch (error) {
+      console.error("Erro ao buscar reclamações:", error);
+    } finally {
+      setIsBuscando(false);
+    }
+  }, [empId, queryClient, user, aeroportosAngola]);
 
   const showSuccess = useCallback((title, message, details = []) => {
     setSuccessInfo({ isOpen: true, title, message, details });
@@ -184,12 +198,7 @@ export default function Reclamacoes() {
   }, []);
 
   const handleBuscar = useCallback(async () => {
-    setIsBuscando(true);
-    try {
-      await loadData(filtros);
-    } finally {
-      setIsBuscando(false);
-    }
+    await loadData(filtros);
   }, [loadData, filtros]);
 
   // Client-side: only text search (busca) since it needs OR across multiple columns
@@ -357,7 +366,7 @@ export default function Reclamacoes() {
   }, [reclamacoes, selectedReclamacoes, filteredReclamacoes, aeroportos, showSuccess]);
 
   const handleExportPDF = useCallback(async () => {
-    setIsLoading(true);
+    setIsProcessing(true);
     try {
       const reclamacoesToExport = selectedReclamacoes.length > 0 ?
         reclamacoes.filter(r => selectedReclamacoes.includes(r.id)) :
@@ -370,7 +379,7 @@ export default function Reclamacoes() {
           title: 'Nenhuma Reclamação',
           message: 'Não há reclamações para exportar.'
         });
-        setIsLoading(false);
+        setIsProcessing(false);
         return;
       }
 
@@ -433,9 +442,9 @@ export default function Reclamacoes() {
         message: `Ocorreu um erro ao gerar o relatório PDF: ${error.message || ''}`
       });
     } finally {
-      setIsLoading(false);
+      setIsProcessing(false);
     }
-  }, [reclamacoes, selectedReclamacoes, filteredReclamacoes, aeroportos, showSuccess, setIsLoading, setAlertInfo, user, empresas]);
+  }, [reclamacoes, selectedReclamacoes, filteredReclamacoes, aeroportos, showSuccess, setIsProcessing, setAlertInfo, user, empresas]);
 
   const handleSendEmail = useCallback(async (recipient, subject) => {
     try {
@@ -556,9 +565,9 @@ export default function Reclamacoes() {
       dataInicio: '',
       dataFim: ''
     });
-    setIsBuscando(true);
-    loadData().finally(() => setIsBuscando(false));
-  }, [loadData]);
+    setSearchOverride(null);
+    queryClient.invalidateQueries({ queryKey: ['reclamacoes', empId] });
+  }, [empId, queryClient]);
 
   const aeroportoOptions = useMemo(() => {
     const permitidos = getAeroportosPermitidos(user, aeroportos, user?.empresa_id);
@@ -608,7 +617,7 @@ export default function Reclamacoes() {
                         setAlertInfo({ isOpen: true, type: 'warning', title: 'Seleção Vazia', message: 'Selecione pelo menos uma reclamação para classificar.' });
                         return;
                       }
-                      setIsLoading(true);
+                      setIsProcessing(true);
                       try {
                         let classificadas = 0;
                         for (const recId of selectedReclamacoes) {
@@ -630,10 +639,10 @@ export default function Reclamacoes() {
                       } catch (error) {
                         setAlertInfo({ isOpen: true, type: 'error', title: 'Erro', message: 'Erro ao classificar reclamações.' });
                       } finally {
-                        setIsLoading(false);
+                        setIsProcessing(false);
                       }
                     }}
-                    disabled={selectedReclamacoes.length === 0 || isLoading}
+                    disabled={selectedReclamacoes.length === 0 || isLoading || isProcessing}
                     className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
