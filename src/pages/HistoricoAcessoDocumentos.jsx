@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,9 +51,14 @@ export default function HistoricoAcessoDocumentos() {
     }
   };
 
+  const documentoMap = useMemo(() => {
+    const map = new Map();
+    documentos.forEach(d => map.set(d.id, d.titulo || d.nome || d.id));
+    return map;
+  }, [documentos]);
+
   const getDocumentoNome = (docId) => {
-    const doc = documentos.find(d => d.id === docId);
-    return doc?.titulo || t('historico.documento_removido');
+    return documentoMap.get(docId) || t('historico.documento_removido');
   };
 
   const handleSort = (field) => {
@@ -65,16 +70,16 @@ export default function HistoricoAcessoDocumentos() {
     }
   };
 
-  const filteredLogs = logs
+  const filteredLogs = useMemo(() => logs
     .filter(log => {
-      const matchesSearch = 
+      const matchesSearch =
         log.usuario_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.usuario_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         getDocumentoNome(log.documento_id).toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesTipo = tipoFilter === 'todos' || log.tipo_acesso === tipoFilter;
       const matchesDocumento = documentoFilter === 'todos' || log.documento_id === documentoFilter;
-      
+
       let matchesData = true;
       if (dataInicio && dataFim) {
         const logDate = new Date(log.data_hora_acesso);
@@ -105,7 +110,7 @@ export default function HistoricoAcessoDocumentos() {
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
-    });
+    }), [logs, searchTerm, tipoFilter, documentoFilter, dataInicio, dataFim, sortField, sortDirection, documentoMap]);
 
   const stats = {
     total: logs.length,

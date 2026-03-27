@@ -52,8 +52,10 @@ const DocumentosVooModal = React.lazy(() => import('../components/operacoes/Docu
 const UploadMultiplosDocumentosModal = React.lazy(() => import('../components/operacoes/UploadMultiplosDocumentosModal'));
 const FIDSPanel = React.lazy(() => import('../components/operacoes/FIDSPanel'));
 
+const fmtAOA = new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' });
 const formatCurrency = (value, currency = 'AOA') => {
-  return new Intl.NumberFormat('pt-AO', { style: 'currency', currency: currency }).format(value || 0);
+  if (currency === 'AOA') return fmtAOA.format(value || 0);
+  return new Intl.NumberFormat('pt-AO', { style: 'currency', currency }).format(value || 0);
 };
 
 // Helper: filtra tarifas por empresa_id
