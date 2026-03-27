@@ -1,15 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, FileDown, Settings, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Credenciamento as CredenciamentoEntity } from '@/entities/Credenciamento';
 import { Empresa } from '@/entities/Empresa';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { AreaAcesso } from '@/entities/AreaAcesso';
 import { useAuth } from '@/lib/AuthContext';
+import { useCredenciamentos } from '@/hooks/useCredenciamentos';
 
 import CredenciamentoStats from '../components/credenciamento/CredenciamentoStats';
 import CredenciamentoList from '../components/credenciamento/CredenciamentoList';
@@ -24,11 +26,11 @@ import { useI18n } from '@/components/lib/i18n';
 export default function Credenciamento() {
   const { t } = useI18n();
   const { user: currentUser } = useAuth();
-  const [credenciamentos, setCredenciamentos] = useState([]);
+  const queryClient = useQueryClient();
   const [empresas, setEmpresas] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [areasAcesso, setAreasAcesso] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [secondaryLoading, setSecondaryLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCredenciamento, setEditingCredenciamento] = useState(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -37,178 +39,130 @@ export default function Credenciamento() {
   const [errorMessage, setErrorMessage] = useState('');
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, title: '', message: '' });
 
-  const loadMinimalDataForCompanyManager = async () => {
-    try {
-      // Dados mínimos hardcoded para funcionar
-      setCredenciamentos([]);
-      setEmpresas([]);
-      setAeroportos([
-        { codigo_icao: 'FNLU', nome: 'Aeroporto Internacional 4 de Fevereiro - Luanda', pais: 'AO' },
-        { codigo_icao: 'FNUB', nome: 'Aeroporto de Cabinda', pais: 'AO' },
-        { codigo_icao: 'FNHU', nome: 'Aeroporto de Huambo', pais: 'AO' }
-      ]);
-      setAreasAcesso([
-        { id: '1', nome: 'Terminal de Passageiros', status: 'ativo' },
-        { id: '2', nome: 'Área de Carga', status: 'ativo' },
-        { id: '3', nome: 'Pista', status: 'ativo' }
-      ]);
-    } catch (error) {
-      console.error('Erro ao carregar dados mínimos:', error);
-    }
-  };
+  // Pagination state (internal users only)
+  const PAGE_SIZE = 50;
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const loadDataForCompanyManagerSafe = async (user) => {
-    // Inicializar com arrays vazios para evitar erros
-    let credenciamentosData = [];
-    let aeroportosData = [];
-    let areasData = [];
-    let empresasData = [];
+  const isGestorEmpresa = hasUserProfile(currentUser, 'gestor_empresa');
 
-    // Tentar carregar credenciamentos, mas não falhar se der erro
-    if (user.empresa_id) {
-      try {
-        // Server-side filter by empresa_solicitante_id
-        credenciamentosData = await CredenciamentoEntity.filter({ empresa_solicitante_id: user.empresa_id }, '-data_solicitacao');
-        credenciamentosData = credenciamentosData || [];
-      } catch (credError) {
-        console.warn('Erro ao carregar credenciamentos:', credError);
-        credenciamentosData = [];
-      }
-    }
+  // Primary data via useQuery
+  const {
+    data: credResult,
+    isLoading: credLoading,
+  } = useCredenciamentos({
+    empresaId: currentUser?.empresa_id,
+    isGestorEmpresa,
+    page: currentPage,
+    pageSize: PAGE_SIZE,
+  });
 
-    // Tentar carregar aeroportos com fallback
-    try {
-      aeroportosData = await (user.empresa_id ? Aeroporto.filter({ empresa_id: user.empresa_id }) : Aeroporto.list());
-      aeroportosData = aeroportosData.filter(a => a.pais === 'AO');
-    } catch (aerError) {
-      console.warn('❌ Erro ao carregar aeroportos, usando fallback:', aerError);
-      aeroportosData = [
-        { codigo_icao: 'FNLU', nome: 'Aeroporto Internacional 4 de Fevereiro - Luanda', pais: 'AO' },
-        { codigo_icao: 'FNUB', nome: 'Aeroporto de Cabinda', pais: 'AO' },
-        { codigo_icao: 'FNHU', nome: 'Aeroporto de Huambo', pais: 'AO' }
-      ];
-    }
+  const credenciamentos = credResult?.data ?? [];
+  const totalPages = credResult?.totalPages ?? 1;
+  const totalRegistos = credResult?.total ?? 0;
+  const isLoading = credLoading || secondaryLoading;
 
-    // Tentar carregar áreas com fallback
-    try {
-      areasData = await AreaAcesso.list();
-    } catch (areasError) {
-      console.warn('❌ Erro ao carregar áreas, usando fallback:', areasError);
-      areasData = [
-        { id: '1', nome: 'Terminal de Passageiros', status: 'ativo' },
-        { id: '2', nome: 'Área de Carga', status: 'ativo' },
-        { id: '3', nome: 'Pista', status: 'ativo' }
-      ];
-    }
-
-    // Tentar carregar empresa do utilizador
-    if (user.empresa_id) {
-      try {
-        const empresaData = await Empresa.get(user.empresa_id);
-        empresasData = empresaData ? [empresaData] : [];
-      } catch (empresaError) {
-        console.warn('Erro ao carregar empresa:', empresaError);
-        // Criar empresa fictícia para não quebrar o sistema
-        empresasData = [{
-          id: user.empresa_id,
-          nome: 'Minha Empresa',
-          email_principal: user.email || 'empresa@exemplo.com',
-          responsavel_nome: user.full_name || 'Responsável',
-          responsavel_email: user.email || 'responsavel@exemplo.com'
-        }];
-      }
-    }
-
-    // Definir os dados carregados
-    setCredenciamentos(credenciamentosData);
-    setAeroportos(aeroportosData);
-    setAreasAcesso(areasData);
-    setEmpresas(empresasData);
-    
-  };
-
-  const loadDataForInternalUser = async (user) => {
-
-    const [credenciamentosData, empresasData, aeroportosData, areasAcessoData] = await Promise.all([
-      CredenciamentoEntity.list('-data_solicitacao'),
-      Empresa.list(),
-      user?.empresa_id ? Aeroporto.filter({ empresa_id: user.empresa_id }) : Aeroporto.list(),
-      AreaAcesso.list()
-    ]);
-
-    setCredenciamentos(credenciamentosData);
-    setEmpresas(empresasData);
-    setAeroportos(aeroportosData.filter(a => a.pais === 'AO'));
-    setAreasAcesso(areasAcessoData);
-    
-  };
-
+  // Secondary data loading (aeroportos, empresas, areas)
   useEffect(() => {
-    const loadInitialData = async () => {
-      setIsLoading(true);
+    let cancelled = false;
+    const loadSecondary = async () => {
+      setSecondaryLoading(true);
       setHasError(false);
       setErrorMessage('');
-      
-      try {
-        // Se for gestor de empresa, usar estratégia especial
-        if (hasUserProfile(currentUser, 'gestor_empresa')) {
-          await loadDataForCompanyManagerSafe(currentUser);
-        } else {
-          await loadDataForInternalUser(currentUser);
+
+      if (isGestorEmpresa) {
+        // Gestor empresa: load with fallbacks
+        let aeroportosData = [];
+        let areasData = [];
+        let empresasData = [];
+
+        try {
+          aeroportosData = await (currentUser.empresa_id ? Aeroporto.filter({ empresa_id: currentUser.empresa_id }) : Aeroporto.list());
+          aeroportosData = aeroportosData.filter(a => a.pais === 'AO');
+        } catch (aerError) {
+          console.warn('Erro ao carregar aeroportos, usando fallback:', aerError);
+          aeroportosData = [
+            { codigo_icao: 'FNLU', nome: 'Aeroporto Internacional 4 de Fevereiro - Luanda', pais: 'AO' },
+            { codigo_icao: 'FNUB', nome: 'Aeroporto de Cabinda', pais: 'AO' },
+            { codigo_icao: 'FNHU', nome: 'Aeroporto de Huambo', pais: 'AO' }
+          ];
         }
 
-      } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-        setHasError(true);
-        if (error.message && error.message.includes('403')) {
-          setErrorMessage('Acesso negado. A sua conta de gestor de empresa tem permissões limitadas. Algumas funcionalidades podem não estar disponíveis.');
-          // Para gestor de empresa, ainda assim tentar carregar o mínimo necessário
-          await loadMinimalDataForCompanyManager();
-        } else if (error.response?.status === 403) { // New, more robust check for 403
-          setErrorMessage('Acesso negado. Você não tem permissão para visualizar alguns dados. Entre em contacto com o administrador se necessário.');
-          // Tentar carregar dados mínimos
-          await loadMinimalDataForCompanyManager();
-        } else {
-          setErrorMessage('Não foi possível carregar os dados. Verifique a sua conexão ou tente novamente mais tarde.');
+        try {
+          areasData = await AreaAcesso.list();
+        } catch (areasError) {
+          console.warn('Erro ao carregar areas, usando fallback:', areasError);
+          areasData = [
+            { id: '1', nome: 'Terminal de Passageiros', status: 'ativo' },
+            { id: '2', nome: 'Área de Carga', status: 'ativo' },
+            { id: '3', nome: 'Pista', status: 'ativo' }
+          ];
         }
-      } finally {
-        setIsLoading(false);
+
+        if (currentUser.empresa_id) {
+          try {
+            const empresaData = await Empresa.get(currentUser.empresa_id);
+            empresasData = empresaData ? [empresaData] : [];
+          } catch (empresaError) {
+            console.warn('Erro ao carregar empresa:', empresaError);
+            empresasData = [{
+              id: currentUser.empresa_id,
+              nome: 'Minha Empresa',
+              email_principal: currentUser.email || 'empresa@exemplo.com',
+              responsavel_nome: currentUser.full_name || 'Responsavel',
+              responsavel_email: currentUser.email || 'responsavel@exemplo.com'
+            }];
+          }
+        }
+
+        if (!cancelled) {
+          setAeroportos(aeroportosData);
+          setAreasAcesso(areasData);
+          setEmpresas(empresasData);
+        }
+      } else {
+        // Internal user
+        try {
+          const [empresasData, aeroportosData, areasAcessoData] = await Promise.all([
+            Empresa.list(),
+            currentUser?.empresa_id ? Aeroporto.filter({ empresa_id: currentUser.empresa_id }) : Aeroporto.list(),
+            AreaAcesso.list()
+          ]);
+
+          if (!cancelled) {
+            setEmpresas(empresasData);
+            setAeroportos(aeroportosData.filter(a => a.pais === 'AO'));
+            setAreasAcesso(areasAcessoData);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados:', error);
+          if (!cancelled) {
+            setHasError(true);
+            if (error.message?.includes('403') || error.response?.status === 403) {
+              setErrorMessage('Acesso negado. Algumas funcionalidades podem nao estar disponiveis.');
+            } else {
+              setErrorMessage('Nao foi possivel carregar os dados. Verifique a sua conexao ou tente novamente mais tarde.');
+            }
+          }
+        }
       }
+
+      if (!cancelled) setSecondaryLoading(false);
     };
 
-    loadInitialData();
-  }, []); // Empty dependency array as loadInitialData is defined inside
+    loadSecondary();
+    return () => { cancelled = true; };
+  }, []);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    setHasError(false);
-    setErrorMessage('');
-    
-    try {
-      // Se for gestor de empresa, usar estratégia especial
-      if (hasUserProfile(currentUser, 'gestor_empresa')) {
-        await loadDataForCompanyManagerSafe(currentUser);
-      } else {
-        await loadDataForInternalUser();
-      }
-
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      setHasError(true);
-      if (error.message && error.message.includes('403')) {
-        setErrorMessage('Acesso negado. A sua conta de gestor de empresa tem permissões limitadas. Algumas funcionalidades podem não estar disponíveis.');
-        // Para gestor de empresa, ainda assim tentar carregar o mínimo necessário
-        await loadMinimalDataForCompanyManager();
-      } else if (error.response?.status === 403) { // New, more robust check for 403
-        setErrorMessage('Acesso negado. Você não tem permissão para visualizar alguns dados. Entre em contacto com o administrador se necessário.');
-        // Tentar carregar dados mínimos
-        await loadMinimalDataForCompanyManager();
-      } else {
-        setErrorMessage('Não foi possível carregar os dados. Verifique a sua conexão ou tente novamente mais tarde.');
-      }
-    } finally {
-      setIsLoading(false);
+  const loadData = useCallback((page) => {
+    if (page && page !== currentPage) {
+      setCurrentPage(page);
     }
+    queryClient.invalidateQueries({ queryKey: ['credenciamentos'] });
+  }, [queryClient, currentPage]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
   };
 
   const handleFormSubmit = async (formData) => {
@@ -232,7 +186,7 @@ export default function Credenciamento() {
 
       setIsFormOpen(false);
       setEditingCredenciamento(null);
-      loadData();
+      loadData(1);
     } catch (error) {
       console.error('Erro ao salvar credenciamento:', error);
       setAlertInfo({ 
@@ -310,8 +264,6 @@ export default function Credenciamento() {
     return aeroporto ? aeroporto.nome : aeroportoId || 'N/A';
   };
 
-  const isGestorEmpresa = hasUserProfile(currentUser, 'gestor_empresa');
-
   return (
     <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -362,7 +314,7 @@ export default function Credenciamento() {
           </TabsList>
           
           <TabsContent value="credenciamentos" className="space-y-6">
-            <CredenciamentoList 
+            <CredenciamentoList
               credenciamentos={credenciamentos}
               empresas={empresas}
               aeroportos={aeroportos}
@@ -370,6 +322,32 @@ export default function Credenciamento() {
               onEdit={handleEdit}
               currentUser={currentUser}
             />
+            {/* Pagination (internal users) */}
+            {!isGestorEmpresa && totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {t('common.pagina') || 'Pagina'} {currentPage} {t('common.de') || 'de'} {totalPages} ({totalRegistos} {t('common.registos') || 'registos'})
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                  >
+                    {t('common.anterior') || 'Anterior'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
+                  >
+                    {t('common.seguinte') || 'Seguinte'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {!isGestorEmpresa && (

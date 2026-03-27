@@ -15,6 +15,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { TipoAuditoria } from '@/entities/TipoAuditoria';
 import { ItemAuditoria } from '@/entities/ItemAuditoria';
@@ -30,6 +31,7 @@ import { useCompanyView } from '@/lib/CompanyViewContext';
 import { Empresa } from '@/entities/Empresa';
 import { useI18n } from '@/components/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
+import { useProcessosAuditoria } from '@/hooks/useProcessosAuditoria';
 
 import FormProcessoAuditoria from '../components/auditoria/FormProcessoAuditoria';
 import ConfiguracaoAuditoria from '../components/auditoria/ConfiguracaoAuditoria';
@@ -87,14 +89,15 @@ export default function Auditoria() {
   const { user } = useAuth();
   const currentUser = ensureUserProfilesExist(user);
 
+  const queryClient = useQueryClient();
+
   // --- Shared data state ---
   const [tiposAuditoria, setTiposAuditoria] = useState([]);
-  const [processosAuditoria, setProcessosAuditoria] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [users, setUsers] = useState([]);
   const [pacs, setPacs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [secondaryLoading, setSecondaryLoading] = useState(true);
 
   // --- UI state ---
   const [activeTab, setActiveTab] = useState('processos');
@@ -141,60 +144,76 @@ export default function Auditoria() {
     return getAeroportosPermitidos(currentUser, aeroportos, effectiveEmpresaId);
   }, [aeroportos, currentUser, effectiveEmpresaId]);
 
-  // --- Data loading ---
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const isAdmin = isAdminProfile(currentUser);
-      setGestaoPermission(isAdmin);
+  // --- Primary data via useQuery ---
+  const empId = effectiveEmpresaId || currentUser?.empresa_id;
+  const {
+    data: rawProcessos,
+    isLoading: processosLoading,
+  } = useProcessosAuditoria({ empresaId: empId });
 
-      const empId = effectiveEmpresaId || currentUser?.empresa_id;
-      const processoPromise = empId
-        ? ProcessoAuditoria.filter({ empresa_id: empId }, '-data_auditoria')
-        : ProcessoAuditoria.list('-data_auditoria');
+  // Search override: when user runs handleBuscar, these override the query data
+  const [searchProcessos, setSearchProcessos] = useState(null);
 
-      const [tiposData, processosData, aeroportosData, usersData, pacsData, , , empresasData] = await Promise.all([
-        TipoAuditoria.list(),
-        processoPromise,
-        Aeroporto.filter({ pais: 'AO' }),
-        empId ? User.filter({ empresa_id: empId }) : User.list(),
-        PlanoAcaoCorretiva.list('-data_criacao'),
-        ItemAuditoria.list(),
-        ItemPAC.list(),
-        Empresa.list()
-      ]);
+  // Filtered processos based on user access
+  const processosAuditoria = useMemo(() => {
+    const source = searchProcessos !== null ? searchProcessos : (rawProcessos || []);
+    return filtrarDadosPorAcesso(user, source, 'aeroporto_id', aeroportos || [], effectiveEmpresaId);
+  }, [rawProcessos, searchProcessos, user, aeroportos, effectiveEmpresaId]);
 
-      const processosFiltrados = filtrarDadosPorAcesso(user, processosData || [], 'aeroporto_id', aeroportosData || [], effectiveEmpresaId);
-      const pacsFiltrados = filtrarDadosPorAcesso(user, pacsData || [], 'aeroporto_id', aeroportosData || [], effectiveEmpresaId);
+  const isLoading = processosLoading || secondaryLoading;
 
-      setProcessosAuditoria(processosFiltrados);
-      setTiposAuditoria(tiposData || []);
-      setAeroportos(aeroportosData || []);
-      setPacs(pacsFiltrados);
-      setUsers(usersData || []);
-      setEmpresas(empresasData || []);
-    } catch (error) {
-      console.error('Erro ao carregar dados ou verificar usuário:', error);
-      setGestaoPermission(false);
-      setProcessosAuditoria([]);
-      setAeroportos([]);
-      setTiposAuditoria([]);
-      setUsers([]);
-      setPacs([]);
-      setAlertInfo({
-        isOpen: true,
-        type: 'error',
-        title: t('auditoria.erroCarregamento'),
-        message: t('auditoria.erroCarregamentoDesc')
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
+  // --- Secondary data loading ---
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let cancelled = false;
+    (async () => {
+      setSecondaryLoading(true);
+      try {
+        const isAdmin = isAdminProfile(currentUser);
+        setGestaoPermission(isAdmin);
+
+        const [tiposData, aeroportosData, usersData, pacsData, , , empresasData] = await Promise.all([
+          TipoAuditoria.list(),
+          Aeroporto.filter({ pais: 'AO' }),
+          empId ? User.filter({ empresa_id: empId }) : User.list(),
+          PlanoAcaoCorretiva.list('-data_criacao'),
+          ItemAuditoria.list(),
+          ItemPAC.list(),
+          Empresa.list()
+        ]);
+
+        if (!cancelled) {
+          setTiposAuditoria(tiposData || []);
+          setAeroportos(aeroportosData || []);
+          setUsers(usersData || []);
+          const pacsFiltrados = filtrarDadosPorAcesso(user, pacsData || [], 'aeroporto_id', aeroportosData || [], effectiveEmpresaId);
+          setPacs(pacsFiltrados);
+          setEmpresas(empresasData || []);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados ou verificar usuário:', error);
+        if (!cancelled) {
+          setGestaoPermission(false);
+          setAeroportos([]);
+          setTiposAuditoria([]);
+          setUsers([]);
+          setPacs([]);
+          setAlertInfo({
+            isOpen: true,
+            type: 'error',
+            title: t('auditoria.erroCarregamento'),
+            message: t('auditoria.erroCarregamentoDesc')
+          });
+        }
+      } finally {
+        if (!cancelled) setSecondaryLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [empId]);
+
+  const loadData = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['processosAuditoria'] });
+  }, [queryClient]);
 
   // --- Search / filter ---
   const handleBuscar = async () => {
@@ -213,8 +232,7 @@ export default function Auditoria() {
         Object.keys(queryProcesso).length > 0 ? queryProcesso : {},
         '-data_auditoria'
       );
-      const processosFiltrados = filtrarDadosPorAcesso(currentUser, processosData || [], 'aeroporto_id', aeroportos || [], effectiveEmpresaId);
-      setProcessosAuditoria(processosFiltrados);
+      setSearchProcessos(processosData || []);
 
       const queryPAC = {};
       if (empId) queryPAC.empresa_id = empId;
@@ -245,6 +263,7 @@ export default function Auditoria() {
       responsavel: ''
     });
     setAlertInfo({ isOpen: false, type: 'info', title: '', message: '' });
+    setSearchProcessos(null);
     loadData();
   };
 

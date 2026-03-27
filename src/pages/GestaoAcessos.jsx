@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Users, MailCheck, User } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { SolicitacaoAcesso } from '@/entities/SolicitacaoAcesso';
 import { User as UserEntity } from '@/entities/User';
@@ -13,6 +14,7 @@ import { useCompanyView } from '@/lib/CompanyViewContext';
 import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/components/lib/i18n';
 import { supabase } from '@/lib/supabaseClient';
+import { useGestaoAcessos } from '@/hooks/useGestaoAcessos';
 
 import AprovarAcessoModal from '../components/gestao/AprovarAcessoModal';
 import EditUserModal from '../components/gestao/EditUserModal';
@@ -48,71 +50,71 @@ const STATUS_CONFIG = {
 export default function GestaoAcessos() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
+  const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = useState(null);
-  const [solicitacoes, setSolicitacoes] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [currentUserLoading, setCurrentUserLoading] = useState(true);
   const [aeroportos, setAeroportos] = useState([]);
   const [empresas, setEmpresas] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   const [sendingInvite, setSendingInvite] = useState(null);
   const [sendingBatch, setSendingBatch] = useState(false);
 
   const modals = useGestaoModals();
 
-  // Define loadData here using useCallback
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const user = await UserEntity.me();
-      setCurrentUser(user);
-
-      if (!user || !isAdminProfile(user)) {
-        setIsLoading(false);
-        return;
+  // Fetch currentUser first
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const user = await UserEntity.me();
+        if (!cancelled) setCurrentUser(user);
+      } catch (error) {
+        console.error('Erro ao carregar utilizador:', error);
+      } finally {
+        if (!cancelled) setCurrentUserLoading(false);
       }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
-      // Server-side filter solicitacoes by empresa when CompanyView is active
-      const solicitacaoPromise = effectiveEmpresaId
-        ? SolicitacaoAcesso.filter({ empresa_solicitante_id: effectiveEmpresaId }, '-created_date')
-        : SolicitacaoAcesso.list('-created_date');
+  const isAdmin = currentUser && isAdminProfile(currentUser);
 
-      const empId = effectiveEmpresaId || user.empresa_id;
-      const [solicitacoesData, usersData, aeroportosData, empresasData] = await Promise.all([
-        solicitacaoPromise,
-        empId ? UserEntity.filter({ empresa_id: empId }) : UserEntity.list(),
-        (effectiveEmpresaId || user.empresa_id) ? Aeroporto.filter({ empresa_id: effectiveEmpresaId || user.empresa_id }) : Aeroporto.list(),
-        Empresa.list(),
-      ]);
+  // Primary data via useQuery
+  const {
+    data: primaryData,
+    isLoading: primaryLoading,
+    refetch: refetchPrimary,
+  } = useGestaoAcessos({
+    empresaId: effectiveEmpresaId,
+    currentUser,
+    enabled: !!isAdmin,
+  });
 
-      const allAeroportos = aeroportosData.filter(a => a.pais === 'AO') || [];
-      setAeroportos(allAeroportos);
-      setEmpresas(empresasData || []);
+  const solicitacoes = primaryData?.solicitacoes ?? [];
+  const users = primaryData?.users ?? [];
+  const isLoading = currentUserLoading || primaryLoading;
 
-      // Filtrar utilizadores válidos
-      let validUsers = (usersData || []).filter(u => u && u.id && u.email);
-      let filteredSolicitacoes = solicitacoesData || [];
-
-      // Filtrar utilizadores por empresa quando CompanyView está ativo
-      if (effectiveEmpresaId) {
-        const solicitacaoUserIds = new Set(filteredSolicitacoes.map(s => s.user_id).filter(Boolean));
-        const solicitacaoEmails = new Set(filteredSolicitacoes.map(s => s.email?.toLowerCase()).filter(Boolean));
-        validUsers = validUsers.filter(u =>
-          u.empresa_id === effectiveEmpresaId ||
-          solicitacaoUserIds.has(u.id) ||
-          solicitacaoEmails.has(u.email?.toLowerCase())
-        );
+  // Secondary data: Aeroportos + Empresas (leave as useEffect)
+  useEffect(() => {
+    if (!isAdmin) return;
+    (async () => {
+      try {
+        const empId = effectiveEmpresaId || currentUser?.empresa_id;
+        const [aeroportosData, empresasData] = await Promise.all([
+          empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
+          Empresa.list(),
+        ]);
+        setAeroportos((aeroportosData || []).filter(a => a.pais === 'AO'));
+        setEmpresas(empresasData || []);
+      } catch (error) {
+        console.error('Erro ao carregar dados secundários:', error);
       }
+    })();
+  }, [isAdmin, effectiveEmpresaId, currentUser?.empresa_id]);
 
-      setSolicitacoes(filteredSolicitacoes);
-      setUsers(validUsers);
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      modals.showAlert('error', 'Erro', 'Erro ao carregar dados. Tente novamente.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [effectiveEmpresaId, modals.showAlert]);
+  const invalidateAndRefetch = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['gestaoAcessos'] });
+  }, [queryClient]);
 
   const getAeroportoNome = useCallback((idOuIcao) => {
     if (!idOuIcao) return null;
@@ -194,10 +196,6 @@ export default function GestaoAcessos() {
       novasSolicitacoesMes
     };
   }, [users, solicitacoes, aeroportos, getEmpresaNome]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   // --- Handlers ---
 
@@ -290,7 +288,7 @@ export default function GestaoAcessos() {
 
       modals.closeAprovarModal();
       modals.showAlert('success', 'Acesso Concedido', 'O utilizador foi aprovado e notificado por e-mail. As suas permissões estão ativas.');
-      loadData();
+      invalidateAndRefetch();
     } catch (error) {
       console.error('Erro ao aprovar solicitação:', error);
       modals.showAlert('error', 'Erro ao Aprovar', `Ocorreu um erro: ${error.message}`);
@@ -324,7 +322,7 @@ export default function GestaoAcessos() {
 
       modals.closeRejeitarModal();
       modals.showAlert('success', 'Solicitação Rejeitada', 'A solicitação foi rejeitada e o utilizador notificado por e-mail.');
-      loadData();
+      invalidateAndRefetch();
     } catch (error) {
       console.error('Erro ao rejeitar solicitação:', error);
       modals.showAlert('error', 'Erro ao Rejeitar', `Ocorreu um erro: ${error.message}`);
@@ -340,12 +338,12 @@ export default function GestaoAcessos() {
     try {
       await SolicitacaoAcesso.delete(solicitacao.id);
       modals.showAlert('success', 'Solicitação Excluída', 'A solicitação foi excluída com sucesso.');
-      loadData();
+      invalidateAndRefetch();
     } catch (error) {
       console.error('Erro ao excluir solicitação:', error);
       if (error.response?.status === 404 || error.message?.includes('404') || error.message?.includes('not found')) {
         modals.showAlert('warning', 'Solicitação Não Encontrada', 'A solicitação que tentou excluir já não existe. A lista será atualizada.');
-        loadData();
+        invalidateAndRefetch();
       } else {
         modals.showAlert('error', 'Erro ao Excluir', `Ocorreu um erro: ${error.message || 'Erro desconhecido'}`);
       }
@@ -356,7 +354,7 @@ export default function GestaoAcessos() {
     try {
       await UserEntity.update(userId, data);
       modals.closeEditUserModal();
-      loadData();
+      invalidateAndRefetch();
       modals.showAlert('success', 'Sucesso', 'Utilizador atualizado com sucesso.');
     } catch (error) {
       console.error('Erro ao salvar utilizador:', error);
@@ -380,7 +378,7 @@ export default function GestaoAcessos() {
       } catch (checkError) {
         if (checkError.response?.status === 404 || checkError.message?.includes('404') || checkError.message?.includes('not found')) {
           modals.showAlert('warning', 'Utilizador Já Excluído', 'Este utilizador já foi excluído do sistema. A lista será atualizada.');
-          loadData();
+          invalidateAndRefetch();
           return;
         }
         console.warn('Erro ao verificar existência do utilizador antes da exclusão:', checkError);
@@ -388,12 +386,12 @@ export default function GestaoAcessos() {
 
       await UserEntity.delete(user.id);
       modals.showAlert('success', 'Utilizador Excluído', 'O utilizador foi excluído com sucesso do sistema.');
-      loadData();
+      invalidateAndRefetch();
     } catch (error) {
       console.error('Erro ao excluir utilizador:', error);
       if (error.response?.status === 404 || error.message?.includes('404') || error.message?.includes('not found')) {
         modals.showAlert('warning', 'Utilizador Não Encontrado', 'O utilizador que tentou excluir já não existe no sistema. A lista será atualizada.');
-        loadData();
+        invalidateAndRefetch();
       } else if (error.response?.status === 403) {
         modals.showAlert('error', 'Sem Permissão', 'Você não tem permissão para excluir este utilizador.');
       } else {
@@ -416,7 +414,7 @@ export default function GestaoAcessos() {
       }
 
       modals.showAlert('success', 'Convite Enviado', `Email de definição de senha enviado para ${user.email}.`);
-      loadData();
+      invalidateAndRefetch();
     } catch (error) {
       console.error('Erro ao enviar convite:', error);
       modals.showAlert('error', 'Erro ao Enviar Convite', `Erro: ${error.message}`);
@@ -465,7 +463,7 @@ export default function GestaoAcessos() {
       'Convites Enviados',
       `${sent} convites enviados com sucesso. ${errors > 0 ? `${errors} erros.` : ''}`
     );
-    loadData();
+    invalidateAndRefetch();
   };
 
   const handleExportUsersCSV = useCallback((filteredUsers) => {
@@ -592,7 +590,7 @@ export default function GestaoAcessos() {
         empresas={empresas}
         onSuccess={() => {
           modals.showAlert('success', 'Utilizador Criado', 'O utilizador foi criado com sucesso e receberá um email para definir a senha.');
-          loadData();
+          invalidateAndRefetch();
         }}
       />
 

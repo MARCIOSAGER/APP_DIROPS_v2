@@ -15,6 +15,7 @@ import { importVooFromFlightAwareCache } from '@/functions/importVooFromFlightAw
 import { useAuth } from '@/lib/AuthContext';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
+import { useCacheFlightAware } from '@/hooks/useCacheFlightAware';
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -245,15 +246,41 @@ export default function FlightAwarePage() {
   const [alert, setAlert] = useState(null);
   const showAlert = (type, message) => setAlert({ type, message });
 
-  // Tab 1: Cache
-  const [cacheLoading, setCacheLoading] = useState(false);
+  // Tab 1: Cache — primary data via useQuery (user-triggered)
+  const [cacheStatusFilter, setCacheStatusFilter] = useState('todos');
+  const [cacheSearchEnabled, setCacheSearchEnabled] = useState(false);
+  const {
+    data: cacheQueryData,
+    isLoading: cacheQueryLoading,
+    refetch: refetchCache,
+  } = useCacheFlightAware({
+    airportIcao,
+    startDate,
+    endDate,
+    statusFilter: cacheStatusFilter,
+    enabled: cacheSearchEnabled,
+  });
+
   const [cachedFlights, setCachedFlights] = useState([]);
   const [cacheStats, setCacheStats] = useState(null);
-  const [cacheStatusFilter, setCacheStatusFilter] = useState('todos');
   const [cacheCompanhiaFilter, setCacheCompanhiaFilter] = useState('todas');
   const [creatingIds, setCreatingIds] = useState(new Set());
   const [bulkCreating, setBulkCreating] = useState(false);
   const [verifyingPending, setVerifyingPending] = useState(false);
+  const [cacheLoading, setCacheLoading] = useState(false);
+
+  // Sync hook data to local state for in-place mutations
+  useEffect(() => {
+    if (cacheQueryData) {
+      setCachedFlights(cacheQueryData);
+      const total = cacheQueryData.length;
+      const importados = cacheQueryData.filter(f => f.status === 'importado' || f.status === 'actualizado').length;
+      const pendentes = cacheQueryData.filter(f => f.status === 'pendente').length;
+      const ignorados = cacheQueryData.filter(f => f.status === 'ignorado').length;
+      setCacheStats({ total, importados, pendentes, ignorados });
+      setCacheLoading(false);
+    }
+  }, [cacheQueryData]);
 
   // Tab 2: API
   const [apiLoading, setApiLoading] = useState(false);
@@ -303,27 +330,12 @@ export default function FlightAwarePage() {
     setCacheLoading(true);
     setAlert(null);
     setCacheCompanhiaFilter('todas');
-    try {
-      const filters = { airport_icao: airportIcao };
-      if (startDate) filters.data_voo = { $gte: startDate };
-      if (endDate) filters.data_voo = { ...filters.data_voo, $lte: endDate };
-      if (cacheStatusFilter !== 'todos') filters.status = cacheStatusFilter;
-
-      const data = await CacheVooFlightAware.filter(filters, '-data_voo');
-      setCachedFlights(data);
-
-      // Stats
-      const total = data.length;
-      const importados = data.filter(f => f.status === 'importado' || f.status === 'actualizado').length;
-      const pendentes = data.filter(f => f.status === 'pendente').length;
-      const ignorados = data.filter(f => f.status === 'ignorado').length;
-      setCacheStats({ total, importados, pendentes, ignorados });
-    } catch (err) {
-      showAlert('error', `Erro ao carregar cache: ${err.message}`);
-    } finally {
-      setCacheLoading(false);
+    if (!cacheSearchEnabled) {
+      setCacheSearchEnabled(true);
+    } else {
+      refetchCache();
     }
-  }, [airportIcao, startDate, endDate, cacheStatusFilter]);
+  }, [cacheSearchEnabled, refetchCache]);
 
   // Create a single voo from FlightAware cache entry
   const createVooFromCache = useCallback(async (cachedFlight) => {

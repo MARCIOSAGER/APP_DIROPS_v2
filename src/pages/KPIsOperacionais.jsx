@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Filter, X, Search, Settings, ClipboardCheck, Download, FileText, Mail, Trash2, AlertTriangle, BarChart3, Brain, FileEdit, Loader2 } from 'lucide-react';
@@ -37,6 +37,8 @@ import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import { useI18n } from '@/components/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { useMedicoesKPI } from '@/hooks/useMedicoesKPI';
 
 const CATEGORIA_COLORS = {
   operacional: 'bg-blue-100 text-blue-800',
@@ -49,11 +51,11 @@ export default function KPIsOperacionais() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const { user: currentUser } = useAuth();
+  const queryClient = useQueryClient();
   const [tiposKPI, setTiposKPI] = useState([]);
-  const [medicoesKPI, setMedicoesKPI] = useState([]); // Changed from medicoes to medicoesKPI
   const [aeroportos, setAeroportos] = useState([]);
   const [companhias, setCompanhias] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [secondaryLoading, setSecondaryLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isDiagnosticoOpen, setIsDiagnosticoOpen] = useState(false);
@@ -83,9 +85,59 @@ export default function KPIsOperacionais() {
     numeroVoo: ''
   });
 
+  // Primary data via useQuery
+  const empId = effectiveEmpresaId || currentUser?.empresa_id;
+  const {
+    data: rawMedicoes,
+    isLoading: medicoesLoading,
+  } = useMedicoesKPI({ empresaId: empId });
+
+  // Filtered medicoes based on user access
+  const medicoesKPI = useMemo(() => {
+    return filtrarDadosPorAcesso(currentUser, rawMedicoes || [], 'aeroporto_id', aeroportos);
+  }, [rawMedicoes, currentUser, aeroportos]);
+
+  const isLoading = medicoesLoading || secondaryLoading;
+
+  // Secondary data loading
   useEffect(() => {
-    loadData();
-  }, [effectiveEmpresaId]);
+    let cancelled = false;
+    (async () => {
+      setSecondaryLoading(true);
+      try {
+        const [tiposData, aeroportosData, companhiasData] = await Promise.all([
+          TipoKPI.list(),
+          empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
+          CompanhiaAerea.list()
+        ]);
+
+        if (!cancelled) {
+          const aeroportosAngola = aeroportosData.filter((a) => a.pais === 'AO');
+          const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosAngola, empId);
+          setAeroportos(aeroportosFiltrados);
+          setTiposKPI(tiposData);
+          setCompanhias(companhiasData);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados dos KPIs:", error);
+        if (!cancelled) {
+          setAlertInfo({
+            isOpen: true,
+            type: 'error',
+            title: 'Erro de Carregamento',
+            message: 'Não foi possível carregar os dados dos KPIs. Tente novamente.'
+          });
+        }
+      } finally {
+        if (!cancelled) setSecondaryLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [empId]);
+
+  const loadData = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['medicoesKPI'] });
+  }, [queryClient]);
 
   useEffect(() => {
     setSelectedMedicoes([]); // Limpar seleção ao mudar os filtros
@@ -98,46 +150,6 @@ export default function KPIsOperacionais() {
     } else {
       setSortField(field);
       setSortDirection('asc'); // Default to ascending when changing field
-    }
-  };
-
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      // Use effectiveEmpresaId (respects company view switch for superadmin)
-      const empId = effectiveEmpresaId || currentUser?.empresa_id;
-      const medicaoPromise = empId
-        ? MedicaoKPI.filter({ empresa_id: empId }, '-data_medicao')
-        : MedicaoKPI.list('-data_medicao');
-
-      const [tiposData, medicoesData, aeroportosData, companhiasData] = await Promise.all([
-      TipoKPI.list(),
-      medicaoPromise,
-      empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
-      CompanhiaAerea.list()]
-      );
-
-      const aeroportosAngola = aeroportosData.filter((a) => a.pais === 'AO');
-
-      // Filtrar aeroportos pelos aeroportos de acesso do utilizador (empresa-based)
-      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosAngola, empId);
-      setAeroportos(aeroportosFiltrados);
-      setTiposKPI(tiposData);
-      setCompanhias(companhiasData);
-
-      // Filtrar medições pelos aeroportos de acesso do utilizador (empresa-based)
-      const medicoesFiltradas = filtrarDadosPorAcesso(currentUser, medicoesData, 'aeroporto_id', aeroportosAngola);
-      setMedicoesKPI(medicoesFiltradas); // Set the filtered measurements
-    } catch (error) {
-      console.error("Erro ao carregar dados dos KPIs:", error);
-      setAlertInfo({
-        isOpen: true,
-        type: 'error',
-        title: 'Erro de Carregamento',
-        message: 'Não foi possível carregar os dados dos KPIs. Tente novamente.'
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
