@@ -14,8 +14,12 @@ import SuccessModal from '@/components/shared/SuccessModal';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { User } from '@/entities/User';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 
 export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhias, aeroportos, voosLigados }) {
+  const { user: currentUser } = useAuth();
+  const { effectiveEmpresaId } = useCompanyView();
   const { t } = useI18n();
   const [voosNaLixeira, setVoosNaLixeira] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -189,8 +193,9 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
   const handleNotificarAdministradores = async () => {
     setIsSendingNotification(true);
     try {
-      // Buscar todos os administradores
-      const users = await User.list();
+      // Buscar administradores da empresa
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
+      const users = empId ? await User.filter({ empresa_id: empId }) : await User.list();
       const admins = users.filter(u => 
         u.role === 'admin' || (u.perfis && u.perfis.includes('administrador'))
       );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, Filter, Plus, RefreshCw, FileDown, FileText, X, Trash2, Download, Pencil, Search, Loader2 } from 'lucide-react';
 import Combobox from '@/components/ui/combobox';
@@ -13,7 +13,7 @@ import SortableTableHeader from '@/components/shared/SortableTableHeader';
 
 import { MovimentoFinanceiro } from '@/entities/MovimentoFinanceiro';
 import { Aeroporto } from '@/entities/Aeroporto';
-import MovimentosFinanceirosChart from '../components/financeiro/MovimentosFinanceirosChart';
+const MovimentosFinanceirosChart = React.lazy(() => import('../components/financeiro/MovimentosFinanceirosChart'));
 import FormMovimentoFinanceiro from '../components/financeiro/FormMovimentoFinanceiro';
 import { downloadAsCSV } from '../components/lib/export';
 import AlertModal from '../components/shared/AlertModal';
@@ -592,7 +592,9 @@ export default function FundoManeio() {
         {/* Gráficos */}
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <MovimentosFinanceirosChart data={chartData} />
+            <Suspense fallback={<div className="h-64 flex items-center justify-center text-sm text-gray-400">Carregando gráfico...</div>}>
+              <MovimentosFinanceirosChart data={chartData} />
+            </Suspense>
           </div>
           <div>
             <RecentMovimentosFinanceiros movimentos={filteredMovimentos.slice(0, 10)} t={t} />

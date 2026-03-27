@@ -301,9 +301,10 @@ export default function GestaoNotificacoes() {
         return;
       }
 
+      const empId = user.empresa_id;
       const [regrasData, usuariosData, aeroportosData, historicoData, placeholdersData, gruposData] = await Promise.all([
         RegraNotificacao.list(),
-        UserEntity.list(),
+        empId ? UserEntity.filter({ empresa_id: empId }) : UserEntity.list(),
         base44.entities.Aeroporto.list(),
         base44.entities.HistoricoNotificacao.list('-created_date', 100),
         base44.entities.Placeholder.filter({ ativo: true }).catch(() => []),

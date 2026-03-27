@@ -30,6 +30,8 @@ import { useI18n } from '@/components/lib/i18n';
 
 import { ConfiguracaoArea } from '@/entities/ConfiguracaoArea';
 import { User } from '@/entities/User';
+import { useAuth } from '@/lib/AuthContext';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 
 const AREAS_DISPONIVEIS = [
   { value: 'manutencao', label: 'Manutenção', icon: '🔧' },
@@ -44,6 +46,8 @@ const AREAS_DISPONIVEIS = [
 
 export default function ConfiguracaoReclamacoes() {
   const { t } = useI18n();
+  const { user: currentUser } = useAuth();
+  const { effectiveEmpresaId } = useCompanyView();
   const [configuracoes, setConfiguracoes] = useState([]);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -85,9 +89,10 @@ export default function ConfiguracaoReclamacoes() {
   const loadData = async () => {
     setIsLoading(true);
     try {
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
       const [configData, usersData] = await Promise.all([
         ConfiguracaoArea.list(),
-        User.list()
+        empId ? User.filter({ empresa_id: empId }) : User.list()
       ]);
       
       setConfiguracoes(configData);

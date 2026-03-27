@@ -5,12 +5,12 @@ describe('queryClientInstance', () => {
   const defaults = queryClientInstance.getDefaultOptions();
 
   describe('default query options', () => {
-    it('has staleTime of 2 minutes', () => {
-      expect(defaults.queries.staleTime).toBe(1000 * 60 * 2);
+    it('has staleTime of 3 minutes', () => {
+      expect(defaults.queries.staleTime).toBe(1000 * 60 * 3);
     });
 
-    it('has gcTime of 10 minutes', () => {
-      expect(defaults.queries.gcTime).toBe(1000 * 60 * 10);
+    it('has gcTime of 15 minutes', () => {
+      expect(defaults.queries.gcTime).toBe(1000 * 60 * 15);
     });
 
     it('has retry set to 2', () => {

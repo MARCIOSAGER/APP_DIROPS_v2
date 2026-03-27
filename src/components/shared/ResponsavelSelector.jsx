@@ -4,6 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { User } from '@/entities/User';
 import { useI18n } from '@/components/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
+import { useCompanyView } from '@/lib/CompanyViewContext';
 
 export default function ResponsavelSelector({
   aeroporto,
@@ -17,18 +19,22 @@ export default function ResponsavelSelector({
   const [usuarios, setUsuarios] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { t } = useI18n();
+  const { user: currentUser } = useAuth();
+  const { effectiveEmpresaId } = useCompanyView();
 
   const displayLabel = label || t('shared.responsavel');
   const displayPlaceholder = placeholder || t('shared.selecionar_responsavel');
   const displayEmptyLabel = emptyLabel || t('shared.nenhum_responsavel');
 
+  const empId = effectiveEmpresaId || currentUser?.empresa_id;
+
   useEffect(() => {
     loadUsuarios();
-  }, []);
+  }, [empId]);
 
   const loadUsuarios = async () => {
     try {
-      const usuariosData = await User.list();
+      const usuariosData = empId ? await User.filter({ empresa_id: empId }) : await User.list();
       const usuariosAtivos = usuariosData.filter(u => u.status === 'ativo');
       setUsuarios(usuariosAtivos);
     } catch (error) {

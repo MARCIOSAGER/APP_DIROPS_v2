@@ -185,7 +185,7 @@ export default function Auditoria() {
       TipoAuditoria.list(),
       processoPromise,
       Aeroporto.filter({ pais: 'AO' }),
-      User.list(),
+      empId ? User.filter({ empresa_id: empId }) : User.list(),
       PlanoAcaoCorretiva.list('-data_criacao'),
       ItemAuditoria.list(),
       ItemPAC.list(),

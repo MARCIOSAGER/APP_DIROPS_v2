@@ -144,9 +144,10 @@ export default function GestaoAcessos() {
         ? SolicitacaoAcesso.filter({ empresa_solicitante_id: effectiveEmpresaId }, '-created_date')
         : SolicitacaoAcesso.list('-created_date');
 
+      const empId = effectiveEmpresaId || user.empresa_id;
       const [solicitacoesData, usersData, aeroportosData, empresasData] = await Promise.all([
         solicitacaoPromise,
-        UserEntity.list(),
+        empId ? UserEntity.filter({ empresa_id: empId }) : UserEntity.list(),
         (effectiveEmpresaId || user.empresa_id) ? Aeroporto.filter({ empresa_id: effectiveEmpresaId || user.empresa_id }) : Aeroporto.list(),
         Empresa.list(),
       ]);

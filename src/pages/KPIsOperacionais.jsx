@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Filter, X, Search, Settings, ClipboardCheck, Download, FileText, Mail, Trash2, AlertTriangle, BarChart3, Brain, FileEdit, Loader2 } from 'lucide-react';
@@ -23,7 +23,7 @@ import ConfiguracaoKPIs from '../components/kpis/ConfiguracaoKPIs';
 import DiagnosticoDuplicacoesModal from '../components/kpis/DiagnosticoDuplicacoesModal';
 import AnalisadorInteligente from '../components/kpis/AnalisadorInteligente';
 import AssistenteRelatorio from '../components/shared/AssistenteRelatorio';
-import DashboardKPIs from '../components/kpis/DashboardKPIs';
+const DashboardKPIs = React.lazy(() => import('../components/kpis/DashboardKPIs'));
 import { downloadAsExcel } from '@/components/lib/export';
 import AlertModal from '@/components/shared/AlertModal';
 import SuccessModal from '@/components/shared/SuccessModal';
@@ -1297,13 +1297,15 @@ Por favor tente novamente ou contacte o suporte técnico.`;
           </TabsContent>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <DashboardKPIs 
-              medicoes={medicoesKPI} 
-              tiposKPI={tiposKPI} 
-              aeroportos={aeroportos}
-              onExportPDF={handleExportPDF}
-              isExporting={isExportingPDF}
-            />
+            <Suspense fallback={<div className="h-64 flex items-center justify-center text-sm text-gray-400">Carregando dashboard...</div>}>
+              <DashboardKPIs
+                medicoes={medicoesKPI}
+                tiposKPI={tiposKPI}
+                aeroportos={aeroportos}
+                onExportPDF={handleExportPDF}
+                isExporting={isExportingPDF}
+              />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="powerbi" className="space-y-6">

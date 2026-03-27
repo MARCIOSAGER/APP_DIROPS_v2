@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +50,7 @@ import EditarFaturaModal from '../components/faturacao/EditarFaturaModal';
 import GerarProformaConsolidadaModal from '../components/faturacao/GerarProformaConsolidadaModal';
 import GerarRelatorioFaturacaoModal from '../components/faturacao/GerarRelatorioFaturacaoModal';
 import DashboardFaturacao from '../components/faturacao/DashboardFaturacao';
-import DashboardFinanceiro from '../components/faturacao/DashboardFinanceiro';
+const DashboardFinanceiro = React.lazy(() => import('../components/faturacao/DashboardFinanceiro'));
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
 import CancelarProformaModal from '../components/shared/CancelarProformaModal';
@@ -508,7 +508,9 @@ export default function ProformaPage() {
         {activeTab === 'extrato' ? (
           <DashboardFaturacao companhias={companhias} aeroportos={aeroportos} />
         ) : activeTab === 'dashboard' ? (
-          <DashboardFinanceiro companhias={companhias} aeroportos={aeroportos} />
+          <Suspense fallback={<div className="h-64 flex items-center justify-center text-sm text-gray-400">Carregando dashboard...</div>}>
+            <DashboardFinanceiro companhias={companhias} aeroportos={aeroportos} />
+          </Suspense>
         ) : (<>
 
         {/* KPIs */}

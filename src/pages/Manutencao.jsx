@@ -84,7 +84,7 @@ export default function Manutencao() {
         empId ? OrdemServico.filter(empFilters, '-data_abertura') : OrdemServico.list('-data_abertura'),
         empId ? SolicitacaoServico.filter(empFilters, '-created_date') : SolicitacaoServico.list('-created_date'),
         (empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list()),
-        User.list()
+        empId ? User.filter({ empresa_id: empId }) : User.list()
       ]);
       setAllUsers(usersData);
 
@@ -117,7 +117,8 @@ export default function Manutencao() {
         }
       }
       // Fallback: all admins/infraestrutura of the empresa
-      const users = allUsers.length > 0 ? allUsers : await User.list();
+      const empId2 = currentUser?.empresa_id;
+      const users = allUsers.length > 0 ? allUsers : (empId2 ? await User.filter({ empresa_id: empId2 }) : await User.list());
       return users
         .filter(u => {
           if (empId && u.empresa_id !== empId) return false;
