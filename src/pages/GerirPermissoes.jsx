@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ import AlertModal from '../components/shared/AlertModal';
 import { hasUserProfile, isAdminProfile } from '@/components/lib/userUtils';
 import { useI18n } from '@/components/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
+import { useRegrasPermissao } from '@/hooks/useRegrasPermissao';
 
 // Todas as páginas disponíveis no sistema
 const PAGINAS_DISPONIVEIS = [
@@ -265,52 +267,40 @@ const PERFIL_INFO = {
 export default function GerirPermissoes() {
   const { t } = useI18n();
   const { user: currentUser } = useAuth();
-  const [regras, setRegras] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: regras = [], isLoading, error: queryError } = useRegrasPermissao({
+    enabled: isAdminProfile(currentUser),
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [editedRegras, setEditedRegras] = useState({});
   const [hasChanges, setHasChanges] = useState(false);
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
 
+  // Inicializar editedRegras quando regras mudam
   useEffect(() => {
-    loadData();
-  }, []);
+    if (regras.length === 0 && !queryError) return;
+    const inicial = {};
+    Object.keys(PERFIL_INFO).forEach(perfilKey => {
+      const existingRegra = regras.find((regra) => regra.perfil === perfilKey);
+      inicial[perfilKey] = {
+        paginas_permitidas: existingRegra ? existingRegra.paginas_permitidas || [] : [],
+        descricao: existingRegra ? existingRegra.descricao || '' : ''
+      };
+    });
+    setEditedRegras(inicial);
+    setHasChanges(false);
+  }, [regras, queryError]);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      if (!isAdminProfile(currentUser)) {
-        setIsLoading(false);
-        return;
-      }
-
-      const regrasData = await RegraPermissao.list();
-      setRegras(regrasData);
-
-      // Inicializar editedRegras com os dados carregados
-      const inicial = {};
-      Object.keys(PERFIL_INFO).forEach(perfilKey => { // Ensure all profiles from PERFIL_INFO are initialized
-        const existingRegra = regrasData.find((regra) => regra.perfil === perfilKey);
-        inicial[perfilKey] = {
-          paginas_permitidas: existingRegra ? existingRegra.paginas_permitidas || [] : [],
-          descricao: existingRegra ? existingRegra.descricao || '' : ''
-        };
-      });
-
-      setEditedRegras(inicial);
-      setHasChanges(false);
-    } catch (error) {
-      console.error('Erro ao carregar permissões:', error);
+  useEffect(() => {
+    if (queryError) {
       setAlertInfo({
         isOpen: true,
         type: 'error',
         title: 'Erro ao Carregar',
         message: 'Não foi possível carregar as regras de permissão.'
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [queryError]);
 
   const handleTogglePagina = (perfil, pageKey) => {
     setEditedRegras((prev) => {
@@ -393,7 +383,7 @@ export default function GerirPermissoes() {
         message: 'As regras de permissão foram salvas com sucesso. As alterações serão aplicadas no próximo login dos utilizadores.'
       });
       setHasChanges(false);
-      loadData();
+      queryClient.invalidateQueries({ queryKey: ['regras-permissao'] });
     } catch (error) {
       console.error('Erro ao salvar permissões:', error);
       setAlertInfo({
@@ -408,7 +398,7 @@ export default function GerirPermissoes() {
   };
 
   const handleCancel = () => {
-    loadData();
+    queryClient.invalidateQueries({ queryKey: ['regras-permissao'] });
   };
 
   if (isLoading) {

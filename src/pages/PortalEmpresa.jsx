@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { UserCheck, FileText, Users, LogOut, RefreshCw, Plus } from 'lucide-react';
 import { User as UserEntity } from '@/entities/User';
-import { Credenciamento } from '@/entities/Credenciamento';
 import { Empresa } from '@/entities/Empresa';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { getEmpresaLogoByUser } from '@/components/lib/userUtils';
 import { useI18n } from '@/components/lib/i18n';
+import { useCredenciamentos } from '@/hooks/useCredenciamentos';
 
 const STATUS_CONFIG_BASE = {
   pendente: { color: 'bg-yellow-100 text-yellow-800', labelKey: 'portal.statusPendente' },
@@ -25,22 +26,30 @@ const STATUS_CONFIG_BASE = {
 
 export default function PortalEmpresa() {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
   const STATUS_CONFIG = Object.fromEntries(
     Object.entries(STATUS_CONFIG_BASE).map(([k, v]) => [k, { ...v, label: t(v.labelKey) }])
   );
   const [user, setUser] = useState(null);
   const [empresa, setEmpresa] = useState(null);
   const [empresas, setEmpresas] = useState([]);
-  const [credenciamentos, setCredenciamentos] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingSecondary, setIsLoadingSecondary] = useState(true);
+
+  // Primary entity: Credenciamentos scoped by empresa_id
+  const { data: credenciamentos = [], isLoading: isLoadingCredenciamentos, refetch: refetchCredenciamentos } = useCredenciamentos({
+    empresaId: user?.empresa_id,
+    enabled: !!user?.empresa_id,
+  });
+
+  const isLoading = isLoadingSecondary || (!!user?.empresa_id && isLoadingCredenciamentos);
 
   useEffect(() => {
-    loadData();
+    loadSecondaryData();
   }, []);
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadSecondaryData = async () => {
+    setIsLoadingSecondary(true);
     try {
       // Carregar dados do utilizador atual
       const currentUser = await UserEntity.me();
@@ -52,12 +61,6 @@ export default function PortalEmpresa() {
         setEmpresas(empresaData || []);
         const userEmpresa = empresaData.find(e => e.id === currentUser.empresa_id);
         setEmpresa(userEmpresa);
-
-        // Carregar credenciamentos da empresa
-        const credenciamentosData = await Credenciamento.filter({ 
-          empresa_solicitante_id: currentUser.empresa_id 
-        }, '-data_solicitacao');
-        setCredenciamentos(credenciamentosData);
       }
 
       // Carregar aeroportos
@@ -67,7 +70,7 @@ export default function PortalEmpresa() {
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
-      setIsLoading(false);
+      setIsLoadingSecondary(false);
     }
   };
 
@@ -225,7 +228,7 @@ export default function PortalEmpresa() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={loadData}
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['credenciamentos'] })}
                   className="h-16"
                 >
                   <div className="text-center">

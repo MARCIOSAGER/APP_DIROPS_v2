@@ -12,26 +12,35 @@ import Combobox from '@/components/ui/combobox';
 import { Badge } from '@/components/ui/badge';
 
 import { SolicitacaoAcesso } from '@/entities/SolicitacaoAcesso';
-import { Empresa } from '@/entities/Empresa';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { createPageUrl } from '@/utils';
 import { sendNotificationEmail } from '@/functions/sendNotificationEmail';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { useI18n } from '@/components/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
+import { useEmpresas } from '@/hooks/useEmpresas';
 
 export default function SolicitacaoPerfil() {
   const { t } = useI18n();
   const { user: authUser, logout } = useAuth();
-  const [empresas, setEmpresas] = useState([]);
+
+  // Redirect if user already has active profile
+  const shouldRedirect = authUser && authUser.status === 'ativo' && Array.isArray(authUser.perfis) && authUser.perfis.length > 0;
+
+  const { data: allEmpresas = [], isLoading: isLoadingEmpresas } = useEmpresas({
+    enabled: !shouldRedirect,
+  });
+  const empresas = allEmpresas.filter(e => e.status === 'ativa');
+
   const [aeroportos, setAeroportos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingAeroportos, setIsLoadingAeroportos] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { guardedSubmit } = useSubmitGuard();
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [searchAeroporto, setSearchAeroporto] = useState('');
-  
+  const [formInitialized, setFormInitialized] = useState(false);
+
   const [formData, setFormData] = useState({
     nome_completo: '',
     email: '',
@@ -42,47 +51,44 @@ export default function SolicitacaoPerfil() {
     justificativa: ''
   });
 
+  const isLoading = isLoadingEmpresas || isLoadingAeroportos;
+
+  // Redirect if active user
   useEffect(() => {
-    loadInitialData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const loadInitialData = async () => {
-    setIsLoading(true);
-    try {
-      // Se o contexto de auth já tem perfil ativo, redirecionar imediatamente sem queries
-      if (authUser && authUser.status === 'ativo' && Array.isArray(authUser.perfis) && authUser.perfis.length > 0) {
-        window.location.href = createPageUrl('Home');
-        return;
-      }
-
-      // Carregar empresas e aeroportos
-      const [empresasData, aeroportosData] = await Promise.all([
-        Empresa.list(),
-        Aeroporto.list()
-      ]);
-
-      const empresasAtivas = empresasData.filter(e => e.status === 'ativa');
-      setEmpresas(empresasAtivas);
-
-      // Filtrar apenas aeroportos de Angola
-      const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-      setAeroportos(aeroportosAngola);
-
-      // Preencher dados do utilizador
-      setFormData(prev => ({
-        ...prev,
-        nome_completo: authUser?.full_name || '',
-        email: authUser?.email || '',
-        empresa_solicitante_id: empresasAtivas.length === 1 ? empresasAtivas[0].id : ''
-      }));
-
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      setError(t('solic.erro_carregar'));
-    } finally {
-      setIsLoading(false);
+    if (shouldRedirect) {
+      window.location.href = createPageUrl('Home');
     }
-  };
+  }, [shouldRedirect]);
+
+  // Load aeroportos (secondary data)
+  useEffect(() => {
+    if (shouldRedirect) return;
+    const loadAeroportos = async () => {
+      setIsLoadingAeroportos(true);
+      try {
+        const aeroportosData = await Aeroporto.list();
+        setAeroportos(aeroportosData.filter(a => a.pais === 'AO'));
+      } catch (err) {
+        console.error('Erro ao carregar dados:', err);
+        setError(t('solic.erro_carregar'));
+      } finally {
+        setIsLoadingAeroportos(false);
+      }
+    };
+    loadAeroportos();
+  }, [shouldRedirect]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Initialize form when empresas load
+  useEffect(() => {
+    if (formInitialized || isLoadingEmpresas) return;
+    setFormData(prev => ({
+      ...prev,
+      nome_completo: authUser?.full_name || '',
+      email: authUser?.email || '',
+      empresa_solicitante_id: empresas.length === 1 ? empresas[0].id : ''
+    }));
+    setFormInitialized(true);
+  }, [empresas, isLoadingEmpresas, formInitialized, authUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

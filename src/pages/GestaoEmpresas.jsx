@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ import { isSuperAdmin } from '@/components/lib/userUtils';
 import { base44 } from '@/api/base44Client';
 import AccessDenied from '@/components/shared/AccessDenied';
 import { useI18n } from '@/components/lib/i18n';
+import { useEmpresas } from '@/hooks/useEmpresas';
 
 const STATUS_OPTIONS = [
   { value: 'ativa', label: 'Ativa', className: 'bg-green-100 text-green-800' },
@@ -36,11 +38,12 @@ const EMPTY_FORM = {
 export default function GestaoEmpresas() {
   const { t } = useI18n();
   const { user: authUser } = useAuth();
-  const [empresas, setEmpresas] = useState([]);
+  const queryClient = useQueryClient();
+  const { data: empresas = [], isLoading: isLoadingEmpresas } = useEmpresas();
   const [aeroportos, setAeroportos] = useState([]);
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingSecondary, setIsLoadingSecondary] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [editingEmpresa, setEditingEmpresa] = useState(null);
@@ -49,25 +52,25 @@ export default function GestaoEmpresas() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  const isLoading = isLoadingEmpresas || isLoadingSecondary;
+
   useEffect(() => {
-    loadData();
+    loadSecondaryData();
   }, []);
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadSecondaryData = async () => {
+    setIsLoadingSecondary(true);
     try {
-      const [empresasData, aeroportosData, usersData] = await Promise.all([
-        Empresa.list(),
+      const [aeroportosData, usersData] = await Promise.all([
         Aeroporto.list(),
         UserEntity.list(),
       ]);
-      setEmpresas(empresasData || []);
       setAeroportos(aeroportosData || []);
       setUsers(usersData || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
-      setIsLoading(false);
+      setIsLoadingSecondary(false);
     }
   };
 
@@ -146,7 +149,7 @@ export default function GestaoEmpresas() {
         await Empresa.create(formData);
       }
       setIsModalOpen(false);
-      await loadData();
+      queryClient.invalidateQueries({ queryKey: ['empresas'] });
     } catch (error) {
       console.error('Erro ao salvar empresa:', error);
     } finally {
@@ -167,7 +170,7 @@ export default function GestaoEmpresas() {
 
     try {
       await Empresa.delete(empresa.id);
-      await loadData();
+      queryClient.invalidateQueries({ queryKey: ['empresas'] });
     } catch (error) {
       console.error('Erro ao eliminar empresa:', error);
     }
