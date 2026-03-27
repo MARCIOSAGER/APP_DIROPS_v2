@@ -981,7 +981,7 @@ export default function Operacoes() {
               });
             }
           }
-        } catch (_) {}
+        } catch (err) { console.warn('Operação secundária falhou:', err.message); }
 
         // Deslincar voo_ligado associado (se existir)
         try {
@@ -999,7 +999,7 @@ export default function Operacoes() {
             await Voo.update(voo.id, { voo_ligado_id: null });
             await VooLigado.delete(vooLigadoAssociado.id);
           }
-        } catch (_) {}
+        } catch (err) { console.warn('Operação secundária falhou:', err.message); }
 
         await Voo.update(voo.id, {
           deleted_at: new Date().toISOString(),
@@ -1031,7 +1031,7 @@ export default function Operacoes() {
     try {
       const pfs = await Proforma.filter({ voo_id: voo.id });
       proformasAtivas = pfs.filter(pf => pf.status !== 'cancelada' && pf.status !== 'paga');
-    } catch (_) {}
+    } catch (err) { console.warn('Operação secundária falhou:', err.message); }
 
     if (proformasAtivas.length > 0) {
       setCancelarProformaModal({
@@ -1166,7 +1166,7 @@ export default function Operacoes() {
       try {
         const pfs = await Proforma.filter({ calculo_tarifa_id: calculoAssociado.id });
         proformasAtivas = pfs.filter(pf => pf.status !== 'cancelada' && pf.status !== 'paga');
-      } catch (_) {}
+      } catch (err) { console.warn('Operação secundária falhou:', err.message); }
     }
 
     if (proformasAtivas.length > 0) {

@@ -1174,11 +1174,11 @@ async function uploadAndReturn(doc, proforma, proforma_id) {
     throw new Error('Falha no upload do PDF');
   }
 
-  const { data: urlData } = supabase.storage
+  const { data: urlData } = await supabase.storage
     .from('uploads')
-    .getPublicUrl(fileName);
+    .createSignedUrl(fileName, 86400); // 24h for PDF sharing
 
-  const pdf_url = urlData.publicUrl;
+  const pdf_url = urlData?.signedUrl || fileName;
 
   await supabase
     .from('proforma')

@@ -102,7 +102,8 @@ Deno.serve(async (req) => {
 
     // Create transporter
     const smtpPort = parseInt(String(smtp.smtp_port || "587"));
-    console.log(`SMTP config: ${smtp.smtp_host}:${smtpPort} secure=${smtp.smtp_secure === true || smtpPort === 465} user=${smtp.smtp_user ? 'set' : 'none'}`);
+    // SMTP config logged without sensitive details
+    console.log(`SMTP: port=${smtpPort} secure=${smtp.smtp_secure === true || smtpPort === 465}`);
 
     const transporter = nodemailer.createTransport({
       host: smtp.smtp_host,

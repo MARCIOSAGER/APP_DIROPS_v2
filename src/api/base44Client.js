@@ -81,10 +81,10 @@ export const base44 = {
           .from('uploads')
           .upload(fileName, file);
         if (error) throw error;
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = await supabase.storage
           .from('uploads')
-          .getPublicUrl(data.path);
-        return { url: urlData.publicUrl, path: data.path };
+          .createSignedUrl(data.path, 3600); // 1 hour expiry
+        return { url: urlData?.signedUrl || data.path, path: data.path };
       },
       async UploadPrivateFile({ file }) {
         const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
