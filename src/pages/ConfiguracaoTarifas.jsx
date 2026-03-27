@@ -37,27 +37,22 @@ import { getAeroportosPermitidos } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
-
-// Helper: fetch tarifas scoped to empresa + global (null empresa_id) for fallback
-// When empresaId is set, fetches only empresa-specific rows; falls back to global if none exist.
-async function fetchTarifasScoped(Entity, empresaId) {
-  if (!empresaId) return Entity.list();
-  const [empresaData, globalData] = await Promise.all([
-    Entity.filter({ empresa_id: { $eq: empresaId } }),
-    Entity.filter({ empresa_id: { $is: null } }),
-  ]);
-  return empresaData.length > 0 ? empresaData : globalData;
-}
+import { useQueryClient } from '@tanstack/react-query';
+import { useTarifas } from '@/hooks/useTarifas';
 
 export default function ConfiguracaoTarifas() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
   const { user } = useAuth();
-  const [tarifasPouso, setTarifasPouso] = useState([]);
-  const [tarifasPermanencia, setTarifasPermanencia] = useState([]);
-  const [outrasTarifas, setOutrasTarifas] = useState([]);
-  const [impostos, setImpostos] = useState([]);
-  const [tarifasRecursos, setTarifasRecursos] = useState([]);
+  const queryClient = useQueryClient();
+
+  const { data: tarifasData, isLoading: isLoadingTarifas } = useTarifas({ empresaId: effectiveEmpresaId });
+  const tarifasPouso = tarifasData?.tarifasPouso ?? [];
+  const tarifasPermanencia = tarifasData?.tarifasPermanencia ?? [];
+  const outrasTarifas = tarifasData?.outrasTarifas ?? [];
+  const impostos = tarifasData?.impostos ?? [];
+  const tarifasRecursos = tarifasData?.tarifasRecursos ?? [];
+
   const [aeroportos, setAeroportos] = useState([]);
   const [configuracao, setConfiguracao] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,28 +88,22 @@ export default function ConfiguracaoTarifas() {
   const [sortFieldOutras, setSortFieldOutras] = useState('tipo');
   const [sortDirectionOutras, setSortDirectionOutras] = useState('asc');
 
-  const loadData = useCallback(async () => {
+  const invalidateTarifas = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['tarifas', effectiveEmpresaId] });
+  }, [queryClient, effectiveEmpresaId]);
+
+  // Load secondary data (aeroportos, configuracao, tipos, clientes)
+  const loadSecondaryData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const empId = effectiveEmpresaId;
       const [
         aeroportosData,
-        tarifasPousoData,
-        tarifasPermanenciaData,
-        outrasTarifasData,
-        impostosData,
-        tarifasRecursosData,
         configsData,
         tiposData,
         tiposServicoGeralData,
         clientesData
       ] = await Promise.all([
         (effectiveEmpresaId || user.empresa_id) ? Aeroporto.filter({ empresa_id: effectiveEmpresaId || user.empresa_id }) : Aeroporto.list(),
-        fetchTarifasScoped(TarifaPouso, empId),
-        fetchTarifasScoped(TarifaPermanencia, empId),
-        fetchTarifasScoped(OutraTarifa, empId),
-        fetchTarifasScoped(Imposto, empId),
-        fetchTarifasScoped(TarifaRecurso, empId),
         (async () => {
           try {
             const configs = await ConfiguracaoSistema.list();
@@ -130,11 +119,6 @@ export default function ConfiguracaoTarifas() {
       const userAccessibleAeroportos = getAeroportosPermitidos(user, aeroportosAngola, effectiveEmpresaId);
       setAeroportos(userAccessibleAeroportos);
 
-      setTarifasPouso(tarifasPousoData);
-      setTarifasPermanencia(tarifasPermanenciaData);
-      setOutrasTarifas(outrasTarifasData);
-      setImpostos(impostosData);
-      setTarifasRecursos(tarifasRecursosData || []);
       setConfiguracao(configsData);
       setTiposOutraTarifa((tiposData || []).filter(t => t.status === 'ativa').sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
       setTiposServicoGeral((tiposServicoGeralData || []).sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
@@ -147,7 +131,13 @@ export default function ConfiguracaoTarifas() {
     }
   }, [effectiveEmpresaId]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadSecondaryData(); }, [loadSecondaryData]);
+
+  // Reload all data — invalidate tariff cache + reload secondary data
+  const loadData = useCallback(() => {
+    invalidateTarifas();
+    loadSecondaryData();
+  }, [invalidateTarifas, loadSecondaryData]);
 
   const handleOpenForm = (type, item = null) => {
     setFormType(type);
@@ -353,8 +343,8 @@ export default function ConfiguracaoTarifas() {
             </h1>
             <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.config_tarifas.subtitle')}</p>
           </div>
-          <Button variant="outline" onClick={loadData} disabled={isLoading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" onClick={loadData} disabled={isLoading || isLoadingTarifas}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${(isLoading || isLoadingTarifas) ? 'animate-spin' : ''}`} />
             {t('btn.refresh')}
           </Button>
         </div>

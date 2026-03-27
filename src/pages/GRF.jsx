@@ -30,11 +30,16 @@ import SendEmailModal from '../components/shared/SendEmailModal';
 import SuccessModal from '../components/shared/SuccessModal';
 import { useI18n } from '@/components/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRegistosGRF } from '@/hooks/useRegistosGRF';
 
 export default function GRFPage() { // Renamed from GRF to GRFPage
   const { t } = useI18n();
   const { user: currentUser } = useAuth();
-  const [registos, setRegistos] = useState([]);
+  const queryClient = useQueryClient();
+  const empId = currentUser?.empresa_id;
+  const { data: registosRaw = [], isLoading: isLoadingGRF } = useRegistosGRF({ empresaId: empId, enabled: !!currentUser });
+
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -50,37 +55,38 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
     pista: 'todas'
   });
 
+  // Load secondary data (aeroportos only)
   useEffect(() => {
-    loadData();
-  }, []);
+    (async () => {
+      setIsLoading(true);
+      try {
+        const aeroportosData = empId ? await Aeroporto.filter({ empresa_id: empId }) : await Aeroporto.list();
+        const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
+        setAeroportos(aeroportosAngola);
+      } catch (error) {
+        console.error('Erro ao carregar dados GRF:', error);
+        setAlertInfo({
+          isOpen: true,
+          type: 'error',
+          title: 'Erro ao Carregar Dados',
+          message: 'Não foi possível carregar os registos GRF ou aeroportos. Tente novamente mais tarde.'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [empId]);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const empId = currentUser?.empresa_id;
-      const [registosData, aeroportosData] = await Promise.all([
-        RegistoGRF.list('-mes', 100), // Added limit of 100
-        empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list()
-      ]);
+  // FILTRO CRÍTICO: Filtrar registos GRF por aeroportos do utilizador (empresa-based)
+  const registos = React.useMemo(
+    () => filtrarDadosPorAcesso(currentUser, registosRaw, 'aeroporto', aeroportos),
+    [currentUser, registosRaw, aeroportos]
+  );
 
-      const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-
-      // FILTRO CRÍTICO: Filtrar registos GRF por aeroportos do utilizador (empresa-based)
-      const registosFiltrados = filtrarDadosPorAcesso(currentUser, registosData, 'aeroporto', aeroportosAngola);
-      setRegistos(registosFiltrados);
-      setAeroportos(aeroportosAngola);
-    } catch (error) {
-      console.error('Erro ao carregar dados GRF:', error);
-      setAlertInfo({
-        isOpen: true,
-        type: 'error',
-        title: 'Erro ao Carregar Dados',
-        message: 'Não foi possível carregar os registos GRF ou aeroportos. Tente novamente mais tarde.'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const invalidateGRF = React.useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['registos-grf', empId] }),
+    [queryClient, empId]
+  );
 
   const handleFormSubmit = async (data) => {
     try {
@@ -101,7 +107,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
       }
       setIsFormOpen(false);
       setEditingRegisto(null);
-      loadData();
+      invalidateGRF();
     } catch (error) {
       console.error('Erro ao salvar GRF:', error);
       setAlertInfo({
@@ -137,7 +143,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
             title: 'GRF Excluído!', 
             message: 'O registo GRF foi excluído com sucesso.' 
           });
-          loadData();
+          invalidateGRF();
         } catch (error) {
           console.error('Erro ao excluir registo GRF:', error);
           setAlertInfo({
@@ -505,7 +511,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.grf.subtitle')}</p>
           </div>
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-            <Button variant="outline" onClick={loadData} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+            <Button variant="outline" onClick={invalidateGRF} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <RefreshCw className="w-4 h-4 mr-2" />
               {t('grf.atualizar')}
             </Button>
@@ -592,7 +598,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <CardTitle className="text-lg">{t('grf.registosGRF')}</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {(isLoading || isLoadingGRF) ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 <p className="text-slate-500 dark:text-slate-400 mt-2">{t('grf.carregando')}</p>

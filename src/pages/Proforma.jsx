@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +45,8 @@ import { getAeroportosPermitidos, ensureUserProfilesExist } from '@/components/l
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { useProformas } from '@/hooks/useProformas';
 
 import EditarFaturaModal from '../components/faturacao/EditarFaturaModal';
 import GerarProformaConsolidadaModal from '../components/faturacao/GerarProformaConsolidadaModal';
@@ -68,7 +70,11 @@ export default function ProformaPage() {
   const { effectiveEmpresaId } = useCompanyView();
   const { user: authUser } = useAuth();
   const currentUser = ensureUserProfilesExist(authUser);
-  const [proformas, setProformas] = useState([]);
+  const queryClient = useQueryClient();
+
+  const empresaIdFiltro = effectiveEmpresaId || currentUser?.empresa_id;
+  const { data: proformas = [], isLoading: isLoadingProformas } = useProformas({ empresaId: empresaIdFiltro });
+
   const [companhias, setCompanhias] = useState([]);
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,42 +101,35 @@ export default function ProformaPage() {
   const [sortField, setSortField] = useState('data_emissao');
   const [sortDirection, setSortDirection] = useState('desc');
 
+  // Load secondary data (companhias, aeroportos)
   useEffect(() => {
-    loadData();
+    (async () => {
+      setIsLoading(true);
+      try {
+        const [companhiasData, aeroportosData] = await Promise.all([
+          CompanhiaAerea.list(),
+          empresaIdFiltro ? Aeroporto.filter({ empresa_id: empresaIdFiltro }) : Aeroporto.list(),
+        ]);
+        const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosData, effectiveEmpresaId);
+        setCompanhias(companhiasData);
+        setAeroportos(aeroportosFiltrados);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        setAlertInfo({
+          isOpen: true,
+          type: 'error',
+          title: t('proforma.error_load_title'),
+          message: t('proforma.error_load_msg')
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   }, [effectiveEmpresaId]);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      // Server-side empresa filter
-      const empresaIdFiltro = effectiveEmpresaId || currentUser?.empresa_id;
-      const proformaFilters = {};
-      if (empresaIdFiltro) proformaFilters.empresa_id = empresaIdFiltro;
-
-      const [proformasData, companhiasData, aeroportosData] = await Promise.all([
-        Proforma.filter(proformaFilters, '-data_emissao'),
-        CompanhiaAerea.list(),
-        empresaIdFiltro ? Aeroporto.filter({ empresa_id: empresaIdFiltro }) : Aeroporto.list(),
-      ]);
-
-      // Filtrar aeroportos por empresa/permissões do utilizador
-      const aeroportosFiltrados = getAeroportosPermitidos(currentUser, aeroportosData, effectiveEmpresaId);
-
-      setProformas(proformasData);
-      setCompanhias(companhiasData);
-      setAeroportos(aeroportosFiltrados);
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      setAlertInfo({
-        isOpen: true,
-        type: 'error',
-        title: t('proforma.error_load_title'),
-        message: t('proforma.error_load_msg')
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const invalidateProformas = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['proformas', empresaIdFiltro] });
+  }, [queryClient, empresaIdFiltro]);
 
   const handleFilterChange = (field, value) => {
     setFiltros((prev) => ({ ...prev, [field]: value }));
@@ -216,7 +215,7 @@ export default function ProformaPage() {
   const handleSaveProforma = async (proformaData) => {
     try {
       await Proforma.update(editingProforma.id, proformaData);
-      await loadData();
+      invalidateProformas();
       setIsEditModalOpen(false);
       setEditingProforma(null);
       setSuccessInfo({
@@ -245,7 +244,7 @@ export default function ProformaPage() {
         data_cancelamento: new Date().toISOString()
       });
       setCancelarModalInfo({ isOpen: false, proforma: null });
-      await loadData();
+      invalidateProformas();
       setSuccessInfo({
         isOpen: true,
         title: t('proforma.cancelada_sucesso_titulo'),
@@ -288,7 +287,7 @@ export default function ProformaPage() {
         link.click();
         document.body.removeChild(link);
 
-        await loadData();
+        invalidateProformas();
 
         setSuccessInfo({
           isOpen: true,
@@ -368,7 +367,7 @@ export default function ProformaPage() {
         await registarCriacao('Proforma', novaProforma, 'faturacao');
       } catch (_) {}
 
-      await loadData();
+      invalidateProformas();
       setIsConsolidadaModalOpen(false);
 
       setSuccessInfo({
@@ -460,8 +459,8 @@ export default function ProformaPage() {
           </div>
           {activeTab === 'proformas' && (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={loadData} disabled={isLoading}>
-                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              <Button variant="outline" onClick={invalidateProformas} disabled={isLoading || isLoadingProformas}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingProformas ? 'animate-spin' : ''}`} />
                 {t('proforma.refresh')}
               </Button>
               <Button onClick={() => setIsConsolidadaModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
@@ -728,7 +727,7 @@ export default function ProformaPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading ?
+                  {(isLoading || isLoadingProformas) ?
                   Array(5).fill(0).map((_, i) =>
                   <TableRow key={i}>
                         {Array(9).fill(0).map((_, j) =>

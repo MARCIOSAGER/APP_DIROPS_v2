@@ -15,6 +15,8 @@ import { TipoServicoGeral } from '@/entities/TipoServicoGeral';
 import { OutraTarifa } from '@/entities/OutraTarifa';
 import { base44 } from '@/api/base44Client';
 import { useCompanyView } from '@/lib/CompanyViewContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCobrancasServico } from '@/hooks/useCobrancasServico';
 import FormCobrancaServico from '@/components/servicos/FormCobrancaServico';
 import ConfirmModal from '@/components/shared/ConfirmModal';
 import { useI18n } from '@/components/lib/i18n';
@@ -26,13 +28,13 @@ export default function ServicosAeroportuarios() {
   const { t } = useI18n();
   const { effectiveEmpresaId } = useCompanyView();
 
+  const queryClient = useQueryClient();
+
   const [currentUser, setCurrentUser] = useState(null);
   const [clientes, setClientes] = useState([]);
-  const [cobrancas, setCobrancas] = useState([]);
   const [tiposServicoGeral, setTiposServicoGeral] = useState([]);
   const [tiposOutraTarifa, setTiposOutraTarifa] = useState([]);
   const [outrasTarifas, setOutrasTarifas] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
 
   // Filters
@@ -42,6 +44,21 @@ export default function ServicosAeroportuarios() {
   const [dataInicio, setDataInicio] = useState(primeiroDia);
   const [dataFim, setDataFim] = useState(ultimoDia);
   const [filtroCliente, setFiltroCliente] = useState('');
+
+  // Committed query — only updated on Buscar / initial load
+  const buildInitialQuery = useCallback(() => {
+    const q = {};
+    if (effectiveEmpresaId) q.empresa_id = effectiveEmpresaId;
+    q.data_servico = { $gte: primeiroDia, $lte: ultimoDia };
+    return q;
+  }, [effectiveEmpresaId, primeiroDia, ultimoDia]);
+
+  const [committedQuery, setCommittedQuery] = useState(buildInitialQuery);
+  const { data: cobrancas = [], isLoading } = useCobrancasServico({
+    empresaId: effectiveEmpresaId,
+    query: committedQuery,
+    enabled: !!currentUser,
+  });
 
   // Modals
   const [formCobrancaCategoria, setFormCobrancaCategoria] = useState('cursos_licencas');
@@ -110,57 +127,18 @@ export default function ServicosAeroportuarios() {
     return query;
   }, [effectiveEmpresaId, dataInicio, dataFim, filtroCliente]);
 
-  // Load cobrancas (initial load)
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const query = buildQuery();
-      const cobrancasData = await CobrancaServico.filter(query, '-data_servico');
-      setCobrancas(cobrancasData || []);
-    } catch (err) {
-      console.error('Erro ao carregar dados:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [buildQuery]);
-
-  useEffect(() => {
-    if (currentUser) loadData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]);
-
-  // Buscar button handler — server-side search
-  const handleBuscar = async () => {
-    setIsSearching(true);
-    try {
-      const query = buildQuery();
-      const cobrancasData = await CobrancaServico.filter(query, '-data_servico');
-      setCobrancas(cobrancasData || []);
-    } catch (err) {
-      console.error('Erro ao buscar:', err);
-    } finally {
-      setIsSearching(false);
-    }
+  // Buscar button handler — commit current filters to trigger useQuery refetch
+  const handleBuscar = () => {
+    setCommittedQuery(buildQuery());
   };
 
   // Limpar filters and reload with defaults
-  const handleLimparFiltros = async () => {
+  const handleLimparFiltros = () => {
     setDataInicio(primeiroDia);
     setDataFim(ultimoDia);
     setFiltroCliente('');
-    // Reload with default filter values (state not yet updated, so build query manually)
-    setIsSearching(true);
-    try {
-      const query = {};
-      if (effectiveEmpresaId) query.empresa_id = effectiveEmpresaId;
-      query.data_servico = { $gte: primeiroDia, $lte: ultimoDia };
-      const cobrancasData = await CobrancaServico.filter(query, '-data_servico');
-      setCobrancas(cobrancasData || []);
-    } catch (err) {
-      console.error('Erro ao limpar filtros:', err);
-    } finally {
-      setIsSearching(false);
-    }
+    // Commit default query immediately (state not yet updated)
+    setCommittedQuery(buildInitialQuery());
   };
 
   // ==================== Cobranças ====================
@@ -181,17 +159,19 @@ export default function ServicosAeroportuarios() {
     setIsFormCobrancaOpen(true);
   };
 
-  const handleCobrancaSaved = async () => {
-    const query = buildQuery();
-    const cobrancasData = await CobrancaServico.filter(query, '-data_servico');
-    setCobrancas(cobrancasData || []);
+  const invalidateCobrancas = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['cobrancas-servico', effectiveEmpresaId] });
+  }, [queryClient, effectiveEmpresaId]);
+
+  const handleCobrancaSaved = () => {
+    invalidateCobrancas();
   };
 
   const handleDeleteCobranca = async () => {
     if (!deleteTarget) return;
     try {
       await CobrancaServico.delete(deleteTarget.id);
-      await handleCobrancaSaved();
+      invalidateCobrancas();
     } catch (err) {
       console.error('Erro ao excluir:', err);
     }
@@ -300,8 +280,8 @@ export default function ServicosAeroportuarios() {
               <Layers className="w-5 h-5 text-cyan-600" />
               {t('page.servicos_aeroportuarios.title')}
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={handleBuscar} disabled={isSearching}>
-              <RefreshCw className={`w-4 h-4 mr-1 ${isSearching ? 'animate-spin' : ''}`} /> {t('btn.refresh')}
+            <Button variant="outline" size="sm" onClick={invalidateCobrancas} disabled={isLoading}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} /> {t('btn.refresh')}
             </Button>
           </div>
         </CardHeader>
