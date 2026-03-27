@@ -9,8 +9,8 @@ import AlertModal from '../shared/AlertModal';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { createPdfDoc, addHeader, addFooter, addSectionTitle, addKeyValuePairs, addInfoBox, checkPageBreak, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
 import { TarifaPouso } from '@/entities/TarifaPouso';
-import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 import { useI18n } from '@/components/lib/i18n';
+import { useCompanhias } from '@/components/lib/useStaticData';
 
 // Helper para obter o label da categoria
 const getCategoriaLabel = (categoria) => {
@@ -30,13 +30,12 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'error', title: '', message: '' });
   const [tarifasPouso, setTarifasPouso] = useState([]);
-  const [companhias, setCompanhias] = useState([]); // New state
+  const { data: companhias = [] } = useCompanhias();
 
-  // Effect to load tarifasPouso and companhias when the modal opens
+  // Effect to load tarifasPouso when the modal opens
   useEffect(() => {
     if (isOpen) {
       loadTarifasPouso();
-      loadCompanhias(); // New call
     }
   }, [isOpen]);
 
@@ -53,23 +52,6 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
         type: 'error',
         title: 'Erro de Carregamento',
         message: 'Não foi possível carregar as tarifas de pouso para exibição completa.'
-      });
-    }
-  };
-
-  // Function to load companhias
-  const loadCompanhias = async () => {
-    try {
-      const companhiasData = await CompanhiaAerea.list();
-      setCompanhias(companhiasData);
-    } catch (error) {
-      console.error('Erro ao carregar companhias:', error);
-      // Optionally set an alert if loading fails
-      setAlertInfo({
-        isOpen: true,
-        type: 'error',
-        title: 'Erro de Carregamento',
-        message: 'Não foi possível carregar as informações das companhias aéreas.'
       });
     }
   };
@@ -225,10 +207,6 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
   const handleSendEmail = async (emailData) => {
     setIsSendingEmail(true);
     try {
-      // Carregar companhias se ainda não estiverem carregadas
-      if (companhias.length === 0) {
-        await loadCompanhias();
-      }
       // Construir seções detalhadas de cada tarifa
       let detalhesPouso = '';
       if (detalhes.pouso && typeof detalhes.pouso === 'object' && !detalhes.pouso.erro) {

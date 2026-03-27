@@ -1,16 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Select from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { Aeroporto } from '@/entities/Aeroporto';
 import { Empresa } from '@/entities/Empresa';
 import { Send, Search, X } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { useI18n } from '@/components/lib/i18n';
+import { useAeroportos } from '@/components/lib/useStaticData';
 
 export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading }) {
   const { t } = useI18n();
@@ -24,29 +24,29 @@ export default function FormSolicitacaoAcesso({ userData, onSubmit, isLoading })
     justificativa: ''
   });
 
-  const [aeroportos, setAeroportos] = useState([]);
+  const { data: aeroportosRaw = [], isLoading: isLoadingAeroportos } = useAeroportos();
+  const aeroportos = useMemo(() => aeroportosRaw.filter(a => a.pais === 'AO'), [aeroportosRaw]);
+
   const [empresas, setEmpresas] = useState([]);
   const [searchAeroporto, setSearchAeroporto] = useState('');
-  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isLoadingEmpresas, setIsLoadingEmpresas] = useState(true);
 
   useEffect(() => {
-    loadData();
+    loadEmpresas();
   }, []);
 
-  const loadData = async () => {
+  const loadEmpresas = async () => {
     try {
-      const [aeroportosData, empresasData] = await Promise.all([
-        Aeroporto.list(),
-        Empresa.list()
-      ]);
-      setAeroportos(aeroportosData.filter(a => a.pais === 'AO'));
+      const empresasData = await Empresa.list();
       setEmpresas(empresasData.filter(e => e.status === 'ativa'));
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('Erro ao carregar empresas:', error);
     } finally {
-      setIsLoadingData(false);
+      setIsLoadingEmpresas(false);
     }
   };
+
+  const isLoadingData = isLoadingAeroportos || isLoadingEmpresas;
 
   const handleInputChange = (field, value) => {
     setFormData(prev => {
