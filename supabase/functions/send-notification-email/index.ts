@@ -3,6 +3,7 @@ import nodemailer from "npm:nodemailer@6";
 
 const ALLOWED_ORIGINS = [
   "https://app.marciosager.com",
+  "http://localhost:5173",
 ];
 
 function getCorsHeaders(req: Request) {
@@ -180,7 +181,7 @@ Deno.serve(async (req) => {
       emailSubject = tpl.subject || emailSubject;
       emailHtml = tpl.html || emailHtml;
     } else if (emailHtml && !emailHtml.includes("<!DOCTYPE")) {
-      emailHtml = baseLayout(`<p style="color:#334155;font-size:14px;line-height:1.6;">${emailHtml}</p>`);
+      emailHtml = baseLayout(`<p style="color:#334155;font-size:14px;line-height:1.6;">${escHtml(emailHtml)}</p>`);
     }
 
     const transporter = nodemailer.createTransport({

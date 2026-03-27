@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
   "https://app.marciosager.com",
+  "http://localhost:5173",
 ];
 
 function getCorsHeaders(req: Request) {

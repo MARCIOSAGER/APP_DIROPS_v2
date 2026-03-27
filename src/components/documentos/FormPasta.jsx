@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import Select from '@/components/ui/select';
 import { useI18n } from '@/components/lib/i18n';
+import { hashPassword } from '@/lib/hashPassword';
 
 const CORES_PASTAS = [
 '#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#84cc16'];
@@ -77,7 +78,13 @@ export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = nu
     }
 
     guardedSubmit(async () => {
-      await onSubmit(formData);
+      const dataToSubmit = { ...formData };
+      // Hash the password before storing so it is never saved as plaintext
+      if (dataToSubmit.protegida_senha && dataToSubmit.senha) {
+        dataToSubmit.senha_hash = await hashPassword(dataToSubmit.senha);
+        delete dataToSubmit.senha;
+      }
+      await onSubmit(dataToSubmit);
     });
   };
 

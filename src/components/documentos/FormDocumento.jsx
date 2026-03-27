@@ -11,6 +11,7 @@ import { sanitizeFilename } from '@/lib/sanitize';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { analisarDocumento } from '@/functions/analisarDocumento';
 import { useI18n } from '@/components/lib/i18n';
+import { hashPassword } from '@/lib/hashPassword';
 
 const CATEGORIA_OPTIONS = [
 { value: 'manual_operacoes', label: 'Manual de Operações' },
@@ -102,7 +103,13 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
     }
 
     guardedSubmit(async () => {
-      await onSubmit(formData);
+      const dataToSubmit = { ...formData };
+      // Hash the password before storing so it is never saved as plaintext
+      if (dataToSubmit.requer_senha_adicional && dataToSubmit.senha) {
+        dataToSubmit.senha_hash = await hashPassword(dataToSubmit.senha);
+        delete dataToSubmit.senha;
+      }
+      await onSubmit(dataToSubmit);
     });
   };
 

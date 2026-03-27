@@ -3,6 +3,7 @@ import nodemailer from "npm:nodemailer@6";
 
 const ALLOWED_ORIGINS = [
   "https://app.marciosager.com",
+  "http://localhost:5173",
 ];
 
 function getCorsHeaders(req: Request) {

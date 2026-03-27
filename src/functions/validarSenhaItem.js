@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient';
+import { hashPassword } from '@/lib/hashPassword';
 
 export async function validarSenhaItem({ item_id, tipo, senha }) {
   if (!item_id || !tipo || !senha) {
@@ -15,8 +16,8 @@ export async function validarSenhaItem({ item_id, tipo, senha }) {
   if (error || !item) return { valido: false, message: 'Item não encontrado' };
   if (!item.senha_hash) return { valido: true, message: 'Item não protegido por senha' };
 
-  // bcrypt not available client-side - simple comparison fallback
-  // TODO: migrate to Supabase Edge Function with bcrypt for production
-  const valido = item.senha_hash === senha;
+  // Hash the user input and compare against the stored hash
+  const inputHash = await hashPassword(senha);
+  const valido = inputHash === item.senha_hash;
   return { valido, message: valido ? 'Senha válida' : 'Senha incorreta' };
 }

@@ -1,5 +1,20 @@
 const LOGO_URL = '/logo-dirops.png';
 
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function escAttr(str) {
+  if (!str) return '';
+  return encodeURI(String(str));
+}
+
 const baseLayout = (content) => `
 <!DOCTYPE html>
 <html>
@@ -60,7 +75,7 @@ export const emailTemplates = {
         <h2 style="margin:0;color:#0f172a;font-size:20px;">Acesso Aprovado</h2>
       </div>
       <p style="color:#334155;font-size:14px;line-height:1.6;">
-        Prezado(a) <strong>${full_name || 'Utilizador'}</strong>,
+        Prezado(a) <strong>${escHtml(full_name) || 'Utilizador'}</strong>,
       </p>
       <p style="color:#334155;font-size:14px;line-height:1.6;">
         O seu acesso ao sistema DIROPS foi <strong style="color:#059669;">aprovado</strong> com sucesso.
@@ -69,17 +84,17 @@ export const emailTemplates = {
         <table style="width:100%;border-collapse:collapse;">
           <tr>
             <td style="padding:6px 0;color:#64748b;font-size:13px;width:120px;">Perfis:</td>
-            <td style="padding:6px 0;color:#0f172a;font-size:13px;font-weight:600;">${Array.isArray(perfis) ? perfis.join(', ') : perfis || 'Utilizador'}</td>
+            <td style="padding:6px 0;color:#0f172a;font-size:13px;font-weight:600;">${escHtml(Array.isArray(perfis) ? perfis.join(', ') : perfis) || 'Utilizador'}</td>
           </tr>
           <tr>
             <td style="padding:6px 0;color:#64748b;font-size:13px;">Aeroportos:</td>
-            <td style="padding:6px 0;color:#0f172a;font-size:13px;font-weight:600;">${Array.isArray(aeroportos) ? aeroportos.join(', ') : aeroportos || 'Todos'}</td>
+            <td style="padding:6px 0;color:#0f172a;font-size:13px;font-weight:600;">${escHtml(Array.isArray(aeroportos) ? aeroportos.join(', ') : aeroportos) || 'Todos'}</td>
           </tr>
         </table>
       </div>
       ${url ? `
       <div style="text-align:center;margin:24px 0;">
-        <a href="${url}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;">
+        <a href="${escAttr(url)}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;">
           Aceder ao Sistema
         </a>
       </div>` : ''}
@@ -96,14 +111,14 @@ export const emailTemplates = {
         <h2 style="margin:0;color:#0f172a;font-size:20px;">Solicitacao de Acesso</h2>
       </div>
       <p style="color:#334155;font-size:14px;line-height:1.6;">
-        Prezado(a) <strong>${full_name || 'Utilizador'}</strong>,
+        Prezado(a) <strong>${escHtml(full_name) || 'Utilizador'}</strong>,
       </p>
       <p style="color:#334155;font-size:14px;line-height:1.6;">
         Lamentamos informar que a sua solicitacao de acesso ao DIROPS nao foi aprovada neste momento.
       </p>
       ${motivo ? `
       <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:20px 0;">
-        <p style="margin:0;color:#991b1b;font-size:13px;"><strong>Motivo:</strong> ${motivo}</p>
+        <p style="margin:0;color:#991b1b;font-size:13px;"><strong>Motivo:</strong> ${escHtml(motivo)}</p>
       </div>` : ''}
       <p style="color:#64748b;font-size:13px;line-height:1.6;">
         Para mais informacoes, contacte o administrador do sistema.
@@ -127,17 +142,17 @@ export const emailTemplates = {
         <table style="width:100%;border-collapse:collapse;">
           <tr>
             <td style="padding:6px 0;color:#64748b;font-size:13px;width:80px;">Nome:</td>
-            <td style="padding:6px 0;color:#0f172a;font-size:13px;font-weight:600;">${full_name || '-'}</td>
+            <td style="padding:6px 0;color:#0f172a;font-size:13px;font-weight:600;">${escHtml(full_name) || '-'}</td>
           </tr>
           <tr>
             <td style="padding:6px 0;color:#64748b;font-size:13px;">Email:</td>
-            <td style="padding:6px 0;color:#0f172a;font-size:13px;">${email || '-'}</td>
+            <td style="padding:6px 0;color:#0f172a;font-size:13px;">${escHtml(email) || '-'}</td>
           </tr>
         </table>
       </div>
       ${url ? `
       <div style="text-align:center;margin:24px 0;">
-        <a href="${url}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;">
+        <a href="${escAttr(url)}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;">
           Gerir Acessos
         </a>
       </div>` : ''}
@@ -147,16 +162,16 @@ export const emailTemplates = {
   // Notificacao generica
   notification: ({ title, message, details, actionUrl, actionLabel }) => baseLayout(`
     <div style="padding:10px 0;">
-      <h2 style="margin:0 0 16px;color:#0f172a;font-size:20px;text-align:center;">${title || 'Notificacao'}</h2>
-      <p style="color:#334155;font-size:14px;line-height:1.6;">${message || ''}</p>
+      <h2 style="margin:0 0 16px;color:#0f172a;font-size:20px;text-align:center;">${escHtml(title) || 'Notificacao'}</h2>
+      <p style="color:#334155;font-size:14px;line-height:1.6;">${escHtml(message) || ''}</p>
       ${details ? `
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin:20px 0;">
-        <p style="margin:0;color:#334155;font-size:13px;white-space:pre-line;">${details}</p>
+        <p style="margin:0;color:#334155;font-size:13px;white-space:pre-line;">${escHtml(details)}</p>
       </div>` : ''}
       ${actionUrl ? `
       <div style="text-align:center;margin:24px 0;">
-        <a href="${actionUrl}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;">
-          ${actionLabel || 'Ver Detalhes'}
+        <a href="${escAttr(actionUrl)}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;">
+          ${escHtml(actionLabel) || 'Ver Detalhes'}
         </a>
       </div>` : ''}
     </div>
@@ -172,13 +187,13 @@ export const emailTemplates = {
         <h2 style="margin:0;color:#0f172a;font-size:20px;">Recuperacao de Senha</h2>
       </div>
       <p style="color:#334155;font-size:14px;line-height:1.6;">
-        Prezado(a) <strong>${full_name || 'Utilizador'}</strong>,
+        Prezado(a) <strong>${escHtml(full_name) || 'Utilizador'}</strong>,
       </p>
       <p style="color:#334155;font-size:14px;line-height:1.6;">
         Recebemos um pedido para redefinir a sua senha no DIROPS. Clique no botao abaixo:
       </p>
       <div style="text-align:center;margin:24px 0;">
-        <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;">
+        <a href="${escAttr(resetUrl)}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;">
           Redefinir Senha
         </a>
       </div>
