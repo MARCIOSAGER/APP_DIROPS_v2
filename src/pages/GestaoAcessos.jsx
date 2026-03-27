@@ -101,6 +101,9 @@ export default function GestaoAcessos() {
   const [selectedSolicitacao, setSelectedSolicitacao] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
 
+  const [sendingInvite, setSendingInvite] = useState(null);
+  const [sendingBatch, setSendingBatch] = useState(false);
+
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
   const [rejectionInfo, setRejectionInfo] = useState({ isOpen: false, solicitacao: null });
   const [exclusionInfo, setExclusionInfo] = useState({ isOpen: false, solicitacao: null });
@@ -725,9 +728,6 @@ export default function GestaoAcessos() {
       }
     }
   };
-
-  const [sendingInvite, setSendingInvite] = useState(null); // email of user being invited
-  const [sendingBatch, setSendingBatch] = useState(false);
 
   const handleEnviarConvite = async (user) => {
     if (!user?.email) return;

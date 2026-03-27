@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-export function makeEntityQuery(queryKey, queryFn, options = {}) {
+export function useEntityQuery(queryKey, queryFn, options = {}) {
   return useQuery({
     queryKey,
     queryFn,
