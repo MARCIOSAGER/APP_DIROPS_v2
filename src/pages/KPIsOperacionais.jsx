@@ -262,7 +262,7 @@ export default function KPIsOperacionais() {
     try {
       const dataToExport = filteredAndSortedMedicoes.map((medicao) => {
         const tipoKPI = tiposKPI.find((t) => t.id === medicao.tipo_kpi_id);
-        const aeroporto = aeroportos.find((a) => a.codigo_icao === medicao.aeroporto_id);
+        const aeroporto = aeroportos.find((a) => a.codigo_icao === medicao.aeroporto_id || a.id === medicao.aeroporto_id);
 
         return {
           'Tipo KPI': tipoKPI?.nome || 'N/A',
@@ -510,7 +510,7 @@ export default function KPIsOperacionais() {
           : '-';
         return [
           tipo?.nome || 'N/A',
-          medicao.aeroporto_id || '-',
+          (aeroportos.find(a => a.codigo_icao === medicao.aeroporto_id || a.id === medicao.aeroporto_id)?.nome || medicao.aeroporto_id || '-'),
           medicao.data_medicao ? format(new Date(medicao.data_medicao), 'dd/MM/yyyy', { locale: pt }) : '-',
           medicao.numero_voo || '-',
           medicao.responsavel_medicao || '-',
@@ -791,8 +791,8 @@ Por favor tente novamente ou contacte o suporte técnico.`;
           bValue = tipoB?.nome || '';
           break;
         case 'aeroporto':
-          const aeroportoA = aeroportos.find((ap) => ap.codigo_icao === a.aeroporto_id);
-          const aeroportoB = aeroportos.find((ap) => ap.codigo_icao === b.aeroporto_id);
+          const aeroportoA = aeroportos.find((ap) => ap.codigo_icao === a.aeroporto_id || ap.id === a.aeroporto_id);
+          const aeroportoB = aeroportos.find((ap) => ap.codigo_icao === b.aeroporto_id || ap.id === b.aeroporto_id);
           aValue = aeroportoA?.codigo_icao || '';
           bValue = aeroportoB?.codigo_icao || '';
           break;
@@ -1172,7 +1172,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                       <TableBody>
                         {filteredAndSortedMedicoes.map((medicao) => {
                         const tipoKPI = tiposKPI.find((t) => t.id === medicao.tipo_kpi_id);
-                        const aeroporto = aeroportos.find((a) => a.codigo_icao === medicao.aeroporto_id);
+                        const aeroporto = aeroportos.find((a) => a.codigo_icao === medicao.aeroporto_id || a.id === medicao.aeroporto_id);
 
                         return (
                           <TableRow key={medicao.id} data-state={selectedMedicoes.includes(medicao.id) ? "selected" : ""}>
