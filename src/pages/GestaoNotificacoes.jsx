@@ -15,6 +15,7 @@ import ZAPIGruposRegistrados from '@/components/configuracoes/ZAPIGruposRegistra
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { isAdminProfile } from '@/components/lib/userUtils';
 import { Mail } from 'lucide-react';
+import { useAeroportos } from '@/components/lib/useStaticData';
 
 import RegrasTab from '@/components/notificacoes/RegrasTab';
 import HistoricoTab from '@/components/notificacoes/HistoricoTab';
@@ -363,7 +364,7 @@ export default function GestaoNotificacoes() {
   const { t } = useI18n();
   const [regras, setRegras] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
-  const [aeroportos, setAeroportos] = useState([]);
+  const { data: aeroportos = [] } = useAeroportos();
   const [placeholdersGlobais, setPlaceholdersGlobais] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
@@ -392,7 +393,6 @@ export default function GestaoNotificacoes() {
   const [runRegraId, setRunRegraId] = useState(null);
   const [voosLigados, setVoosLigados] = useState([]);
   const [selectedVooLigadoId, setSelectedVooLigadoId] = useState('');
-  const [aeroportosModal, setAeroportosModal] = useState([]);
   const [selectedAeroporto, setSelectedAeroporto] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [periodoConsolidado, setPeriodoConsolidado] = useState('');
@@ -416,17 +416,15 @@ export default function GestaoNotificacoes() {
         return;
       }
       const empId = user.empresa_id;
-      const [regrasData, usuariosData, aeroportosData, historicoData, placeholdersData, gruposData] = await Promise.all([
+      const [regrasData, usuariosData, historicoData, placeholdersData, gruposData] = await Promise.all([
         RegraNotificacao.list(),
         empId ? UserEntity.filter({ empresa_id: empId }) : UserEntity.list(),
-        base44.entities.Aeroporto.list(),
         base44.entities.HistoricoNotificacao.list('-created_date', 100),
         base44.entities.Placeholder.filter({ ativo: true }).catch(() => []),
         base44.entities.GrupoWhatsApp.filter({ status: 'aprovado' }).catch(() => [])
       ]);
       setRegras(regrasData || []);
       setUsuarios(usuariosData || []);
-      setAeroportos(aeroportosData || []);
       setHistorico(historicoData || []);
       setPlaceholdersGlobais(placeholdersData || []);
       setGruposWhatsApp(gruposData || []);
@@ -764,14 +762,21 @@ export default function GestaoNotificacoes() {
     if (regra.evento_gatilho === 'voo_ligado_criado') {
       try {
         const voosLigadosData = await VooLigado.list('-created_date', 20);
-        const voosComDetalhes = await Promise.all(voosLigadosData.map(async (vooLigado) => {
+        // Batch fetch: collect all unique voo IDs, fetch in one query, then map
+        const allVooIds = [...new Set(
+          voosLigadosData.flatMap(vl => [vl.id_voo_arr, vl.id_voo_dep]).filter(Boolean)
+        )];
+        const vooMap = new Map();
+        if (allVooIds.length > 0) {
           try {
-            const [vooArr, vooDep] = await Promise.all([
-              base44.entities.Voo.get(vooLigado.id_voo_arr).catch(() => null),
-              base44.entities.Voo.get(vooLigado.id_voo_dep).catch(() => null)
-            ]);
-            return { ...vooLigado, vooArr, vooDep };
-          } catch (e) { console.error('Erro ao buscar detalhes do voo:', e); return vooLigado; }
+            const allVoos = await base44.entities.Voo.filter({ id: { $in: allVooIds } });
+            allVoos.forEach(v => vooMap.set(v.id, v));
+          } catch (e) { console.error('Erro ao buscar voos em lote:', e); }
+        }
+        const voosComDetalhes = voosLigadosData.map(vooLigado => ({
+          ...vooLigado,
+          vooArr: vooLigado.id_voo_arr ? (vooMap.get(vooLigado.id_voo_arr) || null) : null,
+          vooDep: vooLigado.id_voo_dep ? (vooMap.get(vooLigado.id_voo_dep) || null) : null,
         }));
         setVoosLigados(voosComDetalhes);
       } catch (error) {
@@ -779,15 +784,7 @@ export default function GestaoNotificacoes() {
         setAlertInfo({ isOpen: true, type: 'error', title: 'Erro ao Carregar Voos', message: 'Não foi possível carregar a lista de voos ligados.' });
       }
     }
-    if (regra.evento_gatilho === 'relatorio_operacional_diario' || regra.evento_gatilho === 'relatorio_operacional_semanal' || regra.evento_gatilho === 'relatorio_operacional_mensal') {
-      try {
-        const aeroportosData = await base44.entities.Aeroporto.list();
-        setAeroportosModal(aeroportosData || []);
-      } catch (error) {
-        console.error('Erro ao carregar aeroportos:', error);
-        setAlertInfo({ isOpen: true, type: 'error', title: 'Erro ao Carregar Aeroportos', message: 'Não foi possível carregar a lista de aeroportos.' });
-      }
-    }
+    // aeroportos for the modal come from the useAeroportos() cached hook
     setShowRunModal(true);
   };
 
@@ -1001,7 +998,7 @@ export default function GestaoNotificacoes() {
             runRegraId={runRegraId}
             voosLigados={voosLigados}
             selectedVooLigadoId={selectedVooLigadoId}
-            aeroportosModal={aeroportosModal}
+            aeroportosModal={aeroportos}
             selectedAeroporto={selectedAeroporto}
             testeData={testeData}
             isRunning={isRunning}
