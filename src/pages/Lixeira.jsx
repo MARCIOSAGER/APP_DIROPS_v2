@@ -31,6 +31,18 @@ export default function Lixeira() {
   const [proformasCanceladas, setProformasCanceladas] = useState([]);
   const [checklistInativos, setChecklistInativos] = useState([]);
 
+  // Pagination state per tab
+  const PAGE_SIZE = 50;
+  const [inspecoesPage, setInspecoesPage] = useState(1);
+  const [inspecoesTotalPages, setInspecoesTotalPages] = useState(1);
+  const [inspecoesTotal, setInspecoesTotal] = useState(0);
+  const [proformasPage, setProformasPage] = useState(1);
+  const [proformasTotalPages, setProformasTotalPages] = useState(1);
+  const [proformasTotal, setProformasTotal] = useState(0);
+  const [checklistPage, setChecklistPage] = useState(1);
+  const [checklistTotalPages, setChecklistTotalPages] = useState(1);
+  const [checklistTotal, setChecklistTotal] = useState(0);
+
   // Action state
   const [actionLoading, setActionLoading] = useState(null);
   const [confirmInfo, setConfirmInfo] = useState({ isOpen: false, type: '', item: null, action: '' });
@@ -40,41 +52,67 @@ export default function Lixeira() {
     loadData();
   }, [effectiveEmpresaId]);
 
-  const loadData = async () => {
+  const loadData = async (options = {}) => {
     setIsLoading(true);
     try {
       const empresaIdFiltro = effectiveEmpresaId || user?.empresa_id;
       const aeroportosData = await (empresaIdFiltro ? Aeroporto.filter({ empresa_id: empresaIdFiltro }) : Aeroporto.list());
       const aeroportosFiltrados = getAeroportosPermitidos(user, aeroportosData, effectiveEmpresaId);
       setAeroportos(aeroportosFiltrados);
-      const idsPermitidos = new Set(aeroportosFiltrados.map(a => a.id));
 
-      // Load cancelled inspections
-      const allInspecoes = await Inspecao.list('-updated_date');
-      let canceladas = allInspecoes.filter(i => i.status === 'cancelada');
-      if (!isSuperAdmin(user) || effectiveEmpresaId) {
-        canceladas = canceladas.filter(i => idsPermitidos.has(i.aeroporto_id));
+      const iPage = options.inspecoesPage || inspecoesPage;
+      const pPage = options.proformasPage || proformasPage;
+      const cPage = options.checklistPage || checklistPage;
+
+      // Build filters for server-side queries
+      const inspecaoFilters = { status: 'cancelada' };
+      const proformaFilters = { status: 'cancelada' };
+      if (empresaIdFiltro) {
+        inspecaoFilters.empresa_id = empresaIdFiltro;
+        proformaFilters.empresa_id = empresaIdFiltro;
       }
-      setInspecoesCanceladas(canceladas);
 
-      // Load cancelled proformas
-      const allProformas = await Proforma.list('-created_date');
-      let proformasCancelled = allProformas.filter(p => p.status === 'cancelada');
-      if (!isSuperAdmin(user) || effectiveEmpresaId) {
-        proformasCancelled = proformasCancelled.filter(p => idsPermitidos.has(p.aeroporto_id));
-      }
-      setProformasCanceladas(proformasCancelled);
+      const [inspecoesResult, proformasResult, checklistResult] = await Promise.all([
+        Inspecao.paginate({ filters: inspecaoFilters, orderBy: '-updated_date', page: iPage, pageSize: PAGE_SIZE }),
+        Proforma.paginate({ filters: proformaFilters, orderBy: '-created_date', page: pPage, pageSize: PAGE_SIZE }),
+        ItemChecklist.paginate({ filters: { status: 'inativo' }, orderBy: '-updated_date', page: cPage, pageSize: PAGE_SIZE }),
+      ]);
 
-      // Load inactive checklist items
-      const allChecklist = await ItemChecklist.list();
-      const inativos = allChecklist.filter(i => i.status === 'inativo');
-      setChecklistInativos(inativos);
+      setInspecoesCanceladas(inspecoesResult.data);
+      setInspecoesPage(inspecoesResult.page);
+      setInspecoesTotalPages(inspecoesResult.totalPages);
+      setInspecoesTotal(inspecoesResult.total);
+
+      setProformasCanceladas(proformasResult.data);
+      setProformasPage(proformasResult.page);
+      setProformasTotalPages(proformasResult.totalPages);
+      setProformasTotal(proformasResult.total);
+
+      setChecklistInativos(checklistResult.data);
+      setChecklistPage(checklistResult.page);
+      setChecklistTotalPages(checklistResult.totalPages);
+      setChecklistTotal(checklistResult.total);
 
     } catch (error) {
       console.error('Erro ao carregar lixeira:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleInspecoesPageChange = async (newPage) => {
+    if (newPage < 1 || newPage > inspecoesTotalPages) return;
+    await loadData({ inspecoesPage: newPage, proformasPage: proformasPage, checklistPage: checklistPage });
+  };
+
+  const handleProformasPageChange = async (newPage) => {
+    if (newPage < 1 || newPage > proformasTotalPages) return;
+    await loadData({ inspecoesPage: inspecoesPage, proformasPage: newPage, checklistPage: checklistPage });
+  };
+
+  const handleChecklistPageChange = async (newPage) => {
+    if (newPage < 1 || newPage > checklistTotalPages) return;
+    await loadData({ inspecoesPage: inspecoesPage, proformasPage: proformasPage, checklistPage: newPage });
   };
 
   const handleRestore = async (type, item) => {
@@ -123,7 +161,7 @@ export default function Lixeira() {
     return aeroportos.find(a => a.id === id)?.nome || id || '—';
   };
 
-  const totalItens = inspecoesCanceladas.length + proformasCanceladas.length + checklistInativos.length;
+  const totalItens = inspecoesTotal + proformasTotal + checklistTotal;
 
   const filteredInspecoes = useMemo(() => {
     if (!busca.trim()) return inspecoesCanceladas;
@@ -219,15 +257,15 @@ export default function Lixeira() {
             <TabsList className="mb-4">
               <TabsTrigger value="inspecoes" className="flex items-center gap-2">
                 <ClipboardCheck className="w-4 h-4" />
-                {t('lixeira.tabInspecoes')} ({inspecoesCanceladas.length})
+                {t('lixeira.tabInspecoes')} ({inspecoesTotal})
               </TabsTrigger>
               <TabsTrigger value="proformas" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
-                {t('lixeira.tabProformas')} ({proformasCanceladas.length})
+                {t('lixeira.tabProformas')} ({proformasTotal})
               </TabsTrigger>
               <TabsTrigger value="checklist" className="flex items-center gap-2">
                 <ClipboardCheck className="w-4 h-4" />
-                {t('lixeira.tabChecklist')} ({checklistInativos.length})
+                {t('lixeira.tabChecklist')} ({checklistTotal})
               </TabsTrigger>
             </TabsList>
 
@@ -249,6 +287,21 @@ export default function Lixeira() {
                       onDelete={() => setConfirmInfo({ isOpen: true, type: 'inspecao', item: insp, action: 'delete' })}
                     />
                   ))}
+                  {inspecoesTotalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                        {t('common.pagina') || 'Pagina'} {inspecoesPage} {t('common.de') || 'de'} {inspecoesTotalPages} ({inspecoesTotal} {t('common.registos') || 'registos'})
+                      </span>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleInspecoesPageChange(inspecoesPage - 1)} disabled={inspecoesPage <= 1}>
+                          {t('common.anterior') || 'Anterior'}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleInspecoesPageChange(inspecoesPage + 1)} disabled={inspecoesPage >= inspecoesTotalPages}>
+                          {t('common.seguinte') || 'Seguinte'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -271,6 +324,21 @@ export default function Lixeira() {
                       onDelete={() => setConfirmInfo({ isOpen: true, type: 'proforma', item: prof, action: 'delete' })}
                     />
                   ))}
+                  {proformasTotalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                        {t('common.pagina') || 'Pagina'} {proformasPage} {t('common.de') || 'de'} {proformasTotalPages} ({proformasTotal} {t('common.registos') || 'registos'})
+                      </span>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleProformasPageChange(proformasPage - 1)} disabled={proformasPage <= 1}>
+                          {t('common.anterior') || 'Anterior'}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleProformasPageChange(proformasPage + 1)} disabled={proformasPage >= proformasTotalPages}>
+                          {t('common.seguinte') || 'Seguinte'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -293,6 +361,21 @@ export default function Lixeira() {
                       onDelete={() => setConfirmInfo({ isOpen: true, type: 'checklist', item, action: 'delete' })}
                     />
                   ))}
+                  {checklistTotalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                        {t('common.pagina') || 'Pagina'} {checklistPage} {t('common.de') || 'de'} {checklistTotalPages} ({checklistTotal} {t('common.registos') || 'registos'})
+                      </span>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleChecklistPageChange(checklistPage - 1)} disabled={checklistPage <= 1}>
+                          {t('common.anterior') || 'Anterior'}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleChecklistPageChange(checklistPage + 1)} disabled={checklistPage >= checklistTotalPages}>
+                          {t('common.seguinte') || 'Seguinte'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>
