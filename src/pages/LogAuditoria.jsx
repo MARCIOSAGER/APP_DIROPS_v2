@@ -49,7 +49,10 @@ export default function LogAuditoriaPage() {
   const { t } = useI18n();
   const { user } = useAuth();
   const [logs, setLogs] = useState([]);
-  const [filteredLogs, setFilteredLogs] = useState([]);
+  const [totalRegistos, setTotalRegistos] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 50;
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hasAccess, setHasAccess] = useState(false);
@@ -117,12 +120,29 @@ export default function LogAuditoriaPage() {
     }
   };
 
-  const loadAuditLogs = async () => {
+  const loadAuditLogs = async (page = currentPage) => {
     try {
-      // Carregar apenas os logs mais recentes para evitar sobrecarga
-      const logsData = await LogAuditoria.list('-created_date', 200);
-      setLogs(logsData || []);
-      setFilteredLogs(logsData || []);
+      // Build server-side filters from current filter state
+      const serverFilters = {};
+      if (filters.acao) serverFilters.acao = filters.acao;
+      if (filters.modulo) serverFilters.modulo = filters.modulo;
+      if (filters.dataInicio) serverFilters.created_date = { ...serverFilters.created_date, $gte: filters.dataInicio };
+      if (filters.dataFim) {
+        const endDate = new Date(filters.dataFim);
+        endDate.setHours(23, 59, 59, 999);
+        serverFilters.created_date = { ...serverFilters.created_date, $lte: endDate.toISOString() };
+      }
+
+      const result = await LogAuditoria.paginate({
+        filters: serverFilters,
+        orderBy: '-created_date',
+        page,
+        pageSize: PAGE_SIZE,
+      });
+      setLogs(result.data || []);
+      setTotalRegistos(result.total);
+      setTotalPages(result.totalPages);
+      setCurrentPage(result.page);
     } catch (error) {
       console.error('Erro ao carregar logs:', error);
       throw error;
@@ -132,14 +152,30 @@ export default function LogAuditoriaPage() {
   const handleFilterChange = (field, value) => {
     const newFilters = { ...filters, [field]: value };
     setFilters(newFilters);
-    applyFilters(newFilters);
+
+    // Server-side filterable fields trigger a reload at page 1
+    if (['acao', 'modulo', 'dataInicio', 'dataFim'].includes(field)) {
+      setCurrentPage(1);
+      // We need to reload with new filters — schedule via effect
+      setNeedsReload(true);
+    }
   };
 
-  const applyFilters = (currentFilters) => {
-    let filtered = [...logs];
+  const [needsReload, setNeedsReload] = useState(false);
 
-    if (currentFilters.search) {
-      const searchLower = currentFilters.search.toLowerCase();
+  useEffect(() => {
+    if (needsReload && hasAccess) {
+      setNeedsReload(false);
+      loadAuditLogs(1);
+    }
+  }, [needsReload]);
+
+  // Client-side filtering for text search fields (search, usuario)
+  const filteredLogs = React.useMemo(() => {
+    let filtered = logs;
+
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(log =>
         log.usuario_email?.toLowerCase().includes(searchLower) ||
         log.usuario_nome?.toLowerCase().includes(searchLower) ||
@@ -148,38 +184,16 @@ export default function LogAuditoriaPage() {
       );
     }
 
-    if (currentFilters.acao) {
-      filtered = filtered.filter(log => log.acao === currentFilters.acao);
-    }
-
-    if (currentFilters.modulo) {
-      filtered = filtered.filter(log => log.modulo === currentFilters.modulo);
-    }
-
-    if (currentFilters.usuario) {
-      const userLower = currentFilters.usuario.toLowerCase();
+    if (filters.usuario) {
+      const userLower = filters.usuario.toLowerCase();
       filtered = filtered.filter(log =>
         log.usuario_email?.toLowerCase().includes(userLower) ||
         log.usuario_nome?.toLowerCase().includes(userLower)
       );
     }
 
-    if (currentFilters.dataInicio) {
-      filtered = filtered.filter(log =>
-        new Date(log.created_date) >= new Date(currentFilters.dataInicio)
-      );
-    }
-
-    if (currentFilters.dataFim) {
-      const endDate = new Date(currentFilters.dataFim);
-      endDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(log =>
-        new Date(log.created_date) <= endDate
-      );
-    }
-
-    setFilteredLogs(filtered);
-  };
+    return filtered;
+  }, [logs, filters.search, filters.usuario]);
 
   const clearFilters = () => {
     const emptyFilters = {
@@ -191,7 +205,14 @@ export default function LogAuditoriaPage() {
       dataFim: ''
     };
     setFilters(emptyFilters);
-    setFilteredLogs(logs);
+    setCurrentPage(1);
+    setNeedsReload(true);
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
+    loadAuditLogs(newPage);
   };
 
   const handleRetryLogin = () => {
@@ -366,7 +387,7 @@ export default function LogAuditoriaPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {t('logAuditoria.logsAuditoria')} ({filteredLogs.length} {t('logAuditoria.registos')})
+            {t('logAuditoria.logsAuditoria')} ({totalRegistos} {t('logAuditoria.registos')})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -428,8 +449,34 @@ export default function LogAuditoriaPage() {
               </table>
             </div>
           )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <span className="text-sm text-slate-600 dark:text-slate-400">
+                {t('logAuditoria.paginaLabel') || 'Página'} {currentPage} {t('logAuditoria.paginaDe') || 'de'} {totalPages} ({totalRegistos} {t('logAuditoria.registos')})
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                >
+                  {t('logAuditoria.anterior') || 'Anterior'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                >
+                  {t('logAuditoria.seguinte') || 'Seguinte'}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
-        </Card>
-        </div>
-        );
-        }
+      </Card>
+    </div>
+  );
+}

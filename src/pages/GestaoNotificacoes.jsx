@@ -399,6 +399,10 @@ export default function GestaoNotificacoes() {
   const [historico, setHistorico] = useState([]);
   const [filtrosHistorico, setFiltrosHistorico] = useState({ status: 'todos', canal: 'todos' });
   const [historicoSelecionado, setHistoricoSelecionado] = useState(new Set());
+  const [historicoPage, setHistoricoPage] = useState(1);
+  const [historicoTotal, setHistoricoTotal] = useState(0);
+  const [historicoTotalPages, setHistoricoTotalPages] = useState(0);
+  const HISTORICO_PAGE_SIZE = 50;
 
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
@@ -416,16 +420,19 @@ export default function GestaoNotificacoes() {
         return;
       }
       const empId = user.empresa_id;
-      const [regrasData, usuariosData, historicoData, placeholdersData, gruposData] = await Promise.all([
+      const [regrasData, usuariosData, historicoResult, placeholdersData, gruposData] = await Promise.all([
         RegraNotificacao.list(),
         empId ? UserEntity.filter({ empresa_id: empId }) : UserEntity.list(),
-        base44.entities.HistoricoNotificacao.list('-created_date', 100),
+        base44.entities.HistoricoNotificacao.paginate({ orderBy: '-created_date', page: 1, pageSize: HISTORICO_PAGE_SIZE }),
         base44.entities.Placeholder.filter({ ativo: true }).catch(() => []),
         base44.entities.GrupoWhatsApp.filter({ status: 'aprovado' }).catch(() => [])
       ]);
       setRegras(regrasData || []);
       setUsuarios(usuariosData || []);
-      setHistorico(historicoData || []);
+      setHistorico(historicoResult.data || []);
+      setHistoricoTotal(historicoResult.total);
+      setHistoricoTotalPages(historicoResult.totalPages);
+      setHistoricoPage(historicoResult.page);
       setPlaceholdersGlobais(placeholdersData || []);
       setGruposWhatsApp(gruposData || []);
     } catch (error) {
@@ -636,6 +643,24 @@ export default function GestaoNotificacoes() {
         }
       }
     });
+  };
+
+  const handleHistoricoPageChange = async (newPage) => {
+    if (newPage < 1 || newPage > historicoTotalPages) return;
+    try {
+      const result = await base44.entities.HistoricoNotificacao.paginate({
+        orderBy: '-created_date',
+        page: newPage,
+        pageSize: HISTORICO_PAGE_SIZE,
+      });
+      setHistorico(result.data || []);
+      setHistoricoTotal(result.total);
+      setHistoricoTotalPages(result.totalPages);
+      setHistoricoPage(result.page);
+      setHistoricoSelecionado(new Set());
+    } catch (error) {
+      console.error('Erro ao carregar página do histórico:', error);
+    }
   };
 
   // Placeholders
@@ -922,6 +947,10 @@ export default function GestaoNotificacoes() {
             onToggleAllHistorico={toggleAllHistorico}
             onApagarHistoricoSelecionado={handleApagarHistoricoSelecionado}
             onLimparHistorico={handleLimparHistorico}
+            currentPage={historicoPage}
+            totalPages={historicoTotalPages}
+            totalRegistos={historicoTotal}
+            onPageChange={handleHistoricoPageChange}
           />
         )}
 

@@ -17,6 +17,10 @@ export default function HistoricoTab({
   onToggleAllHistorico,
   onApagarHistoricoSelecionado,
   onLimparHistorico,
+  currentPage = 1,
+  totalPages = 1,
+  totalRegistos = 0,
+  onPageChange,
 }) {
   return (
     <Card>
@@ -167,6 +171,32 @@ export default function HistoricoTab({
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {/* Pagination */}
+        {totalPages > 1 && onPageChange && (
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              {t('notificacoes.pagina') || 'Página'} {currentPage} {t('notificacoes.de') || 'de'} {totalPages} ({totalRegistos} {t('notificacoes.registos') || 'registos'})
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage <= 1}
+              >
+                {t('notificacoes.anterior') || 'Anterior'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+              >
+                {t('notificacoes.seguinte') || 'Seguinte'}
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

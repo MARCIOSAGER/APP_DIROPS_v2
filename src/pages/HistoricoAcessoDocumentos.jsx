@@ -30,25 +30,80 @@ export default function HistoricoAcessoDocumentos() {
   const [sortDirection, setSortDirection] = useState('desc');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalRegistos, setTotalRegistos] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const PAGE_SIZE = 50;
+
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   useEffect(() => {
-    loadData();
+    loadData().then(() => setInitialLoadDone(true));
   }, []);
+
+  // Reload logs when server-side filters change
+  useEffect(() => {
+    if (initialLoadDone) {
+      setCurrentPage(1);
+      loadLogs(1);
+    }
+  }, [tipoFilter, documentoFilter, dataInicio, dataFim, sortField, sortDirection]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [logsData, docsData] = await Promise.all([
-        base44.entities.LogAcessoDocumento.list('-data_hora_acesso'),
+      const [logsResult, docsData] = await Promise.all([
+        buildPaginatedQuery(1),
         base44.entities.Documento.list()
       ]);
-      setLogs(logsData);
+      setLogs(logsResult.data);
+      setTotalRegistos(logsResult.total);
+      setTotalPages(logsResult.totalPages);
+      setCurrentPage(logsResult.page);
       setDocumentos(docsData);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const buildPaginatedQuery = async (page) => {
+    const serverFilters = {};
+    if (tipoFilter !== 'todos') serverFilters.tipo_acesso = tipoFilter;
+    if (documentoFilter !== 'todos') serverFilters.documento_id = documentoFilter;
+    if (dataInicio) serverFilters.data_hora_acesso = { ...serverFilters.data_hora_acesso, $gte: dataInicio };
+    if (dataFim) {
+      const endDate = new Date(dataFim);
+      endDate.setHours(23, 59, 59, 999);
+      serverFilters.data_hora_acesso = { ...serverFilters.data_hora_acesso, $lte: endDate.toISOString() };
+    }
+
+    const orderBy = `${sortDirection === 'desc' ? '-' : ''}${sortField}`;
+
+    return base44.entities.LogAcessoDocumento.paginate({
+      filters: serverFilters,
+      orderBy,
+      page,
+      pageSize: PAGE_SIZE,
+    });
+  };
+
+  const loadLogs = async (page) => {
+    try {
+      const result = await buildPaginatedQuery(page);
+      setLogs(result.data);
+      setTotalRegistos(result.total);
+      setTotalPages(result.totalPages);
+      setCurrentPage(result.page);
+    } catch (error) {
+      console.error('Erro ao carregar logs:', error);
+    }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    loadLogs(newPage);
   };
 
   const documentoMap = useMemo(() => {
@@ -70,50 +125,20 @@ export default function HistoricoAcessoDocumentos() {
     }
   };
 
-  const filteredLogs = useMemo(() => logs
-    .filter(log => {
-      const matchesSearch =
+  // Client-side text search only; sorting and other filters are server-side
+  const filteredLogs = useMemo(() => {
+    if (!searchTerm) return logs;
+    return logs.filter(log => {
+      return (
         log.usuario_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.usuario_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getDocumentoNome(log.documento_id).toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesTipo = tipoFilter === 'todos' || log.tipo_acesso === tipoFilter;
-      const matchesDocumento = documentoFilter === 'todos' || log.documento_id === documentoFilter;
-
-      let matchesData = true;
-      if (dataInicio && dataFim) {
-        const logDate = new Date(log.data_hora_acesso);
-        const inicio = new Date(dataInicio);
-        const fim = new Date(dataFim);
-        matchesData = logDate >= inicio && logDate <= fim;
-      }
-
-      return matchesSearch && matchesTipo && matchesDocumento && matchesData;
-    })
-    .sort((a, b) => {
-      let aValue = a[sortField];
-      let bValue = b[sortField];
-
-      if (sortField === 'documento_id') {
-        aValue = getDocumentoNome(a.documento_id);
-        bValue = getDocumentoNome(b.documento_id);
-      }
-
-      if (aValue === undefined || aValue === null) aValue = '';
-      if (bValue === undefined || bValue === null) bValue = '';
-
-      if (typeof aValue === 'string') {
-        const comparison = aValue.localeCompare(bValue);
-        return sortDirection === 'asc' ? comparison : -comparison;
-      }
-
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    }), [logs, searchTerm, tipoFilter, documentoFilter, dataInicio, dataFim, sortField, sortDirection, documentoMap]);
+        getDocumentoNome(log.documento_id).toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+  }, [logs, searchTerm, documentoMap]);
 
   const stats = {
-    total: logs.length,
+    total: totalRegistos,
     visualizacoes: logs.filter(l => l.tipo_acesso === 'visualizacao').length,
     downloads: logs.filter(l => l.tipo_acesso === 'download').length,
     ultimasHoras: logs.filter(l => {
@@ -275,7 +300,7 @@ export default function HistoricoAcessoDocumentos() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">
-            {t('historico.registros_acesso')} ({filteredLogs.length})
+            {t('historico.registros_acesso')} ({totalRegistos})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -406,6 +431,32 @@ export default function HistoricoAcessoDocumentos() {
                   })}
                 </TableBody>
               </Table>
+            </div>
+          )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <span className="text-sm text-slate-600 dark:text-slate-400">
+                {t('historico.pagina') || 'Página'} {currentPage} {t('historico.de') || 'de'} {totalPages} ({totalRegistos} {t('historico.registos') || 'registos'})
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                >
+                  {t('historico.anterior') || 'Anterior'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                >
+                  {t('historico.seguinte') || 'Seguinte'}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

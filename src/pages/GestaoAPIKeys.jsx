@@ -82,6 +82,10 @@ export default function GestaoAPIKeys() {
   // Logs filter
   const [logSearch, setLogSearch] = useState('');
   const [logStatusFilter, setLogStatusFilter] = useState('todos');
+  const [logPage, setLogPage] = useState(1);
+  const [logTotal, setLogTotal] = useState(0);
+  const [logTotalPages, setLogTotalPages] = useState(0);
+  const LOG_PAGE_SIZE = 50;
 
   // Access is controlled by regra_permissao (Layout already checks paginas_permitidas)
   // If the user reached this page, they have permission via GerirPermissoes
@@ -98,17 +102,24 @@ export default function GestaoAPIKeys() {
       const empId = effectiveEmpresaId || currentUser?.empresa_id;
       const useFilter = !(isSuperAdmin(currentUser) && !effectiveEmpresaId) && empId;
 
-      const [keysData, logsData] = await Promise.all([
+      const logFilters = useFilter ? { empresa_id: { $eq: empId } } : {};
+      const [keysData, logsResult] = await Promise.all([
         useFilter
           ? ApiKey.filter({ empresa_id: { $eq: empId } }, '-created_date')
           : ApiKey.list('-created_date'),
-        useFilter
-          ? ApiAccessLog.filter({ empresa_id: { $eq: empId } }, '-created_at')
-          : ApiAccessLog.list('-created_at'),
+        ApiAccessLog.paginate({
+          filters: logFilters,
+          orderBy: '-created_at',
+          page: 1,
+          pageSize: LOG_PAGE_SIZE,
+        }),
       ]);
 
       setKeys(keysData);
-      setLogs(logsData);
+      setLogs(logsResult.data);
+      setLogTotal(logsResult.total);
+      setLogTotalPages(logsResult.totalPages);
+      setLogPage(logsResult.page);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -198,15 +209,36 @@ export default function GestaoAPIKeys() {
     });
   }, [logs, logSearch, logStatusFilter]);
 
+  const handleLogPageChange = async (newPage) => {
+    if (newPage < 1 || newPage > logTotalPages) return;
+    try {
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
+      const useFilter = !(isSuperAdmin(currentUser) && !effectiveEmpresaId) && empId;
+      const logFilters = useFilter ? { empresa_id: { $eq: empId } } : {};
+      const result = await ApiAccessLog.paginate({
+        filters: logFilters,
+        orderBy: '-created_at',
+        page: newPage,
+        pageSize: LOG_PAGE_SIZE,
+      });
+      setLogs(result.data);
+      setLogTotal(result.total);
+      setLogTotalPages(result.totalPages);
+      setLogPage(result.page);
+    } catch (error) {
+      console.error('Erro ao carregar página de logs:', error);
+    }
+  };
+
   // Stats
   const stats = useMemo(() => ({
     totalKeys: keys.length,
     activeKeys: keys.filter(k => k.is_active && !k.revoked_at).length,
-    totalRequests: logs.length,
+    totalRequests: logTotal,
     successRate: logs.length > 0
       ? Math.round((logs.filter(l => l.status_code === 200).length / logs.length) * 100)
       : 0,
-  }), [keys, logs]);
+  }), [keys, logs, logTotal]);
 
   if (!canAccess) {
     return (
@@ -553,7 +585,7 @@ body = Json.FromValue([
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredLogs.slice(0, 100).map(log => (
+                        {filteredLogs.map(log => (
                           <tr key={log.id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
                             <td className="p-3 text-xs text-slate-500 dark:text-slate-400">
                               {log.created_at ? format(new Date(log.created_at), 'dd/MM/yy HH:mm:ss', { locale: pt }) : '—'}
@@ -576,10 +608,31 @@ body = Json.FromValue([
                       </tbody>
                     </table>
                   </div>
-                  {filteredLogs.length > 100 && (
-                    <p className="text-center text-xs text-slate-400 dark:text-slate-500 py-3">
-                      {t('apiKeys.mostrandoRegistos').replace('{total}', filteredLogs.length)}
-                    </p>
+                  {/* Pagination */}
+                  {logTotalPages > 1 && (
+                    <div className="flex items-center justify-between px-3 py-3 border-t border-slate-200 dark:border-slate-700">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                        {t('apiKeys.pagina') || 'Página'} {logPage} {t('apiKeys.de') || 'de'} {logTotalPages} ({logTotal} {t('apiKeys.registos') || 'registos'})
+                      </span>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleLogPageChange(logPage - 1)}
+                          disabled={logPage <= 1}
+                        >
+                          {t('apiKeys.anterior') || 'Anterior'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleLogPageChange(logPage + 1)}
+                          disabled={logPage >= logTotalPages}
+                        >
+                          {t('apiKeys.seguinte') || 'Seguinte'}
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </CardContent>
               </Card>
