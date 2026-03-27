@@ -95,21 +95,20 @@ export default function GestaoAPIKeys() {
   const loadData = async () => {
     setIsLoading(true);
     try {
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
+      const useFilter = !(isSuperAdmin(currentUser) && !effectiveEmpresaId) && empId;
+
       const [keysData, logsData] = await Promise.all([
-        ApiKey.list('-created_date'),
-        ApiAccessLog.list('-created_at'),
+        useFilter
+          ? ApiKey.filter({ empresa_id: { $eq: empId } }, '-created_date')
+          : ApiKey.list('-created_date'),
+        useFilter
+          ? ApiAccessLog.filter({ empresa_id: { $eq: empId } }, '-created_at')
+          : ApiAccessLog.list('-created_at'),
       ]);
 
-      const empId = effectiveEmpresaId || currentUser?.empresa_id;
-      const filteredKeys = isSuperAdmin(currentUser) && !effectiveEmpresaId
-        ? keysData
-        : keysData.filter(k => k.empresa_id === empId);
-      const filteredLogs = isSuperAdmin(currentUser) && !effectiveEmpresaId
-        ? logsData
-        : logsData.filter(l => l.empresa_id === empId);
-
-      setKeys(filteredKeys);
-      setLogs(filteredLogs);
+      setKeys(keysData);
+      setLogs(logsData);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {

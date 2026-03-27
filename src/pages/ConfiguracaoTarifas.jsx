@@ -38,12 +38,15 @@ import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useI18n } from '@/components/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 
-// Helper: filtra tarifas por empresa_id
-function filterTarifasByEmpresa(tarifas, empresaId) {
-  if (!empresaId) return tarifas;
-  const empresaTarifas = tarifas.filter(t => t.empresa_id === empresaId);
-  const globalTarifas = tarifas.filter(t => !t.empresa_id);
-  return empresaTarifas.length > 0 ? empresaTarifas : globalTarifas;
+// Helper: fetch tarifas scoped to empresa + global (null empresa_id) for fallback
+// When empresaId is set, fetches only empresa-specific rows; falls back to global if none exist.
+async function fetchTarifasScoped(Entity, empresaId) {
+  if (!empresaId) return Entity.list();
+  const [empresaData, globalData] = await Promise.all([
+    Entity.filter({ empresa_id: { $eq: empresaId } }),
+    Entity.filter({ empresa_id: { $is: null } }),
+  ]);
+  return empresaData.length > 0 ? empresaData : globalData;
 }
 
 export default function ConfiguracaoTarifas() {
@@ -93,6 +96,7 @@ export default function ConfiguracaoTarifas() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
+      const empId = effectiveEmpresaId;
       const [
         aeroportosData,
         tarifasPousoData,
@@ -106,11 +110,11 @@ export default function ConfiguracaoTarifas() {
         clientesData
       ] = await Promise.all([
         (effectiveEmpresaId || user.empresa_id) ? Aeroporto.filter({ empresa_id: effectiveEmpresaId || user.empresa_id }) : Aeroporto.list(),
-        TarifaPouso.list(),
-        TarifaPermanencia.list(),
-        OutraTarifa.list(),
-        Imposto.list(),
-        TarifaRecurso.list(),
+        fetchTarifasScoped(TarifaPouso, empId),
+        fetchTarifasScoped(TarifaPermanencia, empId),
+        fetchTarifasScoped(OutraTarifa, empId),
+        fetchTarifasScoped(Imposto, empId),
+        fetchTarifasScoped(TarifaRecurso, empId),
         (async () => {
           try {
             const configs = await ConfiguracaoSistema.list();
@@ -126,11 +130,11 @@ export default function ConfiguracaoTarifas() {
       const userAccessibleAeroportos = getAeroportosPermitidos(user, aeroportosAngola, effectiveEmpresaId);
       setAeroportos(userAccessibleAeroportos);
 
-      setTarifasPouso(filterTarifasByEmpresa(tarifasPousoData, effectiveEmpresaId));
-      setTarifasPermanencia(filterTarifasByEmpresa(tarifasPermanenciaData, effectiveEmpresaId));
-      setOutrasTarifas(filterTarifasByEmpresa(outrasTarifasData, effectiveEmpresaId));
-      setImpostos(filterTarifasByEmpresa(impostosData, effectiveEmpresaId));
-      setTarifasRecursos(filterTarifasByEmpresa(tarifasRecursosData || [], effectiveEmpresaId));
+      setTarifasPouso(tarifasPousoData);
+      setTarifasPermanencia(tarifasPermanenciaData);
+      setOutrasTarifas(outrasTarifasData);
+      setImpostos(impostosData);
+      setTarifasRecursos(tarifasRecursosData || []);
       setConfiguracao(configsData);
       setTiposOutraTarifa((tiposData || []).filter(t => t.status === 'ativa').sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
       setTiposServicoGeral((tiposServicoGeralData || []).sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
