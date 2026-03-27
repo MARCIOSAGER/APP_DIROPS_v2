@@ -34,6 +34,9 @@ import { useCalculosTarifa, fetchCalculoMap } from '@/hooks/useCalculosTarifa';
 import { useQueryClient } from '@tanstack/react-query';
 
 import VoosTable from '../components/operacoes/VoosTable';
+import VoosTab from '../components/operacoes/VoosTab';
+import VoosLigadosTab from '../components/operacoes/VoosLigadosTab';
+import VoosSemLinkTab from '../components/operacoes/VoosSemLinkTab';
 import FormVoo from '../components/operacoes/FormVoo';
 import { downloadAsExcel } from '../components/lib/export';
 import { calculateAllTariffs } from '../components/lib/tariffCalculations';
@@ -1194,6 +1197,39 @@ export default function Operacoes() {
     }
   };
 
+  const handleRecalcularTarifaSingle = async (vooLigado) => {
+    try {
+      await _recalculateSingleTariff(vooLigado);
+      // Buscar apenas o cálculo atualizado em vez de recarregar tudo
+      const updatedCalculo = await CalculoTarifa.filter({ voo_ligado_id: { $eq: vooLigado.id } });
+      if (updatedCalculo.length > 0) {
+        queryClient.setQueryData(['calculos-tarifa', empresaId], prev => {
+          const withoutOld = (prev || []).filter(ct => ct.voo_ligado_id !== vooLigado.id);
+          return [...withoutOld, ...updatedCalculo];
+        });
+      }
+      setSuccessInfo({
+        isOpen: true,
+        title: t('operacoes.tarifa_recalculada'),
+        message: t('operacoes.tarifa_recalculada_msg')
+      });
+    } catch (error) {
+      console.error('Erro ao recalcular tarifa:', error);
+      setAlertInfo({
+        isOpen: true,
+        type: 'error',
+        title: t('operacoes.erro_recalcular'),
+        message: error.message || t('operacoes.erro_recalcular_msg')
+      });
+    }
+  };
+
+  const handleDeleteVooSemLink = async (voo) => {
+    if (!confirm(`Eliminar voo ${voo.numero_voo} ${voo.tipo_movimento} ${voo.data_operacao}?`)) return;
+    await Voo.update(voo.id, { deleted_at: new Date().toISOString() });
+    if (semLinkLoaded) loadVoosSemLink(); else queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+  };
+
   const handleRecalcularTarifasLote = async (selectedVooLigadoIds = null) => {
     let targets = [];
     if (selectedVooLigadoIds && Array.isArray(selectedVooLigadoIds)) {
@@ -2130,635 +2166,98 @@ export default function Operacoes() {
           </TabsList>
 
           <TabsContent value="voos" className="space-y-4 sm:space-y-6">
-            <Card className="shadow-sm border-0">
-              <CardHeader className="flex flex-col gap-3 sm:gap-4 p-4 sm:p-6">
-                <div>
-                  <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-200">
-                    {t('operacoes.gestao_voos')}
-                  </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">{t('operacoes.gestao_voos_desc')}</CardDescription>
-                </div>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  <Button variant="outline" onClick={loadData} disabled={isLoadingAll} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
-                    <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoadingAll ? 'animate-spin' : ''}`} />
-                    <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.atualizar')}</span>
-                  </Button>
-                  <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
-                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline ml-2 text-sm">Excel</span>
-                  </Button>
-                  {isAdminProfile(currentUser) && (
-                    <Button variant="outline" onClick={() => setIsLixeiraModalOpen(true)} className="border-yellow-300 dark:border-yellow-600 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-950 h-8 sm:h-10 px-2 sm:px-4">
-                      <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.lixeira')}</span>
-                    </Button>
-                  )}
-                  <Button className="bg-blue-500 hover:bg-blue-600 text-white h-8 sm:h-10 px-2 sm:px-4" onClick={() => handleOpenForm('ARR', null)}>
-                    <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.adicionar_voo')}</span>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6">
-                <Card className="mb-4 sm:mb-6 border-slate-200 dark:border-slate-700">
-                  <CardHeader className="p-3 sm:p-4">
-                    <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-2">
-                      <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500 dark:text-slate-400" />
-                      <span className="hidden sm:inline">{t('operacoes.filtros_pesquisa')}</span>
-                      <span className="sm:hidden">{t('operacoes.filtros')}</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 sm:p-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                      <div className="sm:col-span-2 lg:col-span-4">
-                        <Label htmlFor="busca" className="text-xs sm:text-sm">{t('operacoes.pesquisar')}</Label>
-                        <Input
-                          id="busca"
-                          placeholder={t('operacoes.voo_ou_matricula')}
-                          value={filtros.busca}
-                          onChange={(e) => handleFilterChange('busca', e.target.value)}
-                          className="text-xs sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="data-inicio" className="text-xs sm:text-sm">{t('operacoes.data_inicio')}</Label>
-                        <Input id="data-inicio" type="date" value={filtros.dataInicio} onChange={(e) => handleFilterChange('dataInicio', e.target.value)} className="text-xs sm:text-sm" />
-                      </div>
-                      <div>
-                        <Label htmlFor="data-fim" className="text-xs sm:text-sm">{t('operacoes.data_fim')}</Label>
-                        <Input id="data-fim" type="date" value={filtros.dataFim} onChange={(e) => handleFilterChange('dataFim', e.target.value)} className="text-xs sm:text-sm" />
-                      </div>
-                      <div>
-                        <Label htmlFor="filtro-tipo" className="text-xs sm:text-sm">{t('operacoes.tipo')}</Label>
-                        <Select
-                          id="filtro-tipo"
-                          options={tipoMovimentoOptions}
-                          value={filtros.tipoMovimento}
-                          onValueChange={(v) => handleFilterChange('tipoMovimento', v)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="filtro-status" className="text-xs sm:text-sm">{t('operacoes.status')}</Label>
-                        <Select
-                          id="filtro-status"
-                          options={statusOptions}
-                          value={filtros.status}
-                          onValueChange={(v) => handleFilterChange('status', v)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="filtro-tipo-voo" className="text-xs sm:text-sm">{t('operacoes.tipo_voo')}</Label>
-                        <Combobox
-                          id="filtro-tipo-voo"
-                          options={tipoVooOptions}
-                          value={filtros.tipoVoo}
-                          onValueChange={(v) => handleFilterChange('tipoVoo', v)}
-                          placeholder={`${t('operacoes.todos')}...`}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="filtro-companhia" className="text-xs sm:text-sm">{t('operacoes.companhia')}</Label>
-                        <Combobox
-                          id="filtro-companhia"
-                          options={companhiaOptions}
-                          value={filtros.companhia}
-                          onValueChange={(v) => handleFilterChange('companhia', v)}
-                          placeholder={`${t('operacoes.todos')}...`}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="filtro-aeroporto" className="text-xs sm:text-sm">{t('operacoes.aeroporto')}</Label>
-                        <Combobox
-                          id="filtro-aeroporto"
-                          options={aeroportoOptions}
-                          value={filtros.aeroporto}
-                          onValueChange={(v) => handleFilterChange('aeroporto', v)}
-                          placeholder={`${t('operacoes.todos')}...`}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="filtro-vinculacao" className="text-xs sm:text-sm">{t('operacoes.vinculacao')}</Label>
-                        <Select
-                          id="filtro-vinculacao"
-                          options={statusVinculacaoOptions}
-                          value={filtros.statusVinculacao}
-                          onValueChange={(v) => handleFilterChange('statusVinculacao', v)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="filtro-origem" className="text-xs sm:text-sm">{t('operacoes.origem') || 'Origem'}</Label>
-                        <Select
-                          id="filtro-origem"
-                          options={[
-                            { value: 'todos', label: t('operacoes.todos') || 'Todos' },
-                            { value: 'flightaware', label: 'FlightAware-Import' },
-                            { value: 'sistema', label: t('operacoes.sistema') || 'Sistema' },
-                            { value: 'manual', label: 'Manual' }
-                          ]}
-                          value={filtros.origem}
-                          onValueChange={(v) => handleFilterChange('origem', v)}
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="passageiros-min" className="text-xs sm:text-sm">{t('operacoes.passageiros_min')}</Label>
-                        <Input
-                          id="passageiros-min"
-                          type="number"
-                          placeholder="0"
-                          value={filtros.passageirosMin}
-                          onChange={(e) => handleFilterChange('passageirosMin', e.target.value)}
-                          className="text-xs sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="passageiros-max" className="text-xs sm:text-sm">{t('operacoes.passageiros_max')}</Label>
-                        <Input
-                          id="passageiros-max"
-                          type="number"
-                          placeholder="999"
-                          value={filtros.passageirosMax}
-                          onChange={(e) => handleFilterChange('passageirosMax', e.target.value)}
-                          className="text-xs sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="carga-min" className="text-xs sm:text-sm">{t('operacoes.carga_min')}</Label>
-                        <Input
-                          id="carga-min"
-                          type="number"
-                          placeholder="0"
-                          value={filtros.cargaMin}
-                          onChange={(e) => handleFilterChange('cargaMin', e.target.value)}
-                          className="text-xs sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="carga-max" className="text-xs sm:text-sm">{t('operacoes.carga_max')}</Label>
-                        <Input
-                          id="carga-max"
-                          type="number"
-                          placeholder="50000"
-                          value={filtros.cargaMax}
-                          onChange={(e) => handleFilterChange('cargaMax', e.target.value)}
-                          className="text-xs sm:text-sm"
-                        />
-                      </div>
-                      
-                      <div className="flex items-end gap-2 sm:col-span-2">
-                        <Button
-                          onClick={handleBuscarVoos}
-                          disabled={isFiltering}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 text-xs sm:text-sm"
-                        >
-                          {isFiltering ? <><RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-2 animate-spin" /> Buscando...</> : <><Filter className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> Buscar</>}
-                        </Button>
-                        <Button variant="outline" onClick={clearFilters} className="flex-1 text-xs sm:text-sm">
-                          <X className="w-3 h-3 sm:w-4 sm:h-4 mr-2" /> {t('operacoes.limpar')}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {isFiltering && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                      <p className="text-slate-700 dark:text-slate-300 font-medium">{t('operacoes.carregando_voos')}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <div className="inline-block min-w-full align-middle">
-                    <VoosTable
-                      voos={voosFiltrados}
-                      voosLigados={voosLigados}
-                      isLoading={isLoadingAll}
-                      onEditVoo={(voo) => handleOpenForm(voo.tipo_movimento, voo)}
-                      onCancelarVoo={handleCancelarVoo}
-                      onExcluirVoo={handleExcluirVoo}
-                      currentUser={currentUser}
-                      sortField={sortField}
-                      sortDirection={sortDirection}
-                      onSort={handleSort}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <VoosTab
+              voosFiltrados={voosFiltrados}
+              isLoadingAll={isLoadingAll}
+              isFiltering={isFiltering}
+              filtros={filtros}
+              aeroportos={aeroportos}
+              companhias={companhias}
+              voos={voos}
+              voosLigados={voosLigados}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              t={t}
+              language={language}
+              currentUser={currentUser}
+              onFilterChange={handleFilterChange}
+              onSort={handleSort}
+              onBuscar={handleBuscarVoos}
+              onClearFilters={clearFilters}
+              onRefresh={loadData}
+              onExportCSV={handleExportCSV}
+              onOpenForm={handleOpenForm}
+              onLixeira={() => setIsLixeiraModalOpen(true)}
+              onEditVoo={(voo) => handleOpenForm(voo.tipo_movimento, voo)}
+              onCancelarVoo={handleCancelarVoo}
+              onExcluirVoo={handleExcluirVoo}
+              onLinkarManual={handleLinkarManual}
+              onUploadDocumento={handleUploadDocumento}
+              onVerDocumentosVoo={handleVerDocumentosVoo}
+              onRecursosVoo={handleRecursosVoo}
+            />
           </TabsContent>
 
-
           <TabsContent value="linkados" className="space-y-4 sm:space-y-6">
-            <Card className="shadow-sm border-0">
-              <CardHeader className="flex flex-col gap-3 sm:gap-4 p-4 sm:p-6">
-                <div>
-                  <CardTitle className="text-base sm:text-lg md:text-xl flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="w-fit text-xs">
-                        {voosLigadosValidos.length} {t('operacoes.pares')}
-                      </Badge>
-                    </div>
-                  </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm mt-2">
-                    {t('operacoes.voos_ligados_desc')}
-                  </CardDescription>
-                </div>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  <Button variant="outline" onClick={loadData} disabled={isLoadingAll} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
-                    <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoadingAll ? 'animate-spin' : ''}`} />
-                    <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.atualizar')}</span>
-                  </Button>
-                  <Button variant="outline" onClick={handleExportLinkedFlightsCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4">
-                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline ml-2 text-sm">Excel</span>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6">
-                <VoosLigadosFilters
-                   filtros={filtrosLigados}
-                   onFilterChange={handleFilterChangeLigados}
-                   onClearFilters={clearFiltersLigados}
-                   onBuscar={handleBuscarLigados}
-                   isSearching={isFilteringLigados}
-                   companhias={companhias}
-                   aeroportos={todosAeroportos}
-                 />
-
-                {isFilteringLigados && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                      <p className="text-slate-700 dark:text-slate-300 font-medium">{t('operacoes.carregando_ligados')}</p>
-                    </div>
-                  </div>
-                )}
-
-                {voosLigadosFiltrados.length === 0 && !isLoadingAll ? (
-                  <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                    <p className="text-sm sm:text-base">{t('operacoes.nenhum_voo_ligado')}</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto -mx-4 sm:mx-0">
-                    <div className="inline-block min-w-full align-middle">
-                      <VoosLigadosTable
-                        voosLigados={voosLigadosFiltrados}
-                        voos={voos}
-                        calculosTarifa={calculosTarifa}
-                        isLoading={isLoadingAll}
-                        onShowTariffDetails={handleShowTariffDetails}
-                        onExportPDF={handleExportTariffPDF}
-                        onGerarProforma={handleGerarProforma}
-                        onRecalcularTarifa={async (vooLigado) => {
-                          try {
-                            await _recalculateSingleTariff(vooLigado);
-                            // Buscar apenas o cálculo atualizado em vez de recarregar tudo
-                            const updatedCalculo = await CalculoTarifa.filter({ voo_ligado_id: { $eq: vooLigado.id } });
-                            if (updatedCalculo.length > 0) {
-                              queryClient.setQueryData(['calculos-tarifa', empresaId], prev => {
-                                const withoutOld = (prev || []).filter(ct => ct.voo_ligado_id !== vooLigado.id);
-                                return [...withoutOld, ...updatedCalculo];
-                              });
-                            }
-                            setSuccessInfo({
-                              isOpen: true,
-                              title: t('operacoes.tarifa_recalculada'),
-                              message: t('operacoes.tarifa_recalculada_msg')
-                            });
-                          } catch (error) {
-                            console.error('Erro ao recalcular tarifa:', error);
-                            setAlertInfo({
-                              isOpen: true,
-                              type: 'error',
-                              title: t('operacoes.erro_recalcular'),
-                              message: error.message || t('operacoes.erro_recalcular_msg')
-                            });
-                          }
-                        }}
-                        onRecalcularTarifaLote={handleRecalcularTarifasLote}
-                        onAlterarCambio={handleAlterarCambio}
-                        onExcluirVooLigado={handleExcluirVooLigado}
-                        onUploadDocumento={handleUploadDocumento}
-                        onVerDocumentosVoo={handleVerDocumentosVoo}
-                        onRecursosVoo={handleRecursosVoo}
-                        todosAeroportos={todosAeroportos}
-                        sortField={sortFieldLigados}
-                        sortDirection={sortDirectionLigados}
-                        onSort={handleSortLigados}
-                        currentUser={currentUser}
-                      />
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <VoosLigadosTab
+              voosLigadosValidos={voosLigadosValidos}
+              voosLigadosFiltrados={voosLigadosFiltrados}
+              voos={voos}
+              calculosTarifa={calculosTarifa}
+              todosAeroportos={todosAeroportos}
+              aeroportos={aeroportos}
+              companhias={companhias}
+              isLoadingAll={isLoadingAll}
+              isFilteringLigados={isFilteringLigados}
+              filtrosLigados={filtrosLigados}
+              sortFieldLigados={sortFieldLigados}
+              sortDirectionLigados={sortDirectionLigados}
+              configuracaoSistema={configuracaoSistema}
+              t={t}
+              language={language}
+              formatCurrency={formatCurrency}
+              currentUser={currentUser}
+              onFilterChange={handleFilterChangeLigados}
+              onClearFilters={clearFiltersLigados}
+              onBuscar={handleBuscarLigados}
+              onSort={handleSortLigados}
+              onRefresh={loadData}
+              onExcluirVooLigado={handleExcluirVooLigado}
+              onRecalcularTarifaSingle={handleRecalcularTarifaSingle}
+              onRecalcularTarifasLote={handleRecalcularTarifasLote}
+              onShowTariffDetails={handleShowTariffDetails}
+              onExportTariffPDF={handleExportTariffPDF}
+              onExportCSV={handleExportLinkedFlightsCSV}
+              onGerarProforma={handleGerarProforma}
+              onAlterarCambio={handleAlterarCambio}
+              onUploadDocumento={handleUploadDocumento}
+              onVerDocumentosVoo={handleVerDocumentosVoo}
+              onRecursosVoo={handleRecursosVoo}
+              onUploadMultiplos={(vl) => { setUploadMultiplosModalData(vl); setIsUploadMultiplosModalOpen(true); }}
+            />
           </TabsContent>
 
           <TabsContent value="sem_link" className="space-y-4 sm:space-y-6">
-            <Card className="shadow-sm border-0">
-              <CardHeader className="flex flex-col gap-3 sm:gap-4 p-4 sm:p-6">
-                <div>
-                  <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
-                    <Unlink className="w-5 h-5 text-orange-500" />
-                    Voos Sem Link
-                  </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm mt-2">
-                    Voos que ainda n&atilde;o foram vinculados (ARR + DEP). Use o link autom&aacute;tico ou vincule manualmente.
-                  </CardDescription>
-                </div>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  <Button
-                    onClick={handleLinkarAutomatico}
-                    disabled={isLinkingAuto}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 sm:h-10 px-2 sm:px-4"
-                  >
-                    {isLinkingAuto ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Link2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                    <span className="ml-2 text-sm">Linkar Autom&aacute;tico</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={loadVoosSemLink}
-                    disabled={isLoadingSemLink}
-                    className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 sm:h-10 px-2 sm:px-4"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoadingSemLink ? 'animate-spin' : ''}`} />
-                    <span className="hidden sm:inline ml-2 text-sm">Atualizar</span>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6">
-                {/* Stats cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                  <Card className="border-orange-200 dark:border-orange-800">
-                    <CardContent className="p-3 sm:p-4 text-center">
-                      <div className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400">{semLinkStats.total}</div>
-                      <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Total Sem Link</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-emerald-200 dark:border-emerald-800">
-                    <CardContent className="p-3 sm:p-4 text-center">
-                      <div className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{semLinkStats.arr}</div>
-                      <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">ARR Sem Link</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-blue-200 dark:border-blue-800">
-                    <CardContent className="p-3 sm:p-4 text-center">
-                      <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">{semLinkStats.dep}</div>
-                      <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">DEP Sem Link</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-purple-200 dark:border-purple-800">
-                    <CardContent className="p-3 sm:p-4 text-center">
-                      <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">{semLinkStats.sugestoes}</div>
-                      <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Sugest&otilde;es de Pares</div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Filters */}
-                <Card className="mb-4 sm:mb-6 border-slate-200 dark:border-slate-700">
-                  <CardHeader className="p-3 sm:p-4">
-                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                      <Filter className="w-4 h-4 text-slate-500" />
-                      Filtros
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 sm:p-4 pt-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                      <div>
-                        <Label className="text-xs">Data In&iacute;cio</Label>
-                        <Input
-                          type="date"
-                          value={filtrosSemLink.dataInicio}
-                          onChange={(e) => setFiltrosSemLink(prev => ({ ...prev, dataInicio: e.target.value }))}
-                          className="h-8 sm:h-9 text-xs sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Data Fim</Label>
-                        <Input
-                          type="date"
-                          value={filtrosSemLink.dataFim}
-                          onChange={(e) => setFiltrosSemLink(prev => ({ ...prev, dataFim: e.target.value }))}
-                          className="h-8 sm:h-9 text-xs sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Tipo</Label>
-                        <Select
-                          value={filtrosSemLink.tipoMovimento}
-                          onValueChange={(v) => setFiltrosSemLink(prev => ({ ...prev, tipoMovimento: v }))}
-                          options={[
-                            { value: 'todos', label: 'Todos' },
-                            { value: 'ARR', label: 'ARR' },
-                            { value: 'DEP', label: 'DEP' }
-                          ]}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Companhia</Label>
-                        <Select
-                          value={filtrosSemLink.companhia}
-                          onValueChange={(v) => setFiltrosSemLink(prev => ({ ...prev, companhia: v }))}
-                          options={[
-                            { value: 'todos', label: 'Todas' },
-                            ...[...new Set(voosSemLink.map(v => v.companhia_aerea).filter(Boolean))].sort().map(c => ({ value: c, label: c }))
-                          ]}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Registo</Label>
-                        <Select
-                          value={filtrosSemLink.registo || 'todos'}
-                          onValueChange={(v) => setFiltrosSemLink(prev => ({ ...prev, registo: v }))}
-                          options={[
-                            { value: 'todos', label: 'Todos' },
-                            ...[...new Set(voosSemLink.map(v => v.registo_aeronave).filter(Boolean))].sort().map(r => ({ value: r, label: r }))
-                          ]}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Pesquisar</Label>
-                        <Input
-                          placeholder="Voo ou registo..."
-                          value={filtrosSemLink.busca}
-                          onChange={(e) => setFiltrosSemLink(prev => ({ ...prev, busca: e.target.value }))}
-                          className="h-8 sm:h-9 text-xs sm:text-sm"
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button
-                          onClick={loadVoosSemLink}
-                          disabled={isLoadingSemLink}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 sm:h-9 w-full"
-                        >
-                          {isLoadingSemLink ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Search className="w-4 h-4 mr-1" />}
-                          Buscar
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Loading overlay */}
-                {isLoadingSemLink && (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mr-3"></div>
-                    <span className="text-slate-500 dark:text-slate-400 text-sm">Carregando voos sem link...</span>
-                  </div>
-                )}
-
-                {/* Table */}
-                {!isLoadingSemLink && (() => {
-                  const displayData = semLinkLoaded ? voosSemLink : voosSemLinkComputed;
-                  if (displayData.length === 0) {
-                    return (
-                      <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                        <Unlink className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-                        <p className="text-sm sm:text-base">
-                          {semLinkLoaded ? 'Nenhum voo sem link encontrado com os filtros aplicados.' : 'Todos os voos est\u00e3o vinculados ou clique em "Buscar" para filtrar.'}
-                        </p>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="overflow-x-auto -mx-4 sm:mx-0">
-                      <div className="inline-block min-w-full align-middle">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="text-xs">Tipo</TableHead>
-                              <TableHead className="text-xs">Data</TableHead>
-                              <TableHead className="text-xs">Voo</TableHead>
-                              <TableHead className="text-xs">Registo</TableHead>
-                              <TableHead className="text-xs hidden sm:table-cell">Companhia</TableHead>
-                              <TableHead className="text-xs hidden md:table-cell">Rota</TableHead>
-                              <TableHead className="text-xs hidden md:table-cell">Hor&aacute;rio</TableHead>
-                              <TableHead className="text-xs hidden lg:table-cell">Pax</TableHead>
-                              <TableHead className="text-xs hidden lg:table-cell">Origem</TableHead>
-                              <TableHead className="text-xs text-right">A&ccedil;&otilde;es</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {displayData.map(voo => {
-                              const sugestoes = getSugestoesPar(voo);
-                              return (
-                                <TableRow key={voo.id} className="text-xs sm:text-sm">
-                                  <TableCell>
-                                    <Badge className={`text-[10px] sm:text-xs ${voo.tipo_movimento === 'ARR' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'} text-white`}>
-                                      {voo.tipo_movimento}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="whitespace-nowrap text-xs">
-                                    {voo.data_operacao ? format(parseISO(voo.data_operacao), 'dd MMM yyyy', { locale: pt }) : 'N/A'}
-                                  </TableCell>
-                                  <TableCell className="font-medium text-xs">{voo.numero_voo || 'N/A'}</TableCell>
-                                  <TableCell className="text-xs">{voo.registo_aeronave || 'N/A'}</TableCell>
-                                  <TableCell className="text-xs hidden sm:table-cell">{voo.companhia_aerea || 'N/A'}</TableCell>
-                                  <TableCell className="text-xs hidden md:table-cell">
-                                    {voo.tipo_movimento === 'ARR'
-                                      ? `${voo.aeroporto_origem_destino || '?'} → ${voo.aeroporto_operacao || '?'}`
-                                      : `${voo.aeroporto_operacao || '?'} → ${voo.aeroporto_origem_destino || '?'}`}
-                                  </TableCell>
-                                  <TableCell className="text-xs hidden md:table-cell whitespace-nowrap">
-                                    {voo.horario_previsto || 'N/A'}{voo.horario_real ? ` / ${voo.horario_real}` : ''}
-                                  </TableCell>
-                                  <TableCell className="text-xs hidden lg:table-cell">{voo.passageiros_total ?? 'N/A'}</TableCell>
-                                  <TableCell className="text-xs hidden lg:table-cell">
-                                    {voo.created_by === 'FR24-Import' || voo.created_by === 'FlightAware-Import' || voo.created_by === 'FlightAware' ? (
-                                      <Badge variant="outline" className="text-[10px] border-sky-400 text-sky-600 dark:text-sky-400">FA</Badge>
-                                    ) : (
-                                      <span className="text-slate-400 truncate max-w-[80px] inline-block">{voo.created_by || 'N/A'}</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="text-right flex gap-1 justify-end">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 px-2 text-xs border-red-300 text-red-600 hover:bg-red-50"
-                                      onClick={async () => {
-                                        if (!confirm(`Eliminar voo ${voo.numero_voo} ${voo.tipo_movimento} ${voo.data_operacao}?`)) return;
-                                        await Voo.update(voo.id, { deleted_at: new Date().toISOString() });
-                                        if (semLinkLoaded) loadVoosSemLink(); else queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
-                                      }}
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </Button>
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className="h-7 px-2 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950"
-                                          disabled={sugestoes.length === 0}
-                                        >
-                                          <ArrowRightLeft className="w-3 h-3 mr-1" />
-                                          Sugerir Par
-                                          {sugestoes.length > 0 && (
-                                            <span className="ml-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-[10px] px-1 rounded-full">{sugestoes.length}</span>
-                                          )}
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-80 sm:w-96 p-0" align="end">
-                                        <div className="p-3 border-b">
-                                          <h4 className="text-sm font-medium">
-                                            Sugest&otilde;es para {voo.numero_voo} ({voo.tipo_movimento})
-                                          </h4>
-                                          <p className="text-xs text-slate-500 mt-1">Mesmo registo ({voo.registo_aeronave}), at&eacute; 7 dias</p>
-                                        </div>
-                                        <div className="max-h-60 overflow-y-auto">
-                                          {sugestoes.length === 0 ? (
-                                            <div className="p-4 text-center text-xs text-slate-400">Nenhuma sugest&atilde;o encontrada</div>
-                                          ) : (
-                                            sugestoes.map(sug => (
-                                              <div key={sug.id} className="flex items-center justify-between p-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b last:border-0">
-                                                <div className="flex-1 min-w-0">
-                                                  <div className="flex items-center gap-2">
-                                                    <Badge className={`text-[9px] ${sug.tipo_movimento === 'ARR' ? 'bg-emerald-600' : 'bg-blue-600'} text-white`}>
-                                                      {sug.tipo_movimento}
-                                                    </Badge>
-                                                    <span className="text-xs font-medium">{sug.numero_voo}</span>
-                                                  </div>
-                                                  <div className="text-[10px] text-slate-500 mt-0.5">
-                                                    {sug.data_operacao ? format(parseISO(sug.data_operacao), 'dd MMM yyyy', { locale: pt }) : 'N/A'}
-                                                    {' - '}
-                                                    {sug.horario_previsto || 'N/A'}
-                                                  </div>
-                                                </div>
-                                                <Button
-                                                  size="sm"
-                                                  className="h-6 px-2 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white"
-                                                  onClick={() => {
-                                                    const arrVoo = voo.tipo_movimento === 'ARR' ? voo : sug;
-                                                    const depVoo = voo.tipo_movimento === 'DEP' ? voo : sug;
-                                                    handleLinkarManual(arrVoo, depVoo);
-                                                  }}
-                                                >
-                                                  <Link2 className="w-3 h-3 mr-1" />
-                                                  Linkar
-                                                </Button>
-                                              </div>
-                                            ))
-                                          )}
-                                        </div>
-                                      </PopoverContent>
-                                    </Popover>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </CardContent>
-            </Card>
+            <VoosSemLinkTab
+              voosSemLink={voosSemLink}
+              voosSemLinkComputed={voosSemLinkComputed}
+              semLinkStats={semLinkStats}
+              isLoadingSemLink={isLoadingSemLink}
+              isLinkingAuto={isLinkingAuto}
+              filtrosSemLink={filtrosSemLink}
+              semLinkLoaded={semLinkLoaded}
+              aeroportos={aeroportos}
+              companhias={companhias}
+              t={t}
+              onLinkarAutomatico={handleLinkarAutomatico}
+              onLinkarManual={handleLinkarManual}
+              onLoadSemLink={loadVoosSemLink}
+              onFilterChange={(field, value) => setFiltrosSemLink(prev => ({ ...prev, [field]: value }))}
+              onDeleteVoo={handleDeleteVooSemLink}
+              getSugestoesPar={getSugestoesPar}
+            />
           </TabsContent>
+
 
           <TabsContent value="fids" className="space-y-4 sm:space-y-6">
             <React.Suspense fallback={<div className="p-8 text-center text-slate-400">A carregar...</div>}>
