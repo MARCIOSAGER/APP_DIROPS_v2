@@ -1,57 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, CheckCircle, Mail, ArrowLeft, RefreshCw } from 'lucide-react';
-import { SolicitacaoAcesso } from '@/entities/SolicitacaoAcesso';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
+import { useSolicitacaoAcesso } from '@/hooks/useSolicitacaoAcesso';
 
 export default function AguardandoAprovacao() {
   const { user } = useAuth();
-  const [solicitacao, setSolicitacao] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: solicitacao, isLoading, refetch } = useSolicitacaoAcesso({
+    userId: user?.id,
+  });
 
+  // Redirect if user is already approved and no pending request found
   useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async (tentativa = 1) => {
-    const MAX_TENTATIVAS = 3;
-    setIsLoading(true);
-    try {
-      // Buscar a solicitação pendente do utilizador (deve haver apenas uma)
-      const solicitacoes = await SolicitacaoAcesso.filter({
-        user_id: user?.id,
-        status: 'pendente'
-      }, '-created_date', 1);
-
-      if (solicitacoes && solicitacoes.length > 0) {
-        setSolicitacao(solicitacoes[0]);
-      } else {
-        // Se não há solicitação pendente, verificar se o utilizador já foi aprovado
-        if (user?.perfis && Array.isArray(user.perfis) && user.perfis.length > 0 && user?.status === 'ativo') {
-          window.location.href = createPageUrl('Home');
-          return;
-        }
-        // Não redirecionar de volta para SolicitacaoPerfil para evitar loop
-        // O utilizador pode ter acabado de submeter e o dado ainda não propagou
-      }
-      setIsLoading(false);
-    } catch (error) {
-      console.error(`Erro ao carregar dados (tentativa ${tentativa}):`, error);
-      
-      // Retry com backoff se conexão instável
-      if (tentativa < MAX_TENTATIVAS) {
-        const tempoEspera = tentativa * 2000;
-        setTimeout(() => loadData(tentativa + 1), tempoEspera);
-      } else {
-        setIsLoading(false);
+    if (!isLoading && !solicitacao) {
+      if (user?.perfis && Array.isArray(user.perfis) && user.perfis.length > 0 && user?.status === 'ativo') {
+        window.location.href = createPageUrl('Home');
       }
     }
-  };
+  }, [isLoading, solicitacao, user]);
 
-  const handleVerificar = async () => {
-    await loadData(1);
+  const handleVerificar = () => {
+    refetch();
   };
 
   const handleLogout = async () => {

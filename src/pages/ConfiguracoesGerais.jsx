@@ -12,14 +12,18 @@ import { createPageUrl } from '@/utils';
 import { emailTemplates } from '@/lib/emailTemplates';
 import { useI18n } from '@/components/lib/i18n';
 import { isAdminProfile } from '@/components/lib/userUtils';
+import { useConfiguracaoSistema, useSaveConfiguracaoSistema } from '@/hooks/useConfiguracaoSistema';
 
 export default function ConfiguracoesGerais() {
   const { t } = useI18n();
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [configId, setConfigId] = useState(null);
   const [activeTab, setActiveTab] = useState('smtp');
+
+  const isAdmin = isAdminProfile(user);
+  const { data: configData, isLoading, refetch } = useConfiguracaoSistema({ enabled: isAdmin });
+  const saveMutation = useSaveConfiguracaoSistema();
+
+  const configId = configData?.id || null;
 
   const [smtpData, setSmtpData] = useState({
     smtp_host: '',
@@ -39,61 +43,34 @@ export default function ConfiguracoesGerais() {
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
 
+  // Redirect non-admin users
   useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      if (!isAdminProfile(user)) {
-        setAlertInfo({
-          isOpen: true,
-          type: 'error',
-          title: t('configGerais.acessoNegado'),
-          message: t('configGerais.apenasAdmins')
-        });
-        setTimeout(() => { window.location.href = createPageUrl('Home'); }, 2000);
-        return;
-      }
-
-      // Load config from configuracao_sistema table
-      const { data: configs, error } = await supabase
-        .from('configuracao_sistema')
-        .select('*')
-        .limit(1);
-
-      if (error) {
-        console.error('Erro ao carregar configuracao_sistema:', error);
-        // Table might not exist or RLS blocks - just show empty form
-      }
-
-      if (configs && configs.length > 0) {
-        const config = configs[0];
-        setConfigId(config.id);
-        setSmtpData({
-          smtp_host: config.smtp_host || '',
-          smtp_port: config.smtp_port || '587',
-          smtp_user: config.smtp_user || '',
-          smtp_password: config.smtp_password || '',
-          smtp_from_name: config.smtp_from_name || 'DIROPS',
-          smtp_from_email: config.smtp_from_email || '',
-          smtp_secure: config.smtp_secure !== false,
-          email_notificacoes_padrao: config.email_notificacoes_padrao || '',
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao carregar configuracoes:', error);
+    if (!isAdmin) {
       setAlertInfo({
         isOpen: true,
         type: 'error',
-        title: t('configGerais.erroCarregar'),
-        message: t('configGerais.erroCarregarMsg') + error.message
+        title: t('configGerais.acessoNegado'),
+        message: t('configGerais.apenasAdmins')
       });
-    } finally {
-      setIsLoading(false);
+      setTimeout(() => { window.location.href = createPageUrl('Home'); }, 2000);
     }
-  };
+  }, [isAdmin]);
+
+  // Sync query data into local form state
+  useEffect(() => {
+    if (configData) {
+      setSmtpData({
+        smtp_host: configData.smtp_host || '',
+        smtp_port: configData.smtp_port || '587',
+        smtp_user: configData.smtp_user || '',
+        smtp_password: configData.smtp_password || '',
+        smtp_from_name: configData.smtp_from_name || 'DIROPS',
+        smtp_from_email: configData.smtp_from_email || '',
+        smtp_secure: configData.smtp_secure !== false,
+        email_notificacoes_padrao: configData.email_notificacoes_padrao || '',
+      });
+    }
+  }, [configData]);
 
   const handleSmtpChange = (field, value) => {
     setSmtpData(prev => ({ ...prev, [field]: value }));
@@ -109,51 +86,38 @@ export default function ConfiguracoesGerais() {
       return;
     }
 
-    setIsSaving(true);
-    try {
-      const updateData = {
-        smtp_host: smtpData.smtp_host,
-        smtp_port: smtpData.smtp_port,
-        smtp_user: smtpData.smtp_user,
-        smtp_password: smtpData.smtp_password,
-        smtp_from_name: smtpData.smtp_from_name,
-        smtp_from_email: smtpData.smtp_from_email,
-        smtp_secure: smtpData.smtp_secure,
-        email_notificacoes_padrao: smtpData.email_notificacoes_padrao,
-      };
+    const updateData = {
+      smtp_host: smtpData.smtp_host,
+      smtp_port: smtpData.smtp_port,
+      smtp_user: smtpData.smtp_user,
+      smtp_password: smtpData.smtp_password,
+      smtp_from_name: smtpData.smtp_from_name,
+      smtp_from_email: smtpData.smtp_from_email,
+      smtp_secure: smtpData.smtp_secure,
+      email_notificacoes_padrao: smtpData.email_notificacoes_padrao,
+    };
 
-      if (configId) {
-        const { error } = await supabase
-          .from('configuracao_sistema')
-          .update(updateData)
-          .eq('id', configId);
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase
-          .from('configuracao_sistema')
-          .insert(updateData)
-          .select()
-          .single();
-        if (error) throw error;
-        setConfigId(data.id);
+    saveMutation.mutate(
+      { configId, data: updateData },
+      {
+        onSuccess: () => {
+          setSuccessInfo({
+            isOpen: true,
+            title: t('configGerais.salvoTitulo'),
+            message: t('configGerais.salvoMsg')
+          });
+        },
+        onError: (error) => {
+          console.error('Erro ao salvar:', error);
+          setAlertInfo({
+            isOpen: true,
+            type: 'error',
+            title: t('configGerais.erroSalvarTitulo'),
+            message: error.message || t('configGerais.erroSalvarMsg')
+          });
+        },
       }
-
-      setSuccessInfo({
-        isOpen: true,
-        title: t('configGerais.salvoTitulo'),
-        message: t('configGerais.salvoMsg')
-      });
-    } catch (error) {
-      console.error('Erro ao salvar:', error);
-      setAlertInfo({
-        isOpen: true,
-        type: 'error',
-        title: t('configGerais.erroSalvarTitulo'),
-        message: error.message || t('configGerais.erroSalvarMsg')
-      });
-    } finally {
-      setIsSaving(false);
-    }
+    );
   };
 
   const handleTestSmtp = async () => {
@@ -347,13 +311,13 @@ export default function ConfiguracoesGerais() {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-3 pt-4 border-t">
-                <Button onClick={handleSaveSmtp} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white">
-                  {isSaving ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> {t('configGerais.smtp.salvando')}</> : <><Save className="w-4 h-4 mr-2" /> {t('configGerais.smtp.salvar')}</>}
+                <Button onClick={handleSaveSmtp} disabled={saveMutation.isPending} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  {saveMutation.isPending ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> {t('configGerais.smtp.salvando')}</> : <><Save className="w-4 h-4 mr-2" /> {t('configGerais.smtp.salvar')}</>}
                 </Button>
                 <Button variant="outline" onClick={handleTestSmtp} disabled={isTesting}>
                   {isTesting ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> {t('configGerais.smtp.testando')}</> : <><Mail className="w-4 h-4 mr-2" /> {t('configGerais.smtp.enviarEmailTeste')}</>}
                 </Button>
-                <Button variant="outline" onClick={loadData} disabled={isSaving}>
+                <Button variant="outline" onClick={() => refetch()} disabled={saveMutation.isPending}>
                   <RefreshCw className="w-4 h-4 mr-2" /> {t('configGerais.recarregar')}
                 </Button>
               </div>
