@@ -1,0 +1,13 @@
+{
+  "powerbi.titulo": "Power BI Analysis",
+  "powerbi.subtitulo": "Data visualization and interactive reports",
+  "powerbi.abrir_ecra_completo": "Open Full Screen",
+  "powerbi.dica": "Tip",
+  "powerbi.dica_texto": "To export the report as PDF, click \"Open Full Screen\" and use the native Power BI export options in the report menu (the \"...\" icon in the top right corner).",
+  "powerbi.diario_titulo": "Daily Flights",
+  "powerbi.diario_desc": "Yesterday's flight report",
+  "powerbi.semanal_titulo": "Weekly Flights",
+  "powerbi.semanal_desc": "Last week's flight report",
+  "powerbi.mensal_titulo": "Monthly Flights",
+  "powerbi.mensal_desc": "Last month's flight report"
+}

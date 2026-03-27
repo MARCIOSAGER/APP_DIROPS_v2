@@ -1,0 +1,18 @@
+{
+  "lixeira.item": "item",
+  "lixeira.itens": "items",
+  "lixeira.fechar": "Close",
+  "lixeira.pesquisar": "Search in trash...",
+  "lixeira.aviso": "Permanent deletion cannot be undone. Restoring an item returns it to its original module with the previous status.",
+  "lixeira.carregando": "Loading trash items...",
+  "lixeira.vazia": "Trash is empty",
+  "lixeira.vaziaDesc": "There are no cancelled or inactive items.",
+  "lixeira.tabInspecoes": "Inspections",
+  "lixeira.tabProformas": "Proformas",
+  "lixeira.tabChecklist": "Checklist Items",
+  "lixeira.restaurar": "Restore",
+  "lixeira.eliminar": "Delete",
+  "lixeira.eliminarPermanente": "Delete Permanently",
+  "lixeira.eliminarPermanenteDesc": "This action cannot be undone. The item and all associated data will be removed from the system. Are you sure?",
+  "lixeira.naoExistem": "There are no"
+}

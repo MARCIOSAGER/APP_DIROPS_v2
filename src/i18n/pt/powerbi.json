@@ -1,0 +1,13 @@
+{
+  "powerbi.titulo": "Análise Power BI",
+  "powerbi.subtitulo": "Visualização de dados e relatórios interativos",
+  "powerbi.abrir_ecra_completo": "Abrir em Ecrã Completo",
+  "powerbi.dica": "Dica",
+  "powerbi.dica_texto": "Para exportar o relatório em PDF, clique no botão \"Abrir em Ecrã Completo\" e utilize as opções de exportação nativas do Power BI disponíveis no menu do relatório (ícone \"...\" no canto superior direito).",
+  "powerbi.diario_titulo": "Voos Diários",
+  "powerbi.diario_desc": "Relatório de voos do dia de ontem",
+  "powerbi.semanal_titulo": "Voos Semanais",
+  "powerbi.semanal_desc": "Relatório de voos da última semana",
+  "powerbi.mensal_titulo": "Voos Mensais",
+  "powerbi.mensal_desc": "Relatório de voos do mês passado"
+}

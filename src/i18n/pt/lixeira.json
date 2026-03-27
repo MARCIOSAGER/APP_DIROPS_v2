@@ -1,0 +1,18 @@
+{
+  "lixeira.item": "item",
+  "lixeira.itens": "itens",
+  "lixeira.fechar": "Fechar",
+  "lixeira.pesquisar": "Pesquisar na lixeira...",
+  "lixeira.aviso": "A eliminação permanente não pode ser desfeita. Restaurar um item devolve-o ao seu módulo original com o status anterior.",
+  "lixeira.carregando": "A carregar itens da lixeira...",
+  "lixeira.vazia": "Lixeira vazia",
+  "lixeira.vaziaDesc": "Não existem itens cancelados ou inativos.",
+  "lixeira.tabInspecoes": "Inspeções",
+  "lixeira.tabProformas": "Proformas",
+  "lixeira.tabChecklist": "Itens Checklist",
+  "lixeira.restaurar": "Restaurar",
+  "lixeira.eliminar": "Eliminar",
+  "lixeira.eliminarPermanente": "Eliminar Permanentemente",
+  "lixeira.eliminarPermanenteDesc": "Esta ação não pode ser desfeita. O item e todos os dados associados serão removidos do sistema. Tem a certeza?",
+  "lixeira.naoExistem": "Não existem"
+}
