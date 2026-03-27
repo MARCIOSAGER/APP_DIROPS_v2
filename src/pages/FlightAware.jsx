@@ -35,9 +35,9 @@ function statusBadge(status) {
   const map = {
     pendente:  'bg-yellow-100 text-yellow-800',
     importado: 'bg-green-100 text-green-800',
-    ignorado:  'bg-slate-200 text-slate-600',
+    ignorado:  'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
   };
-  return map[status] || 'bg-slate-100 text-slate-600';
+  return map[status] || 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
 }
 
 function tipoBadge(isArr) {
@@ -56,7 +56,7 @@ function FiltersBar({ airportIcao, setAirportIcao, startDate, setStartDate, endD
       <CardContent className="pt-4 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Aeroporto (ICAO)</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Aeroporto (ICAO)</label>
             <Input
               value={airportIcao}
               onChange={(e) => setAirportIcao(e.target.value.toUpperCase())}
@@ -64,11 +64,11 @@ function FiltersBar({ airportIcao, setAirportIcao, startDate, setStartDate, endD
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Data Início</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Data Início</label>
             <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Data Fim</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Data Fim</label>
             <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </div>
           {extraFilters}
@@ -120,7 +120,7 @@ function AlertBanner({ alert, onDismiss }) {
             : <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />}
           <p className={`text-sm ${isError ? 'text-red-700' : 'text-green-700'}`}>{alert.message}</p>
         </div>
-        <button onClick={onDismiss} className="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+        <button onClick={onDismiss} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-lg leading-none">&times;</button>
       </CardContent>
     </Card>
   );
@@ -151,19 +151,19 @@ function FlightTable({ flights, airportIcao, showActions, onCreateVoo, onIgnore,
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
-        <thead className="border-b bg-slate-50">
+        <thead className="border-b bg-slate-50 dark:bg-slate-800">
           <tr>
-            <th className="text-left p-2 font-medium">Voo</th>
-            <th className="text-left p-2 font-medium">Data</th>
-            <th className="text-left p-2 font-medium">Tipo</th>
-            <th className="text-left p-2 font-medium">Registo</th>
-            <th className="text-left p-2 font-medium">Aeronave</th>
-            <th className="text-left p-2 font-medium">Companhia</th>
-            <th className="text-left p-2 font-medium">Origem</th>
-            <th className="text-left p-2 font-medium">Destino</th>
-            <th className="text-left p-2 font-medium">Decolagem</th>
-            <th className="text-left p-2 font-medium">Aterragem</th>
-            <th className="text-left p-2 font-medium">Status</th>
+            <th className="text-left p-2 font-medium dark:text-slate-300">Voo</th>
+            <th className="text-left p-2 font-medium dark:text-slate-300">Data</th>
+            <th className="text-left p-2 font-medium dark:text-slate-300">Tipo</th>
+            <th className="text-left p-2 font-medium dark:text-slate-300">Registo</th>
+            <th className="text-left p-2 font-medium dark:text-slate-300">Aeronave</th>
+            <th className="text-left p-2 font-medium dark:text-slate-300">Companhia</th>
+            <th className="text-left p-2 font-medium dark:text-slate-300">Origem</th>
+            <th className="text-left p-2 font-medium dark:text-slate-300">Destino</th>
+            <th className="text-left p-2 font-medium dark:text-slate-300">Decolagem</th>
+            <th className="text-left p-2 font-medium dark:text-slate-300">Aterragem</th>
+            <th className="text-left p-2 font-medium dark:text-slate-300">Status</th>
             {showActions && <th className="text-left p-2 font-medium">Ações</th>}
           </tr>
         </thead>
@@ -173,7 +173,7 @@ function FlightTable({ flights, airportIcao, showActions, onCreateVoo, onIgnore,
             const isArr = isArrival(raw, airportIcao);
             const creating = creatingIds?.has(f.id || f.fr24_id);
             return (
-              <tr key={f.id || f.fr24_id || idx} className="border-b hover:bg-slate-50">
+              <tr key={f.id || f.fr24_id || idx} className="border-b hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-700">
                 <td className="p-2 font-medium">{f.numero_voo || raw.flight || '\u2014'}</td>
                 <td className="p-2">{f.data_voo}</td>
                 <td className="p-2">
@@ -919,7 +919,7 @@ export default function FlightAwarePage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4">
-      <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
         <Plane className="w-6 h-6 text-sky-500" />
         {t('flightaware.title')}
       </h1>
@@ -952,7 +952,7 @@ export default function FlightAwarePage() {
             extraFilters={
               <>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Status</label>
                   <select
                     value={cacheStatusFilter}
                     onChange={(e) => setCacheStatusFilter(e.target.value)}
@@ -965,7 +965,7 @@ export default function FlightAwarePage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Companhia</label>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Companhia</label>
                   <select
                     value={cacheCompanhiaFilter}
                     onChange={(e) => setCacheCompanhiaFilter(e.target.value)}
@@ -1093,8 +1093,8 @@ export default function FlightAwarePage() {
           )}
 
           {!cacheLoading && filteredCachedFlights.length === 0 && !alert && (
-            <Card className="bg-slate-50 border-dashed">
-              <CardContent className="pt-8 pb-8 text-center text-slate-500">
+            <Card className="bg-slate-50 dark:bg-slate-900 border-dashed">
+              <CardContent className="pt-8 pb-8 text-center text-slate-500 dark:text-slate-400">
                 <Database className="w-8 h-8 mx-auto mb-2 text-slate-400" />
                 <p>{t('flightaware.noFlights')}</p>
               </CardContent>
@@ -1133,7 +1133,7 @@ export default function FlightAwarePage() {
           {apiResults.length > 0 && (
             <>
               <div className="flex justify-between items-center">
-                <p className="text-sm text-slate-600">{apiResults.length} voos encontrados</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{apiResults.length} voos encontrados</p>
                 <Button
                   onClick={saveToCache}
                   disabled={savingCache}
@@ -1162,8 +1162,8 @@ export default function FlightAwarePage() {
           )}
 
           {!apiLoading && apiResults.length === 0 && !apiProgress && (
-            <Card className="bg-slate-50 border-dashed">
-              <CardContent className="pt-8 pb-8 text-center text-slate-500">
+            <Card className="bg-slate-50 dark:bg-slate-900 border-dashed">
+              <CardContent className="pt-8 pb-8 text-center text-slate-500 dark:text-slate-400">
                 <Download className="w-8 h-8 mx-auto mb-2 text-slate-400" />
                 <p>Configure os filtros e clique "Buscar FlightAware API"</p>
               </CardContent>
@@ -1216,17 +1216,17 @@ export default function FlightAwarePage() {
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
-                    <thead className="border-b bg-slate-50">
+                    <thead className="border-b bg-slate-50 dark:bg-slate-800">
                       <tr>
-                        <th className="text-left p-2 font-medium">Voo</th>
-                        <th className="text-left p-2 font-medium">Data</th>
-                        <th className="text-left p-2 font-medium">Tipo</th>
-                        <th className="text-left p-2 font-medium">Hora FA</th>
-                        <th className="text-left p-2 font-medium">Hora ATO</th>
-                        <th className="text-left p-2 font-medium">Reg FA</th>
-                        <th className="text-left p-2 font-medium">Reg ATO</th>
-                        <th className="text-left p-2 font-medium">Status</th>
-                        <th className="text-left p-2 font-medium">Ações</th>
+                        <th className="text-left p-2 font-medium dark:text-slate-300">Voo</th>
+                        <th className="text-left p-2 font-medium dark:text-slate-300">Data</th>
+                        <th className="text-left p-2 font-medium dark:text-slate-300">Tipo</th>
+                        <th className="text-left p-2 font-medium dark:text-slate-300">Hora FA</th>
+                        <th className="text-left p-2 font-medium dark:text-slate-300">Hora ATO</th>
+                        <th className="text-left p-2 font-medium dark:text-slate-300">Reg FA</th>
+                        <th className="text-left p-2 font-medium dark:text-slate-300">Reg ATO</th>
+                        <th className="text-left p-2 font-medium dark:text-slate-300">Status</th>
+                        <th className="text-left p-2 font-medium dark:text-slate-300">Ações</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1243,7 +1243,7 @@ export default function FlightAwarePage() {
                         };
                         const working = comparingIds.has(row.id);
                         return (
-                          <tr key={row.id || idx} className={`border-b hover:bg-slate-50 ${rowBg[row.compareStatus] || ''}`}>
+                          <tr key={row.id || idx} className={`border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 ${rowBg[row.compareStatus] || ''}`}>
                             <td className="p-2 font-medium">{row.numero_voo || row.raw_data?.flight || '\u2014'}</td>
                             <td className="p-2">{row.data_voo}</td>
                             <td className="p-2">
@@ -1251,8 +1251,8 @@ export default function FlightAwarePage() {
                                 {row.tipo}
                               </span>
                             </td>
-                            <td className="p-2 font-mono text-slate-500">{row.faTime || '\u2014'}</td>
-                            <td className="p-2 font-mono text-slate-500">{row.atoTime || '\u2014'}</td>
+                            <td className="p-2 font-mono text-slate-500 dark:text-slate-400">{row.faTime || '\u2014'}</td>
+                            <td className="p-2 font-mono text-slate-500 dark:text-slate-400">{row.atoTime || '\u2014'}</td>
                             <td className="p-2 font-mono">{row.faReg || '\u2014'}</td>
                             <td className="p-2 font-mono">{row.atoReg || '\u2014'}</td>
                             <td className="p-2">
@@ -1295,8 +1295,8 @@ export default function FlightAwarePage() {
           )}
 
           {!compareLoading && compareData.length === 0 && !alert && (
-            <Card className="bg-slate-50 border-dashed">
-              <CardContent className="pt-8 pb-8 text-center text-slate-500">
+            <Card className="bg-slate-50 dark:bg-slate-900 border-dashed">
+              <CardContent className="pt-8 pb-8 text-center text-slate-500 dark:text-slate-400">
                 <ArrowRightLeft className="w-8 h-8 mx-auto mb-2 text-slate-400" />
                 <p>Selecione o período e clique "Comparar"</p>
               </CardContent>

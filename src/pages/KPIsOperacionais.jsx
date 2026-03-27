@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Filter, X, Search, Settings, ClipboardCheck, Download, FileText, Mail, Trash2, AlertTriangle, BarChart3, Brain, FileEdit, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { PageLoading } from '@/components/ui/loading-spinner';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import Select from '@/components/ui/select';
@@ -1095,10 +1096,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               </CardHeader>
               <CardContent>
                 {isLoading ?
-                <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-slate-500 dark:text-slate-400 mt-2">{t('kpis.carregando')}</p>
-                  </div> :
+                <PageLoading label={t('kpis.carregando')} /> :
                 filteredAndSortedMedicoes.length === 0 ?
                 <div className="text-center py-8 text-slate-500">
                     <ClipboardCheck className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />

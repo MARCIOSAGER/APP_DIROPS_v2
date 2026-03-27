@@ -17,12 +17,12 @@ export default function PortalServicos() {
   const logoUrl = getEmpresaLogoByUser(null, empresas);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-4xl">
         <header className="absolute top-0 right-0 p-6">
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-white/80 backdrop-blur-sm"
+            className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm"
             onClick={() => window.location.href = createPageUrl('PaginaInicial')}
           >
             <LogIn className="w-4 h-4" />
@@ -36,21 +36,21 @@ export default function PortalServicos() {
             alt="DIROPS Logo"
             className="h-16 mx-auto mb-4"
           />
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-100">
             Portal de Serviços Públicos
           </h1>
-          <p className="text-slate-600 mt-2">
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
             Aceda aos serviços públicos disponibilizados pela DIROPS.
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card className="hover:shadow-lg transition-shadow border-2 border-blue-100">
+          <Card className="hover:shadow-lg transition-shadow border-2 border-blue-100 dark:border-blue-900">
             <CardHeader className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
                 <UserCheck className="w-8 h-8 text-blue-600" />
               </div>
-              <CardTitle className="text-xl text-slate-700">Solicitar Credencial</CardTitle>
+              <CardTitle className="text-xl text-slate-700 dark:text-slate-300">Solicitar Credencial</CardTitle>
               <CardDescription>Inicie um novo pedido de credenciamento.</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
@@ -63,12 +63,12 @@ export default function PortalServicos() {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow border-2 border-pink-100">
+          <Card className="hover:shadow-lg transition-shadow border-2 border-pink-100 dark:border-pink-900">
             <CardHeader className="text-center">
-              <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-pink-100 dark:bg-pink-900 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-8 h-8 text-pink-600" />
               </div>
-              <CardTitle className="text-xl text-slate-700">Fazer Reclamação</CardTitle>
+              <CardTitle className="text-xl text-slate-700 dark:text-slate-300">Fazer Reclamação</CardTitle>
               <CardDescription>Relate problemas, sugestões ou reclamações.</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
@@ -82,9 +82,9 @@ export default function PortalServicos() {
           </Card>
         </div>
 
-        <Card className="bg-white/80 backdrop-blur-sm shadow-lg">
+        <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-lg">
           <CardHeader>
-            <CardTitle className="text-center text-slate-700 flex items-center justify-center gap-2">
+            <CardTitle className="text-center text-slate-700 dark:text-slate-300 flex items-center justify-center gap-2">
               <Building className="w-5 h-5" />
               Contactos
             </CardTitle>
@@ -92,19 +92,19 @@ export default function PortalServicos() {
           <CardContent>
             <div className="grid md:grid-cols-3 gap-4 text-center">
               <div className="flex flex-col items-center gap-2">
-                <Phone className="w-5 h-5 text-slate-500" />
-                <span className="font-medium text-slate-700">Telefone</span>
-                <span className="text-slate-600">+244 932 043 077</span>
+                <Phone className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                <span className="font-medium text-slate-700 dark:text-slate-300">Telefone</span>
+                <span className="text-slate-600 dark:text-slate-400">+244 932 043 077</span>
               </div>
               <div className="flex flex-col items-center gap-2">
-                <Mail className="w-5 h-5 text-slate-500" />
-                <span className="font-medium text-slate-700">Email</span>
-                <span className="text-slate-600">oaeroportos@sga.co.ao</span>
+                <Mail className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                <span className="font-medium text-slate-700 dark:text-slate-300">Email</span>
+                <span className="text-slate-600 dark:text-slate-400">oaeroportos@sga.co.ao</span>
               </div>
               <div className="flex flex-col items-center gap-2">
-                <Globe className="w-5 h-5 text-slate-500" />
-                <span className="font-medium text-slate-700">Website</span>
-                <span className="text-slate-600">www.sga.co.ao</span>
+                <Globe className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                <span className="font-medium text-slate-700 dark:text-slate-300">Website</span>
+                <span className="text-slate-600 dark:text-slate-400">www.sga.co.ao</span>
               </div>
             </div>
           </CardContent>

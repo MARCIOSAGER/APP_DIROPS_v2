@@ -213,22 +213,22 @@ export default function GestaoAPIKeys() {
     return (
       <div className="p-6 text-center">
         <Shield className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-slate-700">{t('apiKeys.acessoRestrito')}</h2>
-        <p className="text-slate-500 mt-2">{t('apiKeys.acessoRestritoDesc')}</p>
+        <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-300">{t('apiKeys.acessoRestrito')}</h2>
+        <p className="text-slate-500 dark:text-slate-400 mt-2">{t('apiKeys.acessoRestritoDesc')}</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen">
+    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
               <Key className="w-8 h-8 text-blue-600" />
               {t('apiKeys.titulo')}
             </h1>
-            <p className="text-slate-500 mt-1">{t('apiKeys.subtitulo')}</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">{t('apiKeys.subtitulo')}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={loadData} disabled={isLoading}>
@@ -248,10 +248,10 @@ export default function GestaoAPIKeys() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{stats.totalKeys}</p><p className="text-sm text-slate-500">{t('apiKeys.totalKeys')}</p></CardContent></Card>
-          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600">{stats.activeKeys}</p><p className="text-sm text-slate-500">{t('apiKeys.ativas')}</p></CardContent></Card>
-          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-blue-600">{stats.totalRequests}</p><p className="text-sm text-slate-500">{t('apiKeys.requisicoes')}</p></CardContent></Card>
-          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-emerald-600">{stats.successRate}%</p><p className="text-sm text-slate-500">{t('apiKeys.taxaSucesso')}</p></CardContent></Card>
+          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{stats.totalKeys}</p><p className="text-sm text-slate-500 dark:text-slate-400">{t('apiKeys.totalKeys')}</p></CardContent></Card>
+          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-green-600">{stats.activeKeys}</p><p className="text-sm text-slate-500 dark:text-slate-400">{t('apiKeys.ativas')}</p></CardContent></Card>
+          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-blue-600">{stats.totalRequests}</p><p className="text-sm text-slate-500 dark:text-slate-400">{t('apiKeys.requisicoes')}</p></CardContent></Card>
+          <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-emerald-600">{stats.successRate}%</p><p className="text-sm text-slate-500 dark:text-slate-400">{t('apiKeys.taxaSucesso')}</p></CardContent></Card>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -276,8 +276,8 @@ export default function GestaoAPIKeys() {
               <Card>
                 <CardContent className="py-12 text-center">
                   <Key className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-500">{t('apiKeys.nenhumaKey')}</p>
-                  <p className="text-sm text-slate-400 mt-1">{t('apiKeys.nenhumaKeyDesc')}</p>
+                  <p className="text-slate-500 dark:text-slate-400">{t('apiKeys.nenhumaKey')}</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">{t('apiKeys.nenhumaKeyDesc')}</p>
                 </CardContent>
               </Card>
             ) : (
@@ -286,7 +286,7 @@ export default function GestaoAPIKeys() {
                   const isActive = k.is_active && !k.revoked_at;
                   const isExpired = k.expires_at && new Date(k.expires_at) < new Date();
                   return (
-                    <Card key={k.id} className={`border ${!isActive || isExpired ? 'border-red-200 bg-red-50/30' : 'border-slate-200'}`}>
+                    <Card key={k.id} className={`border ${!isActive || isExpired ? 'border-red-200 bg-red-50/30 dark:border-red-800 dark:bg-red-950/30' : 'border-slate-200 dark:border-slate-700'}`}>
                       <CardContent className="py-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -295,7 +295,7 @@ export default function GestaoAPIKeys() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-slate-900">{k.name}</span>
+                                <span className="font-semibold text-slate-900 dark:text-slate-100">{k.name}</span>
                                 {isActive && !isExpired ? (
                                   <Badge className="bg-green-100 text-green-700 text-xs">{t('apiKeys.ativa')}</Badge>
                                 ) : isExpired ? (
@@ -304,8 +304,8 @@ export default function GestaoAPIKeys() {
                                   <Badge className="bg-red-100 text-red-700 text-xs">{t('apiKeys.revogada')}</Badge>
                                 )}
                               </div>
-                              <div className="flex items-center gap-4 mt-1 text-xs text-slate-500">
-                                <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">{k.key_prefix}...</span>
+                              <div className="flex items-center gap-4 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{k.key_prefix}...</span>
                                 <span>{t('apiKeys.criada')}: {format(new Date(k.created_date), 'dd/MM/yyyy HH:mm', { locale: pt })}</span>
                                 {k.last_used_at && (
                                   <span>{t('apiKeys.ultimoUso')}: {format(new Date(k.last_used_at), 'dd/MM/yyyy HH:mm', { locale: pt })}</span>
@@ -325,9 +325,9 @@ export default function GestaoAPIKeys() {
                                 {(k.scopes || []).length > 5 && (
                                   <Badge variant="outline" className="text-xs">+{k.scopes.length - 5}</Badge>
                                 )}
-                                <span className="text-xs text-slate-400 ml-2">{k.rate_limit_per_minute} req/min</span>
+                                <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">{k.rate_limit_per_minute} req/min</span>
                                 {k.allowed_ips?.length > 0 && (
-                                  <span className="text-xs text-slate-400">IPs: {k.allowed_ips.join(', ')}</span>
+                                  <span className="text-xs text-slate-400 dark:text-slate-500">IPs: {k.allowed_ips.join(', ')}</span>
                                 )}
                               </div>
                             </div>
@@ -366,19 +366,19 @@ export default function GestaoAPIKeys() {
               <CardHeader>
                 <CardTitle className="text-base">{t('apiKeys.powerBiTitle')}</CardTitle>
               </CardHeader>
-              <CardContent className="text-sm text-slate-600 space-y-4">
+              <CardContent className="text-sm text-slate-600 dark:text-slate-400 space-y-4">
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
                   <strong>Importante:</strong> O Power BI usa o Power Query (linguagem M) para fazer requisições POST com body JSON. Siga os passos abaixo.
                 </div>
 
                 <div>
-                  <p className="font-semibold text-slate-800 mb-2">Passo 1 — Abrir o Editor</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Passo 1 — Abrir o Editor</p>
                   <p>No Power BI Desktop: <strong>Página Inicial → Obter dados → Consulta em Branco</strong></p>
                   <p className="mt-1">Na barra de ferramentas do Power Query, clique em <strong>Editor Avançado</strong></p>
                 </div>
 
                 <div>
-                  <p className="font-semibold text-slate-800 mb-2">Passo 2 — Colar o código</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Passo 2 — Colar o código</p>
                   <p className="mb-2">Apague tudo e cole o código abaixo. Substitua <code>dk_SUA_KEY_AQUI</code> pela sua API key.</p>
                   <pre className="bg-slate-900 text-green-400 p-4 rounded-lg text-xs overflow-x-auto whitespace-pre">{`let
     url = "https://glernwcsuwcyzwsnelad.supabase.co/functions/v1/data-api",
@@ -398,13 +398,13 @@ in
                 </div>
 
                 <div>
-                  <p className="font-semibold text-slate-800 mb-2">Passo 3 — Concluir e Renomear</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Passo 3 — Concluir e Renomear</p>
                   <p>Clique <strong>Concluído</strong>. Os dados aparecerão em tabela.</p>
                   <p className="mt-1">Renomeie a consulta para o nome da entidade (ex: "Voos").</p>
                 </div>
 
                 <div>
-                  <p className="font-semibold text-slate-800 mb-2">Passo 4 — Adicionar mais entidades</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Passo 4 — Adicionar mais entidades</p>
                   <p>Repita os passos 1-3 mudando o <code>entity</code> no código:</p>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     {[
@@ -417,15 +417,15 @@ in
                       ['aeroporto', 'Aeroportos'],
                       ['movimento_financeiro', 'Mov. Financeiros'],
                     ].map(([entity, label]) => (
-                      <div key={entity} className="bg-slate-100 px-2 py-1 rounded text-xs font-mono">
-                        <span className="text-blue-600">entity</span> = "{entity}" → <span className="text-slate-700 font-sans">{label}</span>
+                      <div key={entity} className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-xs font-mono">
+                        <span className="text-blue-600">entity</span> = "{entity}" → <span className="text-slate-700 dark:text-slate-300 font-sans">{label}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <p className="font-semibold text-slate-800 mb-2">Passo 5 — Filtros (opcional)</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Passo 5 — Filtros (opcional)</p>
                   <p>Para filtrar dados, adicione <code>filters</code> ao body:</p>
                   <pre className="bg-slate-900 text-green-400 p-3 rounded-lg text-xs overflow-x-auto whitespace-pre">{`// Só voos de 2026 em diante
 body = Json.FromValue([
@@ -436,14 +436,14 @@ body = Json.FromValue([
                 </div>
 
                 <div>
-                  <p className="font-semibold text-slate-800 mb-2">Entidades disponíveis</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Entidades disponíveis</p>
                   <p className="mb-2">Use o valor da coluna <code>entity</code> no código M:</p>
                   <div className="max-h-64 overflow-y-auto border rounded-lg">
                     <table className="w-full text-xs">
-                      <thead className="bg-slate-100 sticky top-0">
+                      <thead className="bg-slate-100 dark:bg-slate-800 sticky top-0">
                         <tr>
-                          <th className="text-left p-2 font-medium text-slate-600">entity</th>
-                          <th className="text-left p-2 font-medium text-slate-600">Descrição</th>
+                          <th className="text-left p-2 font-medium text-slate-600 dark:text-slate-400">entity</th>
+                          <th className="text-left p-2 font-medium text-slate-600 dark:text-slate-400">Descrição</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -477,9 +477,9 @@ body = Json.FromValue([
                           ['plano_acao_corretiva', 'Planos de Ação Corretiva'],
                           ['item_checklist', 'Itens de Checklist'],
                         ].map(([entity, label]) => (
-                          <tr key={entity} className="border-t hover:bg-slate-50">
+                          <tr key={entity} className="border-t dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
                             <td className="p-2 font-mono text-blue-600">{entity}</td>
-                            <td className="p-2 text-slate-700">{label}</td>
+                            <td className="p-2 text-slate-700 dark:text-slate-300">{label}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -488,7 +488,7 @@ body = Json.FromValue([
                 </div>
 
                 <div>
-                  <p className="font-semibold text-slate-800 mb-2">Passo 6 — Publicar e Agendar Refresh</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Passo 6 — Publicar e Agendar Refresh</p>
                   <ul className="list-disc list-inside space-y-1 text-xs">
                     <li>Publique no Power BI Service (<strong>Publicar</strong>)</li>
                     <li>No Service: <strong>Configurações do dataset → Credenciais da fonte de dados</strong></li>
@@ -535,7 +535,7 @@ body = Json.FromValue([
               <Card>
                 <CardContent className="py-12 text-center">
                   <Activity className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-500">{t('apiKeys.nenhumAcesso')}</p>
+                  <p className="text-slate-500 dark:text-slate-400">{t('apiKeys.nenhumAcesso')}</p>
                 </CardContent>
               </Card>
             ) : (
@@ -544,19 +544,19 @@ body = Json.FromValue([
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b bg-slate-50">
-                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colDataHora')}</th>
-                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colEndpoint')}</th>
-                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colStatus')}</th>
-                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colLinhas')}</th>
-                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colTempo')}</th>
-                          <th className="text-left p-3 font-medium text-slate-600">{t('apiKeys.colIP')}</th>
+                        <tr className="border-b bg-slate-50 dark:bg-slate-800 dark:border-slate-700">
+                          <th className="text-left p-3 font-medium text-slate-600 dark:text-slate-400">{t('apiKeys.colDataHora')}</th>
+                          <th className="text-left p-3 font-medium text-slate-600 dark:text-slate-400">{t('apiKeys.colEndpoint')}</th>
+                          <th className="text-left p-3 font-medium text-slate-600 dark:text-slate-400">{t('apiKeys.colStatus')}</th>
+                          <th className="text-left p-3 font-medium text-slate-600 dark:text-slate-400">{t('apiKeys.colLinhas')}</th>
+                          <th className="text-left p-3 font-medium text-slate-600 dark:text-slate-400">{t('apiKeys.colTempo')}</th>
+                          <th className="text-left p-3 font-medium text-slate-600 dark:text-slate-400">{t('apiKeys.colIP')}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredLogs.slice(0, 100).map(log => (
-                          <tr key={log.id} className="border-b hover:bg-slate-50">
-                            <td className="p-3 text-xs text-slate-500">
+                          <tr key={log.id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
+                            <td className="p-3 text-xs text-slate-500 dark:text-slate-400">
                               {log.created_at ? format(new Date(log.created_at), 'dd/MM/yy HH:mm:ss', { locale: pt }) : '—'}
                             </td>
                             <td className="p-3">
@@ -569,16 +569,16 @@ body = Json.FromValue([
                                 <Badge className="bg-red-100 text-red-700 text-xs">{log.status_code}</Badge>
                               )}
                             </td>
-                            <td className="p-3 text-slate-600">{log.rows_returned ?? '—'}</td>
-                            <td className="p-3 text-slate-600">{log.response_time_ms ? `${log.response_time_ms}ms` : '—'}</td>
-                            <td className="p-3 text-xs text-slate-400 font-mono">{log.ip_address || '—'}</td>
+                            <td className="p-3 text-slate-600 dark:text-slate-400">{log.rows_returned ?? '—'}</td>
+                            <td className="p-3 text-slate-600 dark:text-slate-400">{log.response_time_ms ? `${log.response_time_ms}ms` : '—'}</td>
+                            <td className="p-3 text-xs text-slate-400 dark:text-slate-500 font-mono">{log.ip_address || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                   {filteredLogs.length > 100 && (
-                    <p className="text-center text-xs text-slate-400 py-3">
+                    <p className="text-center text-xs text-slate-400 dark:text-slate-500 py-3">
                       {t('apiKeys.mostrandoRegistos').replace('{total}', filteredLogs.length)}
                     </p>
                   )}
@@ -617,7 +617,7 @@ body = Json.FromValue([
                 <Input
                   readOnly
                   value={createdKey}
-                  className="font-mono text-sm pr-12 bg-slate-50"
+                  className="font-mono text-sm pr-12 bg-slate-50 dark:bg-slate-900"
                 />
                 <Button
                   variant="ghost"
@@ -649,7 +649,7 @@ body = Json.FromValue([
 
               <div className="space-y-2">
                 <Label>{t('apiKeys.scopes')}</Label>
-                <p className="text-xs text-slate-500">{t('apiKeys.scopesDesc')}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{t('apiKeys.scopesDesc')}</p>
                 <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2 border rounded-lg">
                   {AVAILABLE_ENTITIES.map(e => (
                     <button
@@ -659,7 +659,7 @@ body = Json.FromValue([
                       className={`text-xs px-2 py-1 rounded-md transition-colors ${
                         newKeyData.scopes.includes(e.value)
                           ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
                       }`}
                     >
                       {e.label}
@@ -701,7 +701,7 @@ body = Json.FromValue([
                   onChange={(e) => setNewKeyData(prev => ({ ...prev, allowed_ips: e.target.value }))}
                   placeholder="Ex: 192.168.1.100, 10.0.0.1 (vazio = qualquer IP)"
                 />
-                <p className="text-xs text-slate-500">{t('apiKeys.separeIPs')}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{t('apiKeys.separeIPs')}</p>
               </div>
 
               <DialogFooter>
@@ -733,7 +733,7 @@ body = Json.FromValue([
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               {t('apiKeys.confirmarRevogar').replace('{name}', revokeKey?.name || '')}
             </p>
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">

@@ -125,7 +125,7 @@ export default function LogAuditoriaDetalhesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <p className="text-slate-600">{t('logAuditoria.carregandoDetalhes')}</p>
+        <p className="text-slate-600 dark:text-slate-400">{t('logAuditoria.carregandoDetalhes')}</p>
       </div>
     );
   }
@@ -164,7 +164,7 @@ export default function LogAuditoriaDetalhesPage() {
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t('logAuditoria.voltar')}
         </Button>
-        <p className="text-slate-600">{t('logAuditoria.logNaoEncontrado')}</p>
+        <p className="text-slate-600 dark:text-slate-400">{t('logAuditoria.logNaoEncontrado')}</p>
       </div>
     );
   }
@@ -199,20 +199,20 @@ export default function LogAuditoriaDetalhesPage() {
           {/* Data e hora */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 <Calendar className="w-4 h-4 inline mr-1" />
                 {t('logAuditoria.dataHora')}
               </label>
-              <p className="text-slate-900 font-mono">
+              <p className="text-slate-900 dark:text-slate-100 font-mono">
                 {format(new Date(log.created_date), 'dd/MM/yyyy HH:mm:ss', { locale: pt })}
               </p>
             </div>
 
             {/* ID do Log */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.idLog')}</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('logAuditoria.idLog')}</label>
               <div className="flex items-center gap-2">
-                <p className="text-slate-900 font-mono text-xs break-all">{log.id}</p>
+                <p className="text-slate-900 dark:text-slate-100 font-mono text-xs break-all">{log.id}</p>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -226,40 +226,40 @@ export default function LogAuditoriaDetalhesPage() {
           </div>
 
           {/* Utilizador */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 <UserIcon className="w-4 h-4 inline mr-1" />
                 {t('logAuditoria.nomeUtilizador')}
               </label>
-              <p className="text-slate-900 font-medium">{log.usuario_nome || 'N/A'}</p>
+              <p className="text-slate-900 dark:text-slate-100 font-medium">{log.usuario_nome || 'N/A'}</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.emailUtilizador')}</label>
-              <p className="text-slate-900 font-mono text-sm">{log.usuario_email || 'N/A'}</p>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('logAuditoria.emailUtilizador')}</label>
+              <p className="text-slate-900 dark:text-slate-100 font-mono text-sm">{log.usuario_email || 'N/A'}</p>
             </div>
           </div>
 
           {/* Entidade */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.entidadeAfetada')}</label>
-              <p className="text-slate-900 font-medium">{log.entidade || 'N/A'}</p>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('logAuditoria.entidadeAfetada')}</label>
+              <p className="text-slate-900 dark:text-slate-100 font-medium">{log.entidade || 'N/A'}</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.idEntidade')}</label>
-              <p className="text-slate-900 font-mono text-sm">{log.entidade_id || 'N/A'}</p>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('logAuditoria.idEntidade')}</label>
+              <p className="text-slate-900 dark:text-slate-100 font-mono text-sm">{log.entidade_id || 'N/A'}</p>
             </div>
           </div>
 
           {/* Detalhes */}
           {log.detalhes && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.detalhesAcao')}</label>
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                <p className="text-slate-700 text-sm whitespace-pre-wrap break-words">{log.detalhes}</p>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('logAuditoria.detalhesAcao')}</label>
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                <p className="text-slate-700 dark:text-slate-300 text-sm whitespace-pre-wrap break-words">{log.detalhes}</p>
               </div>
             </div>
           )}
@@ -267,9 +267,9 @@ export default function LogAuditoriaDetalhesPage() {
           {/* Alterações (se houver) */}
           {log.alteracoes && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">{t('logAuditoria.alteracoesRegistadas')}</label>
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                <pre className="text-xs overflow-x-auto text-slate-700">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('logAuditoria.alteracoesRegistadas')}</label>
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                <pre className="text-xs overflow-x-auto text-slate-700 dark:text-slate-300">
                   {JSON.stringify(log.alteracoes, null, 2)}
                 </pre>
               </div>

@@ -18,6 +18,18 @@ const entitiesProxy = new Proxy({}, {
   }
 });
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+async function uploadToBucket(file, bucket) {
+  if (file.size > MAX_FILE_SIZE) throw new Error('Ficheiro excede o limite de 10MB.');
+  const validation = await validateFileType(file);
+  if (!validation.valid) throw new Error(validation.reason);
+  const fileName = `${Date.now()}_${sanitizeFilename(file.name)}`;
+  const { data, error } = await supabase.storage.from(bucket).upload(fileName, file);
+  if (error) throw error;
+  return { fileName, data };
+}
+
 export const base44 = {
   auth: {
     async me() {
@@ -72,30 +84,14 @@ export const base44 = {
         return invokeFunction('invokeLLM', params);
       },
       async UploadFile({ file }) {
-        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-        if (file.size > MAX_FILE_SIZE) throw new Error('Ficheiro excede o limite de 10MB.');
-        const validation = await validateFileType(file);
-        if (!validation.valid) throw new Error(validation.reason);
-        const fileName = `${Date.now()}_${sanitizeFilename(file.name)}`;
-        const { data, error } = await supabase.storage
-          .from('uploads')
-          .upload(fileName, file);
-        if (error) throw error;
+        const { fileName, data } = await uploadToBucket(file, 'uploads');
         const { data: urlData } = await supabase.storage
           .from('uploads')
-          .createSignedUrl(data.path, 3600); // 1 hour expiry
+          .createSignedUrl(data.path, 3600);
         return { url: urlData?.signedUrl || data.path, path: data.path };
       },
       async UploadPrivateFile({ file }) {
-        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-        if (file.size > MAX_FILE_SIZE) throw new Error('Ficheiro excede o limite de 10MB.');
-        const validation = await validateFileType(file);
-        if (!validation.valid) throw new Error(validation.reason);
-        const fileName = `${Date.now()}_${sanitizeFilename(file.name)}`;
-        const { data, error } = await supabase.storage
-          .from('private-uploads')
-          .upload(fileName, file);
-        if (error) throw error;
+        const { data } = await uploadToBucket(file, 'private-uploads');
         return { path: data.path };
       },
       async SendSMS(params) {

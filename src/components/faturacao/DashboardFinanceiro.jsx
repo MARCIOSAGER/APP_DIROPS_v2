@@ -274,7 +274,7 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
               <Input type="date" value={filtro.data_fim} onChange={e => setFiltro(p => ({ ...p, data_fim: e.target.value }))} />
             </div>
             <div className="flex items-end">
-              <Button onClick={handleBuscar} disabled={isSearching} className="bg-purple-600 hover:bg-purple-700 text-white w-full">
+              <Button onClick={handleBuscar} disabled={isSearching} className="bg-blue-600 hover:bg-blue-700 text-white w-full">
                 {isSearching ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('msg.loading')}</> : <><Search className="mr-2 h-4 w-4" /> {t('btn.search')}</>}
               </Button>
             </div>

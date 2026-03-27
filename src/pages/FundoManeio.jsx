@@ -455,7 +455,7 @@ export default function FundoManeio() {
               <FileDown className="w-4 h-4 mr-2" />
               {t('fundo.send_email')}
             </Button>
-            <Button onClick={() => handleOpenForm()} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+            <Button onClick={() => handleOpenForm()} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               <Plus className="w-4 h-4 mr-2" />
               {t('fundo.new_movement')}
             </Button>
@@ -486,7 +486,7 @@ export default function FundoManeio() {
                 {t('fundo.filters')}
               </CardTitle>
               <div className="flex items-center gap-2">
-                <Button size="sm" onClick={handleBuscar} disabled={isLoading} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                <Button size="sm" onClick={handleBuscar} disabled={isLoading} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                   {isLoading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Search className="w-4 h-4 mr-1" />}
                   {t('fundo.search_btn', 'Buscar')}
                 </Button>

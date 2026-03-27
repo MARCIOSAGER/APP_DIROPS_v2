@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Select from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageLoading } from '@/components/ui/loading-spinner';
 import {
   Plane,
   DollarSign,
@@ -447,10 +448,7 @@ export default function DashboardInterno() {
         {isSuperAdmin(currentUser) && <MonitoramentoSuperAdmin />}
 
         {isLoadingAll ?
-        <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-slate-600 dark:text-slate-400">{loadingStatus}</p>
-          </div> :
+        <PageLoading label={loadingStatus} /> :
 
         <>
             <DashboardStats

@@ -365,7 +365,7 @@ export default function Safety() {
                 Email ({selectedOcorrencias.length})
               </Button>
             )}
-            <Button onClick={() => { setEditingOcorrencia(null); setIsFormOpen(true); }} className="bg-red-500 hover:bg-red-600 text-white">
+            <Button onClick={() => { setEditingOcorrencia(null); setIsFormOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="w-4 h-4 mr-2" />
               {t('safety.nova_ocorrencia')}
             </Button>

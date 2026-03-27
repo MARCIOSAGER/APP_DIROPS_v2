@@ -137,7 +137,7 @@ export default function HistoricoAcessoDocumentos() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">{t('historico.carregando')}</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('historico.carregando')}</p>
         </div>
       </div>
     );
@@ -148,8 +148,8 @@ export default function HistoricoAcessoDocumentos() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">{t('historico.titulo')}</h1>
-          <p className="text-slate-600 mt-1">{t('historico.subtitulo')}</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{t('historico.titulo')}</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">{t('historico.subtitulo')}</p>
         </div>
         <Button onClick={loadData} variant="outline">
           {t('historico.atualizar')}
@@ -162,8 +162,8 @@ export default function HistoricoAcessoDocumentos() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">{t('historico.total_acessos')}</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('historico.total_acessos')}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</p>
               </div>
               <FileText className="w-8 h-8 text-blue-600" />
             </div>
@@ -174,7 +174,7 @@ export default function HistoricoAcessoDocumentos() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">{t('historico.visualizacoes')}</p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('historico.visualizacoes')}</p>
                 <p className="text-2xl font-bold text-blue-900">{stats.visualizacoes}</p>
               </div>
               <Eye className="w-8 h-8 text-blue-600" />
@@ -186,7 +186,7 @@ export default function HistoricoAcessoDocumentos() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">{t('historico.downloads')}</p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('historico.downloads')}</p>
                 <p className="text-2xl font-bold text-green-900">{stats.downloads}</p>
               </div>
               <Download className="w-8 h-8 text-green-600" />
@@ -198,7 +198,7 @@ export default function HistoricoAcessoDocumentos() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">{t('historico.ultimas_24h')}</p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('historico.ultimas_24h')}</p>
                 <p className="text-2xl font-bold text-orange-900">{stats.ultimasHoras}</p>
               </div>
               <Calendar className="w-8 h-8 text-orange-600" />
@@ -275,9 +275,9 @@ export default function HistoricoAcessoDocumentos() {
         </CardHeader>
         <CardContent>
           {filteredLogs.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
-              <FileText className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-              <h3 className="text-lg font-semibold text-slate-700 mb-2">
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+              <FileText className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
                 {t('historico.nenhum_registro')}
               </h3>
               <p>{t('historico.nenhum_registro_desc')}</p>
@@ -290,7 +290,7 @@ export default function HistoricoAcessoDocumentos() {
                     <TableHead>
                       <button
                         onClick={() => handleSort('data_hora_acesso')}
-                        className="flex items-center gap-1 hover:text-slate-900 font-medium"
+                        className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-100 font-medium"
                       >
                         {t('historico.col_data_hora')}
                         {sortField === 'data_hora_acesso' ? (
@@ -303,7 +303,7 @@ export default function HistoricoAcessoDocumentos() {
                     <TableHead>
                       <button
                         onClick={() => handleSort('documento_id')}
-                        className="flex items-center gap-1 hover:text-slate-900 font-medium"
+                        className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-100 font-medium"
                       >
                         {t('historico.col_documento')}
                         {sortField === 'documento_id' ? (
@@ -316,7 +316,7 @@ export default function HistoricoAcessoDocumentos() {
                     <TableHead>
                       <button
                         onClick={() => handleSort('usuario_nome')}
-                        className="flex items-center gap-1 hover:text-slate-900 font-medium"
+                        className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-100 font-medium"
                       >
                         {t('historico.col_usuario')}
                         {sortField === 'usuario_nome' ? (
@@ -329,7 +329,7 @@ export default function HistoricoAcessoDocumentos() {
                     <TableHead>
                       <button
                         onClick={() => handleSort('tipo_acesso')}
-                        className="flex items-center gap-1 hover:text-slate-900 font-medium"
+                        className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-100 font-medium"
                       >
                         {t('historico.tipo_acesso')}
                         {sortField === 'tipo_acesso' ? (
@@ -349,15 +349,15 @@ export default function HistoricoAcessoDocumentos() {
                     const TipoIcon = tipoConfig.icon;
 
                     return (
-                      <TableRow key={log.id} className="hover:bg-slate-50">
+                      <TableRow key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-slate-400" />
                             <div>
-                              <div className="text-sm font-medium text-slate-900">
+                              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
                                 {format(parseISO(log.data_hora_acesso), 'dd/MM/yyyy', { locale: pt })}
                               </div>
-                              <div className="text-xs text-slate-500">
+                              <div className="text-xs text-slate-500 dark:text-slate-400">
                                 {format(parseISO(log.data_hora_acesso), 'HH:mm:ss', { locale: pt })}
                               </div>
                             </div>
@@ -366,7 +366,7 @@ export default function HistoricoAcessoDocumentos() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <FileText className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm font-medium text-slate-900">
+                            <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
                               {getDocumentoNome(log.documento_id)}
                             </span>
                           </div>
@@ -375,10 +375,10 @@ export default function HistoricoAcessoDocumentos() {
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4 text-slate-400" />
                             <div>
-                              <div className="text-sm font-medium text-slate-900">
+                              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
                                 {log.usuario_nome || t('historico.usuario_removido')}
                               </div>
-                              <div className="text-xs text-slate-500">
+                              <div className="text-xs text-slate-500 dark:text-slate-400">
                                 {log.usuario_email}
                               </div>
                             </div>
@@ -391,7 +391,7 @@ export default function HistoricoAcessoDocumentos() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1 text-xs text-slate-600">
+                          <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
                             <MapPin className="w-3 h-3 text-slate-400" />
                             {log.ip_address || 'N/A'}
                           </div>

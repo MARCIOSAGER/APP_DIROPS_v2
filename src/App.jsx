@@ -16,10 +16,11 @@ import CookieConsent from '@/components/shared/CookieConsent';
 import { I18nProvider } from '@/components/lib/i18n';
 import AppUpdateBanner from '@/components/shared/AppUpdateBanner';
 import { initWebVitals } from '@/lib/webVitals';
+import { LoadingSpinner, PageLoading } from '@/components/ui/loading-spinner';
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-screen">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+    <LoadingSpinner size="lg" />
   </div>
 );
 
@@ -74,8 +75,7 @@ class ErrorBoundary extends React.Component {
         return (
           <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
             <div className="text-center p-8">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4" />
-              <p className="text-slate-600">A carregar nova versão...</p>
+              <PageLoading label="A carregar nova versão..." />
             </div>
           </div>
         );

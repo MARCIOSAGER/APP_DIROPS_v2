@@ -2,28 +2,16 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Download, Settings, Filter, X, Trash2, Link2, Unlink, Loader2, Search, ArrowRightLeft, Plane } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format, parseISO, addDays } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { Settings, Unlink, Plane } from 'lucide-react';
+import { addDays } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import Select from '@/components/ui/select';
-import Combobox from '@/components/ui/combobox';
-import { Badge } from '@/components/ui/badge';
 
 import { supabase } from '@/lib/supabaseClient';
 import { Voo } from '@/entities/Voo';
 import { VooLigado } from '@/entities/VooLigado';
-import { Aeroporto } from '@/entities/Aeroporto';
-import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
-import { RegistoAeronave } from '@/entities/RegistoAeronave';
-import { ModeloAeronave } from '@/entities/ModeloAeronave';
 import { CalculoTarifa } from '@/entities/CalculoTarifa';
 import { createPageUrl } from '@/utils';
-import { hasUserProfile, getAeroportosPermitidos, isSuperAdmin, isAdminProfile } from '@/components/lib/userUtils';
+import { hasUserProfile, getAeroportosPermitidos, isSuperAdmin } from '@/components/lib/userUtils';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
 import { useAeroportos, useCompanhias, useAeronaves, useModelosAeronave, useTarifasPouso, useTarifasPermanencia, useOutrasTarifas, useImpostos } from '@/components/lib/useStaticData';
 import { useCompanyView } from '@/lib/CompanyViewContext';
@@ -33,7 +21,6 @@ import { useVoosLigados } from '@/hooks/useVoosLigados';
 import { useCalculosTarifa, fetchCalculoMap } from '@/hooks/useCalculosTarifa';
 import { useQueryClient } from '@tanstack/react-query';
 
-import VoosTable from '../components/operacoes/VoosTable';
 import VoosTab from '../components/operacoes/VoosTab';
 import VoosLigadosTab from '../components/operacoes/VoosLigadosTab';
 import VoosSemLinkTab from '../components/operacoes/VoosSemLinkTab';
@@ -46,9 +33,7 @@ const AeroportosConfig = React.lazy(() => import('../components/operacoes/config
 const CompanhiasConfig = React.lazy(() => import('../components/operacoes/config/CompanhiasConfig'));
 const ModelosAeronaveConfig = React.lazy(() => import('../components/operacoes/config/ModelosAeronaveConfig'));
 const RegistosAeronaveConfig = React.lazy(() => import('../components/operacoes/config/RegistosAeronaveConfig'));
-import VoosLigadosTable from '../components/operacoes/VoosLigadosTable';
 const TariffDetailsModal = React.lazy(() => import('../components/operacoes/TariffDetailsModal'));
-import VoosLigadosFilters from '../components/operacoes/VoosLigadosFilters';
 
 import AlertModal from '../components/shared/AlertModal';
 import SuccessModal from '../components/shared/SuccessModal';
@@ -85,16 +70,11 @@ export default function Operacoes() {
    const { user } = useAuth();
    const effectiveEmpresaIdRef = useRef(effectiveEmpresaId);
    effectiveEmpresaIdRef.current = effectiveEmpresaId;
-  // R-01: Derived from TanStack cache via useMemo (no duplicate useState)
-  // const [aeroportos/todosAeroportos/companhias/aeronaves] removed — see useMemo below
-  const [allUsers, setAllUsers] = useState([]);
-  // const [modelosAeronave/tarifas/impostos] removed — see useMemo below
   const [configuracaoSistema, setConfiguracaoSistema] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [tipoMovimentoForm, setTipoMovimentoForm] = useState('ARR');
   const [editingVoo, setEditingVoo] = useState(null);
-  const currentUser = user;
   const [vooArrToLink, setVooArrToLink] = useState(null);
   const [tariffDetailsData, setTariffDetailsData] = useState(null);
   const [gerarProformaCalculo, setGerarProformaCalculo] = useState(null);
@@ -237,15 +217,15 @@ export default function Operacoes() {
   // R-01: Derive data from TanStack cache via useMemo (eliminates 8 useEffect + 9 useState double-renders)
   const todosAeroportos = useMemo(() => aeroportosCache || [], [aeroportosCache]);
   const aeroportos = useMemo(() => {
-    if (!aeroportosCache?.length || !currentUser) return [];
+    if (!aeroportosCache?.length || !user) return [];
     const allAngolan = aeroportosCache.filter(a => a.pais === 'AO');
-    return getAeroportosPermitidos(currentUser, allAngolan, effectiveEmpresaIdRef.current);
-  }, [aeroportosCache, currentUser]);
+    return getAeroportosPermitidos(user, allAngolan, effectiveEmpresaIdRef.current);
+  }, [aeroportosCache, user]);
   const companhias = useMemo(() => companhiasCache || [], [companhiasCache]);
   const aeronaves = useMemo(() => aeronavesCache || [], [aeronavesCache]);
   const modelosAeronave = useMemo(() => modelosCache || [], [modelosCache]);
 
-  const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+  const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
   const tarifasPouso = useMemo(() => filterTarifasByEmpresa(tarifasPousoCache || [], empId), [tarifasPousoCache, empId]);
   const tarifasPermanencia = useMemo(() => filterTarifasByEmpresa(tarifasPermanenciaCache || [], empId), [tarifasPermanenciaCache, empId]);
   const outrasTarifas = useMemo(() => filterTarifasByEmpresa(outrasTarifasCache || [], empId), [outrasTarifasCache, empId]);
@@ -256,7 +236,7 @@ export default function Operacoes() {
     setIsFiltering(true);
     try {
       const query = { deleted_at: { $is: null } };
-      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
       if (empId) query.empresa_id = empId;
 
       // Date range
@@ -329,7 +309,7 @@ export default function Operacoes() {
       }
       queryClient.setQueryData(['voos', empresaId], data);
       // Reload voosLigados so statusVinculacao filter works correctly
-      const empIdVl = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      const empIdVl = effectiveEmpresaIdRef.current || user?.empresa_id;
       if (empIdVl) {
         const vlData = await VooLigado.filter({ empresa_id: empId }, '-created_date');
         queryClient.setQueryData(['voos-ligados', empresaId], vlData);
@@ -345,13 +325,13 @@ export default function Operacoes() {
     } finally {
       setIsFiltering(false);
     }
-  }, [filtros, currentUser, companhias, t]);
+  }, [filtros, user, companhias, t]);
 
   // Voos Ligados: server-side reload when user clicks "Buscar"
   const handleBuscarLigados = useCallback(async () => {
     setIsFilteringLigados(true);
     try {
-      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
 
       // 1. Reload voos with date range (server-side)
       const vooQuery = { deleted_at: { $is: null } };
@@ -382,7 +362,7 @@ export default function Operacoes() {
     } finally {
       setIsFilteringLigados(false);
     }
-  }, [filtrosLigados.dataInicio, filtrosLigados.dataFim, currentUser]);
+  }, [filtrosLigados.dataInicio, filtrosLigados.dataFim, user]);
 
   const voosLigadosValidos = useMemo(() => {
     // Deduplicate by id (pagination can return overlapping rows)
@@ -410,7 +390,7 @@ export default function Operacoes() {
   const loadVoosSemLink = useCallback(async () => {
     setIsLoadingSemLink(true);
     try {
-      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
       if (!empId) return;
 
       const { data, error } = await supabase.rpc('get_voos_sem_link', {
@@ -431,10 +411,10 @@ export default function Operacoes() {
     } finally {
       setIsLoadingSemLink(false);
     }
-  }, [filtrosSemLink, currentUser]);
+  }, [filtrosSemLink, user]);
 
   const handleLinkarAutomatico = useCallback(async () => {
-    const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+    const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
     if (!empId) return;
     setIsLinkingAuto(true);
     try {
@@ -463,11 +443,11 @@ export default function Operacoes() {
     } finally {
       setIsLinkingAuto(false);
     }
-  }, [currentUser, loadData, loadVoosSemLink]);
+  }, [user, loadData, loadVoosSemLink]);
 
   const handleLinkarManual = useCallback(async (arrVoo, depVoo) => {
     try {
-      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
       const arrDateTime = new Date(`${arrVoo.data_operacao}T${arrVoo.horario_real || arrVoo.horario_previsto || '00:00'}`);
       const depDateTime = new Date(`${depVoo.data_operacao}T${depVoo.horario_real || depVoo.horario_previsto || '00:00'}`);
       const tempoPermanenciaMin = Math.round((depDateTime.getTime() - arrDateTime.getTime()) / (1000 * 60));
@@ -511,7 +491,7 @@ export default function Operacoes() {
         message: error.message || 'Erro ao linkar voos'
       });
     }
-  }, [currentUser, loadData, loadVoosSemLink]);
+  }, [user, loadData, loadVoosSemLink]);
 
   // Stats for sem link tab
   const semLinkStats = useMemo(() => {
@@ -648,10 +628,10 @@ export default function Operacoes() {
 
     try {
       let savedVoo;
-      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
       const vooDataWithMeta = {
         ...vooData,
-        updated_by: currentUser?.email || 'sistema',
+        updated_by: user?.email || 'sistema',
         ...(empId && !editingVoo ? { empresa_id: empId } : {})
       };
 
@@ -945,7 +925,7 @@ export default function Operacoes() {
       onConfirm: async () => {
         setAlertInfo(prev => ({ ...prev, isOpen: false }));
         try {
-          await Voo.update(voo.id, { ...voo, status: 'Cancelado', updated_by: currentUser?.email || 'sistema' });
+          await Voo.update(voo.id, { ...voo, status: 'Cancelado', updated_by: user?.email || 'sistema' });
           queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
           setSuccessInfo({
             isOpen: true,
@@ -976,7 +956,7 @@ export default function Operacoes() {
               await Proforma.update(pf.id, {
                 status: 'cancelada',
                 motivo_cancelamento: `Voo ${voo.numero_voo} movido para lixeira. Motivo: ${motivo}`,
-                cancelado_por: currentUser?.email || 'sistema',
+                cancelado_por: user?.email || 'sistema',
                 data_cancelamento: new Date().toISOString()
               });
             }
@@ -1003,7 +983,7 @@ export default function Operacoes() {
 
         await Voo.update(voo.id, {
           deleted_at: new Date().toISOString(),
-          deleted_by: currentUser?.email || 'sistema'
+          deleted_by: user?.email || 'sistema'
         });
 
         queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
@@ -1060,7 +1040,7 @@ export default function Operacoes() {
   };
 
   const handleExcluirPermanentemente = async (voo) => {
-    if (!isSuperAdmin(currentUser)) {
+    if (!isSuperAdmin(user)) {
       setAlertInfo({
         isOpen: true,
         type: 'error',
@@ -1118,7 +1098,7 @@ export default function Operacoes() {
               await Proforma.update(pf.id, {
                 status: 'cancelada',
                 motivo_cancelamento: `Vinculação excluída: ${arrVoo?.numero_voo || 'N/A'} (ARR) → ${depVoo?.numero_voo || 'N/A'} (DEP). Motivo: ${motivo}`,
-                cancelado_por: currentUser?.email || 'sistema',
+                cancelado_por: user?.email || 'sistema',
                 data_cancelamento: new Date().toISOString()
               });
             }
@@ -1498,7 +1478,7 @@ export default function Operacoes() {
     }
 
     try {
-      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
       // D-01: Use .filter() instead of .list() — fetch only matching records
       const filterQuery = { calculo_tarifa_id: calculo.id, status: { $ne: 'cancelada' } };
       if (empId) filterQuery.empresa_id = empId;
@@ -1524,7 +1504,7 @@ export default function Operacoes() {
 
   const handleConfirmarGerarProforma = async (dadosProforma) => {
     try {
-      const empId = effectiveEmpresaIdRef.current || currentUser?.empresa_id;
+      const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
       const ano = new Date().getFullYear();
       const prefixoProforma = `PF-${ano}-`;
       // D-01: Fetch only this year's proformas (not ALL) using server-side filter
@@ -1553,7 +1533,7 @@ export default function Operacoes() {
         status: 'emitida',
         data_emissao: new Date().toISOString().split('T')[0],
         voo_id: gerarProformaCalculo?.voo_id || null,
-        emitida_por: currentUser?.email || 'sistema',
+        emitida_por: user?.email || 'sistema',
         empresa_id: empId || null,
       };
 
@@ -1644,7 +1624,7 @@ export default function Operacoes() {
       const documentoData = {
         titulo: `${tiposNome[tipoDocumento]} - ${arrVoo?.numero_voo} → ${depVoo?.numero_voo}`,
         categoria: 'outro',
-        empresa_id: currentUser?.empresa_id,
+        empresa_id: user?.empresa_id,
         aeroporto: arrVoo?.aeroporto_operacao,
         voo_ligado_id: uploadDocumentoData.vooLigado.id,
         arquivo_url: fileUrl,
@@ -2109,8 +2089,6 @@ export default function Operacoes() {
     { value: 'sem_link', label: t('operacoes.apenas_sem_link') }
   ], [t]);
 
-
-
   const configuracao = useMemo(() => ({
     aeroportos: todosAeroportos,
     aeronaves: aeronaves,
@@ -2179,7 +2157,7 @@ export default function Operacoes() {
               sortDirection={sortDirection}
               t={t}
               language={language}
-              currentUser={currentUser}
+              user={user}
               onFilterChange={handleFilterChange}
               onSort={handleSort}
               onBuscar={handleBuscarVoos}
@@ -2216,7 +2194,7 @@ export default function Operacoes() {
               t={t}
               language={language}
               formatCurrency={formatCurrency}
-              currentUser={currentUser}
+              user={user}
               onFilterChange={handleFilterChangeLigados}
               onClearFilters={clearFiltersLigados}
               onBuscar={handleBuscarLigados}
@@ -2329,7 +2307,7 @@ export default function Operacoes() {
           aeronaves={aeronaves}
           voos={voos}
           voosLigados={voosLigados}
-          currentUser={currentUser}
+          user={user}
           linkedArrVoo={vooArrToLink}
           setAlertInfo={setAlertInfo}
           onRefreshData={() => {
@@ -2480,7 +2458,7 @@ export default function Operacoes() {
           vooLigado={documentosVooModalData}
           voos={voos}
           onOpenUploadModal={handleOpenUploadFromDocumentosModal}
-          currentUser={currentUser}
+          user={user}
         />
       )}
 
@@ -2493,7 +2471,7 @@ export default function Operacoes() {
           }}
           vooLigado={uploadMultiplosModalData}
           voos={voos}
-          currentUser={currentUser}
+          user={user}
           onSuccess={(uploadedFiles) => {
             setIsUploadMultiplosModalOpen(false);
             setUploadMultiplosModalData(null);

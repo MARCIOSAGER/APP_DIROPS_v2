@@ -112,7 +112,7 @@ export default function VoosTab({
                       <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.lixeira')}</span>
                     </Button>
                   )}
-                  <Button className="bg-blue-500 hover:bg-blue-600 text-white h-8 sm:h-10 px-2 sm:px-4" onClick={() => onOpenForm('ARR', null)}>
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white h-8 sm:h-10 px-2 sm:px-4" onClick={() => onOpenForm('ARR', null)}>
                     <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span className="hidden sm:inline ml-2 text-sm">{t('operacoes.adicionar_voo')}</span>
                   </Button>
