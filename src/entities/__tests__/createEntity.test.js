@@ -130,6 +130,16 @@ describe('createEntity', () => {
       expect(mockQuery.is).toHaveBeenCalledWith('active', true);
     });
 
+    it('applies $is null for soft-delete checks', async () => {
+      await entity.filter({ deleted_at: { $is: null } });
+      expect(mockQuery.is).toHaveBeenCalledWith('deleted_at', null);
+    });
+
+    it('applies $ilike operator directly', async () => {
+      await entity.filter({ nome: { $ilike: '%aeroporto%' } });
+      expect(mockQuery.ilike).toHaveBeenCalledWith('nome', '%aeroporto%');
+    });
+
     it('applies $not operator', async () => {
       await entity.filter({ deleted: { $not: null } });
       expect(mockQuery.not).toHaveBeenCalledWith('deleted', 'is', null);
@@ -262,6 +272,55 @@ describe('createEntity', () => {
       });
 
       await expect(entity.list()).rejects.toEqual({ message: 'timeout' });
+    });
+  });
+
+  // ── limit parameter ──────────────────────────────────────────────────
+  describe('limit parameter', () => {
+    it('uses .limit() instead of pagination when limit is provided to list()', async () => {
+      mockQuery.limit.mockResolvedValue({ data: [{ id: 1 }], error: null });
+
+      const result = await entity.list(undefined, 10);
+
+      expect(mockQuery.limit).toHaveBeenCalledWith(10);
+      expect(mockQuery.range).not.toHaveBeenCalled();
+      expect(result).toEqual([{ id: 1 }]);
+    });
+
+    it('uses .range() when limit is provided to filter()', async () => {
+      mockQuery.range.mockResolvedValue({ data: [{ id: 2 }], error: null });
+
+      const result = await entity.filter({ status: 'active' }, undefined, 5, 0);
+
+      expect(mockQuery.range).toHaveBeenCalledWith(0, 4);
+      expect(result).toEqual([{ id: 2 }]);
+    });
+  });
+
+  // ── select parameter ─────────────────────────────────────────────────
+  describe('select parameter', () => {
+    it('passes custom select to list()', async () => {
+      mockQuery.range.mockResolvedValue({ data: [], error: null });
+
+      await entity.list(undefined, undefined, 'id,nome');
+
+      expect(mockQuery.select).toHaveBeenCalledWith('id,nome');
+    });
+
+    it('passes custom select to filter()', async () => {
+      mockQuery.range.mockResolvedValue({ data: [], error: null });
+
+      await entity.filter({ active: true }, undefined, undefined, undefined, 'id,status');
+
+      expect(mockQuery.select).toHaveBeenCalledWith('id,status');
+    });
+
+    it('defaults to * when select is not provided', async () => {
+      mockQuery.range.mockResolvedValue({ data: [], error: null });
+
+      await entity.list();
+
+      expect(mockQuery.select).toHaveBeenCalledWith('*');
     });
   });
 });
