@@ -19,7 +19,7 @@ import {
   X
 } from 'lucide-react';
 
-export default function ZAPIChatManagement({ onError, onSuccess }) {
+export default function ZAPIChatManagement({ onError: _onError, onSuccess: _onSuccess }) {
   const [showModal, setShowModal] = useState(null);
 
   const chatOptions = [

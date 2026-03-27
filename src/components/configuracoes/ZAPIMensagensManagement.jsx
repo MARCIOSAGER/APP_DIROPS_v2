@@ -49,9 +49,9 @@ export default function ZAPIMensagensManagement({ onError, onSuccess }) {
   const [videoData, setVideoData] = useState({ to: '', video: '', caption: '' });
   const [localizacaoData, setLocalizacaoData] = useState({ to: '', latitude: '', longitude: '', name: '', address: '' });
   const [contatoData, setContatoData] = useState({ to: '', contactName: '', contactPhone: '' });
-  const [stickerData, setStickerData] = useState({ to: '', sticker: '' });
-  const [gifData, setGifData] = useState({ to: '', gif: '' });
-  const [ptvData, setPtvData] = useState({ to: '', video: '' });
+  const [_stickerData, _setStickerData] = useState({ to: '', sticker: '' });
+  const [_gifData, _setGifData] = useState({ to: '', gif: '' });
+  const [_ptvData, setPtvData] = useState({ to: '', video: '' });
   const [linkData, setLinkData] = useState({ to: '', link: '' });
   const [produtoData, setProdutoData] = useState({ to: '', productId: '' });
   const [catalogoData, setCatalogoData] = useState({ to: '', catalogId: '' });

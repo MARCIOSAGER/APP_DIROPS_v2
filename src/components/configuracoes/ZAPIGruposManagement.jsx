@@ -19,7 +19,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 
-export default function ZAPIGruposManagement({ onError, onSuccess }) {
+export default function ZAPIGruposManagement({ onError: _onError, onSuccess: _onSuccess }) {
   const [showModal, setShowModal] = useState(null);
 
   const grupoOptions = [

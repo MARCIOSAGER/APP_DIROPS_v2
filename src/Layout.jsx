@@ -372,7 +372,7 @@ function LayoutContent({ children, currentPageName }) {
 
   const navigationItems = React.useMemo(() => getNavigationItems(t), [t, language]);
 
-  const filteredNavigationItems = React.useMemo(() => {
+  const _filteredNavigationItems = React.useMemo(() => {
     if (!user || !user.perfis || !Array.isArray(user.perfis)) return [];
     if (isLoadingPermissions) return [];
     return navigationItems.filter(item => hasAccessToPage(user, item.pageKey, permissions));
