@@ -55,7 +55,7 @@ export default function FormOrdemServico({ isOpen, onClose, onSubmit, aeroportos
         titulo: '',
         descricao_problema: '',
         acao_corretiva_sugerida: '',
-        aeroporto_id: '',
+        aeroporto_id: aeroportos?.length === 1 ? aeroportos[0].id : '',
         prioridade: 'media',
         categoria_manutencao: '',
         tipo_execucao: 'interna',

@@ -120,14 +120,10 @@ export default function Combobox({
         />
       </div>
       <div className={cn("overflow-auto", isMobile ? "max-h-64" : "")} style={!isMobile ? { maxHeight: `calc(${maxHeight} - 56px)` } : {}}>
-        {!searchTerm && options.length > 100 ? (
-          <div className="py-4 px-4 text-center text-sm text-slate-600 bg-blue-50">
-            {t('ui.digite_pesquisar')} ({options.length} {t('ui.opcoes_disponiveis')})
-          </div>
-        ) : filteredOptions.length === 0 ? (
+        {filteredOptions.length === 0 ? (
           <div className="py-6 text-center text-sm text-slate-500">{displayNoResultsMessage}</div>
         ) : (
-          filteredOptions.slice(0, 100).map((option) => (
+          filteredOptions.slice(0, 200).map((option) => (
             <div
               key={option.value}
               className={cn(
@@ -145,7 +141,7 @@ export default function Combobox({
             </div>
           ))
         )}
-        {filteredOptions.length > 100 && (
+        {filteredOptions.length > 200 && (
           <div className="py-2 px-4 text-center text-xs text-slate-500 bg-slate-50 border-t">
             {t('ui.mostrando_resultados').replace('{total}', String(filteredOptions.length))}
           </div>

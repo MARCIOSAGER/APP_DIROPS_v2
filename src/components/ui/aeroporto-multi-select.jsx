@@ -14,6 +14,13 @@ export default function AeroportoMultiSelect({ aeroportos = AEROPORTOS_ANGOLA, v
 
   const displayPlaceholder = placeholder || t('ui.selecionar_aeroportos');
 
+  // Auto-select when there is only one airport available
+  useEffect(() => {
+    if (aeroportos.length === 1 && values.length === 0) {
+      onValuesChange([aeroportos[0].codigo_icao]);
+    }
+  }, [aeroportos.length]);
+
   // Fechar dropdown quando clicar fora
   useEffect(() => {
     function handleClickOutside(event) {
@@ -33,10 +40,12 @@ export default function AeroportoMultiSelect({ aeroportos = AEROPORTOS_ANGOLA, v
   }, [isOpen]);
 
   // Filtrar aeroportos baseado na pesquisa
-  const filteredAeroportos = aeroportos.filter(a =>
-    a.codigo_icao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.nome.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredAeroportos = aeroportos.filter(a => {
+    const term = searchTerm.toLowerCase();
+    return a.codigo_icao.toLowerCase().includes(term) ||
+      a.nome.toLowerCase().includes(term) ||
+      (a.codigo_iata && a.codigo_iata.toLowerCase().includes(term));
+  });
 
   const handleToggle = (codigoIcao) => {
     let newValues;

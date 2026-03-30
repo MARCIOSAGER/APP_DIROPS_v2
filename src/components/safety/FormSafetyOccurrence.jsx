@@ -39,7 +39,7 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
     } else {
       setFormData({
         tipo_ocorrencia: '',
-        aeroporto: '',
+        aeroporto: aeroportos?.length === 1 ? aeroportos[0].codigo_icao : '',
         data_ocorrencia: new Date().toISOString().split('T')[0],
         hora_ocorrencia: '',
         local_especifico: '',

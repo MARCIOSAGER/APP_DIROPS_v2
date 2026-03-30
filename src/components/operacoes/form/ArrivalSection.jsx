@@ -84,7 +84,7 @@ export default function ArrivalSection({
             noResultsMessage={t('formVoo.nenhumaCompanhia')}
             onSearch={searchCompanhias}
             getInitialOption={getCompanhiaInicial}
-            minSearchLength={2}
+            minSearchLength={0}
             className={errors.companhia_aerea ? 'border-red-500' : ''} />
           <button
             type="button"

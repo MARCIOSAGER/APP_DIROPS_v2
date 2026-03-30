@@ -84,7 +84,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
 
   const [filtro, setFiltro] = useState({
     companhia_id: '',
-    aeroporto_id: '',
+    aeroporto_id: aeroportos?.length === 1 ? aeroportos[0].id : '',
     data_inicio: '',
     data_fim: '',
   });

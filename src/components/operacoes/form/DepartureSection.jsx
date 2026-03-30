@@ -268,7 +268,7 @@ export default function DepartureSection({
             noResultsMessage={t('formVoo.nenhumAeroportoEncontrado')}
             onSearch={searchAeroportos}
             getInitialOption={getAeroportoInicial}
-            minSearchLength={2}
+            minSearchLength={0}
             className={errors.aeroporto_origem_destino ? 'border-red-500' : ''}
             useDisplayLabel={true} />
           <button

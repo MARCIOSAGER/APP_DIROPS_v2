@@ -34,9 +34,17 @@ export default function useFormVooSearch({
   // --- Companhias ---
   const searchCompanhias = async (searchTerm) => {
     try {
-      if (!searchTerm || searchTerm.length < 2) return [];
-
       const allCompanhias = await loadCompanhiasCache();
+
+      if (!searchTerm) {
+        return allCompanhias
+          .filter(c => c && c.codigo_icao)
+          .slice(0, 50)
+          .map(c => ({
+            value: c.codigo_icao || '',
+            label: `${c.nome || 'Sem nome'} (${c.codigo_icao || 'N/A'})`
+          }));
+      }
 
       const searchLower = searchTerm.toLowerCase();
       return allCompanhias
@@ -89,7 +97,7 @@ export default function useFormVooSearch({
       .slice(0, 50)
       .map(a => ({
         value: a.codigo_icao,
-        label: `${a.codigo_icao} - ${a.nome}`,
+        label: a.codigo_iata ? `${a.codigo_icao}/${a.codigo_iata} - ${a.nome}` : `${a.codigo_icao} - ${a.nome}`,
         displayLabel: a.codigo_icao
       }));
   };
@@ -100,7 +108,7 @@ export default function useFormVooSearch({
     if (aeroporto) {
       return {
         value: aeroporto.codigo_icao,
-        label: `${aeroporto.codigo_icao} - ${aeroporto.nome}`,
+        label: aeroporto.codigo_iata ? `${aeroporto.codigo_icao}/${aeroporto.codigo_iata} - ${aeroporto.nome}` : `${aeroporto.codigo_icao} - ${aeroporto.nome}`,
         displayLabel: aeroporto.codigo_icao
       };
     }
@@ -110,7 +118,7 @@ export default function useFormVooSearch({
         const a = results[0];
         return {
           value: a.codigo_icao,
-          label: `${a.codigo_icao} - ${a.nome}`,
+          label: a.codigo_iata ? `${a.codigo_icao}/${a.codigo_iata} - ${a.nome}` : `${a.codigo_icao} - ${a.nome}`,
           displayLabel: a.codigo_icao
         };
       }

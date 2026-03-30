@@ -110,6 +110,11 @@ export default function DashboardInterno() {
 
       setAeroportos(aeroportosFiltrados);
 
+      // Auto-selecionar aeroporto se o utilizador tem acesso a apenas um
+      if (aeroportosFiltrados.length === 1) {
+        setSelectedAeroporto(aeroportosFiltrados[0].codigo_icao);
+      }
+
       setLoadingStatus(t('common.loading'));
       const [ocorrenciasDataResult, inspecoesDataResult, ordensServicoResult] = await Promise.allSettled([
       OcorrenciaSafety.list('-data_ocorrencia', 50),

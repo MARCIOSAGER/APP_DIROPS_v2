@@ -18,7 +18,7 @@ export default function AsyncCombobox({
   // Funções assíncronas
   onSearch, // Função que recebe searchTerm e retorna Promise<options[]>
   getInitialOption, // Função que recebe value e retorna Promise<option> para mostrar o selecionado
-  minSearchLength = 2 // Mínimo de caracteres para iniciar pesquisa
+  minSearchLength = 0 // Mínimo de caracteres para iniciar pesquisa
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
