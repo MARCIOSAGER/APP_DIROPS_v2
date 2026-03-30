@@ -1100,7 +1100,7 @@ export default function Operacoes() {
           aeronaves={aeronaves}
           voos={voos}
           voosLigados={voosLigados}
-          user={user}
+          currentUser={user}
           linkedArrVoo={vooArrToLink}
           setAlertInfo={setAlertInfo}
           onRefreshData={() => {
