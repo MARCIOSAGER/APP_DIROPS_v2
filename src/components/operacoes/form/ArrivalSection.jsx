@@ -106,7 +106,7 @@ export default function ArrivalSection({
             noResultsMessage={t('formVoo.nenhumRegisto')}
             onSearch={searchRegistos}
             getInitialOption={getRegistoInicial}
-            minSearchLength={1}
+            minSearchLength={0}
             disabled={!formData.companhia_aerea}
             className={errors.registo_aeronave ? 'border-red-500' : ''} />
           {formData.companhia_aerea &&
