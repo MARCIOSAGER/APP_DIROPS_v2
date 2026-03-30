@@ -189,6 +189,7 @@ function normalizeFlightAwareFlight(raw, movementType, airportIcao) {
     type: (raw.aircraft_type || '').trim(),
     operating_as: raw.operator_icao || raw.operator || '',
     operator_iata: raw.operator_iata || '',
+    operator_name: raw.operator || '',
     painted_as: '',
 
     // Airport info

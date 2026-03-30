@@ -4,24 +4,32 @@ import { supabase } from '@/lib/supabaseClient';
  * Ensure a companhia_aerea record exists for the given codes.
  * Returns the ICAO code used (3 letters).
  */
-async function ensureCompanhiaAerea(icaoCode, iataCode) {
+async function ensureCompanhiaAerea(icaoCode, iataCode, operatorName) {
   if (!icaoCode && !iataCode) return '';
   const code = icaoCode || iataCode;
 
   // Try ICAO first, then IATA
   const { data: existing } = await supabase
     .from('companhia_aerea')
-    .select('codigo_icao')
+    .select('codigo_icao, nome')
     .or(`codigo_icao.eq.${code},codigo_iata.eq.${code}`)
     .limit(1);
 
-  if (existing?.length > 0) return existing[0].codigo_icao || code;
+  if (existing?.length > 0) {
+    // Update name if it was a placeholder (same as code) and we now have a real name
+    if (operatorName && existing[0].nome === existing[0].codigo_icao) {
+      await supabase.from('companhia_aerea')
+        .update({ nome: operatorName })
+        .eq('codigo_icao', existing[0].codigo_icao);
+    }
+    return existing[0].codigo_icao || code;
+  }
 
   // Auto-create with available info
   const newRecord = {
     codigo_icao: icaoCode || iataCode,
     codigo_iata: iataCode || '',
-    nome: icaoCode || iataCode, // Placeholder name — user can edit later
+    nome: operatorName || icaoCode || iataCode,
     status: 'Ativa',
     created_date: new Date().toISOString(),
   };
