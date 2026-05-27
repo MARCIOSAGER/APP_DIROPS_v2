@@ -26,9 +26,11 @@ A SGA disponibilizou uma máquina virtual VMware no domínio Active Directory **
 3. **Handoff progressivo** — a TI da SGA ganha autonomia para operar e evoluir o sistema ao longo do primeiro ano, com suporte do autor.
 4. **Conformidade com política interna** — sistema integrado ao Active Directory existente; sem credenciais paralelas; sem dependência de provedores externos para autenticação.
 
-### 1.3 Escopo funcional — Módulos incluídos
+### 1.3 Escopo funcional — Módulos visíveis no menu
 
-A versão on-premise será uma **versão enxuta** do DIROPS-SGA, contendo apenas **5 módulos de negócio core**:
+**Princípio adotado:** preservar a integridade do código importando **todos os dados da SGA** (não filtrar por módulo), mas **mostrar no menu apenas 5 módulos de negócio core**. As demais páginas continuam existindo no código (não removidas), só ficam ocultas via `pages.config.js` / `regra_permissao`. Se a SGA decidir ativar um módulo no futuro, basta habilitá-lo — sem reescrita.
+
+**Módulos visíveis no menu:**
 
 | # | Módulo | Função principal | Páginas envolvidas (referência) |
 |---|---|---|---|
@@ -46,6 +48,22 @@ A versão on-premise será uma **versão enxuta** do DIROPS-SGA, contendo apenas
 - Gerir Permissões (admin)
 - Configurações Gerais
 - Suporte / Guia do Utilizador
+
+**Páginas presentes no código mas ocultas no menu** (podem ser reativadas no futuro sem reescrita):
+- Faturação / Proforma
+- Reclamações
+- Credenciamento
+- Auditorias
+- Documentos
+- Ordens de Serviço
+- Serviços Aeroportuários
+- Configuração de Tarifas (admin)
+- Gestão de Empresas (admin superadmin)
+- Power BI (integração externa — pode ser reativada conectando direto ao PostgreSQL)
+- Gestão de API Keys
+- Gestão de Notificações
+- Log de Auditoria
+- Lixeira
 
 ### 1.4 Não-objetivos (fora do escopo)
 
@@ -76,7 +94,7 @@ A versão on-premise será uma **versão enxuta** do DIROPS-SGA, contendo apenas
 **Outros:**
 - **Migração de outros tenants** — fora do escopo. Esta migração trata apenas da SGA.
 
-### 1.4 Stakeholders e responsabilidades
+### 1.5 Stakeholders e responsabilidades
 
 | Stakeholder | Papel | Responsabilidade |
 |---|---|---|
@@ -85,7 +103,7 @@ A versão on-premise será uma **versão enxuta** do DIROPS-SGA, contendo apenas
 | **TI da SGA** | Infra + operações | Provisiona servidor, libera firewall/AD, instala antivírus, opera RDP, fará handoff de manutenção |
 | **Usuários SGA** | Consumidores finais | Validam funcionalidades (UAT), reportam bugs |
 
-### 1.5 Glossário
+### 1.6 Glossário
 
 | Termo | Significado |
 |---|---|
@@ -397,14 +415,14 @@ Dado o escopo restrito aos **5 módulos core** (Operações, Safety, Inspeções
 
 **A — Tabelas multi-tenant a migrar (com `empresa_id`)** — apenas registros da SGA:
 
-| Módulo | Tabelas |
+| Módulo | Tabelas (nomes reais confirmados via `src/entities/`) |
 |---|---|
 | **Operações** | `voo`, `voo_bagagem`, `voo_registo_dep`, `recursos_voo`, `calculo_tarifa`, `registo_aeronave`, `aeroporto` |
-| **Safety** | `safety` (ocorrências SGSO) |
-| **Inspeções** | `inspecao`, `item_checklist`, `tipo_inspecao` |
-| **KPIs** | `kpi`, `medicao_kpi` |
-| **GRF** | `movimento_financeiro` ou equivalente do módulo GRF |
-| **Suporte (sempre)** | `users`, `regra_permissao`, `configuracao_sistema` |
+| **Safety** | `ocorrencia_safety` |
+| **Inspeções** | `inspecao`, `tipo_inspecao`, `item_checklist`, `resposta_inspecao` |
+| **KPIs** | `campo_k_p_i`, `tipo_k_p_i`, `medicao_k_p_i`, `valor_campo_k_p_i` |
+| **GRF** | `registo_g_r_f` |
+| **Suporte (sempre)** | `users`, `regra_permissao`, `configuracao_sistema`, `log_auditoria` (só schema, sem dados) |
 | **Cálculo de tarifa** (se Operações usa) | `tarifa_pouso`, `tarifa_permanencia`, `outra_tarifa`, `tarifa_recurso` |
 
 Filtro padrão: `WHERE empresa_id = '128bc692-3fae-4825-9c55-40565dbedcfb'`
@@ -414,9 +432,11 @@ Filtro padrão: `WHERE empresa_id = '128bc692-3fae-4825-9c55-40565dbedcfb'`
 proforma, proforma_item, cobranca_participante, cliente,
 auditoria, documento, ordem_servico, servicos_aeroportuarios,
 reclamacao, credenciamento, solicitacao_acesso_aprovados,
-solicitacao_servico, imposto, log_auditoria, registo_alterado,
+solicitacao_servico, imposto, registo_alterado,
 external_api, api_key, api_access_log, api_rate_limit
 ```
+
+> **Nota sobre `log_auditoria`**: esta tabela é **mantida** no escopo (criada via schema, mas sem dados históricos importados). Ela é a infraestrutura para o **audit trail interno** do novo backend (Seção 9.5), registrando operações dos 5 módulos in-scope a partir do go-live.
 
 **B — Tabelas compartilhadas (sem `empresa_id`)** — exportar tudo o que é referenciado pelos módulos in-scope:
 ```
@@ -834,10 +854,11 @@ A proposta original previa Ubuntu + Supabase Self-Hosted ($22.500) com **todos o
 | OS do servidor | Ubuntu 22.04 LTS | Windows Server 2019 Datacenter |
 | Stack de aplicação | Supabase Self-Hosted via Docker | Node.js + PostgreSQL nativo + IIS |
 | Auth | Supabase Auth (GoTrue) | Active Directory via LDAP |
+| Escopo funcional | 12 módulos | **5 módulos** (Operações, Safety, Inspeções, KPIs, GRF) |
 | Funcionalidades de IA (chatbot) | Inclusas | Removidas |
 | Funcionalidades FlightAware/FR24 | Inclusas | Removidas |
-| Tempo de instalação | 4-6 horas | ~9-10 semanas (rescrita necessária) |
-| Custo total | $22.500 | $36.520 |
+| Tempo de execução | "Após infra pronta: ~1 dia" (proposta era de instalação, não de reescrita) | **7-8 semanas** (inclui reescrita completa do backend) |
+| Custo total | $22.500 | **$25.960** (ver Seção 13.2 para breakdown) |
 
 ### 14.2 Justificativa técnica para renegociação
 
