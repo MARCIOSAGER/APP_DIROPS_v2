@@ -889,6 +889,16 @@ A produzir após aprovação interna desta spec.
 - [ ] Marcio revisa e aprova
 - [ ] (Opcional) Apresentar resumo à TI SGA para alinhamento
 
+### 16.1.1 Decisões pendentes (bloqueios para Fase 0)
+
+| # | Decisão pendente | Quem decide | Impacto se não decidido |
+|---|---|---|---|
+| 1 | **Proforma incluída ou não em Operações** | SGA + Marcio | Operações calcula tarifa mas pode não emitir proforma — fonte de GRF fica indefinida |
+| 2 | **GRF: fonte dos movimentos financeiros** | SGA | Se não Proforma → manual? Import externo? Define se precisamos integração |
+| 3 | **Auditorias e Documentos** (lista de não-objetivos) | SGA | Confirmar com SGA que estes módulos não são necessários |
+| 4 | **SMTP**: usar Hostinger externo ou interno SGA | TI SGA | Bloqueia configuração de envio de email |
+| 5 | **Certificado SSL**: CA interna SGA ou autoassinado | TI SGA | Não bloqueia mas afeta UX (avisos no navegador) |
+
 ### 16.2 Pré-execução (Fase 0)
 - [ ] Gerar plano de execução por fases via `writing-plans` (próximo passo do fluxo)
 - [ ] Listar pré-requisitos concretos a solicitar à TI SGA
