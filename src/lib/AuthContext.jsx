@@ -4,6 +4,40 @@ import { queryClientInstance } from '@/lib/query-client';
 
 const AuthContext = createContext();
 
+// Avisa os admins que um novo utilizador entrou no 1º login (perfil auto-criado
+// como pendente). Sem isto, quem cria a conta e não conclui o SolicitacaoPerfil
+// fica pendente e INVISÍVEL (não gera solicitação nem email). Mira os admins da
+// empresa operadora SGA — todos @sga.co.ao, entregáveis; o relay SGA bloqueia
+// externos (ex.: super-admin no gmail), então o servidor resolve os admins @sga.
+// Fire-and-forget: não bloqueia o carregamento da sessão.
+async function notifyAdminsNewUser(authUser, profile) {
+  try {
+    let empresaId = null;
+    try {
+      const { data: emp } = await supabase
+        .from('empresa')
+        .select('id')
+        .eq('tipo', 'operadora')
+        .ilike('nome', 'SGA%')
+        .limit(1)
+        .maybeSingle();
+      empresaId = emp?.id || null;
+    } catch { /* segue sem empresa (servidor cai nos admins sem empresa) */ }
+    const { sendNotificationEmail } = await import('@/functions/sendNotificationEmail');
+    await sendNotificationEmail({
+      template: 'new_access_request',
+      data: {
+        full_name: profile?.full_name || authUser.email,
+        email: authUser.email,
+        empresa_id: empresaId,
+        url: `${window.location.origin}/GestaoAcessos`,
+      },
+    });
+  } catch (e) {
+    console.warn('[AUTH] Não foi possível notificar admins do novo utilizador:', e?.message);
+  }
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -42,6 +76,8 @@ export const AuthProvider = ({ children }) => {
 
         if (!createError) {
           profile = newProfile;
+          // 1º login: avisar os admins da SGA (background, não bloqueia a sessão).
+          notifyAdminsNewUser(authUser, newProfile);
         } else {
           // Auto-create also failed (e.g. user already exists but RLS blocked SELECT)
           console.warn('[AUTH] Failed to create profile:', createError.message);
