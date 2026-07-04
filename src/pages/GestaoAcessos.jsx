@@ -136,6 +136,14 @@ export default function GestaoAcessos() {
     return solicitacoes.filter(s => s.status === 'pendente');
   }, [solicitacoes]);
 
+  // Utilizadores pendentes SEM solicitação (ex.: criou conta mas não concluiu o
+  // formulário). Ficavam invisíveis na aba de solicitações — agora entram na
+  // fila única, para ninguém cair no limbo.
+  const usuariosPendentes = useMemo(() => {
+    const comSolic = new Set(solicitacoesPendentes.map(s => (s.email || '').toLowerCase()));
+    return users.filter(u => u.status === 'pendente' && !comSolic.has((u.email || '').toLowerCase()));
+  }, [users, solicitacoesPendentes]);
+
   // Calcular estatísticas
   const stats = useMemo(() => {
     const totalUsers = users.length;
@@ -533,7 +541,7 @@ export default function GestaoAcessos() {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="solicitacoes">
               <MailCheck className="w-4 h-4 mr-2" />
-              {t('acessos.tabSolicitacoes')} ({solicitacoesPendentes.length})
+              {t('acessos.tabSolicitacoes')} ({solicitacoesPendentes.length + usuariosPendentes.length})
             </TabsTrigger>
             <TabsTrigger value="utilizadores">
               <User className="w-4 h-4 mr-2" />
@@ -544,9 +552,11 @@ export default function GestaoAcessos() {
           <TabsContent value="solicitacoes" className="space-y-4">
             <SolicitacoesTab
               solicitacoesPendentes={solicitacoesPendentes}
+              usuariosPendentes={usuariosPendentes}
               isLoading={isLoading}
               getEmpresaNome={getEmpresaNome}
               onAprovar={modals.openAprovarModal}
+              onAprovarUsuario={modals.openEditUserModal}
               onRejeitar={modals.openRejeitarModal}
               onExcluir={modals.openExcluirModal}
             />

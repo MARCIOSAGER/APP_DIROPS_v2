@@ -21,9 +21,11 @@ const PERFIL_LABELS = {
 
 export default function SolicitacoesTab({
   solicitacoesPendentes,
+  usuariosPendentes = [],
   isLoading,
   getEmpresaNome,
   onAprovar,
+  onAprovarUsuario,
   onRejeitar,
   onExcluir,
 }) {
@@ -58,7 +60,7 @@ export default function SolicitacoesTab({
                     <TableCell><div className="h-8 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></TableCell>
                   </TableRow>
                 ))
-              ) : solicitacoesPendentes.length === 0 ? (
+              ) : (solicitacoesPendentes.length === 0 && usuariosPendentes.length === 0) ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                     <Mail className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
@@ -66,7 +68,39 @@ export default function SolicitacoesTab({
                     <p className="text-sm mt-1">{t('acessos.semSolicitacoes')}</p>
                   </TableCell>
                 </TableRow>
-              ) : solicitacoesPendentes.map((solicitacao) => (
+              ) : (<>
+                {usuariosPendentes.map((u) => (
+                  <TableRow key={`u-${u.id}`} className="bg-amber-50/50 dark:bg-amber-950/10">
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{u.full_name || u.email}</div>
+                        <div className="text-sm text-slate-500 dark:text-slate-400">{u.email}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 whitespace-nowrap">Cadastro direto</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-slate-500 dark:text-slate-400">
+                        {u.empresa_id ? getEmpresaNome(u.empresa_id) : 'N/A'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {u.created_date ? new Date(u.created_date).toLocaleDateString('pt-AO') : '—'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        onClick={() => onAprovarUsuario(u)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        {t('acessos.aprovar')}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {solicitacoesPendentes.map((solicitacao) => (
                 <TableRow key={solicitacao.id}>
                   <TableCell>
                     <div>
@@ -114,7 +148,8 @@ export default function SolicitacoesTab({
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+                ))}
+              </>)}
             </TableBody>
           </Table>
         </div>

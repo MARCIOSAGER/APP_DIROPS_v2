@@ -10,19 +10,25 @@ const AuthContext = createContext();
 // empresa operadora SGA — todos @sga.co.ao, entregáveis; o relay SGA bloqueia
 // externos (ex.: super-admin no gmail), então o servidor resolve os admins @sga.
 // Fire-and-forget: não bloqueia o carregamento da sessão.
+// Empresa operadora SGA — todo @sga.co.ao pertence a ela. RLS de empresa permite
+// leitura (status ativa), então resolve mesmo no 1º login de um utilizador pendente.
+async function getSgaEmpresaId() {
+  try {
+    const { data: emp } = await supabase
+      .from('empresa')
+      .select('id')
+      .eq('tipo', 'operadora')
+      .ilike('nome', 'SGA%')
+      .limit(1)
+      .maybeSingle();
+    return emp?.id || null;
+  } catch { return null; }
+}
+
 async function notifyAdminsNewUser(authUser, profile) {
   try {
-    let empresaId = null;
-    try {
-      const { data: emp } = await supabase
-        .from('empresa')
-        .select('id')
-        .eq('tipo', 'operadora')
-        .ilike('nome', 'SGA%')
-        .limit(1)
-        .maybeSingle();
-      empresaId = emp?.id || null;
-    } catch { /* segue sem empresa (servidor cai nos admins sem empresa) */ }
+    // profile.empresa_id já vem preenchido (SGA) pelo auto-create; fallback ao lookup.
+    const empresaId = profile?.empresa_id || await getSgaEmpresaId();
     const { sendNotificationEmail } = await import('@/functions/sendNotificationEmail');
     await sendNotificationEmail({
       template: 'new_access_request',
@@ -59,8 +65,12 @@ export const AuthProvider = ({ children }) => {
         .single();
 
       if (error?.code === 'PGRST116') {
-        // Genuine new user — auto-create profile (first login)
-        // No profile found, auto-creating
+        // Genuine new user — auto-create profile (first login).
+        // Todo @sga.co.ao pertence à empresa operadora SGA → já atribui a empresa
+        // aqui (o admin depois só precisa de perfil + aeroportos; e a empresa já
+        // aparece pré-preenchida no SolicitacaoPerfil).
+        const isSga = (authUser.email || '').toLowerCase().endsWith('@sga.co.ao');
+        const empresaId = isSga ? await getSgaEmpresaId() : null;
         const { data: newProfile, error: createError } = await supabase
           .from('users')
           .insert({
@@ -70,6 +80,7 @@ export const AuthProvider = ({ children }) => {
             status: 'pendente',
             perfis: [],
             aeroportos_acesso: [],
+            empresa_id: empresaId,
           })
           .select()
           .single();
