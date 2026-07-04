@@ -757,29 +757,15 @@ Por favor tente novamente ou contacte o suporte técnico.`;
   };
 
   const handleBuscar = async () => {
+    // Os filtros já aplicam reativamente (filteredAndSortedMedicoes). O botão
+    // "Buscar" agora só recarrega dados frescos do servidor; a filtragem em si é
+    // client-side sobre o conjunto completo. (Antes: fetch server-side + um
+    // setMedicoesKPI inexistente → ReferenceError capturado, busca não fazia nada.)
     setIsSearching(true);
     try {
-      const empId = effectiveEmpresaId || currentUser?.empresa_id;
-      const query = {};
-      if (empId) query.empresa_id = empId;
-      if (filtros.aeroporto !== 'todos') {
-        // filtros.aeroporto é o código ICAO; a coluna aeroporto_id é uuid → mapear p/ o id.
-        const ap = aeroportos.find(a => a.codigo_icao === filtros.aeroporto);
-        query.aeroporto_id = ap?.id || filtros.aeroporto;
-      }
-      if (filtros.tipoKpi !== 'todos') query.tipo_kpi_id = filtros.tipoKpi;
-      if (filtros.dataInicio) query.data_medicao = { ...query.data_medicao, $gte: filtros.dataInicio };
-      if (filtros.dataFim) query.data_medicao = { ...query.data_medicao, $lte: filtros.dataFim };
-      if (filtros.numeroVoo) query.numero_voo = { $ilike: filtros.numeroVoo };
-
-      const data = await MedicaoKPI.filter(
-        Object.keys(query).length > 0 ? query : {},
-        '-data_medicao'
-      );
-      const aeroportosAngola = aeroportos.filter(a => a.pais === 'AO');
-      setMedicoesKPI(filtrarDadosPorAcesso(currentUser, data, 'aeroporto_id', aeroportosAngola));
+      await queryClient.invalidateQueries({ queryKey: ['medicoesKPI'] });
     } catch (error) {
-      console.error('Erro ao buscar KPIs:', error);
+      console.error('Erro ao atualizar KPIs:', error);
     } finally {
       setIsSearching(false);
     }
@@ -793,9 +779,31 @@ Por favor tente novamente ou contacte o suporte técnico.`;
     );
   };
 
-  // No client-side filtering needed — server-side handles all filters via handleBuscar
+  // Filtragem CLIENT-SIDE: medicoesKPI já traz TODAS as medições da empresa
+  // (o entity.filter sem limite faz fetchAll). Antes isto era delegado ao
+  // handleBuscar server-side, que estava quebrado (setter inexistente) → os
+  // filtros não aplicavam. Agora aplicam reativamente.
   const filteredAndSortedMedicoes = useMemo(() => {
     let result = [...medicoesKPI];
+
+    if (filtros.aeroporto && filtros.aeroporto !== 'todos') {
+      const ap = aeroportos.find((a) => a.codigo_icao === filtros.aeroporto);
+      const alvo = new Set([filtros.aeroporto, ap?.id].filter(Boolean));
+      result = result.filter((m) => alvo.has(m.aeroporto_id));
+    }
+    if (filtros.tipoKpi && filtros.tipoKpi !== 'todos') {
+      result = result.filter((m) => m.tipo_kpi_id === filtros.tipoKpi);
+    }
+    if (filtros.dataInicio) {
+      result = result.filter((m) => (m.data_medicao || '').slice(0, 10) >= filtros.dataInicio);
+    }
+    if (filtros.dataFim) {
+      result = result.filter((m) => (m.data_medicao || '').slice(0, 10) <= filtros.dataFim);
+    }
+    if (filtros.numeroVoo) {
+      const q = filtros.numeroVoo.toLowerCase();
+      result = result.filter((m) => (m.numero_voo || '').toLowerCase().includes(q));
+    }
 
     // Aplicar ordenação
     result.sort((a, b) => {
@@ -855,7 +863,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
     });
 
     return result;
-  }, [medicoesKPI, sortField, sortDirection, tiposKPI, aeroportos]);
+  }, [medicoesKPI, filtros, sortField, sortDirection, tiposKPI, aeroportos]);
 
   const allSelectedOnPage = filteredAndSortedMedicoes.length > 0 && selectedMedicoes.length === filteredAndSortedMedicoes.length;
 
