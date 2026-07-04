@@ -122,19 +122,22 @@ export default function ReclamacaoDetailModal({
     }
   };
 
-  const handleStatusChange = async () => {
-    if (!novoStatus || novoStatus === reclamacao.status) return;
-    
+  const handleStatusChange = async (statusAlvo) => {
+    // statusAlvo permite chamar diretamente (ex.: Concluir/Rejeitar) sem depender
+    // do setState assincrono de novoStatus.
+    const status = statusAlvo || novoStatus;
+    if (!status || status === reclamacao.status) return;
+
     setIsSaving(true);
     try {
       const updateData = {
-        status: novoStatus,
+        status: status,
         area_responsavel: novaAreaResponsavel,
-        responsavel_atual: novoResponsavel,
-        data_prazo_resposta: prazoResposta ? format(prazoResposta, 'yyyy-MM-dd') : null,
+        responsavel_principal: novoResponsavel,
+        prazo_resposta: prazoResposta ? format(prazoResposta, 'yyyy-MM-dd') : null,
       };
 
-      if (novoStatus === 'concluida') {
+      if (status === 'concluida') {
         updateData.data_conclusao = new Date().toISOString();
         updateData.solucao_aplicada = solucaoAplicada;
       }
@@ -146,19 +149,19 @@ export default function ReclamacaoDetailModal({
         reclamacao_id: reclamacao.id,
         data_evento: new Date().toISOString(),
         tipo_evento: 'alteracao_status',
-        detalhes: `Status alterado de "${STATUS_CONFIG[reclamacao.status]?.label}" para "${STATUS_CONFIG[novoStatus]?.label}"${observacao ? `. Observação: ${observacao}` : ''}`,
+        detalhes: `Status alterado de "${STATUS_CONFIG[reclamacao.status]?.label}" para "${STATUS_CONFIG[status]?.label}"${observacao ? `. Observação: ${observacao}` : ''}`,
         dados_alterados: {
           status_anterior: reclamacao.status,
-          status_novo: novoStatus,
+          status_novo: status,
           area_responsavel: novaAreaResponsavel,
-          responsavel_atual: novoResponsavel
+          responsavel_principal: novoResponsavel
         },
         usuario_email: 'sistema@sga.co.ao'
       });
 
       // Enviar notificação se necessário
       if (novaAreaResponsavel && novaAreaResponsavel !== 'sem_direcionamento') {
-        await enviarNotificacaoArea(novaAreaResponsavel, novoStatus);
+        await enviarNotificacaoArea(novaAreaResponsavel, status);
       }
 
       setMessage({ type: 'success', text: t('recl_detail.status_atualizado') });
@@ -212,7 +215,7 @@ export default function ReclamacaoDetailModal({
         body: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <img src="/logo-dirops.png" alt="DIROPS" style="height: 60px;">
+              <img src="/logo-sga.png" alt="SGA" style="height: 60px;">
               <h1 style="color: #1e40af; margin-top: 20px;">Notificação de Reclamação</h1>
             </div>
             
@@ -225,12 +228,12 @@ export default function ReclamacaoDetailModal({
             </div>
             
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-              <p><strong>Sistema DIROPS</strong><br>
+              <p><strong>Sistema SGA</strong><br>
               Direcção de Operações - Serviços de Gestão Aeroportuária</p>
             </div>
           </div>
         `,
-        from_name: 'DIROPS'
+        from_name: 'SGA'
       });
     } catch (error) {
       console.error('Erro ao enviar notificação:', error);
@@ -513,7 +516,7 @@ export default function ReclamacaoDetailModal({
                   <Button 
                     onClick={() => {
                       setNovoStatus('concluida');
-                      handleStatusChange();
+                      handleStatusChange('concluida');
                     }}
                     disabled={isSaving || reclamacao.status === 'concluida'}
                     className="bg-green-600 hover:bg-green-700"
@@ -525,7 +528,7 @@ export default function ReclamacaoDetailModal({
                   <Button 
                     onClick={() => {
                       setNovoStatus('rejeitada');
-                      handleStatusChange();
+                      handleStatusChange('rejeitada');
                     }}
                     disabled={isSaving || reclamacao.status === 'rejeitada'}
                     variant="destructive"

@@ -161,12 +161,12 @@ export default function AuditoriaDetailModal({
       const emailLogoUrl = getEmpresaLogoByAeroporto(aeroporto?.codigo_icao || aeroporto?.id, aeroporto ? [aeroporto] : [], empresas);
       await SendEmail({
         to: emailAddress,
-        subject: `Relatório de Auditoria DIROPS - ${tipo?.nome || 'N/A'} - ${aeroporto?.nome || 'N/A'}`,
+        subject: `Relatório de Auditoria SGA - ${tipo?.nome || 'N/A'} - ${aeroporto?.nome || 'N/A'}`,
         body: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #004A99; color: white; padding: 20px; text-align: center;">
-              <img src="${emailLogoUrl}" alt="DIROPS" style="max-width: 150px; height: auto; margin-bottom: 10px;">
-              <h1 style="margin: 0; font-size: 24px;">DIROPS</h1>
+              <img src="${emailLogoUrl}" alt="SGA" style="max-width: 150px; height: auto; margin-bottom: 10px;">
+              <h1 style="margin: 0; font-size: 24px;">SGA</h1>
               <p style="margin: 5px 0 0 0; opacity: 0.9;">Sistema de Gestão Aeroportuária</p>
             </div>
             
@@ -239,7 +239,7 @@ export default function AuditoriaDetailModal({
               ` : ''}
               
               <div style="background: #004A99; color: white; padding: 20px; border-radius: 8px; text-align: center;">
-                <p style="margin: 0; font-size: 14px;">Este relatório foi gerado automaticamente pelo Sistema DIROPS</p>
+                <p style="margin: 0; font-size: 14px;">Este relatório foi gerado automaticamente pelo Sistema SGA</p>
                 <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.8;">Direcção de Operações - Sistema de Gestão Aeroportuária</p>
                 <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.8;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
               </div>
@@ -651,7 +651,7 @@ export default function AuditoriaDetailModal({
               </div>
               <div>
                 <DialogTitle>{t('auditoriaDetail.enviarRelatorio')}</DialogTitle>
-                <p className="text-sm text-slate-500 mt-1">Sistema DIROPS</p>
+                <p className="text-sm text-slate-500 mt-1">Sistema SGA</p>
               </div>
             </div>
           </DialogHeader>

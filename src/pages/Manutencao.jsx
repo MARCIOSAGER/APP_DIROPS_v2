@@ -156,7 +156,7 @@ export default function Manutencao() {
       <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
         ${fields.map(([label, value]) => `<tr><td style="padding: 8px 12px; font-weight: bold; color: #334155; border-bottom: 1px solid #e2e8f0; width: 35%;">${label}</td><td style="padding: 8px 12px; color: #475569; border-bottom: 1px solid #e2e8f0;">${value || '—'}</td></tr>`).join('')}
       </table>
-      <p style="margin-top: 24px; color: #94a3b8; font-size: 12px;">Sistema DIROPS — Notificação automática</p>
+      <p style="margin-top: 24px; color: #94a3b8; font-size: 12px;">Sistema SGA — Notificação automática</p>
     </div>
   `;
 
@@ -175,7 +175,7 @@ export default function Manutencao() {
         ['Data', new Date().toLocaleDateString('pt-PT')],
       ]);
       for (const email of emails) {
-        await sendEmailDirect({ to: email, subject: `DIROPS: Nova SS ${ss.numero_ss} — ${ss.titulo}`, html });
+        await sendEmailDirect({ to: email, subject: `SGA: Nova SS ${ss.numero_ss} — ${ss.titulo}`, html });
       }
     } catch (e) {
       console.error('Erro ao enviar email nova SS:', e);
@@ -192,7 +192,7 @@ export default function Manutencao() {
         ['Analisado por', currentUser?.full_name],
         ['Data', new Date().toLocaleDateString('pt-PT')],
       ]);
-      const subject = `DIROPS: SS ${ss.numero_ss} Aprovada — OS ${os.numero_ordem} criada`;
+      const subject = `SGA: SS ${ss.numero_ss} Aprovada — OS ${os.numero_ordem} criada`;
       const recipients = new Set();
       if (ss.solicitante_email) recipients.add(ss.solicitante_email);
       const managerEmails = await getManagerEmails('ss_aprovada');
@@ -215,7 +215,7 @@ export default function Manutencao() {
         ['Analisado por', currentUser?.full_name],
         ['Data', new Date().toLocaleDateString('pt-PT')],
       ]);
-      const subject = `DIROPS: SS ${ss.numero_ss} Rejeitada`;
+      const subject = `SGA: SS ${ss.numero_ss} Rejeitada`;
       const recipients = new Set();
       if (ss.solicitante_email) recipients.add(ss.solicitante_email);
       const managerEmails = await getManagerEmails('ss_rejeitada');
@@ -240,7 +240,7 @@ export default function Manutencao() {
         ['Descrição', os.descricao_problema],
         ['Data', new Date().toLocaleDateString('pt-PT')],
       ]);
-      const subject = `DIROPS: OS ${os.numero_ordem} atribuída — ${os.titulo}`;
+      const subject = `SGA: OS ${os.numero_ordem} atribuída — ${os.titulo}`;
       const recipients = new Set();
       if (assigneeEmail) recipients.add(assigneeEmail);
       const managerEmails = await getManagerEmails('os_atribuida');
@@ -290,10 +290,10 @@ export default function Manutencao() {
             <tr><td style="padding: 8px; font-weight: bold;">Aeroporto:</td><td style="padding: 8px;">${aeroportoNome}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">Descrição:</td><td style="padding: 8px;">${ordem.descricao_problema}</td></tr>
           </table>
-          <p style="margin-top: 20px; color: #64748b;">Sistema DIROPS</p>
+          <p style="margin-top: 20px; color: #64748b;">Sistema SGA</p>
         </div>
       `;
-      await sendEmailDirect({ to: recipient, subject: subject || `DIROPS: OS ${ordem.numero_ordem}`, body: emailBody });
+      await sendEmailDirect({ to: recipient, subject: subject || `SGA: OS ${ordem.numero_ordem}`, body: emailBody });
       return true;
     } catch (error) {
       console.error("Erro ao enviar email:", error);

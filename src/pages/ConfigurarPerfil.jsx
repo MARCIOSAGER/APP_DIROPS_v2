@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, UserCog, CheckCircle, User, Mail, Shield, Phone, Save, Edit2, X, MessageSquare, ArrowLeft, Trash2, AlertTriangle } from 'lucide-react';
+import { Loader2, UserCog, CheckCircle, User, Mail, Shield, Phone, Save, Edit2, X, MessageSquare, ArrowLeft, Trash2, AlertTriangle, KeyRound, Eye, EyeOff } from 'lucide-react';
 import DeleteAccountModal from '@/components/shared/DeleteAccountModal';
 import { User as UserEntity } from '@/entities/User';
 import { Aeroporto } from '@/entities/Aeroporto';
@@ -38,6 +38,31 @@ export default function ConfigurarPerfil() {
     whatsapp_number: ''
   });
 
+  // Password change
+  const [pwdNova, setPwdNova] = useState('');
+  const [pwdConfirmar, setPwdConfirmar] = useState('');
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdError, setPwdError] = useState('');
+  const [pwdSuccess, setPwdSuccess] = useState(false);
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPwdError('');
+    setPwdSuccess(false);
+    if (!pwdNova || pwdNova.length < 8) { setPwdError('A senha deve ter pelo menos 8 caracteres.'); return; }
+    if (!/[A-Z]/.test(pwdNova)) { setPwdError('A senha deve conter pelo menos uma letra maiúscula.'); return; }
+    if (!/[0-9]/.test(pwdNova)) { setPwdError('A senha deve conter pelo menos um número.'); return; }
+    if (pwdNova !== pwdConfirmar) { setPwdError('As senhas não coincidem.'); return; }
+    setPwdLoading(true);
+    const { error: updErr } = await supabase.auth.updateUser({ password: pwdNova });
+    setPwdLoading(false);
+    if (updErr) { setPwdError(updErr.message); return; }
+    setPwdNova('');
+    setPwdConfirmar('');
+    setPwdSuccess(true);
+    setTimeout(() => setPwdSuccess(false), 4000);
+  };
+
   useEffect(() => {
     loadUser();
   }, []);
@@ -58,22 +83,12 @@ export default function ConfigurarPerfil() {
       if (whatsappDisplay.startsWith('whatsapp:')) {
         whatsappDisplay = whatsappDisplay.replace('whatsapp:', '');
       }
-      
+
       setFormData({
         full_name: currentUser.full_name || '',
         telefone: currentUser.telefone || '',
         whatsapp_number: whatsappDisplay
       });
-      
-      // Check MFA status
-      try {
-        const { data: factors } = await supabase.auth.mfa.listFactors();
-        const totpFactor = factors?.totp?.find(f => f.status === 'verified');
-        setMfaEnabled(!!totpFactor);
-      } catch (e) {
-        console.warn('[MFA] Could not check MFA status:', e.message);
-      }
-
     } catch (error) {
       console.error('Erro ao carregar utilizador:', error);
       setError(t('perfil.erroCarregar'));
@@ -82,11 +97,26 @@ export default function ConfigurarPerfil() {
     }
   };
 
+  // MFA status check runs independently — must not gate the page render
+  // (mfa.listFactors can occasionally hang in supabase-js and would leave
+  // the whole page stuck on the loading spinner forever).
+  const loadMfaStatus = async () => {
+    try {
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('mfa-timeout')), 5000));
+      const factorsPromise = supabase.auth.mfa.listFactors();
+      const { data: factors } = await Promise.race([factorsPromise, timeout]);
+      const totpFactor = factors?.totp?.find(f => f.status === 'verified');
+      setMfaEnabled(!!totpFactor);
+    } catch (e) {
+      console.warn('[MFA] Could not check MFA status:', e.message);
+    }
+  };
+
   const handleEnableMFA = async () => {
     setMfaLoading(true);
     setMfaError('');
     try {
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'DIROPS App' });
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'SGA App' });
       if (error) throw error;
       setMfaSetupData(data);
     } catch (e) {
@@ -541,95 +571,76 @@ export default function ConfigurarPerfil() {
           </p>
         </div>
 
-        {/* 2FA / MFA */}
+        {/* Alterar Senha */}
         <Card className="shadow-lg border-0 mb-6">
           <CardHeader>
             <CardTitle className="text-xl flex items-center gap-2">
-              <Shield className="w-5 h-5 text-green-600" />
-              {t('perfil.2fa_titulo')}
+              <KeyRound className="w-5 h-5 text-blue-600" />
+              Alterar Senha
             </CardTitle>
             <p className="text-sm text-slate-500 mt-1">
-              {t('perfil.2fa_desc')}
+              Defina uma nova senha pessoal para aceder ao sistema.
             </p>
           </CardHeader>
           <CardContent>
-            {mfaError && (
+            {pwdError && (
               <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{mfaError}</AlertDescription>
+                <AlertDescription>{pwdError}</AlertDescription>
               </Alert>
             )}
-
-            {mfaEnabled ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="font-medium text-green-800 dark:text-green-200">{t('perfil.2fa_ativo')}</p>
-                    <p className="text-sm text-green-700 dark:text-green-300">{t('perfil.2fa_ativo_desc')}</p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  className="border-red-200 text-red-600 hover:bg-red-50"
-                  onClick={handleDisableMFA}
-                  disabled={mfaLoading}
-                >
-                  {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  {t('perfil.desativar_2fa')}
-                </Button>
-              </div>
-            ) : mfaSetupData ? (
-              <div className="space-y-4">
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {t('perfil.2fa_instrucoes')}
-                </p>
-                <div className="flex justify-center p-4 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg">
-                  <img src={mfaSetupData.totp.qr_code} alt="QR Code 2FA" className="w-48 h-48" />
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 text-center break-all">
-                  {t('perfil.chave_manual')} <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{mfaSetupData.totp.secret}</code>
-                </p>
-                <div>
-                  <Label className="text-sm">{t('perfil.codigo_verificacao')}</Label>
-                  <div className="flex gap-2 mt-1">
-                    <Input
-                      value={mfaVerifyCode}
-                      onChange={(e) => setMfaVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="000000"
-                      maxLength={6}
-                      className="w-32 text-center text-lg tracking-widest"
-                    />
-                    <Button
-                      onClick={handleVerifyMFA}
-                      disabled={mfaLoading || mfaVerifyCode.length !== 6}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      {t('perfil.verificar_ativar')}
-                    </Button>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => { setMfaSetupData(null); setMfaVerifyCode(''); setMfaError(''); }}>
-                  Cancelar
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-slate-600">
-                  {t('perfil.2fa_info')}
-                </p>
-                <Button
-                  onClick={handleEnableMFA}
-                  disabled={mfaLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white gap-2"
-                >
-                  {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
-                  {t('perfil.ativar_2fa')}
-                </Button>
-              </div>
+            {pwdSuccess && (
+              <Alert className="mb-4 border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800">
+                <AlertDescription className="text-green-700 dark:text-green-300 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  Senha alterada com sucesso.
+                </AlertDescription>
+              </Alert>
             )}
+            <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+              <div>
+                <Label htmlFor="pwd-nova">Nova Senha *</Label>
+                <Input
+                  id="pwd-nova"
+                  type="password"
+                  value={pwdNova}
+                  onChange={(e) => setPwdNova(e.target.value)}
+                  placeholder="Mínimo 8 caracteres, com maiúscula e número"
+                  autoComplete="new-password"
+                />
+              </div>
+              <div>
+                <Label htmlFor="pwd-confirmar">Confirmar Nova Senha *</Label>
+                <Input
+                  id="pwd-confirmar"
+                  type="password"
+                  value={pwdConfirmar}
+                  onChange={(e) => setPwdConfirmar(e.target.value)}
+                  placeholder="Repita a nova senha"
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="text-xs text-slate-500 space-y-1">
+                <p>Requisitos:</p>
+                <ul className="list-disc list-inside ml-1 space-y-0.5">
+                  <li className={pwdNova.length >= 8 ? 'text-green-600' : ''}>Mínimo 8 caracteres</li>
+                  <li className={/[A-Z]/.test(pwdNova) ? 'text-green-600' : ''}>Pelo menos uma letra maiúscula</li>
+                  <li className={/[0-9]/.test(pwdNova) ? 'text-green-600' : ''}>Pelo menos um número</li>
+                  <li className={pwdNova && pwdNova === pwdConfirmar ? 'text-green-600' : ''}>As senhas coincidem</li>
+                </ul>
+              </div>
+              <Button
+                type="submit"
+                disabled={pwdLoading || !pwdNova || !pwdConfirmar}
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+              >
+                {pwdLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                Alterar Senha
+              </Button>
+            </form>
           </CardContent>
         </Card>
+
+        {/* 2FA / MFA removido — funcionalidade desativada para o SGA */}
 
         {/* Delete Account */}
         <Card className="shadow-lg border border-red-200 dark:border-red-800 mt-8">

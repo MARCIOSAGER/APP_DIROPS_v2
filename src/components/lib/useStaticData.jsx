@@ -3,15 +3,15 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { CompanhiaAerea } from '@/entities/CompanhiaAerea';
 import { RegistoAeronave } from '@/entities/RegistoAeronave';
 import { ModeloAeronave } from '@/entities/ModeloAeronave';
-import { useCompanyView } from '@/lib/CompanyViewContext';
 
-// Cache de 5 minutos para dados que podem mudar
-const STATIC_CACHE_TIME = 1000 * 60 * 5; // 5 minutos
+// Cache global — these tables are not partitioned by empresa,
+// so the queryKey is empresa-independent. Switching empresa view
+// no longer triggers redundant refetches.
+const STATIC_CACHE_TIME = 1000 * 60 * 5;
 
 export function useAeroportos() {
-  const { effectiveEmpresaId } = useCompanyView();
   return useQuery({
-    queryKey: ['aeroportos', effectiveEmpresaId],
+    queryKey: ['aeroportos'],
     queryFn: () => Aeroporto.list(),
     staleTime: STATIC_CACHE_TIME,
     gcTime: STATIC_CACHE_TIME * 2,
@@ -20,9 +20,8 @@ export function useAeroportos() {
 }
 
 export function useCompanhias() {
-  const { effectiveEmpresaId } = useCompanyView();
   return useQuery({
-    queryKey: ['companhias', effectiveEmpresaId],
+    queryKey: ['companhias'],
     queryFn: () => CompanhiaAerea.list(),
     staleTime: STATIC_CACHE_TIME,
     gcTime: STATIC_CACHE_TIME * 2,
@@ -31,9 +30,8 @@ export function useCompanhias() {
 }
 
 export function useAeronaves() {
-  const { effectiveEmpresaId } = useCompanyView();
   return useQuery({
-    queryKey: ['aeronaves', effectiveEmpresaId],
+    queryKey: ['aeronaves'],
     queryFn: () => RegistoAeronave.list(),
     staleTime: STATIC_CACHE_TIME,
     gcTime: STATIC_CACHE_TIME * 2,
@@ -42,9 +40,8 @@ export function useAeronaves() {
 }
 
 export function useModelosAeronave() {
-  const { effectiveEmpresaId } = useCompanyView();
   return useQuery({
-    queryKey: ['modelos', effectiveEmpresaId],
+    queryKey: ['modelos'],
     queryFn: () => ModeloAeronave.list(),
     staleTime: STATIC_CACHE_TIME,
     gcTime: STATIC_CACHE_TIME * 2,
@@ -52,10 +49,11 @@ export function useModelosAeronave() {
   });
 }
 
+// Tariff hooks include empresa-scoped + global rows (empresa_id IS NULL).
+// Client code (useOperacoesData / filterTarifasByEmpresa) handles the filter.
 export function useTarifasPouso() {
-  const { effectiveEmpresaId } = useCompanyView();
   return useQuery({
-    queryKey: ['tarifas-pouso', effectiveEmpresaId],
+    queryKey: ['tarifas-pouso'],
     queryFn: () => import('@/entities/TarifaPouso').then(({ TarifaPouso }) => TarifaPouso.list()),
     staleTime: STATIC_CACHE_TIME,
     gcTime: STATIC_CACHE_TIME * 2,
@@ -64,9 +62,8 @@ export function useTarifasPouso() {
 }
 
 export function useTarifasPermanencia() {
-  const { effectiveEmpresaId } = useCompanyView();
   return useQuery({
-    queryKey: ['tarifas-permanencia', effectiveEmpresaId],
+    queryKey: ['tarifas-permanencia'],
     queryFn: () => import('@/entities/TarifaPermanencia').then(({ TarifaPermanencia }) => TarifaPermanencia.list()),
     staleTime: STATIC_CACHE_TIME,
     gcTime: STATIC_CACHE_TIME * 2,
@@ -75,9 +72,8 @@ export function useTarifasPermanencia() {
 }
 
 export function useOutrasTarifas() {
-  const { effectiveEmpresaId } = useCompanyView();
   return useQuery({
-    queryKey: ['outras-tarifas', effectiveEmpresaId],
+    queryKey: ['outras-tarifas'],
     queryFn: () => import('@/entities/OutraTarifa').then(({ OutraTarifa }) => OutraTarifa.list()),
     staleTime: STATIC_CACHE_TIME,
     gcTime: STATIC_CACHE_TIME * 2,
@@ -86,9 +82,8 @@ export function useOutrasTarifas() {
 }
 
 export function useImpostos() {
-  const { effectiveEmpresaId } = useCompanyView();
   return useQuery({
-    queryKey: ['impostos', effectiveEmpresaId],
+    queryKey: ['impostos'],
     queryFn: () => import('@/entities/Imposto').then(({ Imposto }) => Imposto.list()),
     staleTime: STATIC_CACHE_TIME,
     gcTime: STATIC_CACHE_TIME * 2,

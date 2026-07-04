@@ -2,7 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabaseClient";
-import { RefreshCw, Server, Users, Plane, Activity, AlertCircle, Zap, CheckCircle } from 'lucide-react';
+import { RefreshCw, Users, Plane, Activity, AlertCircle, Globe, Database, ShieldCheck } from 'lucide-react';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 function MetricCard({ icon: Icon, label, value, sub, color = "blue" }) {
   const colorMap = {
@@ -26,6 +29,27 @@ function MetricCard({ icon: Icon, label, value, sub, color = "blue" }) {
   );
 }
 
+function ServiceCard({ icon: Icon, label, up }) {
+  const ok = up === true;
+  const unknown = up == null;
+  const tone = ok ? "text-green-600 dark:text-green-400" : unknown ? "text-slate-400" : "text-red-500";
+  const dot = ok ? "bg-green-500" : unknown ? "bg-slate-300" : "bg-red-500";
+  return (
+    <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 flex items-center gap-3">
+      <div className={`p-2 rounded-lg bg-white dark:bg-slate-800 shrink-0 ${tone}`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{label}</p>
+        <p className={`text-sm font-bold flex items-center gap-1.5 ${tone}`}>
+          <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${dot}`} />
+          {unknown ? '—' : ok ? 'Operacional' : 'Fora do ar'}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function SectionLabel({ children }) {
   return (
     <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">{children}</p>
@@ -33,7 +57,8 @@ function SectionLabel({ children }) {
 }
 
 export default function MonitoramentoSuperAdmin() {
-  const [data, setData] = useState(null);
+  const [app, setApp] = useState(null);
+  const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
@@ -41,30 +66,47 @@ export default function MonitoramentoSuperAdmin() {
   const fetchMetrics = useCallback(async () => {
     setLoading(true);
     setError(null);
-    try {
-      const { data, error } = await supabase.functions.invoke('cloudflare-metrics');
-      if (error) throw new Error(error.message);
-      setData(data);
-      setLastUpdate(new Date());
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+
+    // Métricas reais da aplicação (utilizadores, voos hoje) — a função on-premise
+    // conta direto no PostgREST. (Mantém o nome 'cloudflare-metrics' do servidor.)
+    const metricsPromise = (async () => {
+      try {
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Métricas indisponíveis (timeout)')), 5000)
+        );
+        const result = await Promise.race([supabase.functions.invoke('cloudflare-metrics'), timeout]);
+        if (result?.error) throw new Error(result.error.message || 'Métricas indisponíveis');
+        setApp(result?.data?.app || null);
+      } catch (err) {
+        setError(err.message);
+        setApp(null);
+      }
+    })();
+
+    // Saúde dos serviços on-premise (ping direto, com teto de 4s).
+    const healthPromise = (async () => {
+      const ping = async (url, opts) => {
+        try {
+          const r = await fetch(url, { ...opts, signal: AbortSignal.timeout(4000) });
+          return r.ok;
+        } catch { return false; }
+      };
+      const [api, auth] = await Promise.all([
+        ping(`${SUPABASE_URL}/rest/v1/aeroporto?limit=1`, { method: 'HEAD', headers: { apikey: SUPABASE_ANON_KEY } }),
+        ping(`${SUPABASE_URL}/auth/v1/health`, { method: 'GET' }),
+      ]);
+      // nginx serve esta própria página — se a está a ver, o web server está de pé.
+      setHealth({ web: true, api, auth });
+    })();
+
+    await Promise.all([metricsPromise, healthPromise]);
+    setLastUpdate(new Date());
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
 
   const fmt = (n) => n?.toLocaleString('pt-PT') ?? '—';
-
-  const errorRate = (errors, requests) => {
-    if (!requests) return '0%';
-    return ((errors / requests) * 100).toFixed(1) + '%';
-  };
-
-  const w = data?.cloudflare?.worker;
-  const app = data?.app;
-  const hasErrors = (w?.today?.errors ?? 0) > 0;
 
   return (
     <Card className="mb-6 border-blue-100 dark:border-blue-900">
@@ -90,93 +132,40 @@ export default function MonitoramentoSuperAdmin() {
 
       <CardContent>
         {error && (
-          <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2 mb-4">
+          <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 mb-4">
             <AlertCircle className="w-4 h-4 shrink-0" />
             {error}
           </div>
         )}
 
-        {loading && !data ? (
+        {loading && !health && !app ? (
           <div className="flex justify-center py-8">
             <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : data ? (
+        ) : (
           <div className="space-y-5">
 
-            {/* Cloudflare Worker */}
+            {/* Saúde dos serviços on-premise */}
             <div>
-              <SectionLabel>Cloudflare Worker — Proxy REST API</SectionLabel>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <MetricCard
-                  icon={Zap}
-                  label="Requests hoje"
-                  value={fmt(w?.today?.requests)}
-                  color="blue"
-                />
-                <MetricCard
-                  icon={Zap}
-                  label="Requests 7 dias"
-                  value={fmt(w?.week?.requests)}
-                  color="blue"
-                />
-                <MetricCard
-                  icon={hasErrors ? AlertCircle : CheckCircle}
-                  label="Erros hoje"
-                  value={fmt(w?.today?.errors)}
-                  sub={errorRate(w?.today?.errors, w?.today?.requests)}
-                  color={hasErrors ? "red" : "green"}
-                />
-                <MetricCard
-                  icon={Server}
-                  label="Sub-requests hoje"
-                  value={fmt(w?.today?.subrequests)}
-                  color="purple"
-                />
+              <SectionLabel>Serviços (on-premise)</SectionLabel>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <ServiceCard icon={Globe} label="Web (nginx)" up={health?.web} />
+                <ServiceCard icon={Database} label="API / Base de Dados (PostgREST)" up={health?.api} />
+                <ServiceCard icon={ShieldCheck} label="Autenticação (GoTrue)" up={health?.auth} />
               </div>
             </div>
 
-            {/* App */}
+            {/* Métricas reais da aplicação */}
             <div>
               <SectionLabel>Aplicação</SectionLabel>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <MetricCard
-                  icon={Users}
-                  label="Utilizadores"
-                  value={fmt(app?.totalUsers)}
-                  color="green"
-                />
-                <MetricCard
-                  icon={Plane}
-                  label="Voos hoje"
-                  value={fmt(app?.voosHoje)}
-                  color="blue"
-                />
-                <MetricCard
-                  icon={Activity}
-                  label="Chamadas API hoje"
-                  value={fmt(app?.apiCallsHoje)}
-                  color="purple"
-                />
-                <MetricCard
-                  icon={Activity}
-                  label="Chamadas API 7 dias"
-                  value={fmt(app?.apiCalls7d)}
-                  color="purple"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <MetricCard icon={Users} label="Utilizadores" value={fmt(app?.totalUsers)} color="green" />
+                <MetricCard icon={Plane} label="Voos hoje" value={fmt(app?.voosHoje)} color="blue" />
               </div>
             </div>
 
-            {/* Limite free tier */}
-            {w?.today?.requests !== undefined && (
-              <div className="text-xs text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
-                Workers free tier: {fmt(w.today.requests)} / 100.000 requests hoje
-                {w.today.requests > 80000 && (
-                  <span className="ml-2 text-orange-500 font-semibold">⚠ Próximo do limite diário</span>
-                )}
-              </div>
-            )}
           </div>
-        ) : null}
+        )}
       </CardContent>
     </Card>
   );

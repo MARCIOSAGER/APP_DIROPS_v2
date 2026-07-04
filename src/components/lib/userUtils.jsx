@@ -153,7 +153,7 @@ export function filtrarDadosPorCriador(dados, emailsEmpresa) {
   });
 }
 
-const DEFAULT_LOGO_URL = '/logo-dirops.png';
+const DEFAULT_LOGO_URL = '/logo-sga.png';
 
 export function getEmpresaLogoByAeroporto(aeroportoIcaoOrId, aeroportos, empresas) {
   if (!aeroportoIcaoOrId || !aeroportos || !empresas) return DEFAULT_LOGO_URL;

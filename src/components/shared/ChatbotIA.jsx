@@ -128,7 +128,7 @@ export default function ChatbotIA() {
             </div>
             <div>
               <div className="font-semibold text-sm">{t('shared.chatbot.assistente_virtual')}</div>
-              <div className="text-xs text-blue-100">DIROPS • {t('shared.chatbot.online')}</div>
+              <div className="text-xs text-blue-100">SGA • {t('shared.chatbot.online')}</div>
             </div>
             <button onClick={() => setIsOpen(false)} className="ml-auto hover:bg-white/20 rounded-full p-1">
               <X className="w-4 h-4" />

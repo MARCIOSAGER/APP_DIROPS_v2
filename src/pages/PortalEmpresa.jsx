@@ -118,7 +118,7 @@ export default function PortalEmpresa() {
             <div className="flex items-center">
               <img
                 src={getEmpresaLogoByUser(user, empresas)}
-                alt="DIROPS Logo"
+                alt="SGA Logo"
                 className="h-8 mr-4"
               />
               <div>
@@ -274,7 +274,7 @@ export default function PortalEmpresa() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <span className="font-mono text-sm font-bold text-blue-600">
-                            {credenciamento.protocolo_numero}
+                            {credenciamento.numero_protocolo}
                           </span>
                           <Badge className={STATUS_CONFIG[credenciamento.status]?.color}>
                             {STATUS_CONFIG[credenciamento.status]?.label}

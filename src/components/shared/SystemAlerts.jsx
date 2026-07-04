@@ -90,8 +90,9 @@ export default function SystemAlerts() {
 
     try {
       // b) Voos sem link (via server-side RPC)
-      const { data: dashStats } = await supabase.rpc('get_dashboard_stats', {
+      const { data: dashStats } = await supabase.rpc('get_dashboard_stats_full', {
         p_empresa_id: empresaId,
+        p_aeroporto: null,
         p_dias: 30,
       });
 

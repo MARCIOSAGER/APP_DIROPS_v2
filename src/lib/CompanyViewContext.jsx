@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { isSuperAdmin } from '@/components/lib/userUtils';
 
@@ -34,13 +34,15 @@ export const CompanyViewProvider = ({ children }) => {
     sessionStorage.removeItem(STORAGE_KEY);
   }, []);
 
+  const isSuperAdminViewing = useMemo(() => !!(user && isSuperAdmin(user)), [user]);
+
   // effectiveEmpresaId: se superadmin com viewingAs → usa viewingAs, senão usa o real
-  const effectiveEmpresaId = (() => {
-    if (user && isSuperAdmin(user) && viewingAsEmpresa) {
+  const effectiveEmpresaId = useMemo(() => {
+    if (isSuperAdminViewing && viewingAsEmpresa) {
       return viewingAsEmpresa.id;
     }
     return user?.empresa_id || null;
-  })();
+  }, [isSuperAdminViewing, viewingAsEmpresa, user]);
 
   // Se o user não é superadmin, limpar viewingAs
   useEffect(() => {
@@ -49,14 +51,17 @@ export const CompanyViewProvider = ({ children }) => {
     }
   }, [user, viewingAsEmpresa, clearViewingAsEmpresa]);
 
+  // Value memoizado evita re-render dos consumidores a cada render do provider.
+  const value = useMemo(() => ({
+    viewingAsEmpresa,
+    setViewingAsEmpresa,
+    clearViewingAsEmpresa,
+    effectiveEmpresaId,
+    isSuperAdminViewing,
+  }), [viewingAsEmpresa, setViewingAsEmpresa, clearViewingAsEmpresa, effectiveEmpresaId, isSuperAdminViewing]);
+
   return (
-    <CompanyViewContext.Provider value={{
-      viewingAsEmpresa,
-      setViewingAsEmpresa,
-      clearViewingAsEmpresa,
-      effectiveEmpresaId,
-      isSuperAdminViewing: !!(user && isSuperAdmin(user)),
-    }}>
+    <CompanyViewContext.Provider value={value}>
       {children}
     </CompanyViewContext.Provider>
   );

@@ -49,8 +49,10 @@ export default function NetworkIndicator() {
     setIsPinging(true);
     try {
       const start = performance.now();
-      // HEAD request to Supabase REST root — no RLS, no auth, pure connectivity check
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+      // Ping numa TABELA LEVE (HEAD limit=1), NÃO na raiz /rest/v1/. A raiz gera o
+      // OpenAPI de todas as tabelas (~600ms) e inflava a latência (mostrava sempre
+      // "Lento"). Uma query trivial reflete a latência real da rede/servidor.
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/aeroporto?limit=1`, {
         method: 'HEAD',
         headers: { apikey: SUPABASE_ANON_KEY },
       });

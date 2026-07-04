@@ -156,7 +156,7 @@ export default function CredenciamentoPublico() {
         </div>
         <Card className="w-full">
           <CardHeader className="text-center">
-            <div className="flex justify-center mb-4"><img src="/logo-dirops.png" alt="DIROPS Logo" className="h-12" /></div>
+            <div className="flex justify-center mb-4"><img src="/logo-sga.png" alt="SGA Logo" className="h-12" /></div>
             <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t('credPublico.titulo')}</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-400 mt-2">{t('credPublico.descricao')}</CardDescription>
           </CardHeader>

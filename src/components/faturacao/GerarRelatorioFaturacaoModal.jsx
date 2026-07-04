@@ -56,10 +56,16 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
     setHasSearched(true);
 
     try {
+      // Dataset COMPLETO (sem teto de 1000): calculos filtrados pelo período
+      // (escopo do relatório) e voos/voos-ligados sem corte para resolver todos
+      // os ARR/DEP ligados. Voo.filter/list sem limit paginam via fetchAll.
+      const calcFilter = {};
+      if (filtro.data_inicio) calcFilter.data_calculo = { ...calcFilter.data_calculo, $gte: filtro.data_inicio };
+      if (filtro.data_fim) calcFilter.data_calculo = { ...calcFilter.data_calculo, $lte: filtro.data_fim };
       const [allCalcData, voosData, vlData, proformasData] = await Promise.all([
-        CalculoTarifa.list('-data_calculo', 1000),
-        Voo.list('-data_operacao', 1000),
-        VooLigado.list('-created_date', 1000),
+        CalculoTarifa.filter(calcFilter, '-data_calculo'),
+        Voo.list('-data_operacao'),
+        VooLigado.list('-created_date'),
         Proforma.list(),
       ]);
 
@@ -290,7 +296,7 @@ export default function GerarRelatorioFaturacaoModal({ isOpen, onClose, companhi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl" style={{ overflow: 'visible' }}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-emerald-600" />

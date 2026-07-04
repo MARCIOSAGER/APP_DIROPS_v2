@@ -339,26 +339,20 @@ export default function CompanhiasConfig({ companhias, onUpdate }) {
     }
 
     try {
-      // Verificar se há voos associados
+      // Count (HEAD-only) — avoids streaming full rows through PostgREST on Windows
       const { Voo } = await import('@/entities/Voo');
-      const voosComCompanhia = await Voo.filter({
-        companhia_aerea: companhia.codigo_icao
-      });
+      const voosCount = await Voo.count({ companhia_aerea: companhia.codigo_icao });
 
-      // Verificar se há registos de aeronaves associados
       const { RegistoAeronave } = await import('@/entities/RegistoAeronave');
-      const aeronavesComCompanhia = await RegistoAeronave.filter({
-        id_companhia_aerea: companhia.id
-      });
+      const aeronavesCount = await RegistoAeronave.count({ id_companhia_aerea: companhia.id });
 
-      // Corrected variable names: voosComCompanhia, aeronavesComCompanhia
-      if (voosComCompanhia.length > 0 || aeronavesComCompanhia.length > 0) {
+      if (voosCount > 0 || aeronavesCount > 0) {
         let message = 'Esta companhia não pode ser excluída porque existem:\n';
-        if (voosComCompanhia.length > 0) {
-          message += `\n• ${voosComCompanhia.length} voo(s) registado(s)`;
+        if (voosCount > 0) {
+          message += `\n• ${voosCount} voo(s) registado(s)`;
         }
-        if (aeronavesComCompanhia.length > 0) {
-          message += `\n• ${aeronavesComCompanhia.length} aeronave(s) registada(s)`;
+        if (aeronavesCount > 0) {
+          message += `\n• ${aeronavesCount} aeronave(s) registada(s)`;
         }
         message += '\n\nPor favor, remova ou migre esses registos primeiro.';
 

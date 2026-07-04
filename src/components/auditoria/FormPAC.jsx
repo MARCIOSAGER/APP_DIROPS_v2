@@ -576,7 +576,7 @@ export default function FormPAC({
               </div>
               <div>
                 <DialogTitle>{t('formPAC.enviarPACEmail')}</DialogTitle>
-                <p className="text-sm text-slate-500 mt-1">Sistema DIROPS</p>
+                <p className="text-sm text-slate-500 mt-1">Sistema SGA</p>
               </div>
             </div>
           </DialogHeader>

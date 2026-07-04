@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import DebouncedSearchInput from '@/components/shared/DebouncedSearchInput';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, X, Loader2 } from 'lucide-react';
@@ -82,11 +83,11 @@ export default function VoosLigadosFilters({ filtros, onFilterChange, onClearFil
             <Label htmlFor="busca-ligados">{t('voosLigados.pesquisarLabel')}</Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <Input
+              <DebouncedSearchInput
                 id="busca-ligados"
                 placeholder="Ex: TP1530, DT461, D2-EUA..."
                 value={filtros.busca}
-                onChange={(e) => onFilterChange('busca', e.target.value)}
+                onCommit={(v) => onFilterChange('busca', v)}
                 className="pl-9"
               />
             </div>

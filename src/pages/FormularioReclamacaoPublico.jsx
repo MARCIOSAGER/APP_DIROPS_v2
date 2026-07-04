@@ -135,13 +135,13 @@ export default function FormularioReclamacaoPublico() {
         
         const notifLogoUrl = getEmpresaLogoByAeroporto(formData.aeroporto_id, aeroportos, empresas);
         await SendEmail({
-          from_name: 'DIROPS - Formulário Público',
+          from_name: 'SGA - Formulário Público',
           to: 'operacoes@sga.co.ao', // Email centralizador - pode ser configurado
           subject: `Nova Reclamação Pública - ${protocolo_numero}`,
           body: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <div style="text-align: center; margin-bottom: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
-                <img src="${notifLogoUrl}" alt="DIROPS Logo" style="height: 60px; margin-bottom: 20px;">
+                <img src="${notifLogoUrl}" alt="SGA Logo" style="height: 60px; margin-bottom: 20px;">
                 <h1 style="color: #dc2626; margin: 0; font-size: 24px;">Nova Reclamação Recebida</h1>
                 <p style="color: #64748b; margin: 5px 0;">Formulário Público</p>
               </div>
@@ -175,11 +175,11 @@ export default function FormularioReclamacaoPublico() {
               <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #fef3c7; border-radius: 8px;">
                 <p style="color: #92400e; margin: 0; font-weight: bold;">⚠️ Ação Necessária</p>
                 <p style="color: #92400e; margin: 5px 0;">Esta reclamação precisa ser direcionada para a área responsável.</p>
-                <p style="color: #92400e; margin: 5px 0; font-size: 14px;">Aceda ao sistema DIROPS para processar esta reclamação.</p>
+                <p style="color: #92400e; margin: 5px 0; font-size: 14px;">Aceda ao sistema SGA para processar esta reclamação.</p>
               </div>
 
               <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #64748b;">
-                <p><strong>Sistema DIROPS</strong><br>
+                <p><strong>Sistema SGA</strong><br>
                 Direcção de Operações - Serviços de Gestão Aeroportária</p>
               </div>
             </div>

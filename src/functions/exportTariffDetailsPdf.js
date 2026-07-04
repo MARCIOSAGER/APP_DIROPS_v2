@@ -134,10 +134,10 @@ export async function exportTariffDetailsPdf({ calculoId }) {
       bracketRows.push(['Total', '', '', formatUSD(calculo.tarifa_pouso_usd)]);
       yPos = addTable(doc, yPos, {
         columns: [
-          { header: 'Escalão', width: 35 },
-          { header: 'Taxa (USD/ton)', width: 35 },
-          { header: 'Peso no Escalão', width: 35 },
-          { header: 'Subtotal USD', width: 35 },
+          { label: 'Escalão', width: 35 },
+          { label: 'Taxa (USD/ton)', width: 35, align: 'right' },
+          { label: 'Peso no Escalão', width: 35, align: 'right' },
+          { label: 'Subtotal USD', width: 35, align: 'right' },
         ],
         rows: bracketRows,
         rowHeight: 6,

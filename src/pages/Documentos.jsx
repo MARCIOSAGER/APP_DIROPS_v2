@@ -221,7 +221,14 @@ export default function Documentos() {
       'Aeroporto': doc.aeroporto || 'Geral',
       'URL': doc.arquivo_url
     }));
-    downloadAsCSV(dataToExport, `biblioteca_documentos_${new Date().toISOString().split('T')[0]}.csv`);
+    const ok = downloadAsCSV(dataToExport, `biblioteca_documentos_${new Date().toISOString().split('T')[0]}`);
+    if (!ok) {
+      setSuccessModal({
+        isOpen: true,
+        type: 'error',
+        message: 'Nenhum documento para exportar'
+      });
+    }
   };
 
   const canManage = true;

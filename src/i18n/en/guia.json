@@ -8,5 +8,6 @@
   "guia.title": "User Guide",
   "guia.subtitle": "Complete DIROPS system documentation",
   "guia.buscarPlaceholder": "Search guide...",
-  "guia.indiceRapido": "Quick Index"
+  "guia.indiceRapido": "Quick Index",
+  "guia.abrirPagina": "Open page"
 }

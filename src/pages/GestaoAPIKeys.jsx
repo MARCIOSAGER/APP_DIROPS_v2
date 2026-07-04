@@ -412,7 +412,7 @@ export default function GestaoAPIKeys() {
                   <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Passo 2 — Colar o código</p>
                   <p className="mb-2">Apague tudo e cole o código abaixo. Substitua <code>dk_SUA_KEY_AQUI</code> pela sua API key.</p>
                   <pre className="bg-slate-900 text-green-400 p-4 rounded-lg text-xs overflow-x-auto whitespace-pre">{`let
-    url = "https://glernwcsuwcyzwsnelad.supabase.co/functions/v1/data-api",
+    url = "${import.meta.env.VITE_SUPABASE_URL}/functions/v1/data-api",
     body = Json.FromValue([entity = "voo", limit = 10000]),
     Source = Json.Document(Web.Contents(url, [
         Headers = [

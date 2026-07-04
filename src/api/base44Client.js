@@ -84,11 +84,14 @@ export const base44 = {
         return invokeFunction('invokeLLM', params);
       },
       async UploadFile({ file }) {
-        const { fileName, data } = await uploadToBucket(file, 'uploads');
-        const { data: urlData } = await supabase.storage
-          .from('uploads')
-          .createSignedUrl(data.path, 3600);
-        return { url: urlData?.signedUrl || data.path, path: data.path };
+        const { data } = await uploadToBucket(file, 'uploads');
+        // Bucket 'uploads' e publico: usar URL publica PERMANENTE e RELATIVA
+        // (funciona em qualquer host + mesma origem = sem CORS taint no PDF).
+        // 'file_url' e o campo que TODOS os chamadores esperam (o SDK Base44
+        // original retornava assim); antes so devolviamos 'url' -> uploads
+        // gravavam undefined em todo o app.
+        const file_url = `/storage/v1/object/public/uploads/${data.path}`;
+        return { file_url, url: file_url, path: data.path };
       },
       async UploadPrivateFile({ file }) {
         const { data } = await uploadToBucket(file, 'private-uploads');

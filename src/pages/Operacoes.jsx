@@ -38,7 +38,8 @@ const UploadDocumentoVooModal = React.lazy(() => import('../components/operacoes
 const LixeiraVoosModal = React.lazy(() => import('../components/operacoes/LixeiraVoosModal'));
 const DocumentosVooModal = React.lazy(() => import('../components/operacoes/DocumentosVooModal'));
 const UploadMultiplosDocumentosModal = React.lazy(() => import('../components/operacoes/UploadMultiplosDocumentosModal'));
-const FIDSPanel = React.lazy(() => import('../components/operacoes/FIDSPanel'));
+// FIDS hidden — SGA does not use this feature
+// const FIDSPanel = React.lazy(() => import('../components/operacoes/FIDSPanel'));
 
 import VoosTab from '../components/operacoes/VoosTab';
 import VoosLigadosTab from '../components/operacoes/VoosLigadosTab';
@@ -113,7 +114,7 @@ export default function Operacoes() {
     setAlertInfo, t,
   });
   const {
-    filtros, isFiltering, handleFilterChange, handleBuscarVoos, clearFilters,
+    filtros, isFiltering, handleFilterChange, handleBuscarVoos, fetchVoosParaExport, clearFilters,
     filtrosLigados, isFilteringLigados, handleFilterChangeLigados, handleBuscarLigados, clearFiltersLigados,
     voosSemLink, voosSemLinkComputed, isLoadingSemLink, isLinkingAuto, setIsLinkingAuto,
     filtrosSemLink, semLinkLoaded, loadVoosSemLink, semLinkStats, getSugestoesPar, handleFilterChangeSemLink,
@@ -510,10 +511,21 @@ export default function Operacoes() {
     }
   };
 
-  const handleDeleteVooSemLink = async (voo) => {
-    if (!confirm(`Eliminar voo ${voo.numero_voo} ${voo.tipo_movimento} ${voo.data_operacao}?`)) return;
-    await Voo.update(voo.id, { deleted_at: new Date().toISOString() });
-    if (semLinkLoaded) loadVoosSemLink(); else queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+  const handleDeleteVooSemLink = (voo) => {
+    setAlertInfo({
+      isOpen: true, type: 'warning', title: 'Eliminar voo',
+      message: `Eliminar o voo ${voo.numero_voo} ${voo.tipo_movimento} ${voo.data_operacao}? Ele irá para a Lixeira (pode ser restaurado).`,
+      showCancel: true, confirmText: 'Eliminar',
+      onConfirm: async () => {
+        setAlertInfo(prev => ({ ...prev, isOpen: false }));
+        try {
+          await Voo.update(voo.id, { deleted_at: new Date().toISOString() });
+          if (semLinkLoaded) loadVoosSemLink(); else queryClient.invalidateQueries({ queryKey: ['voos', empresaId] });
+        } catch (error) {
+          setAlertInfo({ isOpen: true, type: 'error', title: 'Erro ao eliminar', message: getErrorMessage(error) || String(error) });
+        }
+      },
+    });
   };
 
   const handleLinkarAutomatico = useCallback(async () => {
@@ -653,18 +665,30 @@ export default function Operacoes() {
 
   const handleConfirmarAlterarCambio = async (calculo, novaTaxaCambio) => {
     try {
-      const novoCalculoData = {
-        ...calculo,
+      // O mapa da tabela Voos Ligados (fetchCalculoMap) traz apenas 6 colunas e SEM id.
+      // Para o UPDATE ter id valido e recalcular os componentes, buscamos a linha completa.
+      let full = calculo;
+      if (!full?.id || full.tarifa_pouso_usd == null) {
+        const filtro = full.voo_ligado_id
+          ? { voo_ligado_id: { $eq: full.voo_ligado_id } }
+          : { voo_id: { $eq: full.voo_id } };
+        const rows = await CalculoTarifa.filter(filtro, '-data_calculo', 1);
+        full = rows[0];
+      }
+      if (!full?.id) throw new Error('Calculo nao encontrado para atualizacao.');
+
+      await CalculoTarifa.update(full.id, {
         taxa_cambio_usd_aoa: novaTaxaCambio,
-        tarifa_pouso: calculo.tarifa_pouso_usd * novaTaxaCambio,
-        tarifa_permanencia: calculo.tarifa_permanencia_usd * novaTaxaCambio,
-        tarifa_passageiros: calculo.tarifa_passageiros_usd * novaTaxaCambio,
-        tarifa_carga: calculo.tarifa_carga_usd * novaTaxaCambio,
-        outras_tarifas: calculo.outras_tarifas_usd * novaTaxaCambio,
-        total_tarifa: calculo.total_tarifa_usd * novaTaxaCambio,
+        tarifa_pouso: (full.tarifa_pouso_usd || 0) * novaTaxaCambio,
+        tarifa_permanencia: (full.tarifa_permanencia_usd || 0) * novaTaxaCambio,
+        tarifa_passageiros: (full.tarifa_passageiros_usd || 0) * novaTaxaCambio,
+        tarifa_carga: (full.tarifa_carga_usd || 0) * novaTaxaCambio,
+        outras_tarifas: (full.outras_tarifas_usd || 0) * novaTaxaCambio,
+        tarifa_recursos: (full.tarifa_recursos_usd || 0) * novaTaxaCambio,
+        tarifa_servicos: (full.tarifa_servicos_usd || 0) * novaTaxaCambio,
+        total_tarifa: (full.total_tarifa_usd || 0) * novaTaxaCambio,
         data_calculo: new Date().toISOString()
-      };
-      await CalculoTarifa.update(calculo.id, novoCalculoData);
+      });
       queryClient.invalidateQueries({ queryKey: ['calculos-tarifa', empresaId] });
       setSuccessInfo({ isOpen: true, title: t('operacoes.cambio_atualizado'), message: `${novaTaxaCambio} AOA/USD` });
     } catch (error) {
@@ -810,12 +834,19 @@ export default function Operacoes() {
     }
   };
 
-  const handleExportCSV = () => {
-    if (voosFiltrados.length === 0) {
+  const handleExportCSV = async () => {
+    // Buscar o dataset COMPLETO (sem teto de 1000) respeitando os filtros ativos,
+    // em vez de exportar apenas o array carregado em memória.
+    let fonte = voosFiltrados;
+    try {
+      const completo = await fetchVoosParaExport();
+      if (Array.isArray(completo) && completo.length) fonte = completo;
+    } catch (e) { console.warn('Export voos: falha ao buscar dataset completo, usando o carregado:', e); }
+    if (!fonte || fonte.length === 0) {
       setAlertInfo({ isOpen: true, type: 'info', title: t('operacoes.sem_dados'), message: t('operacoes.sem_voos_exportar') });
       return;
     }
-    const dataToExport = voosFiltrados.map(v => {
+    const dataToExport = fonte.map(v => {
       const companhia = companhias.find(c => c.codigo_icao === v.companhia_aerea || c.codigo_iata === v.companhia_aerea);
       const aeroportoOp = todosAeroportos.find(a => a.codigo_icao === v.aeroporto_operacao);
       const aeroportoOriDest = todosAeroportos.find(a => a.codigo_icao === v.aeroporto_origem_destino);
@@ -835,10 +866,12 @@ export default function Operacoes() {
         'Data Atualizacao': v.updated_date ? new Date(v.updated_date).toLocaleString('pt-PT') : ''
       };
     });
-    downloadAsExcel(dataToExport, `voos_${new Date().toISOString().split('T')[0]}`);
+    const ok = await downloadAsExcel(dataToExport, `voos_${new Date().toISOString().split('T')[0]}`);
+    if (ok) setSuccessInfo({ isOpen: true, title: t('operacoes.exportacao_concluida'), message: `${dataToExport.length} Excel` });
+    else setAlertInfo({ isOpen: true, type: 'error', title: t('operacoes.erro') || 'Erro', message: 'Não foi possível gerar o Excel.' });
   };
 
-  const handleExportLinkedFlightsCSV = () => {
+  const handleExportLinkedFlightsCSV = async () => {
     if (voosLigadosFiltrados.length === 0) {
       setAlertInfo({ isOpen: true, type: 'info', title: t('operacoes.sem_dados'), message: t('operacoes.sem_voos_ligados_exportar') });
       return;
@@ -852,7 +885,7 @@ export default function Operacoes() {
       const aeroportoDestino = todosAeroportos.find(a => a.codigo_icao === depVoo?.aeroporto_origem_destino);
       const isInternational = (aeroportoOrigem && aeroportoOrigem.pais !== 'AO') || (aeroportoOperacao && aeroportoOperacao.pais !== 'AO') || (aeroportoDestino && aeroportoDestino.pais !== 'AO');
       const tipoOperacao = isInternational ? 'Internacional' : 'Domestico';
-      const tempoPermanenciaHoras = (vl.tempo_permanencia_min / 60).toFixed(2);
+      const tempoPermanenciaHoras = Number((vl.tempo_permanencia_min / 60).toFixed(2));
       const companhia = companhias.find(c => c.codigo_icao === depVoo?.companhia_aerea || c.codigo_iata === depVoo?.companhia_aerea);
       const aeroportoOp = todosAeroportos.find(a => a.codigo_icao === arrVoo?.aeroporto_operacao);
       return {
@@ -885,8 +918,19 @@ export default function Operacoes() {
         'Data Calculo': calculo?.data_calculo ? new Date(calculo.data_calculo).toLocaleString('pt-PT') : ''
       };
     });
-    downloadAsExcel(dataToExport, `voos_ligados_${new Date().toISOString().split('T')[0]}`);
-    setSuccessInfo({ isOpen: true, title: t('operacoes.exportacao_concluida'), message: `${dataToExport.length} Excel` });
+    const ok = await downloadAsExcel(dataToExport, `voos_ligados_${new Date().toISOString().split('T')[0]}`);
+    if (!ok) {
+      setAlertInfo({ isOpen: true, type: 'error', title: t('operacoes.erro') || 'Erro', message: 'Não foi possível gerar o Excel.' });
+      return;
+    }
+    const truncado = voos.length >= 1000;
+    setSuccessInfo({
+      isOpen: true,
+      title: t('operacoes.exportacao_concluida'),
+      message: truncado
+        ? `${dataToExport.length} registos. ATENÇÃO: podem faltar voos ligados fora da janela de ${voos.length} voos carregados — aplique um filtro de data para garantir o período completo.`
+        : `${dataToExport.length} registos exportados.`,
+    });
   };
 
   // ========================
@@ -904,7 +948,7 @@ export default function Operacoes() {
         </div>
 
         <Tabs defaultValue="voos" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 h-auto">
+          <TabsList className="grid w-full grid-cols-4 h-auto">
             <TabsTrigger value="voos" className="text-xs sm:text-sm px-2 py-2">{t('tab.all_flights')}</TabsTrigger>
             <TabsTrigger value="linkados" className="text-xs sm:text-sm px-2 py-2">
               <span className="hidden sm:inline">{t('tab.linked_flights')}</span>
@@ -924,11 +968,6 @@ export default function Operacoes() {
                   {semLinkStats.total}
                 </span>
               )}
-            </TabsTrigger>
-            <TabsTrigger value="fids" className="text-xs sm:text-sm px-2 py-2">
-              <Plane className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-              <span className="hidden sm:inline">FIDS</span>
-              <span className="sm:hidden">FIDS</span>
             </TabsTrigger>
             <TabsTrigger value="configuracoes" className="text-xs sm:text-sm px-2 py-2">
               <Settings className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
@@ -951,7 +990,7 @@ export default function Operacoes() {
               sortDirection={sortDirection}
               t={t}
               language={language}
-              user={user}
+              currentUser={user}
               onFilterChange={handleFilterChange}
               onSort={handleSort}
               onBuscar={handleBuscarVoos}
@@ -1030,12 +1069,6 @@ export default function Operacoes() {
             />
           </TabsContent>
 
-          <TabsContent value="fids" className="space-y-4 sm:space-y-6">
-            <React.Suspense fallback={<div className="p-8 text-center text-slate-400">A carregar...</div>}>
-              <FIDSPanel aeroportos={todosAeroportos} />
-            </React.Suspense>
-          </TabsContent>
-
           <TabsContent value="configuracoes" className="space-y-4 sm:space-y-6">
             <Card className="shadow-sm border-0">
               <CardHeader className="p-4 sm:p-6">
@@ -1053,19 +1086,19 @@ export default function Operacoes() {
 
                   <TabsContent value="aeroportos" className="mt-4 sm:mt-6">
                     <React.Suspense fallback={<div className="p-8 text-center text-slate-400">A carregar...</div>}>
-                      <AeroportosConfig aeroportos={todosAeroportos} onReload={() => queryClient.invalidateQueries({ queryKey: ['aeroportos', empresaId] })} />
+                      <AeroportosConfig aeroportos={todosAeroportos} onReload={() => queryClient.invalidateQueries({ queryKey: ['aeroportos'] })} />
                     </React.Suspense>
                   </TabsContent>
 
                   <TabsContent value="companhias" className="mt-4 sm:mt-6">
                     <React.Suspense fallback={<div className="p-8 text-center text-slate-400">A carregar...</div>}>
-                      <CompanhiasConfig companhias={companhias} onUpdate={() => queryClient.invalidateQueries({ queryKey: ['companhias', empresaId] })} />
+                      <CompanhiasConfig companhias={companhias} onUpdate={() => queryClient.invalidateQueries({ queryKey: ['companhias'] })} />
                     </React.Suspense>
                   </TabsContent>
 
                   <TabsContent value="modelos" className="mt-4 sm:mt-6">
                     <React.Suspense fallback={<div className="p-8 text-center text-slate-400">A carregar...</div>}>
-                      <ModelosAeronaveConfig modelos={modelosAeronave} onReload={() => queryClient.invalidateQueries({ queryKey: ['modelos', empresaId] })} />
+                      <ModelosAeronaveConfig modelos={modelosAeronave} onReload={() => queryClient.invalidateQueries({ queryKey: ['modelos'] })} />
                     </React.Suspense>
                   </TabsContent>
 
@@ -1075,7 +1108,7 @@ export default function Operacoes() {
                       registos={aeronaves}
                       modelos={modelosAeronave}
                       companhias={companhiasCache.length > 0 ? companhiasCache : companhias}
-                      onReload={() => queryClient.invalidateQueries({ queryKey: ['aeronaves', empresaId] })}
+                      onReload={() => queryClient.invalidateQueries({ queryKey: ['aeronaves'] })}
                     />
                     </React.Suspense>
                   </TabsContent>

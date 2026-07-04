@@ -314,9 +314,11 @@ export default function ProformaPage() {
       const items = dadosProforma._items || [];
       delete dadosProforma._items;
 
-      // Generate sequential proforma number (per empresa)
+      // Generate sequential proforma number (per empresa).
+      // Usa o MESMO empId do filtro da lista (empresaIdFiltro) para a numeracao
+      // bater com as proformas carregadas e nao reiniciar a sequencia.
       const anoAtual = new Date().getFullYear();
-      const empId = currentUser?.empresa_id;
+      const empId = effectiveEmpresaId || currentUser?.empresa_id;
       const proformasAno = proformas.filter(p =>
         p.numero_proforma?.startsWith(`PF-${anoAtual}`) &&
         (!empId || p.empresa_id === empId)

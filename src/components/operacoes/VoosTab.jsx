@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import DebouncedSearchInput from '@/components/shared/DebouncedSearchInput';
 import { Label } from '@/components/ui/label';
 import Select from '@/components/ui/select';
 import Combobox from '@/components/ui/combobox';
@@ -131,11 +132,11 @@ export default function VoosTab({
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                       <div className="sm:col-span-2 lg:col-span-4">
                         <Label htmlFor="busca" className="text-xs sm:text-sm">{t('operacoes.pesquisar')}</Label>
-                        <Input
+                        <DebouncedSearchInput
                           id="busca"
                           placeholder={t('operacoes.voo_ou_matricula')}
                           value={filtros.busca}
-                          onChange={(e) => onFilterChange('busca', e.target.value)}
+                          onCommit={(v) => onFilterChange('busca', v)}
                           className="text-xs sm:text-sm"
                         />
                       </div>
@@ -280,14 +281,8 @@ export default function VoosTab({
                   </CardContent>
                 </Card>
 
-                {isFiltering && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                      <p className="text-slate-700 dark:text-slate-300 font-medium">{t('operacoes.carregando_voos')}</p>
-                    </div>
-                  </div>
-                )}
+                {/* Overlay bloqueante removido: o botao "Buscar" ja mostra spinner inline
+                    (isFiltering) e a auto-busca nao deve bloquear a tela inteira. */}
 
                 <div className="overflow-x-auto -mx-4 sm:mx-0">
                   <div className="inline-block min-w-full align-middle">

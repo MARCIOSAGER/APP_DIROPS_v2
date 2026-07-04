@@ -16,40 +16,13 @@ import { User } from '@/entities/User';
 import { SendEmail } from '@/integrations/Core';
 import { hasUserProfile } from '@/components/lib/userUtils'; // Added import
 import { useI18n } from '@/components/lib/i18n';
+import { downloadAsCSV } from '@/components/lib/export';
 
 import CredenciamentoDetailModal from './CredenciamentoDetailModal';
 import VerificarCredenciamentoModal from './VerificarCredenciamentoModal';
 import AprovarCredenciamentoModal from './AprovarCredenciamentoModal';
 import SendEmailModal from '../shared/SendEmailModal';
 import AlertModal from '../shared/AlertModal';
-
-// Helper function for CSV export
-const downloadAsCSV = (data, filename) => {
-  if (!data || data.length === 0) return;
-
-  const header = Object.keys(data[0]).join(',');
-  const rows = data.map(obj => Object.values(obj).map(value => {
-    // Basic CSV escape: double quotes and wrap in quotes if contains comma or quote
-    let stringValue = String(value);
-    if (stringValue.includes(',') || stringValue.includes('"')) {
-      stringValue = `"${stringValue.replace(/"/g, '""')}"`;
-    }
-    return stringValue;
-  }).join(','));
-
-  const csvContent = [header, ...rows].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  if (link.download !== undefined) { // feature detection
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${filename}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    document.body.removeChild(link);
-    link.click();
-  }
-};
 
 const STATUS_CONFIG = {
   pendente: { color: 'bg-yellow-100 text-yellow-800', label: 'Pendente' },
@@ -112,7 +85,7 @@ export default function CredenciamentoList({
   };
 
   const getAeroportoNome = (aeroportoId) => {
-    const aeroporto = aeroportos.find(a => a.codigo_icao === aeroportoId);
+    const aeroporto = aeroportos.find(a => a.id === aeroportoId);
     return aeroporto?.nome || aeroportoId;
   };
 
@@ -126,7 +99,7 @@ export default function CredenciamentoList({
 
     return filtered.filter(credenciamento => {
       const searchMatch = !filters.search ||
-                         credenciamento.protocolo_numero?.toLowerCase().includes(filters.search.toLowerCase()) ||
+                         credenciamento.numero_protocolo?.toLowerCase().includes(filters.search.toLowerCase()) ||
                          credenciamento.nome_completo?.toLowerCase().includes(filters.search.toLowerCase()) ||
                          credenciamento.matricula_viatura?.toLowerCase().includes(filters.search.toLowerCase());
 
@@ -232,7 +205,7 @@ export default function CredenciamentoList({
 
     const selectedData = filteredCredenciamentos.filter(c => selectedCredenciamentos.includes(c.id));
     const dataToExport = selectedData.map(c => ({
-      'Protocolo': c.protocolo_numero,
+      'Protocolo': c.numero_protocolo,
       'Empresa': getEmpresaNome(c.empresa_solicitante_id),
       'Tipo': c.tipo_credencial === 'pessoa' ? 'Pessoa' : 'Viatura',
       'Nome/Matrícula': c.nome_completo || c.matricula_viatura,
@@ -243,8 +216,17 @@ export default function CredenciamentoList({
     }));
 
     try {
-      downloadAsCSV(dataToExport, `credenciamentos_selecionados_${new Date().toISOString().split('T')[0]}`);
-      setSelectedCredenciamentos([]);
+      const success = downloadAsCSV(dataToExport, `credenciamentos_selecionados_${new Date().toISOString().split('T')[0]}`);
+      if (success) {
+        setSelectedCredenciamentos([]);
+      } else {
+        setAlertInfo({
+          isOpen: true,
+          type: 'error',
+          title: 'Erro!',
+          message: 'Erro ao exportar dados. Tente novamente.'
+        });
+      }
     } catch (error) {
       console.error('Erro ao exportar CSV:', error);
       setAlertInfo({
@@ -302,22 +284,22 @@ export default function CredenciamentoList({
         if (empresa) {
           await SendEmail({
             to: empresa.responsavel_email,
-            subject: `DIROPS - Credenciamento Aprovado - ${credenciamento.protocolo_numero}`,
+            subject: `SGA - Credenciamento Aprovado - ${credenciamento.numero_protocolo}`,
             body: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="text-align: center; margin-bottom: 30px;">
-                  <img src="/logo-dirops.png" alt="DIROPS Logo" style="height: 60px;">
+                  <img src="/logo-sga.png" alt="SGA Logo" style="height: 60px;">
                   <h1 style="color: #16a34a; margin-top: 20px;">✅ Credenciamento Aprovado!</h1>
                 </div>
 
                 <p>Prezado(a) ${empresa.responsavel_nome},</p>
 
-                <p>Temos o prazer de informar que o credenciamento com protocolo <strong>${credenciamento.protocolo_numero}</strong> foi aprovado!</p>
+                <p>Temos o prazer de informar que o credenciamento com protocolo <strong>${credenciamento.numero_protocolo}</strong> foi aprovado!</p>
 
                 <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
                   <h3 style="color: #1e40af;">📋 Detalhes do Credenciamento:</h3>
                   <ul>
-                    <li><strong>Protocolo:</strong> ${credenciamento.protocolo_numero}</li>
+                    <li><strong>Protocolo:</strong> ${credenciamento.numero_protocolo}</li>
                     <li><strong>Tipo:</strong> ${credenciamento.tipo_credencial === 'pessoa' ? 'Pessoa' : 'Viatura'}</li>
                     <li><strong>Nome/Matrícula:</strong> ${credenciamento.nome_completo || credenciamento.matricula_viatura}</li>
                     <li><strong>Aeroporto:</strong> ${getAeroportoNome(credenciamento.aeroporto_id)}</li>
@@ -343,13 +325,13 @@ export default function CredenciamentoList({
                 </ul>
 
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                  <p><strong>Importante:</strong> Mencione sempre o número de protocolo <strong>${credenciamento.protocolo_numero}</strong> durante o atendimento.</p>
+                  <p><strong>Importante:</strong> Mencione sempre o número de protocolo <strong>${credenciamento.numero_protocolo}</strong> durante o atendimento.</p>
                   <p><strong>Melhores Cumprimentos,</strong><br>
-                  Equipa de Credenciamento DIROPS</p>
+                  Equipa de Credenciamento SGA</p>
                 </div>
               </div>
             `,
-            from_name: 'DIROPS Credenciamento'
+            from_name: 'SGA Credenciamento'
           });
         }
       } catch (emailError) {
@@ -405,7 +387,7 @@ export default function CredenciamentoList({
       isOpen: true,
       type: 'warning',
       title: 'Confirmar Exclusão',
-      message: `Tem certeza que deseja excluir o credenciamento ${credenciamento.protocolo_numero}? Esta ação não pode ser desfeita.`,
+      message: `Tem certeza que deseja excluir o credenciamento ${credenciamento.numero_protocolo}? Esta ação não pode ser desfeita.`,
       showCancel: true,
       confirmText: 'Excluir',
       onConfirm: async () => {
@@ -442,7 +424,7 @@ export default function CredenciamentoList({
       const reportBody = `
         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="/logo-dirops.png" alt="DIROPS Logo" style="height: 60px;">
+            <img src="/logo-sga.png" alt="SGA Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">Relatório de Credenciamentos Selecionados</h1>
             <p style="color: #64748b;">Data: ${new Date().toLocaleDateString('pt-AO')}</p>
           </div>
@@ -482,7 +464,7 @@ export default function CredenciamentoList({
             <tbody>
               ${selectedData.map(c => `
                 <tr>
-                  <td style="border: 1px solid #e2e8f0; padding: 8px;">${c.protocolo_numero}</td>
+                  <td style="border: 1px solid #e2e8f0; padding: 8px;">${c.numero_protocolo}</td>
                   <td style="border: 1px solid #e2e8f0; padding: 8px;">${c.tipo_credencial === 'pessoa' ? 'Pessoa' : 'Viatura'}</td>
                   <td style="border: 1px solid #e2e8f0; padding: 8px;">${c.nome_completo || c.matricula_viatura}</td>
                   <td style="border: 1px solid #e2e8f0; padding: 8px;">${STATUS_CONFIG[c.status]?.label}</td>
@@ -492,7 +474,7 @@ export default function CredenciamentoList({
           </table>
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b;">
-            <p><strong>Sistema DIROPS</strong><br>
+            <p><strong>Sistema SGA</strong><br>
             Gestão de Credenciamentos Aeroportuárias</p>
           </div>
         </div>
@@ -502,7 +484,7 @@ export default function CredenciamentoList({
         to: recipient,
         subject: subject || `Relatório de Credenciamentos Selecionados - ${selectedData.length} itens`,
         body: reportBody,
-        from_name: 'DIROPS'
+        from_name: 'SGA'
       });
 
       setSelectedCredenciamentos([]);
@@ -677,7 +659,7 @@ export default function CredenciamentoList({
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <span className="font-mono text-sm font-bold text-blue-600">
-                            {credenciamento.protocolo_numero}
+                            {credenciamento.numero_protocolo}
                           </span>
                           <Badge className={STATUS_CONFIG[credenciamento.status]?.color}>
                             {STATUS_CONFIG[credenciamento.status]?.label}
@@ -813,7 +795,7 @@ export default function CredenciamentoList({
         }}
         onSend={handleSendBulkEmail}
         defaultSubject={selectedCredenciamentos.length === 1
-          ? `Credenciamento - ${filteredCredenciamentos.find(c => c.id === selectedCredenciamentos[0])?.protocolo_numero || 'Selecionado'}`
+          ? `Credenciamento - ${filteredCredenciamentos.find(c => c.id === selectedCredenciamentos[0])?.numero_protocolo || 'Selecionado'}`
           : `Relatório de Credenciamentos - ${selectedCredenciamentos.length} selecionados`
         }
         title={selectedCredenciamentos.length === 1 ? "Enviar Detalhes do Credenciamento" : "Enviar Credenciamentos Selecionados por Email"}

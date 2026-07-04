@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { addDays } from 'date-fns';
 import { supabase } from '@/lib/supabaseClient';
 import { Voo } from '@/entities/Voo';
@@ -209,11 +209,12 @@ export function useOperacoesFilters({
           if (!batch || batch.length === 0) break;
           all = all.concat(batch);
           if (batch.length < PAGE) break;
+          if (all.length >= 2000) break; // teto de seguranca
           from += PAGE;
         }
         data = all;
       } else {
-        data = await Voo.filter(query, '-data_operacao');
+        data = await Voo.filter(query, '-data_operacao', 2000);
       }
       queryClient.setQueryData(['voos', empresaId], data);
       const empIdVl = effectiveEmpresaIdRef.current || user?.empresa_id;
@@ -233,6 +234,62 @@ export function useOperacoesFilters({
       setIsFiltering(false);
     }
   }, [filtros, user, companhias, t, effectiveEmpresaIdRef, empresaId, queryClient, setAlertInfo]);
+
+  // --- Fetch COMPLETO para export (sem teto de 1000/2000) ---
+  // Reaplica os mesmos filtros do servidor e pagina todo o dataset (Voo.filter
+  // sem limit => fetchAll no _createEntity). Evita export truncado silenciosamente.
+  const fetchVoosParaExport = useCallback(async () => {
+    const query = { deleted_at: { $is: null } };
+    const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
+    if (empId) query.empresa_id = empId;
+    if (filtros.dataInicio) query.data_operacao = { ...query.data_operacao, $gte: filtros.dataInicio };
+    if (filtros.dataFim) query.data_operacao = { ...query.data_operacao, $lte: filtros.dataFim };
+    if (filtros.tipoMovimento !== 'todos') query.tipo_movimento = filtros.tipoMovimento;
+    if (filtros.status !== 'todos') query.status = filtros.status;
+    if (filtros.tipoVoo !== 'todos') query.tipo_voo = filtros.tipoVoo;
+    if (filtros.aeroporto !== 'todos') query.aeroporto_operacao = filtros.aeroporto;
+    if (filtros.origem === 'flightaware') query.created_by = { $ilike: '%FlightAware%' };
+    else if (filtros.origem === 'sistema') query.created_by = { $ilike: '%import%' };
+    else if (filtros.origem === 'manual') query.created_by = { $is: null };
+    if (filtros.companhia !== 'todos' && filtros.companhia !== 'outro') {
+      const comp = companhias.find(c => c.codigo_icao === filtros.companhia);
+      const codes = [filtros.companhia];
+      if (comp?.codigo_iata && comp.codigo_iata !== filtros.companhia) codes.push(comp.codigo_iata);
+      query.companhia_aerea = { $in: codes };
+    }
+    if (filtros.passageirosMin) query.passageiros_total = { ...query.passageiros_total, $gte: parseInt(filtros.passageirosMin) };
+    if (filtros.passageirosMax) query.passageiros_total = { ...query.passageiros_total, $lte: parseInt(filtros.passageirosMax) };
+    if (filtros.cargaMin) query.carga_kg = { ...query.carga_kg, $gte: parseFloat(filtros.cargaMin) };
+    if (filtros.cargaMax) query.carga_kg = { ...query.carga_kg, $lte: parseFloat(filtros.cargaMax) };
+    let data = await Voo.filter(query, '-data_operacao');
+    if (filtros.busca) {
+      const b = filtros.busca.toLowerCase();
+      data = data.filter(v => (v.numero_voo || '').toLowerCase().includes(b) || (v.registo_aeronave || '').toLowerCase().includes(b));
+    }
+    return data;
+  }, [filtros, user, companhias, effectiveEmpresaIdRef]);
+
+  // --- Auto-busca server-side: filtros disparam consulta direta ao banco (debounced) ---
+  // Evita o modelo "carrega 1000 e filtra na memoria": qualquer data/filtro vai ao
+  // servidor automaticamente, sem precisar do botao "Buscar".
+  const buscarVoosRef = useRef(handleBuscarVoos);
+  buscarVoosRef.current = handleBuscarVoos;
+  // NOTA: 'busca' (texto) NAO dispara consulta ao servidor — voosFiltrados ja filtra
+  // por numero_voo/registo em memoria. Ir ao servidor a cada tecla congelava a UI.
+  // O botao "Buscar" continua varrendo o servidor para texto fora da janela carregada.
+  useEffect(() => {
+    const algumFiltro = !!filtros.dataInicio || !!filtros.dataFim ||
+      filtros.tipoMovimento !== 'todos' || filtros.status !== 'todos' ||
+      (filtros.companhia !== 'todos' && filtros.companhia !== 'outro') ||
+      filtros.aeroporto !== 'todos' || filtros.tipoVoo !== 'todos' ||
+      !!filtros.passageirosMin || !!filtros.passageirosMax ||
+      !!filtros.cargaMin || !!filtros.cargaMax || filtros.origem !== 'todos';
+    if (!algumFiltro) return;
+    const id = setTimeout(() => buscarVoosRef.current(), 800);
+    return () => clearTimeout(id);
+  }, [filtros.dataInicio, filtros.dataFim, filtros.tipoMovimento, filtros.status,
+      filtros.companhia, filtros.aeroporto, filtros.tipoVoo,
+      filtros.passageirosMin, filtros.passageirosMax, filtros.cargaMin, filtros.cargaMax, filtros.origem]);
 
   // --- Server-side search: Voos Ligados ---
   const handleBuscarLigados = useCallback(async () => {
@@ -306,36 +363,56 @@ export function useOperacoesFilters({
     }
   }, [filtrosSemLink, user, effectiveEmpresaIdRef]);
 
-  const semLinkStats = useMemo(() => {
+  // Índice O(1) por registo de aeronave (ARR/DEP) — evita varrer todo o source
+  // em cada linha/sugestão. Antes: semLinkStats era O(arr×dep) com new Date no
+  // loop interno; getSugestoesPar filtrava o source inteiro por linha (O(N×n)).
+  const semLinkByReg = useMemo(() => {
     const source = semLinkLoaded ? voosSemLink : voosSemLinkComputed;
-    const arrCount = source.filter(v => v.tipo_movimento === 'ARR').length;
-    const depCount = source.filter(v => v.tipo_movimento === 'DEP').length;
-
-    const arrVoos = source.filter(v => v.tipo_movimento === 'ARR');
-    const depVoos = source.filter(v => v.tipo_movimento === 'DEP');
-    let sugestoes = 0;
-    arrVoos.forEach(arr => {
-      if (!arr.registo_aeronave) return;
-      const arrDate = new Date(arr.data_operacao);
-      const hasMatch = depVoos.some(dep =>
-        dep.registo_aeronave === arr.registo_aeronave &&
-        new Date(dep.data_operacao) >= arrDate &&
-        new Date(dep.data_operacao) <= addDays(arrDate, 7)
-      );
-      if (hasMatch) sugestoes++;
-    });
-
-    return { total: source.length, arr: arrCount, dep: depCount, sugestoes };
+    const map = new Map();
+    for (const v of source) {
+      if (!v.registo_aeronave) continue;
+      let e = map.get(v.registo_aeronave);
+      if (!e) { e = { ARR: [], DEP: [] }; map.set(v.registo_aeronave, e); }
+      if (v.tipo_movimento === 'ARR') e.ARR.push(v);
+      else if (v.tipo_movimento === 'DEP') e.DEP.push(v);
+    }
+    return map;
   }, [voosSemLink, voosSemLinkComputed, semLinkLoaded]);
 
-  const getSugestoesPar = useCallback((voo) => {
+  const semLinkStats = useMemo(() => {
     const source = semLinkLoaded ? voosSemLink : voosSemLinkComputed;
+    let arrCount = 0, depCount = 0;
+    for (const v of source) {
+      if (v.tipo_movimento === 'ARR') arrCount++;
+      else if (v.tipo_movimento === 'DEP') depCount++;
+    }
+    // Pré-parseia timestamps dos DEP por registo (uma vez), depois casa cada ARR
+    // contra apenas os DEP do mesmo registo dentro da janela de 7 dias.
+    const depTsByReg = new Map();
+    semLinkByReg.forEach((e, reg) => {
+      depTsByReg.set(reg, e.DEP.map(d => +new Date(d.data_operacao)));
+    });
+    let sugestoes = 0;
+    for (const v of source) {
+      if (v.tipo_movimento !== 'ARR' || !v.registo_aeronave) continue;
+      const deps = depTsByReg.get(v.registo_aeronave);
+      if (!deps || !deps.length) continue;
+      const arrTs = +new Date(v.data_operacao);
+      const limitTs = +addDays(new Date(v.data_operacao), 7);
+      if (deps.some(d => d >= arrTs && d <= limitTs)) sugestoes++;
+    }
+    return { total: source.length, arr: arrCount, dep: depCount, sugestoes };
+  }, [voosSemLink, voosSemLinkComputed, semLinkLoaded, semLinkByReg]);
+
+  const getSugestoesPar = useCallback((voo) => {
     if (!voo.registo_aeronave) return [];
+    const bucket = semLinkByReg.get(voo.registo_aeronave);
+    if (!bucket) return [];
     const vooDate = new Date(voo.data_operacao);
 
     if (voo.tipo_movimento === 'ARR') {
-      return source.filter(v => {
-        if (v.tipo_movimento !== 'DEP' || v.registo_aeronave !== voo.registo_aeronave || v.id === voo.id) return false;
+      return bucket.DEP.filter(v => {
+        if (v.id === voo.id) return false;
         const vDate = new Date(v.data_operacao);
         if (vDate < vooDate || vDate > addDays(vooDate, 7)) return false;
         if (v.data_operacao === voo.data_operacao) {
@@ -346,8 +423,8 @@ export function useOperacoesFilters({
         return true;
       }).sort((a, b) => new Date(a.data_operacao) - new Date(b.data_operacao));
     } else {
-      return source.filter(v => {
-        if (v.tipo_movimento !== 'ARR' || v.registo_aeronave !== voo.registo_aeronave || v.id === voo.id) return false;
+      return bucket.ARR.filter(v => {
+        if (v.id === voo.id) return false;
         const vDate = new Date(v.data_operacao);
         if (vDate > vooDate || vDate < addDays(vooDate, -7)) return false;
         if (v.data_operacao === voo.data_operacao) {
@@ -358,7 +435,35 @@ export function useOperacoesFilters({
         return true;
       }).sort((a, b) => new Date(b.data_operacao) - new Date(a.data_operacao));
     }
-  }, [voosSemLink, voosSemLinkComputed, semLinkLoaded]);
+  }, [semLinkByReg]);
+
+  // Indices O(1) — evitam lookups lineares aninhados (O(n2)) nos memos abaixo.
+  const voosById = useMemo(() => {
+    const m = new Map();
+    for (const v of voos) m.set(v.id, v);
+    return m;
+  }, [voos]);
+  const calcByVooLigadoId = useMemo(() => {
+    const m = new Map();
+    for (const ct of calculosTarifa) if (ct.voo_ligado_id != null && !m.has(ct.voo_ligado_id)) m.set(ct.voo_ligado_id, ct);
+    return m;
+  }, [calculosTarifa]);
+  const calcByVooId = useMemo(() => {
+    const m = new Map();
+    for (const ct of calculosTarifa) if (ct.voo_id != null && !m.has(ct.voo_id)) m.set(ct.voo_id, ct);
+    return m;
+  }, [calculosTarifa]);
+  const getCalculo = useCallback((vlId, vooId) => calcByVooLigadoId.get(vlId) ?? calcByVooId.get(vooId), [calcByVooLigadoId, calcByVooId]);
+  // Set de ids de voos pertencentes a um voo_ligado valido (ambos os lados existem).
+  const linkedVooIds = useMemo(() => {
+    const s = new Set();
+    for (const vl of voosLigados) {
+      if (voosById.has(vl.id_voo_arr) && voosById.has(vl.id_voo_dep)) {
+        s.add(vl.id_voo_arr); s.add(vl.id_voo_dep);
+      }
+    }
+    return s;
+  }, [voosLigados, voosById]);
 
   // --- Filtered + sorted voos ---
   const voosFiltrados = useMemo(() => {
@@ -378,15 +483,18 @@ export function useOperacoesFilters({
       );
     }
 
+    // Filtros ao vivo sobre a lista carregada (consistente com a busca por texto).
+    // Para datas fora da janela carregada, o botao "Buscar" varre o servidor inteiro.
+    if (filtros.dataInicio) filtered = filtered.filter(v => v.data_operacao && v.data_operacao >= filtros.dataInicio);
+    if (filtros.dataFim) filtered = filtered.filter(v => v.data_operacao && v.data_operacao <= filtros.dataFim);
+    if (filtros.tipoMovimento !== 'todos') filtered = filtered.filter(v => v.tipo_movimento === filtros.tipoMovimento);
+    if (filtros.status !== 'todos') filtered = filtered.filter(v => v.status === filtros.status);
+    if (filtros.aeroporto !== 'todos') filtered = filtered.filter(v => v.aeroporto_operacao === filtros.aeroporto);
+    if (filtros.tipoVoo !== 'todos') filtered = filtered.filter(v => v.tipo_voo === filtros.tipoVoo);
+
     if (filtros.statusVinculacao !== 'todos') {
       filtered = filtered.filter(voo => {
-        const isLinked = voosLigados.some((vl) => {
-          const isLinkedToThisVoo = vl.id_voo_arr === voo.id || vl.id_voo_dep === voo.id;
-          if (!isLinkedToThisVoo) return false;
-          const vooArrExiste = voos.some(v => v.id === vl.id_voo_arr);
-          const vooDepExiste = voos.some(v => v.id === vl.id_voo_dep);
-          return vooArrExiste && vooDepExiste;
-        });
+        const isLinked = linkedVooIds.has(voo.id);
 
         if (filtros.statusVinculacao === 'ligado') return isLinked;
         if (filtros.statusVinculacao === 'sem_link') return !isLinked && voo.status !== 'Cancelado';
@@ -419,13 +527,13 @@ export function useOperacoesFilters({
     });
 
     return sorted;
-  }, [voos, filtros, sortField, sortDirection, companhias, voosLigados]);
+  }, [voos, filtros, sortField, sortDirection, companhias, voosLigados, linkedVooIds]);
 
   // --- Filtered + sorted voos ligados ---
   const voosLigadosFiltrados = useMemo(() => {
     const filtered = voosLigadosValidos.filter(vl => {
-      const arrVoo = voos.find(v => v.id === vl.id_voo_arr);
-      const depVoo = voos.find(v => v.id === vl.id_voo_dep);
+      const arrVoo = voosById.get(vl.id_voo_arr);
+      const depVoo = voosById.get(vl.id_voo_dep);
 
       if (!arrVoo || !depVoo) return false;
 
@@ -445,7 +553,7 @@ export function useOperacoesFilters({
       const tipoVooMatch = filtrosLigados.tipoVoo === 'todos' ||
                           depVoo.tipo_voo === filtrosLigados.tipoVoo;
 
-      const calculo = calculosTarifa.find(ct => ct.voo_ligado_id === vl.id || ct.voo_id === depVoo?.id);
+      const calculo = getCalculo(vl.id, depVoo?.id);
       let statusCalculoMatch = true;
       if (filtrosLigados.statusCalculo !== 'todos') {
         if (filtrosLigados.statusCalculo === 'com_calculo') {
@@ -475,10 +583,10 @@ export function useOperacoesFilters({
     });
 
     const sorted = [...filtered].sort((a, b) => {
-      const arrVooA = voos.find(v => v.id === a.id_voo_arr);
-      const depVooA = voos.find(v => v.id === a.id_voo_dep);
-      const arrVooB = voos.find(v => v.id === b.id_voo_arr);
-      const depVooB = voos.find(v => v.id === b.id_voo_dep);
+      const arrVooA = voosById.get(a.id_voo_arr);
+      const depVooA = voosById.get(a.id_voo_dep);
+      const arrVooB = voosById.get(b.id_voo_arr);
+      const depVooB = voosById.get(b.id_voo_dep);
 
       let aValue, bValue;
 
@@ -508,15 +616,15 @@ export function useOperacoesFilters({
           bValue = b.tempo_permanencia_min || 0;
           break;
         case 'total_tarifa': {
-          const calculoA = calculosTarifa.find(ct => ct.voo_ligado_id === a.id || ct.voo_id === depVooA?.id);
-          const calculoB = calculosTarifa.find(ct => ct.voo_ligado_id === b.id || ct.voo_id === depVooB?.id);
+          const calculoA = getCalculo(a.id, depVooA?.id);
+          const calculoB = getCalculo(b.id, depVooB?.id);
           aValue = calculoA?.total_tarifa || 0;
           bValue = calculoB?.total_tarifa || 0;
           break;
         }
         case 'updated_date': {
-          const calcA = calculosTarifa.find(ct => ct.voo_ligado_id === a.id || ct.voo_id === depVooA?.id);
-          const calcB = calculosTarifa.find(ct => ct.voo_ligado_id === b.id || ct.voo_id === depVooB?.id);
+          const calcA = getCalculo(a.id, depVooA?.id);
+          const calcB = getCalculo(b.id, depVooB?.id);
           aValue = calcA?.updated_date || depVooA?.updated_date || '';
           bValue = calcB?.updated_date || depVooB?.updated_date || '';
           break;
@@ -540,7 +648,7 @@ export function useOperacoesFilters({
     });
 
     return sorted;
-  }, [voosLigadosValidos, voos, calculosTarifa, filtrosLigados, sortFieldLigados, sortDirectionLigados, companhias]);
+  }, [voosLigadosValidos, voos, voosById, getCalculo, calculosTarifa, filtrosLigados, sortFieldLigados, sortDirectionLigados, companhias]);
 
   // --- Select options ---
   const companhiaOptions = useMemo(() => {
@@ -601,6 +709,7 @@ export function useOperacoesFilters({
     isFiltering,
     handleFilterChange,
     handleBuscarVoos,
+    fetchVoosParaExport,
     clearFilters,
 
     // Voos Ligados filters

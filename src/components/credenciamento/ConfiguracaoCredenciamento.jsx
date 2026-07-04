@@ -31,7 +31,7 @@ export default function ConfiguracaoCredenciamento({ initialEmpresas, initialAre
     nif: '',
     endereco: '',
     telefone: '',
-    email_principal: '',
+    email: '',
     responsavel_nome: '',
     responsavel_email: '',
     responsavel_telefone: '',
@@ -405,8 +405,8 @@ export default function ConfiguracaoCredenciamento({ initialEmpresas, initialAre
                         <Label>Email Principal *</Label>
                         <Input
                           type="email"
-                          value={empresaForm.email_principal}
-                          onChange={(e) => setEmpresaForm(prev => ({...prev, email_principal: e.target.value}))}
+                          value={empresaForm.email}
+                          onChange={(e) => setEmpresaForm(prev => ({...prev, email: e.target.value}))}
                           required
                         />
                       </div>
@@ -500,7 +500,7 @@ export default function ConfiguracaoCredenciamento({ initialEmpresas, initialAre
                         <td className="p-4 font-medium">{empresa.nome}</td>
                         <td className="p-4">{empresa.nif}</td>
                         <td className="p-4">{empresa.responsavel_nome}</td>
-                        <td className="p-4">{empresa.email_principal}</td> {/* Corrected to email_principal */}
+                        <td className="p-4">{empresa.email}</td>
                         <td className="p-4">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                             empresa.status === 'ativa' ? 'bg-green-100 text-green-800' :

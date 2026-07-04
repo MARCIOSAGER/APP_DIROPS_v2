@@ -7,6 +7,7 @@ import { normalizeAircraftRegistration, normalizeFlightNumber, createDateTime } 
 import { getAeroportosPermitidos, isSuperAdmin } from '@/components/lib/userUtils';
 import { differenceInMinutes } from 'date-fns';
 import { useI18n } from '@/components/lib/i18n';
+import { Voo } from '@/entities/Voo';
 
 // Importar os formularios COMPLETOS
 import { FormAeroporto } from './config/AeroportosConfig';
@@ -131,6 +132,7 @@ export default function FormVoo({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [militaryWarning, setMilitaryWarning] = useState(null);
+  const [serverArrVoos, setServerArrVoos] = useState([]);
 
   // States para modais de criacao rapida
   const [showCreateAeroporto, setShowCreateAeroporto] = useState(false);
@@ -319,7 +321,12 @@ export default function FormVoo({
         registo_dep: '',
         combustivel_utilizado: vooInicial.combustivel_utilizado || false,
         combustivel_tipo: vooInicial.combustivel_tipo || 'JET-A1',
-        combustivel_litros: vooInicial.combustivel_litros || 0
+        combustivel_litros: vooInicial.combustivel_litros || 0,
+        // Recarregar bagagem ao editar (senao zera os valores ja gravados).
+        bagagem_local: vooInicial.bagagem_local || 0,
+        bagagem_transito_transbordo: vooInicial.bagagem_transito_transbordo || 0,
+        bagagem_transito_direto: vooInicial.bagagem_transito_direto || 0,
+        bagagem_total: vooInicial.bagagem_total || 0
       });
 
       if (vooInicial.tipo_movimento === 'DEP') {
@@ -377,18 +384,54 @@ export default function FormVoo({
   }, [vooInicial, isOpen, tipoMovimento, voosLigados, aeroportosAcesso]);
 
   // --- Derived data ---
+  // Busca autoritativa de ARRs no servidor (independente do cache de ~1000 voos
+  // da pagina): garante que a chegada recem-criada / de qualquer data apareca
+  // para linkar, sem precisar de F5.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (formData.tipo_movimento !== 'DEP' || !formData.data_operacao) { setServerArrVoos([]); return; }
+      try {
+        const dep = new Date(formData.data_operacao);
+        const ini = new Date(dep); ini.setDate(ini.getDate() - 7);
+        const q = {
+          tipo_movimento: 'ARR',
+          deleted_at: { $is: null },
+          data_operacao: { $gte: ini.toISOString().split('T')[0], $lte: formData.data_operacao },
+        };
+        if (formData.registo_aeronave) q.registo_aeronave = formData.registo_aeronave;
+        const res = await Voo.filter(q, '-data_operacao', 300);
+        if (!cancelled) setServerArrVoos(res || []);
+      } catch (e) {
+        console.error('Erro ao buscar ARRs no servidor:', e);
+        if (!cancelled) setServerArrVoos([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [formData.tipo_movimento, formData.data_operacao, formData.registo_aeronave]);
+
+  // Lista mesclada (cache da pagina + busca fresca do servidor), dedupe por id.
+  // Usada no dropdown E no preenchimento/validacao do ARR vinculado, para que
+  // ARRs vindos so do servidor tambem preencham campos e validem horario.
+  const arrCandidatos = useMemo(() => {
+    const merged = [...voos];
+    const seen = new Set(voos.map(v => v.id));
+    for (const v of serverArrVoos) { if (!seen.has(v.id)) { merged.push(v); seen.add(v.id); } }
+    return merged;
+  }, [voos, serverArrVoos]);
+
   const voosArrDisponíveis = useMemo(
-    () => filterVoosArr(voos, formData, voosLigados, vooInicial),
-    [voos, formData.tipo_movimento, formData.data_operacao, formData.horario_real, formData.horario_previsto, formData.registo_aeronave, voosLigados, vooInicial]
+    () => filterVoosArr(arrCandidatos, formData, voosLigados, vooInicial),
+    [arrCandidatos, formData.tipo_movimento, formData.data_operacao, formData.horario_real, formData.horario_previsto, formData.registo_aeronave, voosLigados, vooInicial]
   );
 
   const horarioMinimoDep = useMemo(() => {
     if (formData.tipo_movimento === 'DEP' && linkedArrVooId) {
-      const arrVoo = voos.find((v) => v.id === linkedArrVooId);
+      const arrVoo = arrCandidatos.find((v) => v.id === linkedArrVooId);
       if (arrVoo) return arrVoo.horario_real || arrVoo.horario_previsto;
     }
     return undefined;
-  }, [formData.tipo_movimento, linkedArrVooId, voos]);
+  }, [formData.tipo_movimento, linkedArrVooId, arrCandidatos]);
 
   // --- Handlers ---
   const handleLinkedVooChange = (vooArrId) => {
@@ -398,7 +441,7 @@ export default function FormVoo({
     }
 
     if (vooArrId) {
-      const vooArr = voos.find((v) => v.id === vooArrId);
+      const vooArr = arrCandidatos.find((v) => v.id === vooArrId);
       if (vooArr) {
         setFormData((prev) => ({
           ...prev,
@@ -500,7 +543,7 @@ export default function FormVoo({
       }
 
       if (linkedArrVooId) {
-        const vooArr = voos.find((v) => v.id === linkedArrVooId);
+        const vooArr = arrCandidatos.find((v) => v.id === linkedArrVooId);
         if (vooArr) {
           const horarioArrReal = vooArr.horario_real || vooArr.horario_previsto;
           const dateTimeArr = createDateTime(vooArr.data_operacao, horarioArrReal, vooArr.horario_previsto);
@@ -547,7 +590,7 @@ export default function FormVoo({
         if (!formData.registo_dep) {
           newErrors.registo_dep = t('formVoo.erroRegistoDepObrigatorio');
         } else {
-          const arrVoo = voos.find(v => v.id === linkedArrVooId);
+          const arrVoo = arrCandidatos.find(v => v.id === linkedArrVooId);
           if (arrVoo && formData.registo_dep === arrVoo.registo_aeronave) {
             newErrors.registo_dep = t('formVoo.erroRegistoDepIgualArr');
           }
@@ -623,25 +666,62 @@ export default function FormVoo({
     }
   };
 
+  // Verificação AUTORITATIVA contra o banco no momento de salvar.
+  // A lista em memória (`voos`) pode estar desatualizada (logo após outro
+  // lançamento, ou em sessões paralelas), deixando duplicados passarem.
+  // Esta consulta fresca pega esses casos.
+  const checkDuplicateVooDB = useCallback(async () => {
+    if (!formData.registo_aeronave || !formData.data_operacao || !formData.aeroporto_operacao || !formData.horario_previsto) return null;
+    const horarioParaComparar = formData.horario_real || formData.horario_previsto;
+    const dateTimeAtual = createDateTime(formData.data_operacao, horarioParaComparar, formData.horario_previsto);
+    if (!dateTimeAtual) return null;
+    let candidatos = [];
+    try {
+      candidatos = await Voo.filter({
+        registo_aeronave: formData.registo_aeronave,
+        tipo_movimento: formData.tipo_movimento,
+        aeroporto_operacao: formData.aeroporto_operacao,
+        data_operacao: formData.data_operacao,
+        deleted_at: null,
+      });
+    } catch (e) {
+      console.error('Erro na verificação de duplicado (BD):', e);
+      return null;
+    }
+    const match = (candidatos || []).find((voo) => {
+      if (vooInicial && voo.id === vooInicial.id) return false;
+      const vooHorario = voo.horario_real || voo.horario_previsto;
+      const dt = createDateTime(voo.data_operacao, vooHorario, voo.horario_previsto);
+      if (!dt) return false;
+      return Math.abs(differenceInMinutes(dateTimeAtual, dt)) <= DUPLICATE_TOLERANCE_MINUTES;
+    });
+    if (!match) return null;
+    return {
+      voo: match,
+      message: `${t('formVoo.avisoVooDuplicado1')} ${match.tipo_movimento} ${t('formVoo.avisoVooDuplicado2')} ${match.registo_aeronave} ${t('formVoo.avisoVooDuplicado3')} ${match.aeroporto_operacao} ${t('formVoo.avisoVooDuplicado4')} ${match.data_operacao} ${t('formVoo.avisoVooDuplicado5')} ${match.horario_real || match.horario_previsto} (${t('formVoo.avisoVooDuplicado6')} ${match.numero_voo}). ${t('formVoo.avisoVooDuplicado7')}`
+    };
+  }, [formData, vooInicial, t]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
-    if (duplicateWarning) {
-      if (setAlertInfo) {
-        setAlertInfo({
-          isOpen: true,
-          type: 'warning',
-          title: t('formVoo.alertDuplicidadeTitulo'),
-          message: `${duplicateWarning.message}\n\n${t('formVoo.alertDuplicidadeConfirmar')}`,
-          showCancel: true,
-          confirmText: t('formVoo.alertDuplicidadeConfirmarBtn'),
-          onConfirm: async () => {
-            setAlertInfo(prev => ({ ...prev, isOpen: false }));
-            await performSave();
-          }
-        });
-      }
+    // Aviso em memória; se não houver, faz a verificação autoritativa no banco.
+    const aviso = duplicateWarning || await checkDuplicateVooDB();
+
+    if (aviso && setAlertInfo) {
+      setAlertInfo({
+        isOpen: true,
+        type: 'warning',
+        title: t('formVoo.alertDuplicidadeTitulo'),
+        message: `${aviso.message}\n\n${t('formVoo.alertDuplicidadeConfirmar')}`,
+        showCancel: true,
+        confirmText: t('formVoo.alertDuplicidadeConfirmarBtn'),
+        onConfirm: async () => {
+          setAlertInfo(prev => ({ ...prev, isOpen: false }));
+          await performSave();
+        }
+      });
       return;
     }
 

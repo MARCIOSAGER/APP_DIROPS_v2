@@ -92,9 +92,9 @@ export default function RegrasTab({
 
                         <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                           <MessageSquare className="w-4 h-4" />
-                          <span><strong>{t('notificacoes.canais')}:</strong> {regra.canal_envio.map(c =>
+                          <span><strong>{t('notificacoes.canais')}:</strong> {(regra.canal_envio || []).map(c =>
                             c === 'whatsapp' ? 'WhatsApp' : 'E-mail'
-                          ).join(', ')}</span>
+                          ).join(', ') || '—'}</span>
                         </div>
 
                         {regra.destinatarios_perfis && regra.destinatarios_perfis.length > 0 && (

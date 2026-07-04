@@ -11,7 +11,9 @@ export function useOrdensServico({ empresaId, enabled = true } = {}) {
         empresaId ? OrdemServico.filter(empFilters, '-data_abertura') : OrdemServico.list('-data_abertura'),
         empresaId ? SolicitacaoServico.filter(empFilters, '-created_date') : SolicitacaoServico.list('-created_date'),
       ]);
-      return { ordensData, ssData };
+      // Tickets de suporte agora vivem em ticket_suporte (tabela dedicada);
+      // excluir tipo='suporte' para não poluir a lista de Manutenção.
+      return { ordensData: (ordensData || []).filter(o => o.tipo !== 'suporte'), ssData };
     },
     staleTime: 0,
     gcTime: 5 * 60 * 1000,

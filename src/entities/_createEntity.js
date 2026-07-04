@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabaseClient';
+import { invalidateEntityQueries } from '@/lib/query-client';
 
-const PAGE_SIZE = 500;
+// On-premise: DB is local, fetch bigger pages = fewer round-trips
+const PAGE_SIZE = 5000;
 
 async function fetchAll(query) {
   let allData = [];
@@ -147,33 +149,60 @@ export function createEntity(tableName) {
     },
 
     async create(record) {
-      const email = await getCurrentUserEmail();
+      // *_by columns aren't universal (users/empresa/etc. don't have them);
+      // callers that care about audit tracking pass them explicitly.
+      const payload = {
+        ...record,
+        created_date: record.created_date || new Date().toISOString(),
+      };
+      // id nulo/vazio quebra o DEFAULT do Postgres (NULL explícito != coluna omitida).
+      // Omitir deixa o uuid_generate_v4() gerar o id.
+      if (payload.id == null || payload.id === '') delete payload.id;
       const { data, error } = await supabase
         .from(tableName)
-        .insert({
-          ...record,
-          created_date: record.created_date || new Date().toISOString(),
-          created_by: record.created_by || email,
-        })
+        .insert(payload)
         .select()
         .single();
       if (error) throw new Error(`Erro ao criar ${tableName}: ${error.message}`);
+      invalidateEntityQueries(tableName);
       return data;
     },
 
-    async update(id, changes) {
-      const email = await getCurrentUserEmail();
+    /**
+     * Insert multiple records in a single round-trip.
+     * Returns the array of created rows.
+     */
+    async bulkCreate(records) {
+      if (!Array.isArray(records) || records.length === 0) return [];
+      const now = new Date().toISOString();
+      const payload = records.map(r => {
+        const row = { ...r, created_date: r.created_date || now };
+        if (row.id == null || row.id === '') delete row.id;
+        return row;
+      });
       const { data, error } = await supabase
         .from(tableName)
-        .update({
-          ...changes,
-          updated_date: new Date().toISOString(),
-          updated_by: email,
-        })
+        .insert(payload)
+        .select();
+      if (error) throw new Error(`Erro ao criar ${tableName} em lote: ${error.message}`);
+      invalidateEntityQueries(tableName);
+      return data || [];
+    },
+
+    async update(id, changes) {
+      // *_by columns aren't universal — see create() comment.
+      const payload = {
+        ...changes,
+        updated_date: new Date().toISOString(),
+      };
+      const { data, error } = await supabase
+        .from(tableName)
+        .update(payload)
         .eq('id', id)
         .select()
         .single();
       if (error) throw new Error(`Erro ao atualizar ${tableName}: ${error.message}`);
+      invalidateEntityQueries(tableName);
       return data;
     },
 
@@ -183,6 +212,7 @@ export function createEntity(tableName) {
         .delete()
         .eq('id', id);
       if (error) throw new Error(`Erro ao eliminar ${tableName}: ${error.message}`);
+      invalidateEntityQueries(tableName);
     },
 
     // === New professional methods ===

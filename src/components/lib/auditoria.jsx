@@ -29,9 +29,9 @@ export const registarAuditoria = async ({
       usuario_nome: user.full_name || user.email,
       acao,
       entidade,
-      entidade_id: entidadeId,
-      dados_antes: dadosAntes,
-      dados_depois: dadosDepois,
+      // Schema on-premise: id_registro (não entidade_id) + dados_alterados jsonb (não dados_antes/depois)
+      id_registro: entidadeId,
+      dados_alterados: (dadosAntes || dadosDepois) ? { antes: dadosAntes ?? null, depois: dadosDepois ?? null } : null,
       detalhes,
       user_agent: userAgent,
       modulo
@@ -79,9 +79,8 @@ export async function registarEdicao(usuario, entidade, entidadeId, dadosAntes, 
       usuario_nome: usuario.full_name || usuario.email,
       acao: 'editar',
       entidade,
-      entidade_id: entidadeId,
-      dados_antes: dadosAntes,
-      dados_depois: dadosDepois,
+      id_registro: entidadeId,
+      dados_alterados: { antes: dadosAntes ?? null, depois: dadosDepois ?? null },
       detalhes,
       modulo
     });

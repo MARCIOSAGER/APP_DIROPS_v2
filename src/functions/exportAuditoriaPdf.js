@@ -1,7 +1,19 @@
+import { loadImageAsBase64 } from '@/lib/pdfTemplate';
+
 export async function exportAuditoriaPdf({ processo, respostas, itens, aeroporto, tipo, pacs }) {
   if (!processo || !aeroporto || !tipo) {
     return { error: 'Dados obrigatórios em falta' };
   }
+
+  let logoBase64 = null;
+  try { logoBase64 = await loadImageAsBase64('/logo-sga.png'); } catch { /* segue sem logo */ }
+
+  const escapeHtml = (s) => String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 
   const html = `
   <!DOCTYPE html>
@@ -30,22 +42,23 @@ export async function exportAuditoriaPdf({ processo, respostas, itens, aeroporto
   </head>
   <body>
       <div class="header">
+          ${logoBase64 ? `<img src="${logoBase64}" alt="SGA" style="height:64px;margin-bottom:10px;" />` : ''}
           <h1>RELATÓRIO DE AUDITORIA INTERNA</h1>
-          <p>Sistema DIROPS</p>
+          <p>Sistema DIROPS — SGA</p>
       </div>
 
       <div class="info-grid">
           <div>
               <h3>Informações da Auditoria</h3>
-              <p><strong>Aeroporto:</strong> ${aeroporto.nome || 'N/A'}</p>
-              <p><strong>Tipo:</strong> ${tipo.nome || 'N/A'}</p>
-              <p><strong>Categoria:</strong> ${tipo.categoria || 'N/A'}</p>
+              <p><strong>Aeroporto:</strong> ${escapeHtml(aeroporto.nome || 'N/A')}</p>
+              <p><strong>Tipo:</strong> ${escapeHtml(tipo.nome || 'N/A')}</p>
+              <p><strong>Categoria:</strong> ${escapeHtml(tipo.categoria || 'N/A')}</p>
           </div>
           <div>
               <h3>Detalhes da Execução</h3>
               <p><strong>Data:</strong> ${processo.data_auditoria ? new Date(processo.data_auditoria).toLocaleDateString('pt-BR') : 'N/A'}</p>
-              <p><strong>Auditor Responsável:</strong> ${processo.auditor_responsavel || 'N/A'}</p>
-              <p><strong>Status:</strong> ${processo.status || 'N/A'}</p>
+              <p><strong>Auditor Responsável:</strong> ${escapeHtml(processo.auditor_responsavel || 'N/A')}</p>
+              <p><strong>Status:</strong> ${escapeHtml(processo.status || 'N/A')}</p>
           </div>
       </div>
 
@@ -78,10 +91,10 @@ export async function exportAuditoriaPdf({ processo, respostas, itens, aeroporto
               const item = itens?.find(i => i.id === nc.item_auditoria_id);
               return `
               <div class="nc-item">
-                  <h4>${index + 1}. Item ${item?.numero || 'N/A'}: ${item?.item || 'N/A'}</h4>
-                  <p><strong>Referência:</strong> ${item?.referencia_norma || 'N/A'}</p>
-                  <p><strong>Observação:</strong> ${nc.observacao || 'N/A'}</p>
-                  ${nc.acao_corretiva_recomendada ? `<p><strong>Ação Corretiva Recomendada:</strong> ${nc.acao_corretiva_recomendada}</p>` : ''}
+                  <h4>${index + 1}. Item ${escapeHtml(item?.numero || 'N/A')}: ${escapeHtml(item?.item || 'N/A')}</h4>
+                  <p><strong>Referência:</strong> ${escapeHtml(item?.referencia_norma || 'N/A')}</p>
+                  <p><strong>Observação:</strong> ${escapeHtml(nc.observacao || 'N/A')}</p>
+                  ${nc.acao_corretiva_recomendada ? `<p><strong>Ação Corretiva Recomendada:</strong> ${escapeHtml(nc.acao_corretiva_recomendada)}</p>` : ''}
               </div>
               `;
           }).join('')}

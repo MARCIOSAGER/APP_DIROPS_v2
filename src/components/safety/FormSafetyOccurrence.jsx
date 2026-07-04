@@ -21,6 +21,7 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
     local_especifico: '',
     descricao: '',
     acoes_tomadas: '',
+    responsavel: '',
     evidencias_fotograficas: [],
     gravidade: 'media',
     status: 'aberta'
@@ -45,6 +46,7 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
         local_especifico: '',
         descricao: '',
         acoes_tomadas: '',
+        responsavel: '',
         evidencias_fotograficas: [],
         gravidade: 'media',
         status: 'aberta'
@@ -212,6 +214,15 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
               onChange={(e) => handleChange('acoes_tomadas', e.target.value)}
               placeholder={t('safety.form.acoesPlaceholder')}
               rows={3} />
+
+          </div>
+
+          <div className="space-y-2">
+            <Label>Responsável</Label>
+            <Input
+              value={formData.responsavel || ''}
+              onChange={(e) => handleChange('responsavel', e.target.value)}
+              placeholder="Nome do responsável pela ocorrência" />
 
           </div>
 

@@ -1,3 +1,0 @@
--- Add soft-delete columns to voo table
-ALTER TABLE voo ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ DEFAULT NULL;
-ALTER TABLE voo ADD COLUMN IF NOT EXISTS deleted_by TEXT DEFAULT NULL;

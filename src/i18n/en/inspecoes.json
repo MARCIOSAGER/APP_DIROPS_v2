@@ -81,6 +81,7 @@
   "inspecoesList.emailItensNaoConformes": "Non-Compliant Items",
   "inspecoesList.emailItensNA": "N/A Items",
   "inspecoesList.pdfImagemNaoCarregada": "Image\nnot loaded",
+  "inspecoesList.pdfSemResposta": "No response",
   "formInspecao.novaInspecao": "New Inspection:",
   "formInspecao.preencherChecklist": "Fill Checklist:",
   "formInspecao.inspecaoConcluida": "Inspection Completed",

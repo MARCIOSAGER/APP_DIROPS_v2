@@ -86,23 +86,16 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
     try {
       const voo = voosNaLixeira.find(v => v.id === deleteInfo.id);
       
-      // Verificar e excluir vinculações relacionadas
-      const vinculacoesRelacionadas = voosLigados.filter(vl => 
+      // Bulk-delete vinculações relacionadas + seus cálculos
+      const { supabase } = await import('@/lib/supabaseClient');
+      const vinculacoesRelacionadas = voosLigados.filter(vl =>
         vl.id_voo_arr === voo.id || vl.id_voo_dep === voo.id
       );
-
-      for (const vinculacao of vinculacoesRelacionadas) {
-        // Excluir cálculos de tarifa relacionados
-        const calculosRelacionados = await CalculoTarifa.filter({ voo_ligado_id: vinculacao.id });
-        for (const calculo of calculosRelacionados) {
-          await CalculoTarifa.delete(calculo.id);
-        }
-        
-        // Excluir vinculação
-        await VooLigado.delete(vinculacao.id);
+      const vinculacaoIds = vinculacoesRelacionadas.map(v => v.id);
+      if (vinculacaoIds.length) {
+        await supabase.from('calculo_tarifa').delete().in('voo_ligado_id', vinculacaoIds);
+        await supabase.from('voo_ligado').delete().in('id', vinculacaoIds);
       }
-
-      // Excluir permanentemente o voo
       await Voo.delete(voo.id);
 
       setSuccessInfo({
@@ -148,26 +141,20 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
         setAlertInfo(prev => ({ ...prev, isOpen: false }));
         
         try {
-          for (const voo of voosNaLixeira) {
-            // Verificar e excluir vinculações relacionadas
-            const vinculacoesRelacionadas = voosLigados.filter(vl => 
-              vl.id_voo_arr === voo.id || vl.id_voo_dep === voo.id
-            );
+          const { supabase } = await import('@/lib/supabaseClient');
+          const trashedVooIds = voosNaLixeira.map(v => v.id);
 
-            for (const vinculacao of vinculacoesRelacionadas) {
-              // Excluir cálculos de tarifa relacionados
-              const calculosRelacionados = await CalculoTarifa.filter({ voo_ligado_id: vinculacao.id });
-              for (const calculo of calculosRelacionados) {
-                await CalculoTarifa.delete(calculo.id);
-              }
-              
-              // Excluir vinculação
-              await VooLigado.delete(vinculacao.id);
-            }
+          // Collect all vinculacao ids touching any trashed voo (single client-side scan)
+          const vinculacaoIds = voosLigados
+            .filter(vl => trashedVooIds.includes(vl.id_voo_arr) || trashedVooIds.includes(vl.id_voo_dep))
+            .map(vl => vl.id);
 
-            // Excluir permanentemente o voo
-            await Voo.delete(voo.id);
+          // Bulk delete: 3 round-trips total instead of N×3 (was hundreds)
+          if (vinculacaoIds.length) {
+            await supabase.from('calculo_tarifa').delete().in('voo_ligado_id', vinculacaoIds);
+            await supabase.from('voo_ligado').delete().in('id', vinculacaoIds);
           }
+          await supabase.from('voo').delete().in('id', trashedVooIds);
 
           setSuccessInfo({
             isOpen: true,
@@ -214,11 +201,11 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
       const emailPromises = admins.map(admin => 
         sendEmailDirect({
           to: admin.email,
-          subject: `[DIROPS] ${voosNaLixeira.length} voos na lixeira`,
+          subject: `[SGA] ${voosNaLixeira.length} voos na lixeira`,
           body: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <div style="background-color: #004A99; color: white; padding: 20px; text-align: center;">
-                <h1>DIROPS - Notificação de Lixeira</h1>
+                <h1>SGA - Notificação de Lixeira</h1>
               </div>
               
               <div style="padding: 20px; background-color: #f9f9f9;">
@@ -247,13 +234,13 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
                 </div>
                 
                 <p style="font-size: 12px; color: #666; margin-top: 30px;">
-                  Esta é uma notificação automática do sistema DIROPS.<br>
+                  Esta é uma notificação automática do sistema SGA.<br>
                   Para gerir a lixeira, aceda à página de Operações e clique no botão "Lixeira".
                 </p>
               </div>
             </div>
           `,
-          from_name: 'DIROPS'
+          from_name: 'SGA'
         })
       );
 

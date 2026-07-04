@@ -15,7 +15,8 @@ const TOUR_STEP_KEYS = [
   { titleKey: 'shared.tour.manutencao_titulo', descKey: 'shared.tour.manutencao_desc', target: null, position: "center" },
   { titleKey: 'shared.tour.servicos_titulo', descKey: 'shared.tour.servicos_desc', target: null, position: "center" },
   { titleKey: 'shared.tour.notificacoes_titulo', descKey: 'shared.tour.notificacoes_desc', target: null, position: "center" },
-  { titleKey: 'shared.tour.assistente_titulo', descKey: 'shared.tour.assistente_desc', target: "[data-tour='chatbot']", position: "top-left" },
+  { titleKey: 'shared.tour.relatorios_titulo', descKey: 'shared.tour.relatorios_desc', target: null, position: "center" },
+  { titleKey: 'shared.tour.ajuda_titulo', descKey: 'shared.tour.ajuda_desc', target: null, position: "center" },
   { titleKey: 'shared.tour.concluido_titulo', descKey: 'shared.tour.concluido_desc', target: null, position: "center" },
 ];
 

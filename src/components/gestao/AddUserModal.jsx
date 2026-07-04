@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { emailTemplates } from '@/lib/emailTemplates';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { useI18n } from '@/components/lib/i18n';
+import AlertModal from '@/components/shared/AlertModal';
+import { isExternalEmail, ADMIN_CREATING_EXTERNAL_NOTICE } from '@/lib/emailDomain';
 
 const PERFIL_OPTIONS_KEYS = [
   { value: 'administrador', key: 'gestao.perfil.administrador' },
@@ -23,12 +25,22 @@ const PERFIL_OPTIONS_KEYS = [
 
 export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, onSuccess }) {
   const { t } = useI18n();
+  // Default empresa: prefer SGA. Falls back to single empresa or empty (superadmin).
+  // Prevents accidental creation of empresa-less users that later need data migration.
+  const defaultEmpresaId = useMemo(() => {
+    if (!empresas || empresas.length === 0) return '';
+    const sga = empresas.find(e => /sga/i.test(e.nome || ''));
+    if (sga) return sga.id;
+    if (empresas.length === 1) return empresas[0].id;
+    return '';
+  }, [empresas]);
+
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     telefone: '',
     perfis: ['visualizador'],
-    empresa_id: '',
+    empresa_id: defaultEmpresaId,
     aeroportos_acesso: []
   });
   const [saving, setSaving] = useState(false);
@@ -44,12 +56,12 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
         email: '',
         telefone: '',
         perfis: ['visualizador'],
-        empresa_id: '',
+        empresa_id: defaultEmpresaId,
         aeroportos_acesso: []
       });
       setError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, defaultEmpresaId]);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -119,7 +131,10 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
 
     try {
       // 1. Create auth user (confirmed) + profile via admin Edge Function
-      const tempPassword = crypto.randomUUID().slice(0, 16) + 'A1!';
+      // crypto.randomUUID requires a secure context (HTTPS/localhost); we run on
+      // http://10.1.65.45, so use getRandomValues which works on plain HTTP too.
+      const tempPassword = Array.from(crypto.getRandomValues(new Uint8Array(12)))
+        .map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16) + 'A1!';
       const cleanEmail = formData.email.trim().toLowerCase();
       const cleanName = formData.full_name.trim();
       const { data: fnData, error: fnError } = await supabase.functions.invoke('admin-user', {
@@ -372,13 +387,13 @@ function generateInviteEmail(nome, empresa, perfis) {
 <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:20px;">
     <div style="background:linear-gradient(135deg,#1e3a5f 0%,#1a3050 100%);border-radius:12px 12px 0 0;padding:30px 40px;text-align:center;">
-      <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:1px;">DIROPS</h1>
+      <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:1px;">SGA</h1>
       <p style="margin:4px 0 0;color:#93c5fd;font-size:12px;">Sistema de Gestao Aeroportuaria</p>
     </div>
     <div style="background:#ffffff;padding:32px 40px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">
       <h2 style="margin:0 0 16px;color:#0f172a;font-size:20px;">Bem-vindo, ${nome}!</h2>
       <p style="color:#475569;font-size:14px;line-height:1.6;">
-        A sua conta no DIROPS foi criada por um administrador.
+        A sua conta no SGA foi criada por um administrador.
       </p>
       ${empresa ? `<p style="color:#475569;font-size:14px;"><strong>Empresa:</strong> ${empresa}</p>` : ''}
       <p style="color:#475569;font-size:14px;"><strong>Perfis:</strong> ${perfis}</p>
@@ -387,14 +402,14 @@ function generateInviteEmail(nome, empresa, perfis) {
         Após definir a senha, aceda ao sistema em:
       </p>
       <div style="text-align:center;margin:24px 0;">
-        <a href="${typeof window !== 'undefined' ? window.location.origin : 'https://app.marciosager.com'}"
+        <a href="${typeof window !== 'undefined' ? window.location.origin : (import.meta.env.VITE_APP_URL || 'http://10.1.65.45')}"
            style="background:#1e3a5f;color:white;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;display:inline-block;">
-          Aceder ao DIROPS
+          Aceder ao Sistema DIROPS
         </a>
       </div>
     </div>
     <div style="background:#f8fafc;border-radius:0 0 12px 12px;padding:20px 40px;border:1px solid #e2e8f0;border-top:none;text-align:center;">
-      <p style="margin:0;color:#94a3b8;font-size:11px;">Este email foi enviado automaticamente pelo DIROPS.</p>
+      <p style="margin:0;color:#94a3b8;font-size:11px;">Este email foi enviado automaticamente pelo SGA.</p>
     </div>
   </div>
 </body>

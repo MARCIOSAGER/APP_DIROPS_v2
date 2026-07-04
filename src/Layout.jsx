@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 import { useI18n } from '@/components/lib/i18n';
 import { Button } from "@/components/ui/button";
 import { User as UserEntity } from '@/entities/User';
+import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import {
   DropdownMenu,
@@ -25,6 +26,7 @@ import { RegraPermissao } from '@/entities/RegraPermissao';
 import AccessDenied from '@/components/shared/AccessDenied';
 import { logAuthEvent } from '@/lib/auditLog';
 import NetworkIndicator from '@/components/shared/NetworkIndicator';
+import ConnectionBanner from '@/components/shared/ConnectionBanner';
 const SystemAlerts = React.lazy(() => import('@/components/shared/SystemAlerts'));
             import GlobalLoadingModal from '@/components/shared/GlobalLoadingModal';
 const ChatbotIA = React.lazy(() => import('@/components/shared/ChatbotIA'));
@@ -33,9 +35,9 @@ const TourGuiado = React.lazy(() => import('@/components/shared/TourGuiado'));
 
 // Mapeamento padrão de permissões (fallback se não houver regras na BD)
 const PERFIL_PERMISSIONS_DEFAULT = {
-  administrador: ['Home', 'Operacoes', 'ImportacaoAiaan', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'KPIsOperacionais', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte', 'Monitoramento', 'FlightAware'],
+  administrador: ['Home', 'Operacoes', 'ImportacaoAiaan', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'KPIsOperacionais', 'ProntoPagamento', 'GerirPermissoes', 'GestaoNotificacoes', 'Relatorios', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte', 'Monitoramento'],
   gestor_empresa: ['Credenciamento', 'GuiaUtilizador', 'Suporte'],
-  operacoes: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte'],
+  operacoes: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'ProntoPagamento', 'GuiaUtilizador', 'Suporte'],
   infraestrutura: ['Home', 'Reclamacoes', 'Inspecoes', 'Manutencao', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
   credenciamento: ['Home', 'Credenciamento', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
   safety: ['Home', 'Safety', 'Inspecoes', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte']
@@ -62,8 +64,9 @@ function getNavigationGroups(t) {
       color: "text-green-600",
       items: [
         { title: t('nav.operacoes'), url: createPageUrl("Operacoes"), icon: Plane, color: "text-green-600", pageKey: "Operacoes" },
-        { title: 'Importação AIAAN', url: createPageUrl("ImportacaoAiaan"), icon: FileSpreadsheet, color: "text-amber-600", pageKey: "ImportacaoAiaan" },
-        { title: 'FlightAware', url: createPageUrl("FlightAware"), icon: Plane, color: "text-sky-500", pageKey: "FlightAware" },
+        { title: 'Importação Base44', url: createPageUrl("ImportacaoAiaan"), icon: FileSpreadsheet, color: "text-amber-600", pageKey: "ImportacaoAiaan" },
+        // FlightAware hidden — SGA does not use this feature
+        // { title: 'FlightAware', url: createPageUrl("FlightAware"), icon: Plane, color: "text-sky-500", pageKey: "FlightAware" },
         { title: t('nav.servicos_aeroportuarios'), url: createPageUrl("ServicosAeroportuarios"), icon: Layers, color: "text-cyan-600", pageKey: "ServicosAeroportuarios" },
         { title: t('nav.grf'), url: createPageUrl("GRF"), icon: Activity, color: "text-sky-600", pageKey: "GRF" },
       ],
@@ -97,6 +100,7 @@ function getNavigationGroups(t) {
       items: [
         { title: t('nav.kpis'), url: createPageUrl("KPIsOperacionais"), icon: BarChart3, color: "text-teal-600", pageKey: "KPIsOperacionais" },
         { title: t('nav.powerbi'), url: createPageUrl("PowerBi"), icon: BarChart3, color: "text-purple-600", pageKey: "PowerBi" },
+        { title: 'Pronto Pagamento', url: createPageUrl("ProntoPagamento"), icon: FileSpreadsheet, color: "text-teal-600", pageKey: "ProntoPagamento" },
       ],
     },
     {
@@ -106,7 +110,8 @@ function getNavigationGroups(t) {
       items: [
         { title: t('nav.documentos'), url: createPageUrl("Documentos"), icon: FileText, color: "text-cyan-600", pageKey: "Documentos" },
         { title: t('nav.historico_acesso'), url: createPageUrl("HistoricoAcessoDocumentos"), icon: FileSearch, color: "text-slate-600", pageKey: "HistoricoAcessoDocumentos" },
-        { title: t('nav.credenciamento'), url: "https://credenciamentosga.marciosager.com/", icon: UserCheck, color: "text-teal-600", pageKey: "Credenciamento", external: true },
+        // Credenciamento hidden — SGA does not use this feature
+        // { title: t('nav.credenciamento'), url: import.meta.env.VITE_CREDENCIAMENTO_URL || "https://credenciamentosga.marciosager.com/", icon: UserCheck, color: "text-teal-600", pageKey: "Credenciamento", external: true },
       ],
     },
     {
@@ -118,8 +123,11 @@ function getNavigationGroups(t) {
         { title: t('nav.gestao_acessos'), url: createPageUrl("GestaoAcessos"), icon: Users, color: "text-yellow-600", pageKey: "GestaoAcessos" },
         { title: t('nav.gerir_permissoes'), url: createPageUrl("GerirPermissoes"), icon: Shield, color: "text-red-600", pageKey: "GerirPermissoes" },
         { title: t('nav.gestao_notificacoes'), url: createPageUrl("GestaoNotificacoes"), icon: Bell, color: "text-indigo-600", pageKey: "GestaoNotificacoes" },
+        { title: 'Relatórios Automáticos', url: createPageUrl("Relatorios"), icon: FileSpreadsheet, color: "text-teal-600", pageKey: "Relatorios" },
         { title: t('nav.config_gerais'), url: createPageUrl("ConfiguracoesGerais"), icon: Settings, color: "text-slate-600", pageKey: "ConfiguracoesGerais" },
-        { title: t('nav.api_keys'), url: createPageUrl("GestaoAPIKeys"), icon: Key, color: "text-amber-600", pageKey: "GestaoAPIKeys" },
+        // API Keys hidden — servem só para integrações externas (Power BI), que está a ser aposentado
+        // e substituído pelos relatórios automáticos por email. A página/rota continua a existir.
+        // { title: t('nav.api_keys'), url: createPageUrl("GestaoAPIKeys"), icon: Key, color: "text-amber-600", pageKey: "GestaoAPIKeys" },
         { title: 'Monitoramento', url: createPageUrl("Monitoramento"), icon: Activity, color: "text-blue-600", pageKey: "Monitoramento" },
         { title: t('nav.log_auditoria'), url: createPageUrl("LogAuditoria"), icon: Shield, color: "text-slate-500", pageKey: "LogAuditoria" },
         { title: t('nav.lixeira'), url: createPageUrl("Lixeira"), icon: Trash2, color: "text-slate-500", pageKey: "Lixeira" },
@@ -130,7 +138,7 @@ function getNavigationGroups(t) {
   ];
 }
 
-const DEFAULT_LOGO = '/logo-dirops.png';
+const DEFAULT_LOGO = '/logo-sga.png';
 
 // Simple in-memory cache for Layout queries (avoids re-fetching on every navigation)
 const _layoutCache = { empresas: null, empresasTime: 0, regras: null, regrasTime: 0, permissions: null };
@@ -213,12 +221,6 @@ const getFirstAccessiblePage = (user, permissions, t) => {
 
   const navItems = getNavigationItems(t);
 
-  if (hasUserProfile(user, 'gestor_empresa')) {
-    // Ensure that if 'Credenciamento' is the target, we get its actual URL, which might be external
-    const credenciamentoItem = navItems.find(item => item.pageKey === 'Credenciamento');
-    return credenciamentoItem ? credenciamentoItem.url : createPageUrl('Credenciamento');
-  }
-
   const accessiblePages = navItems.filter(item => hasAccessToPage(user, item.pageKey, permissions));
 
   if (accessiblePages.length > 0) {
@@ -229,7 +231,7 @@ const getFirstAccessiblePage = (user, permissions, t) => {
 };
 
 // Root pages – no back button shown on these
-const rootPages = ['Home', 'Operacoes', 'ImportacaoAiaan', 'Safety', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'Monitoramento', 'FlightAware'];
+const rootPages = ['Home', 'Operacoes', 'ImportacaoAiaan', 'Safety', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'Inspecoes', 'KPIsOperacionais', 'PowerBi', 'ProntoPagamento', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GerirPermissoes', 'GestaoNotificacoes', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'Monitoramento'];
 
 function LayoutContent({ children, currentPageName }) {
   const location = useLocation();
@@ -359,15 +361,23 @@ function LayoutContent({ children, currentPageName }) {
 
 
   const handleLogout = async () => {
+    // Fire-and-forget audit + best-effort server signOut with 3s cap.
+    // Always force redirect — supabase.auth.signOut occasionally hangs on
+    // network blip and we don't want the user stuck on the page.
+    try { logAuthEvent('logout', user?.email || authUser?.email, 'Logout pelo utilizador'); } catch {}
+    setUser(null);
     try {
-      logAuthEvent('logout', user?.email || authUser?.email, 'Logout pelo utilizador');
-      await UserEntity.logout();
-      setUser(null);
-      window.location.href = '/login';
-    } catch (error) {
-      console.error('Erro durante o logout:', error);
-      window.location.href = '/login';
-    }
+      const timeout = new Promise(resolve => setTimeout(resolve, 3000));
+      await Promise.race([supabase.auth.signOut().catch(() => {}), timeout]);
+    } catch {}
+    // Best-effort: nuke local supabase session keys so the next page load
+    // doesn't try to use a half-revoked session.
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('sb-') || k.startsWith('supabase.'))
+        .forEach(k => localStorage.removeItem(k));
+    } catch {}
+    window.location.replace('/login');
   };
 
   const navigationItems = React.useMemo(() => getNavigationItems(t), [t, language]);
@@ -465,6 +475,7 @@ function LayoutContent({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100">
+      <ConnectionBanner />
       <a href="#main-content" className="skip-link">{t('layout.skipToContent') || 'Ir para conteúdo'}</a>
       <style>{`
         :root {
@@ -707,8 +718,10 @@ function LayoutContent({ children, currentPageName }) {
             <div className="flex items-center gap-4">
               <NetworkIndicator />
 
-              {/* Empresa selector (superadmin only) */}
-              {isSuperAdminViewing && empresasList.length > 0 && (
+              {/* Empresa selector (superadmin only, multi-operator installs only) */}
+              {/* 'Visualizar como' escondido — SGA é o operador único do sistema (decisão 2026-07-02).
+                  Para reativar num cenário multi-operador, troque `false &&` pela condição original. */}
+              {false && isSuperAdminViewing && empresasList.filter(e => (e.tipo || 'operadora') === 'operadora').length > 1 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -737,7 +750,7 @@ function LayoutContent({ children, currentPageName }) {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>{t('label.select_empresa')}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {empresasList.map((empresa) => (
+                    {empresasList.filter(e => (e.tipo || 'operadora') === 'operadora').map((empresa) => (
                       <DropdownMenuItem
                         key={empresa.id}
                         onClick={() => setViewingAsEmpresa({ id: empresa.id, nome: empresa.nome, logo_url: empresa.logo_url })}
@@ -848,7 +861,8 @@ function LayoutContent({ children, currentPageName }) {
           <main id="main-content" className="p-4 md:p-6 lg:p-8">{children}</main>
           <BottomTabs />
           <React.Suspense fallback={null}>
-            <ChatbotIA />
+            {/* ChatbotIA oculto — IA nao configurada no on-premise (sem OPENAI_API_KEY). */}
+            {/* <ChatbotIA /> */}
             <SessionTimeoutModal />
             {showTour && <TourGuiado onClose={() => setShowTour(false)} />}
           </React.Suspense>

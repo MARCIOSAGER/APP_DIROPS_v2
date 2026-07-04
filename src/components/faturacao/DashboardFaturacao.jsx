@@ -129,11 +129,8 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
       if (filtro.data_inicio) rpcParams.p_data_inicio = filtro.data_inicio;
       if (filtro.data_fim) rpcParams.p_data_fim = filtro.data_fim;
 
-      // If no aeroporto selected, filter by allowed aeroportos
-      if (!filtro.aeroporto_id && aeroportos.length > 0 && aeroportos.length < 30) {
-        // Use first aeroporto as default filter for performance
-        rpcParams.p_aeroporto_id = aeroportos[0]?.id;
-      }
+      // If no aeroporto selected ("Todos os Aeroportos"), do NOT force one —
+      // omit p_aeroporto_id so the RPC/RLS returns all permitted aeroportos.
 
       // Paginated RPC call (may return > 1000 rows)
       const PAGE = 1000;
@@ -400,7 +397,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
   };
 
   // XLSX export
-  const handleExportXlsx = () => {
+  const handleExportXlsx = async () => {
     if (rows.length === 0) return;
     const data = rows.map((r, idx) => {
       const row = {
@@ -430,8 +427,17 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
 
     const comp = companhias.find(c => c.id === filtro.companhia_id);
     const filename = `extrato_faturacao_${comp?.codigo_icao || 'ALL'}_${new Date().toISOString().split('T')[0]}`;
-    downloadAsExcel(data, filename);
-    toast({ title: t('dashFat.xlsxGerado'), description: t('dashFat.xlsxGeradoDesc') });
+    try {
+      const ok = await downloadAsExcel(data, filename);
+      if (ok) {
+        toast({ title: t('dashFat.xlsxGerado'), description: t('dashFat.xlsxGeradoDesc') });
+      } else {
+        toast({ title: t('shared.erro'), description: t('dashFat.nenhumVooDesc'), variant: 'destructive' });
+      }
+    } catch (error) {
+      console.error('Erro XLSX:', error);
+      toast({ title: t('shared.erro'), description: `Erro ao gerar XLSX: ${error.message}`, variant: 'destructive' });
+    }
   };
 
   // Email with PDF

@@ -119,11 +119,11 @@ export async function fetchEmpresaLogo(empresaId) {
       }
     }
     // Fallback: logo padrão DIROPS
-    return await loadImageAsBase64('/logo-dirops.png');
+    return await loadImageAsBase64('/logo-sga.png');
   } catch (e) {
     console.warn('Não foi possível carregar logo:', e);
     try {
-      return await loadImageAsBase64('/logo-dirops.png');
+      return await loadImageAsBase64('/logo-sga.png');
     } catch {
       return null;
     }
@@ -167,7 +167,13 @@ function setDraw(doc, rgb) {
  * @param {string[]} [opts.meta] - Extra metadata lines (e.g. ["Aeroporto: FNLU", "Total: 42"])
  * @returns {number} Y position where content should start
  */
-export function addHeader(doc, { title, subtitle, logoBase64, date, meta = [] } = {}) {
+export function addHeader(doc, opts = {}) {
+  const { title, subtitle, logoBase64, date, meta = [] } = opts;
+  // Guarda o cabeçalho no doc para que as quebras de página o redesenhem
+  // automaticamente. Assim, um consumidor que chama addHeader() uma vez passa
+  // a ter o cabeçalho (logo + título + barra) repetido em TODAS as páginas,
+  // sem precisar propagar headerOpts em cada checkPageBreak/addTable.
+  doc.__diropsHeaderOpts = opts;
   const { w } = getPageDims(doc);
   const m = PDF.margin;
   let y = 10;
@@ -322,8 +328,9 @@ export function checkPageBreak(doc, currentY, needed = 20, headerOpts = null) {
 
   if (currentY + needed > safeBottom) {
     doc.addPage();
-    if (headerOpts) {
-      return addHeader(doc, headerOpts);
+    const opts = headerOpts || doc.__diropsHeaderOpts;
+    if (opts) {
+      return addHeader(doc, opts);
     }
     return PDF.margin.top;
   }
@@ -353,17 +360,20 @@ export function addTable(doc, startY, { columns, rows, headerOpts = null, rowHei
   const cellPadding = 2;
   const bodyFontSize = fontSize || PDF.font.body;
 
+  // Work on a copy so we never mutate the caller's column objects/array
+  const cols = columns.map(c => ({ ...c }));
+
   // Normalize column widths to fit tableWidth
-  const totalDefined = columns.reduce((sum, col) => sum + col.width, 0);
+  const totalDefined = cols.reduce((sum, col) => sum + col.width, 0);
   if (totalDefined > tableWidth) {
     const scale = tableWidth / totalDefined;
-    columns.forEach(col => { col.width = col.width * scale; });
+    cols.forEach(col => { col.width = col.width * scale; });
   }
 
   // Calculate column positions
   const colPositions = [];
   let xPos = m.left;
-  columns.forEach(col => {
+  cols.forEach(col => {
     colPositions.push(xPos);
     xPos += col.width;
   });
@@ -381,7 +391,7 @@ export function addTable(doc, startY, { columns, rows, headerOpts = null, rowHei
     doc.setFontSize(bodyFontSize);
     setColor(doc, PDF.colors.tableHeaderFg);
 
-    columns.forEach((col, i) => {
+    cols.forEach((col, i) => {
       const align = col.align || 'left';
       let tx = colPositions[i] + cellPadding;
       if (align === 'center') tx = colPositions[i] + col.width / 2;
@@ -402,8 +412,9 @@ export function addTable(doc, startY, { columns, rows, headerOpts = null, rowHei
     // Page break check
     if (y + rowHeight > safeBottom) {
       doc.addPage();
-      if (headerOpts) {
-        y = addHeader(doc, headerOpts);
+      const opts = headerOpts || doc.__diropsHeaderOpts;
+      if (opts) {
+        y = addHeader(doc, opts);
       } else {
         y = PDF.margin.top;
       }
@@ -429,16 +440,27 @@ export function addTable(doc, startY, { columns, rows, headerOpts = null, rowHei
     setColor(doc, PDF.colors.dark);
     doc.setFont('helvetica', isTotalsRow ? 'bold' : 'normal');
 
-    columns.forEach((col, colIndex) => {
+    cols.forEach((col, colIndex) => {
       const cellText = String(row[colIndex] ?? '');
       const align = col.align || 'left';
       let tx = colPositions[colIndex] + cellPadding;
       if (align === 'center') tx = colPositions[colIndex] + col.width / 2;
       if (align === 'right') tx = colPositions[colIndex] + col.width - cellPadding;
 
-      // Truncate text if it overflows column width
+      // Truncate text if it overflows column width; signal cut with ellipsis
       const maxWidth = col.width - cellPadding * 2;
-      const truncated = doc.splitTextToSize(cellText, maxWidth)[0] || '';
+      let truncated = cellText;
+      if (doc.getTextWidth(cellText) > maxWidth) {
+        const lines = doc.splitTextToSize(cellText, maxWidth);
+        truncated = lines[0] || '';
+        if (lines.length > 1) {
+          // Append "..." while trimming so the ellipsis still fits maxWidth
+          while (truncated.length > 0 && doc.getTextWidth(truncated + '...') > maxWidth) {
+            truncated = truncated.slice(0, -1);
+          }
+          truncated += '...';
+        }
+      }
 
       doc.text(truncated, tx, y + rowHeight - 1.5, { align });
     });

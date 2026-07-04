@@ -33,14 +33,14 @@ export default function PortalServicos() {
         <div className="text-center mb-10">
           <img
             src={logoUrl}
-            alt="DIROPS Logo"
+            alt="SGA Logo"
             className="h-16 mx-auto mb-4"
           />
           <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-100">
             Portal de Serviços Públicos
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-2">
-            Aceda aos serviços públicos disponibilizados pela DIROPS.
+            Aceda aos serviços públicos disponibilizados pela SGA.
           </p>
         </div>
 

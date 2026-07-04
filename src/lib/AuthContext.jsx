@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { queryClientInstance } from '@/lib/query-client';
 
@@ -9,8 +9,13 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState(null);
+  // Guarda o id do utilizador atual sem depender do closure do onAuthStateChange
+  // (que captura `user` do primeiro render, sempre null → guarda de TOKEN_REFRESHED
+  // falhava e recarregava o perfil a cada refresh de token).
+  const userIdRef = useRef(null);
 
   const loadUserProfile = useCallback(async (authUser) => {
+    userIdRef.current = authUser.id;
     try {
       // Auth debug logging removed for security (M-05)
       let { data: profile, error } = await supabase
@@ -119,15 +124,17 @@ export const AuthProvider = ({ children }) => {
           setIsLoadingAuth(false);
         } else if (event === 'SIGNED_OUT') {
           queryClientInstance.clear();
+          userIdRef.current = null;
           setUser(null);
           setIsAuthenticated(false);
           setIsLoadingAuth(false);
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
           // Guard: only reload profile if the user identity actually changed.
           // TOKEN_REFRESHED fires every ~55 minutes (Supabase token lifetime).
-          // If the user.id is the same, the profile is unchanged — skip the DB call
-          // to prevent a ghost re-render mid-session.
-          if (session.user.id !== user?.id) {
+          // Comparamos com userIdRef (não com `user`, que aqui é o valor do
+          // primeiro render = null). Sem isto, a guarda falhava e recarregava
+          // o perfil a cada refresh → re-render fantasma de toda a árvore.
+          if (session.user.id !== userIdRef.current) {
             await loadUserProfile(session.user);
           }
         }
@@ -136,23 +143,26 @@ export const AuthProvider = ({ children }) => {
 
     // Re-check session when tab becomes visible again (after hibernate/suspend)
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && !cancelled) {
-        // Tab became visible, refreshing session
-        try {
-          const { data: { session }, error } = await supabase.auth.getSession();
-          if (cancelled) return;
-          if (error || !session) {
-            console.warn('[AUTH] Session lost after hibernate, redirecting to login');
-            setUser(null);
-            setIsAuthenticated(false);
-            window.location.href = '/ValidacaoAcesso';
-            return;
-          }
-          // Session valid — refresh token proactively
-          await supabase.auth.refreshSession();
-        } catch (err) {
-          console.warn('[AUTH] Visibility check error:', err);
+      if (document.visibilityState !== 'visible' || cancelled) return;
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (cancelled) return;
+        // Só expulsar o utilizador quando a sessão está REALMENTE ausente e
+        // estamos online — um blip de rede (error) ou estar offline não deve
+        // atirar para /ValidacaoAcesso ("travou e me jogou fora").
+        if (!session && !error && navigator.onLine) {
+          console.warn('[AUTH] Session lost after hibernate, redirecting to login');
+          userIdRef.current = null;
+          setUser(null);
+          setIsAuthenticated(false);
+          window.location.href = '/ValidacaoAcesso';
         }
+        // NÃO forçar refreshSession() aqui: com autoRefreshToken ligado, o
+        // supabase-js já renova o token sozinho e serializa via processLock.
+        // Um refresh manual incondicional ficava em fila atrás do lock e
+        // pendurava sem timeout ao voltar à aba — o "spinner até F5".
+      } catch (err) {
+        console.warn('[AUTH] Visibility check error:', err);
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -165,19 +175,31 @@ export const AuthProvider = ({ children }) => {
     };
   }, [loadUserProfile]);
 
-  const logout = async (shouldRedirect = true) => {
+  const logout = useCallback(async (shouldRedirect = true) => {
     queryClientInstance.clear();
     setUser(null);
     setIsAuthenticated(false);
-    await supabase.auth.signOut();
+    // Best-effort server signOut com teto de 3s — NUNCA bloquear o redirect.
+    // O /logout do GoTrue pode dar 500/pendurar (ex.: "operation canceled");
+    // o utilizador não pode ficar preso na página.
+    try {
+      const timeout = new Promise(resolve => setTimeout(resolve, 3000));
+      await Promise.race([supabase.auth.signOut().catch(() => {}), timeout]);
+    } catch {}
+    // Limpar as chaves de sessão do supabase pra não reusar sessão meio-revogada.
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('sb-') || k.startsWith('supabase.'))
+        .forEach(k => localStorage.removeItem(k));
+    } catch {}
     if (shouldRedirect) {
-      window.location.href = '/login';
+      window.location.replace('/login');
     }
-  };
+  }, []);
 
-  const navigateToLogin = () => {
+  const navigateToLogin = useCallback(() => {
     window.location.href = '/login';
-  };
+  }, []);
 
   const checkAppState = useCallback(async () => {
     setIsLoadingAuth(true);
@@ -195,16 +217,20 @@ export const AuthProvider = ({ children }) => {
     }
   }, [loadUserProfile]);
 
+  // Value memoizado: só muda quando o estado real de auth muda (não a cada
+  // render do provider), evitando re-render de toda a árvore que consome useAuth.
+  const value = useMemo(() => ({
+    user,
+    isAuthenticated,
+    isLoadingAuth,
+    authError,
+    logout,
+    navigateToLogin,
+    checkAppState,
+  }), [user, isAuthenticated, isLoadingAuth, authError, logout, navigateToLogin, checkAppState]);
+
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      isLoadingAuth,
-      authError,
-      logout,
-      navigateToLogin,
-      checkAppState
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

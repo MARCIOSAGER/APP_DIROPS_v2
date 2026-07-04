@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import DebouncedSearchInput from '@/components/shared/DebouncedSearchInput';
 import { Label } from '@/components/ui/label';
 import Select from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -102,7 +103,7 @@ function VoosSemLinkTab({
                 <Input
                   type="date"
                   value={filtrosSemLink.dataInicio}
-                  onChange={(e) => onFilterChange(prev => ({ ...prev, dataInicio: e.target.value }))}
+                  onChange={(e) => onFilterChange('dataInicio', e.target.value)}
                   className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
@@ -111,7 +112,7 @@ function VoosSemLinkTab({
                 <Input
                   type="date"
                   value={filtrosSemLink.dataFim}
-                  onChange={(e) => onFilterChange(prev => ({ ...prev, dataFim: e.target.value }))}
+                  onChange={(e) => onFilterChange('dataFim', e.target.value)}
                   className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>
@@ -119,7 +120,7 @@ function VoosSemLinkTab({
                 <Label className="text-xs">Tipo</Label>
                 <Select
                   value={filtrosSemLink.tipoMovimento}
-                  onValueChange={(v) => onFilterChange(prev => ({ ...prev, tipoMovimento: v }))}
+                  onValueChange={(v) => onFilterChange('tipoMovimento', v)}
                   options={[
                     { value: 'todos', label: 'Todos' },
                     { value: 'ARR', label: 'ARR' },
@@ -131,7 +132,7 @@ function VoosSemLinkTab({
                 <Label className="text-xs">Companhia</Label>
                 <Select
                   value={filtrosSemLink.companhia}
-                  onValueChange={(v) => onFilterChange(prev => ({ ...prev, companhia: v }))}
+                  onValueChange={(v) => onFilterChange('companhia', v)}
                   options={[
                     { value: 'todos', label: 'Todas' },
                     ...[...new Set(voosSemLink.map(v => v.companhia_aerea).filter(Boolean))].sort().map(c => ({ value: c, label: c }))
@@ -142,7 +143,7 @@ function VoosSemLinkTab({
                 <Label className="text-xs">Registo</Label>
                 <Select
                   value={filtrosSemLink.registo || 'todos'}
-                  onValueChange={(v) => onFilterChange(prev => ({ ...prev, registo: v }))}
+                  onValueChange={(v) => onFilterChange('registo', v)}
                   options={[
                     { value: 'todos', label: 'Todos' },
                     ...[...new Set(voosSemLink.map(v => v.registo_aeronave).filter(Boolean))].sort().map(r => ({ value: r, label: r }))
@@ -151,10 +152,10 @@ function VoosSemLinkTab({
               </div>
               <div>
                 <Label className="text-xs">Pesquisar</Label>
-                <Input
+                <DebouncedSearchInput
                   placeholder="Voo ou registo..."
                   value={filtrosSemLink.busca}
-                  onChange={(e) => onFilterChange(prev => ({ ...prev, busca: e.target.value }))}
+                  onCommit={(v) => onFilterChange('busca', v)}
                   className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>

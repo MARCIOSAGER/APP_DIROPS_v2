@@ -345,6 +345,7 @@ export default function ServicosAeroportuarios() {
         tiposServico={getTiposParaCategoria(formCobrancaCategoria)}
         clientes={clientes}
         cobrancaInicial={formCobrancaData}
+        empresaId={effectiveEmpresaId || currentUser?.empresa_id || null}
         onSaved={handleCobrancaSaved}
       />
 

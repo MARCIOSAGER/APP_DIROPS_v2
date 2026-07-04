@@ -8,7 +8,7 @@ import {
   Mail, Plus, X, Save, Loader2, CheckCircle, Users, Bell,
   FileText, UserCheck, AlertTriangle
 } from 'lucide-react';
-import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
+import { ConfigNotificacaoManutencao } from '@/entities/ConfigNotificacaoManutencao';
 import { useI18n } from '@/components/lib/i18n';
 
 const CONFIG_KEY_PREFIX = 'manutencao_notificacoes';
@@ -64,7 +64,7 @@ export default function ConfigNotificacoesManutencao({ currentUser, availableUse
   const loadConfig = async () => {
     setIsLoading(true);
     try {
-      const allConfigs = await ConfiguracaoSistema.list();
+      const allConfigs = await ConfigNotificacaoManutencao.list();
       const empId = currentUser?.empresa_id;
       const configKey = `${CONFIG_KEY_PREFIX}_${empId || 'global'}`;
       const existing = allConfigs.find(c => c.chave === configKey);
@@ -126,9 +126,9 @@ export default function ConfigNotificacoesManutencao({ currentUser, availableUse
       const configKey = `${CONFIG_KEY_PREFIX}_${empId || 'global'}`;
 
       if (configId) {
-        await ConfiguracaoSistema.update(configId, { valor: config });
+        await ConfigNotificacaoManutencao.update(configId, { valor: config });
       } else {
-        const created = await ConfiguracaoSistema.create({
+        const created = await ConfigNotificacaoManutencao.create({
           chave: configKey,
           valor: config,
           empresa_id: empId || null

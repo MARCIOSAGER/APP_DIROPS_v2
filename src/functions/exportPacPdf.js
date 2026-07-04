@@ -1,3 +1,15 @@
+import { loadImageAsBase64 } from '@/lib/pdfTemplate';
+
+const escapeHtml = (s) => {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   try {
@@ -12,12 +24,15 @@ const formatDate = (dateString) => {
 };
 
 export async function exportPacPdf({ pac, itens, aeroporto }) {
+  let logoBase64 = null;
+  try { logoBase64 = await loadImageAsBase64('/logo-sga.png'); } catch { /* segue sem logo */ }
+
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="pt">
     <head>
       <meta charset="UTF-8">
-      <title>Plano de Ação Corretiva - ${pac.numero_pac || 'Em Elaboração'}</title>
+      <title>Plano de Ação Corretiva - ${escapeHtml(pac.numero_pac || 'Em Elaboração')}</title>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; color: #333; }
         .container { padding: 30px; }
@@ -40,20 +55,21 @@ export async function exportPacPdf({ pac, itens, aeroporto }) {
     <body>
       <div class="container">
         <div class="header">
+          ${logoBase64 ? `<img src="${logoBase64}" alt="SGA" style="height:64px;margin-bottom:10px;" />` : ''}
           <h1>Plano de Ação Corretiva (PAC)</h1>
-          <p>Relatório gerado pelo sistema DIROPS</p>
+          <p>Relatório gerado pelo sistema DIROPS — SGA</p>
         </div>
 
         <div class="card">
           <div class="card-header">Informações Gerais do PAC</div>
           <div class="card-content">
             <div class="info-grid">
-              <div class="info-item"><p><strong>Número PAC:</strong> ${pac.numero_pac || 'A ser gerado'}</p></div>
-              <div class="info-item"><p><strong>Aeroporto:</strong> ${aeroporto?.nome || 'N/A'}</p></div>
-              <div class="info-item"><p><strong>Responsável:</strong> ${pac.responsavel_elaboracao || 'N/A'}</p></div>
+              <div class="info-item"><p><strong>Número PAC:</strong> ${escapeHtml(pac.numero_pac || 'A ser gerado')}</p></div>
+              <div class="info-item"><p><strong>Aeroporto:</strong> ${escapeHtml(aeroporto?.nome || 'N/A')}</p></div>
+              <div class="info-item"><p><strong>Responsável:</strong> ${escapeHtml(pac.responsavel_elaboracao || 'N/A')}</p></div>
               <div class="info-item"><p><strong>Prazo Conclusão:</strong> ${formatDate(pac.prazo_conclusao)}</p></div>
               <div class="info-item"><p><strong>Tipo:</strong> ${pac.tipo === 'formal_anac' ? 'Formal ANAC' : 'Interno'}</p></div>
-              <div class="info-item"><p><strong>Status:</strong> ${pac.status || 'Elaboração'}</p></div>
+              <div class="info-item"><p><strong>Status:</strong> ${escapeHtml(pac.status || 'Elaboração')}</p></div>
             </div>
           </div>
         </div>
@@ -74,10 +90,10 @@ export async function exportPacPdf({ pac, itens, aeroporto }) {
               <tbody>
                 ${(itens || []).map(item => `
                   <tr>
-                    <td><strong>${item.original_nc?.item?.numero || 'N/A'}:</strong> ${item.original_nc?.item?.item || 'N/A'}</td>
-                    <td>${item.descricao_nao_conformidade || ''}</td>
-                    <td>${item.acao_corretiva_proposta || ''}</td>
-                    <td>${item.responsavel || ''}</td>
+                    <td><strong>${escapeHtml(item.original_nc?.item?.numero || 'N/A')}:</strong> ${escapeHtml(item.original_nc?.item?.item || 'N/A')}</td>
+                    <td>${escapeHtml(item.descricao_nao_conformidade || '')}</td>
+                    <td>${escapeHtml(item.acao_corretiva_proposta || '')}</td>
+                    <td>${escapeHtml(item.responsavel || '')}</td>
                     <td>${formatDate(item.prazo_implementacao)}</td>
                   </tr>
                 `).join('')}

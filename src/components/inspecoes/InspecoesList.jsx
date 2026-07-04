@@ -162,7 +162,7 @@ function InspecoesList({ inspecoes, tiposInspecao, aeroportos, isLoading, onRelo
       const reportBody = `
         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="${emailLogoUrl}" alt="DIROPS Logo" style="height: 60px;">
+            <img src="${emailLogoUrl}" alt="SGA Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">${t('inspecoesList.emailRelatorio')}</h1>
           </div>
           
@@ -224,7 +224,7 @@ function InspecoesList({ inspecoes, tiposInspecao, aeroportos, isLoading, onRelo
           ` : ''}
           
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b;">
-            <p><strong>Sistema DIROPS</strong><br>
+            <p><strong>Sistema SGA</strong><br>
             Direcção de Operações - Serviços de Gestão Aeroportária</p>
           </div>
         </div>
@@ -234,7 +234,7 @@ function InspecoesList({ inspecoes, tiposInspecao, aeroportos, isLoading, onRelo
         to: recipient,
         subject: subject || `${t('inspecoesList.emailRelatorio')} - ${tipoNome} - ${aeroportoNome}`,
         body: reportBody,
-        from_name: 'DIROPS'
+        from_name: 'SGA'
       });
 
       return true;
@@ -328,81 +328,152 @@ function InspecoesList({ inspecoes, tiposInspecao, aeroportos, isLoading, onRelo
         yPos += 25;
       }
 
-      // Carregar evidências fotográficas
+      // Checklist Detalhado — perguntas + resultado + observações + plano de ação + fotos
       try {
-        const respostaInspecaoModule = await import('@/entities/RespostaInspecao');
-        const respostas = await respostaInspecaoModule.RespostaInspecao.filter({ inspecao_id: inspecao.id });
-        const respostasComFotos = respostas.filter(r => r.fotos && r.fotos.length > 0);
+        const [{ RespostaInspecao }, { ItemChecklist }] = await Promise.all([
+          import('@/entities/RespostaInspecao'),
+          import('@/entities/ItemChecklist'),
+        ]);
+        const [respostas, itens] = await Promise.all([
+          RespostaInspecao.filter({ inspecao_id: inspecao.id }),
+          ItemChecklist.filter({ tipo_inspecao_id: inspecao.tipo_inspecao_id }, 'ordem'),
+        ]);
+        const respostaPorItem = {};
+        respostas.forEach(r => { respostaPorItem[r.item_checklist_id] = r; });
 
-        if (respostasComFotos.length > 0) {
-          yPos = checkPageBreak(doc, yPos, 60);
-          yPos = addSectionTitle(doc, yPos, t('inspecoesList.pdfEvidencias'));
+        if (itens.length > 0) {
+          const pageW = doc.internal.pageSize.getWidth();
+          const contentW = pageW - m.left - m.right;
+          const resultadoMeta = {
+            conforme:      { label: t('inspecaoDetail.resultadoConforme'),    color: PDF.colors.success },
+            nao_conforme:  { label: t('inspecaoDetail.resultadoNaoConforme'), color: PDF.colors.danger },
+            nao_aplicavel: { label: t('inspecaoDetail.resultadoNA'),          color: PDF.colors.muted },
+          };
 
-          for (const resposta of respostasComFotos) {
-            yPos = checkPageBreak(doc, yPos, 55);
+          yPos = checkPageBreak(doc, yPos, 30);
+          yPos = addSectionTitle(doc, yPos, t('inspecaoDetail.checklistDetalhado'));
 
-            // Título da resposta
-            doc.setFontSize(PDF.font.body);
+          for (const item of itens) {
+            const resposta = respostaPorItem[item.id];
+            const meta = resultadoMeta[resposta?.resultado] || { label: t('inspecoesList.pdfSemResposta'), color: PDF.colors.light };
+
+            yPos = checkPageBreak(doc, yPos, 24);
+
+            // Badge do resultado (direita) — desenhado primeiro para reservar espaço
             doc.setFont('helvetica', 'bold');
-            doc.setTextColor(...PDF.colors.dark);
-            doc.text(t('inspecoesList.pdfItemInspecao'), m.left, yPos);
-            yPos += 7;
+            doc.setFontSize(PDF.font.small);
+            const badgeText = meta.label;
+            const badgeW = doc.getTextWidth(badgeText) + 6;
+            const badgeX = pageW - m.right - badgeW;
+            doc.setFillColor(meta.color[0], meta.color[1], meta.color[2]);
+            doc.roundedRect(badgeX, yPos - 3.5, badgeW, 6, 1.5, 1.5, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.text(badgeText, badgeX + 3, yPos + 0.8);
 
-            if (resposta.observacoes) {
-              doc.setFont('helvetica', 'normal');
-              doc.setFontSize(PDF.font.body);
-              const obsLines = doc.splitTextToSize(resposta.observacoes, 170);
-              doc.text(obsLines, m.left, yPos);
-              yPos += (obsLines.length * 4) + 5;
+            // Pergunta: "ordem. item" (à esquerda, com quebra)
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(PDF.font.body);
+            doc.setTextColor(...PDF.colors.dark);
+            const perguntaLines = doc.splitTextToSize(`${item.ordem}. ${item.item}`, contentW - badgeW - 4);
+            doc.text(perguntaLines, m.left, yPos);
+            yPos += perguntaLines.length * 4.5 + 1;
+
+            // Critério (se existir)
+            if (item.criterio) {
+              doc.setFont('helvetica', 'italic');
+              doc.setFontSize(PDF.font.small);
+              doc.setTextColor(...PDF.colors.muted);
+              const critLines = doc.splitTextToSize(item.criterio, contentW);
+              doc.text(critLines, m.left, yPos);
+              yPos += critLines.length * 4 + 1;
             }
 
-            // Adicionar fotos
-            let xPos = m.left;
-            let photosInRow = 0;
-            const maxPhotosPerRow = 3;
-            const photoWidth = 50;
-            const photoHeight = 40;
+            // Observações
+            if (resposta?.observacoes) {
+              yPos = checkPageBreak(doc, yPos, 12);
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(PDF.font.small);
+              doc.setTextColor(...PDF.colors.body);
+              doc.text(t('inspecaoDetail.observacoes'), m.left, yPos);
+              doc.setFont('helvetica', 'normal');
+              doc.setTextColor(...PDF.colors.dark);
+              const obsLines = doc.splitTextToSize(resposta.observacoes, contentW);
+              doc.text(obsLines, m.left, yPos + 4);
+              yPos += obsLines.length * 4 + 6;
+            }
 
-            for (const fotoUrl of resposta.fotos) {
-              try {
-                if (photosInRow >= maxPhotosPerRow) {
-                  yPos += photoHeight + 5;
-                  xPos = m.left;
-                  photosInRow = 0;
-                }
+            // Plano de ação (não conforme)
+            if (resposta?.resultado === 'nao_conforme' && (resposta.acao_corretiva || resposta.prazo_correcao || resposta.responsavel_correcao)) {
+              const linhas = [];
+              if (resposta.acao_corretiva) linhas.push(`${t('inspecaoDetail.acao')} ${resposta.acao_corretiva}`);
+              if (resposta.prazo_correcao) linhas.push(`${t('inspecaoDetail.prazo')} ${resposta.prazo_correcao}`);
+              if (resposta.responsavel_correcao) linhas.push(`${t('inspecaoDetail.responsavel')} ${resposta.responsavel_correcao}`);
+              const wrapped = [];
+              linhas.forEach(l => doc.splitTextToSize(l, contentW - 8).forEach(x => wrapped.push(x)));
+              const boxH = wrapped.length * 4 + 10;
+              yPos = checkPageBreak(doc, yPos, boxH + 4);
+              doc.setFillColor(254, 242, 242);
+              doc.setDrawColor(...PDF.colors.danger);
+              doc.setLineWidth(0.3);
+              doc.roundedRect(m.left, yPos, contentW, boxH, 2, 2, 'FD');
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(PDF.font.small);
+              doc.setTextColor(...PDF.colors.danger);
+              doc.text(t('inspecaoDetail.planoAcao'), m.left + 4, yPos + 5);
+              doc.setFont('helvetica', 'normal');
+              doc.setTextColor(...PDF.colors.dark);
+              doc.text(wrapped, m.left + 4, yPos + 10);
+              yPos += boxH + 4;
+            }
 
-                yPos = checkPageBreak(doc, yPos, photoHeight + 5);
+            // Fotos (inline)
+            if (resposta?.fotos && resposta.fotos.length > 0) {
+              yPos = checkPageBreak(doc, yPos, 8);
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(PDF.font.small);
+              doc.setTextColor(...PDF.colors.body);
+              doc.text(`${t('inspecaoDetail.fotos')} (${resposta.fotos.length}):`, m.left, yPos);
+              yPos += 3;
+
+              let xPos = m.left;
+              let photosInRow = 0;
+              const maxPhotosPerRow = 3;
+              const photoWidth = 50;
+              const photoHeight = 40;
+
+              for (const fotoUrl of resposta.fotos) {
+                if (photosInRow >= maxPhotosPerRow) { yPos += photoHeight + 4; xPos = m.left; photosInRow = 0; }
+                yPos = checkPageBreak(doc, yPos, photoHeight + 4);
                 if (photosInRow === 0) xPos = m.left;
-
-                const imgBase64 = await loadImageAsBase64(fotoUrl);
-                doc.addImage(imgBase64, 'PNG', xPos, yPos, photoWidth, photoHeight);
-
-                // Borda da foto
-                doc.setDrawColor(...PDF.colors.separator);
-                doc.setLineWidth(0.5);
-                doc.rect(xPos, yPos, photoWidth, photoHeight);
-
-                xPos += photoWidth + 5;
-                photosInRow++;
-              } catch (imgError) {
-                console.debug('Erro ao carregar imagem:', imgError);
-                // Placeholder para imagem que falhou
-                doc.setFillColor(240, 240, 240);
-                doc.rect(xPos, yPos, photoWidth, photoHeight, 'F');
-                doc.setTextColor(150, 150, 150);
-                doc.setFontSize(PDF.font.caption);
-                doc.text(t('inspecoesList.pdfImagemNaoCarregada'), xPos + photoWidth / 2, yPos + photoHeight / 2, { align: 'center' });
-
+                try {
+                  const imgBase64 = await loadImageAsBase64(fotoUrl);
+                  doc.addImage(imgBase64, 'PNG', xPos, yPos, photoWidth, photoHeight);
+                  doc.setDrawColor(...PDF.colors.separator);
+                  doc.setLineWidth(0.5);
+                  doc.rect(xPos, yPos, photoWidth, photoHeight);
+                } catch (imgError) {
+                  console.debug('Erro ao carregar imagem:', imgError);
+                  doc.setFillColor(240, 240, 240);
+                  doc.rect(xPos, yPos, photoWidth, photoHeight, 'F');
+                  doc.setTextColor(150, 150, 150);
+                  doc.setFontSize(PDF.font.caption);
+                  doc.text(t('inspecoesList.pdfImagemNaoCarregada'), xPos + photoWidth / 2, yPos + photoHeight / 2, { align: 'center' });
+                }
                 xPos += photoWidth + 5;
                 photosInRow++;
               }
+              yPos += photoHeight + 6;
             }
 
-            yPos += photoHeight + 15;
+            // Separador entre itens
+            doc.setDrawColor(...PDF.colors.separator);
+            doc.setLineWidth(0.2);
+            doc.line(m.left, yPos, pageW - m.right, yPos);
+            yPos += 5;
           }
         }
       } catch (error) {
-        console.debug('Erro ao carregar evidências:', error);
+        console.debug('Erro ao carregar checklist:', error);
       }
 
       // Footer

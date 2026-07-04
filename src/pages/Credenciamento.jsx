@@ -56,9 +56,12 @@ export default function Credenciamento() {
     pageSize: PAGE_SIZE,
   });
 
-  const credenciamentos = credResult?.data ?? [];
-  const totalPages = credResult?.totalPages ?? 1;
-  const totalRegistos = credResult?.total ?? 0;
+  // useCredenciamentos retorna o ARRAY completo (sem paginação server-side).
+  // Antes líamos credResult?.data (undefined num array) => lista E export SEMPRE
+  // vazios ("Não há credenciamentos disponíveis").
+  const credenciamentos = Array.isArray(credResult) ? credResult : (credResult?.data ?? []);
+  const totalRegistos = credenciamentos.length;
+  const totalPages = 1;
   const isLoading = credLoading || secondaryLoading;
 
   // Secondary data loading (aeroportos, empresas, areas)
@@ -226,7 +229,7 @@ export default function Credenciamento() {
 
     try {
       const dataToExport = credenciamentos.map(c => ({
-        'Protocolo': c.protocolo_numero || '',
+        'Protocolo': c.numero_protocolo || '',
         'Empresa': getEmpresaNome(c.empresa_solicitante_id) || '',
         'Tipo': c.tipo_credencial === 'pessoa' ? 'Pessoa' : 'Viatura',
         'Nome/Matrícula': c.nome_completo || c.matricula_viatura || '',
@@ -260,7 +263,7 @@ export default function Credenciamento() {
   };
 
   const getAeroportoNome = (aeroportoId) => {
-    const aeroporto = aeroportos.find(a => a.codigo_icao === aeroportoId);
+    const aeroporto = aeroportos.find(a => a.id === aeroportoId);
     return aeroporto ? aeroporto.nome : aeroportoId || 'N/A';
   };
 
@@ -320,6 +323,7 @@ export default function Credenciamento() {
               aeroportos={aeroportos}
               isLoading={isLoading}
               onEdit={handleEdit}
+              onReload={() => loadData(currentPage)}
               currentUser={currentUser}
             />
             {/* Pagination (internal users) */}

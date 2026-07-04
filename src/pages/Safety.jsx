@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Filter, FileDown, FileText, Mail, Search, Loader2, X } from 'lucide-react';
+import { Plus, RefreshCw, Filter, FileDown, FileText, Mail, Search, Loader2, X, Shield, GraduationCap } from 'lucide-react';
 import Select from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -13,8 +13,9 @@ import { Aeroporto } from '@/entities/Aeroporto';
 import { useOcorrencias } from '@/hooks/useOcorrencias';
 import SafetyOccurrencesList from '../components/safety/SafetyOccurrencesList';
 import FormSafetyOccurrence from '../components/safety/FormSafetyOccurrence';
+import TreinamentosLicencasTab from '../components/safety/TreinamentosLicencasTab';
 import { downloadAsCSV } from '../components/lib/export';
-import { createPdfDoc, addHeader, addFooter, addTable } from '@/lib/pdfTemplate';
+import { createPdfDoc, addHeader, addFooter, addTable, addSectionTitle, addKeyValuePairs, checkPageBreak, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import SendEmailModal from '../components/shared/SendEmailModal';
 import AlertModal from '../components/shared/AlertModal';
@@ -27,6 +28,7 @@ export default function Safety() {
   const { t } = useI18n();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('ocorrencias');
 
   // Primary data via TanStack Query
   const empId = user?.empresa_id;
@@ -91,11 +93,17 @@ export default function Safety() {
   };
   
   const handleFormSubmit = async (data) => {
+    // Timeout: um insert/update pendurado (ex.: sessão/ligação) vira erro visível
+    // em vez de deixar o botão preso em "A guardar..." para sempre.
+    const withTimeout = (p) => Promise.race([
+      p,
+      new Promise((_, rej) => setTimeout(() => rej(new Error('Sem resposta do servidor após 20s (timeout). Verifique a ligação ou faça login novamente.')), 20000)),
+    ]);
     try {
       if (editingOcorrencia) {
-        await OcorrenciaSafety.update(editingOcorrencia.id, data);
+        await withTimeout(OcorrenciaSafety.update(editingOcorrencia.id, data));
       } else {
-        await OcorrenciaSafety.create({ ...data, empresa_id: user?.empresa_id });
+        await withTimeout(OcorrenciaSafety.create({ ...data, empresa_id: user?.empresa_id }));
       }
       setIsFormOpen(false);
       setEditingOcorrencia(null);
@@ -103,7 +111,8 @@ export default function Safety() {
       setSuccessInfo({ isOpen: true, title: t('safety.ocorrencia_salva'), message: t('safety.ocorrencia_salva_msg') });
     } catch (error) {
       console.error("Erro ao salvar ocorrência:", error);
-      setAlertInfo({ isOpen: true, title: t('safety.erro_salvar'), message: t('safety.erro_salvar_msg') });
+      // Mostra o ERRO REAL ao utilizador para diagnóstico.
+      setAlertInfo({ isOpen: true, type: 'error', title: t('safety.erro_salvar'), message: `${t('safety.erro_salvar_msg')}\n\nDetalhe técnico: ${error?.message || String(error)}` });
     }
   };
 
@@ -217,8 +226,12 @@ export default function Safety() {
       return;
     }
 
-    downloadAsCSV(dataToExport, `ocorrencias_safety_${new Date().toISOString().split('T')[0]}`);
-    setSuccessInfo({ isOpen: true, title: t('safety.csv_gerado'), message: t('safety.csv_gerado_msg') });
+    const ok = downloadAsCSV(dataToExport, `ocorrencias_safety_${new Date().toISOString().split('T')[0]}`);
+    if (ok) {
+      setSuccessInfo({ isOpen: true, title: t('safety.csv_gerado'), message: t('safety.csv_gerado_msg') });
+    } else {
+      setAlertInfo({ isOpen: true, type: 'error', title: t('safety.nenhum_dado'), message: t('safety.nenhum_dado_exportar') });
+    }
   };
 
   const handleExportPDF = async () => {
@@ -233,40 +246,102 @@ export default function Safety() {
 
     try {
       const doc = await createPdfDoc();
+      const logoBase64 = await loadImageAsBase64('/logo-sga.png').catch(() => null);
       const today = new Date().toLocaleDateString('pt-AO');
+      const m = PDF.margin;
+      const pageW = doc.internal.pageSize.getWidth();
+      const contentW = pageW - m.left - m.right;
 
       const headerOpts = {
         title: t('safety.relatorio_titulo'),
-        subtitle: `${t('safety.total_ocorrencias_label')}: ${dataToExport.length}`,
-        date: today,
+        logoBase64,
+        meta: [`Data de geração: ${today}    |    Total: ${dataToExport.length} ocorrência(s)`],
       };
-
       let y = addHeader(doc, headerOpts);
 
-      const columns = [
-        { label: '#', width: 10, align: 'center' },
-        { label: t('safety.col_tipo'), width: 30 },
-        { label: t('safety.col_aeroporto'), width: 30 },
-        { label: t('safety.col_data'), width: 22, align: 'center' },
-        { label: t('safety.col_gravidade'), width: 22, align: 'center' },
-        { label: t('safety.col_status'), width: 25 },
-        { label: t('safety.col_descricao'), width: 41 },
-      ];
+      // Bloco de texto rotulado (Descrição / Ações Tomadas) com quebra de página.
+      const addBlock = (label, text) => {
+        if (!text) return;
+        y = checkPageBreak(doc, y, 10, headerOpts);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(PDF.font.small); doc.setTextColor(100, 116, 139);
+        doc.text(label + ':', m.left, y); y += 4;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(PDF.font.body); doc.setTextColor(15, 23, 42);
+        for (const line of doc.splitTextToSize(String(text), contentW)) {
+          y = checkPageBreak(doc, y, 5, headerOpts);
+          doc.text(line, m.left, y); y += 4.5;
+        }
+        y += 2;
+      };
 
-      const rows = dataToExport.map((occ, index) => [
-        String(index + 1),
-        (occ.tipo_ocorrencia || '').replace(/_/g, ' '),
-        aeroportos.find(a => a.codigo_icao === occ.aeroporto)?.nome || occ.aeroporto || '',
-        occ.data_ocorrencia ? new Date(occ.data_ocorrencia).toLocaleDateString('pt-AO') : '',
-        occ.gravidade || '',
-        (occ.status || '').replace(/_/g, ' '),
-        occ.descricao?.length > 60 ? occ.descricao.substring(0, 57) + '...' : (occ.descricao || ''),
-      ]);
+      for (let i = 0; i < dataToExport.length; i++) {
+        const occ = dataToExport[i];
+        y = checkPageBreak(doc, y, 45, headerOpts);
 
-      y = addTable(doc, y, { columns, rows, headerOpts });
+        const tipo = (occ.tipo_ocorrencia || '').replace(/_/g, ' ');
+        const dataOcc = occ.data_ocorrencia ? new Date(occ.data_ocorrencia).toLocaleDateString('pt-AO') : '';
+        y = addSectionTitle(doc, y, `${i + 1}. ${tipo}${dataOcc ? ' — ' + dataOcc : ''}`);
+
+        const aeroNome = aeroportos.find(a => a.codigo_icao === occ.aeroporto)?.nome || occ.aeroporto || '—';
+        y = addKeyValuePairs(doc, y, [
+          { label: 'Aeroporto', value: aeroNome },
+          { label: 'Hora', value: occ.hora_ocorrencia || '—' },
+          { label: 'Local Específico', value: occ.local_especifico || '—' },
+          { label: 'Gravidade', value: occ.gravidade || '—' },
+          { label: 'Status', value: (occ.status || '').replace(/_/g, ' ') || '—' },
+        ]);
+
+        addBlock('Descrição', occ.descricao);
+        addBlock('Ações Tomadas', occ.acoes_tomadas);
+        y = addKeyValuePairs(doc, y, [{ label: 'Responsável', value: occ.responsavel || '—' }]);
+
+        const fotos = (occ.evidencias_fotograficas || []).filter(Boolean);
+        if (fotos.length > 0) {
+          y = checkPageBreak(doc, y, 14, headerOpts);
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(PDF.font.small); doc.setTextColor(100, 116, 139);
+          doc.text('Evidências Fotográficas:', m.left, y); y += 4;
+
+          const gap = 4;
+          const imgW = (contentW - gap) / 2;
+          const maxImgH = 55;
+          let photoNo = 0;
+          for (let k = 0; k < fotos.length; k += 2) {
+            const pair = fotos.slice(k, k + 2);
+            const imgs = [];
+            for (const f of pair) {
+              try {
+                const b64 = await loadImageAsBase64(f);
+                const p = doc.getImageProperties(b64);
+                let w = imgW, h = imgW * (p.height / p.width);
+                if (h > maxImgH) { h = maxImgH; w = h * (p.width / p.height); }
+                imgs.push({ b64, w, h });
+              } catch { imgs.push(null); }
+            }
+            const rowH = Math.max(0, ...imgs.map(im => (im ? im.h : 8)));
+            y = checkPageBreak(doc, y, rowH + 7, headerOpts);
+            for (let j = 0; j < imgs.length; j++) {
+              const cellX = m.left + j * (imgW + gap);
+              const im = imgs[j];
+              photoNo++;
+              if (im) {
+                try { doc.addImage(im.b64, 'PNG', cellX, y, im.w, im.h); } catch { /* ignore */ }
+              } else {
+                doc.setFont('helvetica', 'italic'); doc.setFontSize(PDF.font.small); doc.setTextColor(148, 163, 184);
+                doc.text('(imagem indisponível)', cellX, y + 5);
+              }
+              doc.setFont('helvetica', 'normal'); doc.setFontSize(PDF.font.caption); doc.setTextColor(100, 116, 139);
+              doc.text(`Foto ${photoNo}`, cellX, y + rowH + 4);
+            }
+            y += rowH + 7;
+          }
+        }
+
+        y = checkPageBreak(doc, y, 8, headerOpts);
+        doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.2);
+        doc.line(m.left, y, pageW - m.right, y);
+        y += 6;
+      }
 
       addFooter(doc);
-
       doc.save(`relatorio_safety_${new Date().toISOString().split('T')[0]}.pdf`);
       setSuccessInfo({ isOpen: true, title: t('safety.pdf_gerado'), message: t('safety.pdf_gerado_msg') });
     } catch (error) {
@@ -355,6 +430,7 @@ export default function Safety() {
             </h1>
             <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.safety.subtitle')}</p>
           </div>
+          {activeTab === 'ocorrencias' && (
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <Button variant="outline" onClick={loadData} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -379,8 +455,31 @@ export default function Safety() {
               {t('safety.nova_ocorrencia')}
             </Button>
           </div>
+          )}
         </div>
 
+        {/* Tabs (sub-páginas de Safety) */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('ocorrencias')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium border transition-colors ${activeTab === 'ocorrencias' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+          >
+            <Shield className="w-4 h-4" />
+            Ocorrências de Safety
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('treinamentos')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium border transition-colors ${activeTab === 'treinamentos' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+          >
+            <GraduationCap className="w-4 h-4" />
+            Treinamentos & Licenças
+          </button>
+        </div>
+
+        {activeTab === 'ocorrencias' && (
+        <>
         {/* KPIs de Safety */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
           <Card className="border-0 shadow-sm">
@@ -519,6 +618,12 @@ export default function Safety() {
           onSelectOcorrencia={handleSelectOcorrencia}
           onSelectAll={handleSelectAll}
         />
+        </>
+        )}
+
+        {activeTab === 'treinamentos' && (
+          <TreinamentosLicencasTab aeroportos={aeroportos} user={user} />
+        )}
       </div>
 
       {isFormOpen && (

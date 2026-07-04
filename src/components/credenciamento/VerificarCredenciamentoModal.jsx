@@ -84,7 +84,7 @@ export default function VerificarCredenciamentoModal({ isOpen, onClose, credenci
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Verificar Credenciamento - {credenciamento.protocolo_numero}</DialogTitle>
+          <DialogTitle>Verificar Credenciamento - {credenciamento.numero_protocolo}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="p-4 bg-slate-50 rounded-lg border">

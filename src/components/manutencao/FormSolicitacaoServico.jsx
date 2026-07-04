@@ -70,19 +70,18 @@ export default function FormSolicitacaoServico({ isOpen, onClose, aeroportos, cu
 
   const generateNumeroSS = async () => {
     const year = new Date().getFullYear();
+    const prefix = `SS-${year}-`;
     try {
+      // Fetch only the latest matching row server-side instead of pulling the whole table.
       const empId = currentUser?.empresa_id;
-      const existing = empId
-        ? await SolicitacaoServico.filter({ empresa_id: empId })
-        : await SolicitacaoServico.list();
-      const thisYearSS = existing.filter(ss => ss.numero_ss?.startsWith(`SS-${year}`));
-      const maxNum = thisYearSS.reduce((max, ss) => {
-        const num = parseInt(ss.numero_ss?.split('-')[2]) || 0;
-        return num > max ? num : max;
-      }, 0);
-      return `SS-${year}-${String(maxNum + 1).padStart(4, '0')}`;
+      const filter = { numero_ss: { $like: `${prefix}%` }, ...(empId ? { empresa_id: empId } : {}) };
+      const latest = await SolicitacaoServico.filter(filter, '-numero_ss', 1);
+      const maxNum = latest?.[0]?.numero_ss
+        ? (parseInt(latest[0].numero_ss.split('-')[2]) || 0)
+        : 0;
+      return `${prefix}${String(maxNum + 1).padStart(4, '0')}`;
     } catch {
-      return `SS-${year}-0001`;
+      return `${prefix}0001`;
     }
   };
 

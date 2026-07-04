@@ -17,7 +17,7 @@ import { useConfiguracaoSistema, useSaveConfiguracaoSistema } from '@/hooks/useC
 export default function ConfiguracoesGerais() {
   const { t } = useI18n();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('smtp');
+  const [activeTab, setActiveTab] = useState('geral');
 
   const isAdmin = isAdminProfile(user);
   const { data: configData, isLoading, refetch } = useConfiguracaoSistema({ enabled: isAdmin });
@@ -30,7 +30,7 @@ export default function ConfiguracoesGerais() {
     smtp_port: '587',
     smtp_user: '',
     smtp_password: '',
-    smtp_from_name: 'DIROPS',
+    smtp_from_name: 'SGA',
     smtp_from_email: '',
     smtp_secure: true,
     email_notificacoes_padrao: '',
@@ -64,7 +64,7 @@ export default function ConfiguracoesGerais() {
         smtp_port: configData.smtp_port || '587',
         smtp_user: configData.smtp_user || '',
         smtp_password: configData.smtp_password || '',
-        smtp_from_name: configData.smtp_from_name || 'DIROPS',
+        smtp_from_name: configData.smtp_from_name || 'SGA',
         smtp_from_email: configData.smtp_from_email || '',
         smtp_secure: configData.smtp_secure !== false,
         email_notificacoes_padrao: configData.email_notificacoes_padrao || '',
@@ -132,7 +132,7 @@ export default function ConfiguracoesGerais() {
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           to: smtpData.smtp_from_email,
-          subject: 'Teste SMTP - DIROPS',
+          subject: 'Teste SMTP - SGA',
           html: emailTemplates.smtp_test(),
         },
       });
@@ -179,13 +179,7 @@ export default function ConfiguracoesGerais() {
 
         {/* Tabs */}
         <div className="flex gap-2 border-b border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-t-lg p-4">
-          <button
-            onClick={() => setActiveTab('smtp')}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'smtp' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
-          >
-            <Mail className="w-4 h-4 inline mr-2" />
-            {t('configGerais.tabSMTP')}
-          </button>
+          {/* Aba SMTP oculta — SGA não usa configuração de email por aqui */}
           <button
             onClick={() => setActiveTab('geral')}
             className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'geral' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
@@ -269,7 +263,7 @@ export default function ConfiguracoesGerais() {
                   <Input
                     value={smtpData.smtp_from_name}
                     onChange={(e) => handleSmtpChange('smtp_from_name', e.target.value)}
-                    placeholder="DIROPS"
+                    placeholder="SGA"
                   />
                 </div>
                 <div className="space-y-2">

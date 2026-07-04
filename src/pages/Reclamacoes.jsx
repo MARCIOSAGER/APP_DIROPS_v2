@@ -283,7 +283,7 @@ export default function Reclamacoes() {
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="${logoUrl}" alt="DIROPS" style="height: 60px;">
+            <img src="${logoUrl}" alt="SGA" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">Protocolo de Reclamação</h1>
           </div>
 
@@ -311,16 +311,16 @@ export default function Reclamacoes() {
           ` : ''}
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280;">
-            <p><strong>DIROPS</strong><br>Direcção de Operações - Serviços de Gestão Aeroportuária</p>
+            <p><strong>SGA</strong><br>Direcção de Operações - Serviços de Gestão Aeroportuária</p>
           </div>
         </div>
       `;
 
       const result = await sendEmailDirect({
         to: recipient,
-        subject: `Protocolo de Reclamação ${reclamacaoParaProtocolo.protocolo_numero} - DIROPS`,
+        subject: `Protocolo de Reclamação ${reclamacaoParaProtocolo.protocolo_numero} - SGA`,
         body: emailBody,
-        from_name: 'DIROPS'
+        from_name: 'SGA'
       });
 
       if (result.status === 200) {
@@ -353,7 +353,7 @@ export default function Reclamacoes() {
       'Área Responsável': rec.area_responsavel?.replace('_', ' '),
       'Aeroporto': aeroportos.find(a => a.codigo_icao === rec.aeroporto_id)?.nome || rec.aeroporto_id,
       'Canal de Entrada': rec.canal_entrada?.replace('_', ' '),
-      'Data Recebimento': new Date(rec.data_recebimento).toLocaleDateString('pt-AO'),
+      'Data Recebimento': rec.data_recebimento ? new Date(rec.data_recebimento).toLocaleDateString('pt-AO') : '',
       'Reclamante': rec.reclamante_nome || 'Não informado',
       'Contacto': rec.reclamante_contacto || 'Não informado',
       'Categoria': rec.categoria_reclamacao?.replace('_', ' '),
@@ -361,8 +361,17 @@ export default function Reclamacoes() {
       'Solução Aplicada': rec.solucao_aplicada || 'Pendente'
     }));
 
-    downloadAsCSV(dataToExport, `reclamacoes_${new Date().toISOString().split('T')[0]}`);
-    showSuccess('Exportação CSV concluída!', 'Os dados das reclamações foram exportados com sucesso para um arquivo CSV.');
+    const ok = downloadAsCSV(dataToExport, `reclamacoes_${new Date().toISOString().split('T')[0]}`);
+    if (ok) {
+      showSuccess('Exportação CSV concluída!', 'Os dados das reclamações foram exportados com sucesso para um arquivo CSV.');
+    } else {
+      setAlertInfo({
+        isOpen: true,
+        type: 'error',
+        title: 'Erro ao Exportar CSV',
+        message: 'Não há dados para exportar ou ocorreu um erro ao gerar o arquivo CSV.'
+      });
+    }
   }, [reclamacoes, selectedReclamacoes, filteredReclamacoes, aeroportos, showSuccess]);
 
   const handleExportPDF = useCallback(async () => {
@@ -463,7 +472,7 @@ export default function Reclamacoes() {
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="${reportLogoUrl}" alt="DIROPS Logo" style="height: 60px;">
+            <img src="${reportLogoUrl}" alt="SGA Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">Relatório de Reclamações</h1>
             <p style="color: #64748b; margin: 5px 0;">Data: ${new Date().toLocaleDateString('pt-AO')}</p>
           </div>
@@ -524,7 +533,7 @@ export default function Reclamacoes() {
           </table>
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b;">
-            <p><strong>Sistema DIROPS</strong><br>
+            <p><strong>Sistema SGA</strong><br>
             Direcção de Operações - Serviços de Gestão Aeroportuária</p>
           </div>
         </div>
@@ -532,9 +541,9 @@ export default function Reclamacoes() {
 
       const result = await sendEmailDirect({
         to: recipient,
-        subject: subject || 'Relatório de Reclamações - DIROPS',
+        subject: subject || 'Relatório de Reclamações - SGA',
         body: emailBody,
-        from_name: 'DIROPS'
+        from_name: 'SGA'
       });
 
       if (result.status === 200) {
@@ -844,7 +853,7 @@ export default function Reclamacoes() {
         isOpen={isEmailModalOpen}
         onClose={() => {setIsEmailModalOpen(false); setReclamacaoParaProtocolo(null);}}
         onSend={reclamacaoParaProtocolo ? handleSendEmailProtocol : handleSendEmail}
-        defaultSubject={reclamacaoParaProtocolo ? `Protocolo de Reclamação ${reclamacaoParaProtocolo.protocolo_numero}` : 'Relatório de Reclamações - DIROPS'}
+        defaultSubject={reclamacaoParaProtocolo ? `Protocolo de Reclamação ${reclamacaoParaProtocolo.protocolo_numero}` : 'Relatório de Reclamações - SGA'}
         title={reclamacaoParaProtocolo ? 'Enviar Protocolo por E-mail' : 'Enviar Relatório por E-mail'}
         isProtocolo={!!reclamacaoParaProtocolo}
       />

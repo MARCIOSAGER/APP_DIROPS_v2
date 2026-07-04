@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { CobrancaServico } from '@/entities/CobrancaServico';
 import { useI18n } from '@/components/lib/i18n';
 
-export default function FormCobrancaServico({ isOpen, onClose, categoria, tiposServico, clientes, cobrancaInicial, onSaved }) {
+export default function FormCobrancaServico({ isOpen, onClose, categoria, tiposServico, clientes, cobrancaInicial, empresaId, onSaved }) {
   const { t } = useI18n();
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -111,6 +111,7 @@ export default function FormCobrancaServico({ isOpen, onClose, categoria, tiposS
         participante: formData.participante || null,
         observacoes: formData.observacoes,
         status: 'pendente',
+        empresa_id: cobrancaInicial?.empresa_id || empresaId || null,
       };
       if (cobrancaInicial?.id) {
         await CobrancaServico.update(cobrancaInicial.id, payload);

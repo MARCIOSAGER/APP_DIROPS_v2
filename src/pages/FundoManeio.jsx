@@ -257,8 +257,12 @@ export default function FundoManeio() {
       [t('fundo.col_value')]: mov.valor_kz,
       [t('fundo.col_airport')]: aeroportos.find(a => a.id === mov.aeroporto_id)?.nome || mov.aeroporto_id
     }));
+    const success = downloadAsCSV(dataToExport, `relatorio_fundo_maneio_${new Date().toISOString().split('T')[0]}`);
+    if (!success) {
+      setAlertInfo({ isOpen: true, type: 'warning', title: t('fundo.error_export_title'), message: t('fundo.no_movements_found') });
+      return;
+    }
     await registarExportacao('MovimentoFinanceiro', 'CSV', filtros, 'financeiro');
-    downloadAsCSV(dataToExport, `relatorio_fundo_maneio_${new Date().toISOString().split('T')[0]}`);
   };
 
   const handleExportPDF = async () => {
@@ -382,7 +386,7 @@ export default function FundoManeio() {
         to,
         subject: subject || `Relatório Fundo de Maneio - ${new Date().toLocaleDateString('pt-AO')}`,
         body: emailBody,
-        from_name: 'DIROPS'
+        from_name: 'SGA'
       });
       return true;
     } catch (error) {

@@ -23,7 +23,7 @@ import FormMedicaoKPI from '../components/kpis/FormMedicaoKPI';
 import ConfiguracaoKPIs from '../components/kpis/ConfiguracaoKPIs';
 import DiagnosticoDuplicacoesModal from '../components/kpis/DiagnosticoDuplicacoesModal';
 import AnalisadorInteligente from '../components/kpis/AnalisadorInteligente';
-import AssistenteRelatorio from '../components/shared/AssistenteRelatorio';
+import { useNavigate } from 'react-router-dom';
 const DashboardKPIs = React.lazy(() => import('../components/kpis/DashboardKPIs'));
 import { downloadAsExcel } from '@/components/lib/export';
 import AlertModal from '@/components/shared/AlertModal';
@@ -60,7 +60,7 @@ export default function KPIsOperacionais() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isDiagnosticoOpen, setIsDiagnosticoOpen] = useState(false);
   const [isAnalisadorOpen, setIsAnalisadorOpen] = useState(false);
-  const [isAssistenteOpen, setIsAssistenteOpen] = useState(false);
+  const navigate = useNavigate();
   const [selectedTipoKPI, setSelectedTipoKPI] = useState(null);
   const [editingMedicao, setEditingMedicao] = useState(null);
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
@@ -201,14 +201,12 @@ export default function KPIsOperacionais() {
 
   const handleDeleteConfirm = async () => {
     try {
-      const medicaoParaExcluir = medicoesKPI.find((m) => m.id === deleteInfo.id); // Changed medicoes to medicoesKPI
+      const medicaoParaExcluir = medicoesKPI.find((m) => m.id === deleteInfo.id);
 
       if (medicaoParaExcluir) {
-        // Primeiro excluir os valores dos campos associados
-        const valoresAssociados = await ValorCampoKPI.filter({ medicao_kpi_id: deleteInfo.id });
-        await Promise.all(valoresAssociados.map((valor) => ValorCampoKPI.delete(valor.id)));
-
-        // Depois excluir a medição
+        // Bulk delete valores associados then the medição itself
+        const { supabase } = await import('@/lib/supabaseClient');
+        await supabase.from('valor_campo_k_p_i').delete().eq('medicao_kpi_id', deleteInfo.id);
         await MedicaoKPI.delete(deleteInfo.id);
 
         // Registar para auditoria
@@ -238,17 +236,14 @@ export default function KPIsOperacionais() {
     }
 
     try {
+      // Bulk delete: 2 round-trips total instead of N×2+ (was 30-100 for 10 KPIs)
+      const { supabase } = await import('@/lib/supabaseClient');
+      await supabase.from('valor_campo_k_p_i').delete().in('medicao_kpi_id', selectedMedicoes);
+      await supabase.from('medicao_k_p_i').delete().in('id', selectedMedicoes);
+
+      // Audit log per row (still loops but no DB writes — frontend log only)
       for (const medicaoId of selectedMedicoes) {
-        // Encontrar a medição completa para auditoria
-        const medicaoParaExcluir = medicoesKPI.find((m) => m.id === medicaoId); // Changed medicoes to medicoesKPI
-
-        // Excluir valores de campos associados
-        const valoresAssociados = await ValorCampoKPI.filter({ medicao_kpi_id: medicaoId });
-        await Promise.all(valoresAssociados.map((valor) => ValorCampoKPI.delete(valor.id)));
-
-        // Excluir a medição principal
-        await MedicaoKPI.delete(medicaoId);
-
+        const medicaoParaExcluir = medicoesKPI.find((m) => m.id === medicaoId);
         if (medicaoParaExcluir) {
           await registarExclusao('MedicaoKPI', medicaoParaExcluir, 'kpis');
         }
@@ -297,7 +292,17 @@ export default function KPIsOperacionais() {
       });
 
       await registarExportacao('MedicaoKPI', 'Excel', filtros, 'kpis');
-      downloadAsExcel(dataToExport, `kpis_operacionais_${new Date().toISOString().split('T')[0]}`);
+      const ok = await downloadAsExcel(dataToExport, `kpis_operacionais_${new Date().toISOString().split('T')[0]}`);
+
+      if (!ok) {
+        setAlertInfo({
+          isOpen: true,
+          type: 'warning',
+          title: 'Nada a Exportar',
+          message: 'Nenhum dado para exportar.'
+        });
+        return;
+      }
 
       setSuccessInfo({
         isOpen: true,
@@ -582,8 +587,8 @@ export default function KPIsOperacionais() {
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; color: #333;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="/logo-dirops.png" alt="DIROPS Logo" style="height: 60px;">
-            <h1 style="color: #1e40af; margin-top: 20px;">DIROPS</h1>
+            <img src="/logo-sga.png" alt="SGA Logo" style="height: 60px;">
+            <h1 style="color: #1e40af; margin-top: 20px;">SGA</h1>
             <h2 style="color: #1e40af; margin: 10px 0;">Relatório de KPIs Operacionais</h2>
             <p style="color: #64748b; margin-bottom: 10px;">Data de Geração: ${new Date().toLocaleDateString('pt-AO')}</p>
             <p style="color: #64748b;">Total de Medições: ${medicoesParaEnviar.length}</p>
@@ -633,7 +638,7 @@ export default function KPIsOperacionais() {
 
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
             <p><strong>Melhores Cumprimentos,</strong></p>
-            <p>Sistema DIROPS<br>Direcção de Operações</p>
+            <p>Sistema SGA<br>Direcção de Operações</p>
           </div>
         </div>
       `;
@@ -642,7 +647,7 @@ export default function KPIsOperacionais() {
         to: destinatario,
         subject: assunto,
         body: emailBody,
-        from_name: 'DIROPS'
+        from_name: 'SGA'
       });
 
       if (result.status !== 200) {
@@ -656,7 +661,7 @@ export default function KPIsOperacionais() {
           errorTitle = 'Destinatário Não Autorizado';
           errorMessage = `Não foi possível enviar o relatório para "${destinatario}". 
 
-O sistema apenas permite o envio de e-mails para utilizadores registados na aplicação DIROPS.
+O sistema apenas permite o envio de e-mails para utilizadores registados na aplicação SGA.
 
 Soluções:
 • Registe o destinatário como utilizador no sistema
@@ -757,7 +762,11 @@ Por favor tente novamente ou contacte o suporte técnico.`;
       const empId = effectiveEmpresaId || currentUser?.empresa_id;
       const query = {};
       if (empId) query.empresa_id = empId;
-      if (filtros.aeroporto !== 'todos') query.aeroporto_id = filtros.aeroporto;
+      if (filtros.aeroporto !== 'todos') {
+        // filtros.aeroporto é o código ICAO; a coluna aeroporto_id é uuid → mapear p/ o id.
+        const ap = aeroportos.find(a => a.codigo_icao === filtros.aeroporto);
+        query.aeroporto_id = ap?.id || filtros.aeroporto;
+      }
       if (filtros.tipoKpi !== 'todos') query.tipo_kpi_id = filtros.tipoKpi;
       if (filtros.dataInicio) query.data_medicao = { ...query.data_medicao, $gte: filtros.dataInicio };
       if (filtros.dataFim) query.data_medicao = { ...query.data_medicao, $lte: filtros.dataFim };
@@ -906,7 +915,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <Download className="w-4 h-4 mr-2" />
               {t('kpis.exportarExcel')}
             </Button>
-            <Button variant="outline" onClick={handleExportPDF}>
+            <Button variant="outline" onClick={() => handleExportPDF()}>
               <FileText className="w-4 h-4 mr-2" />
               {t('kpis.exportarPDF')}
             </Button>
@@ -922,11 +931,14 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <Trash2 className="w-4 h-4 mr-2" />
               {t('kpis.excluir')} {selectedMedicoes.length > 0 && `(${selectedMedicoes.length})`}
             </Button>
-            <Button variant="outline" onClick={() => setIsAnalisadorOpen(true)} className="border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950">
-              <Brain className="w-4 h-4 mr-2" />
-              {t('kpis.analiseIA')}
-            </Button>
-            <Button variant="outline" onClick={() => setIsAssistenteOpen(true)} className="border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950">
+            {/* Análise IA desativada (2026-07-02) — recurso de IA não utilizado */}
+            <Button variant="outline" onClick={() => {
+                const p = new URLSearchParams({ tipo: 'kpis' });
+                if (filtros.dataInicio) p.set('inicio', filtros.dataInicio);
+                if (filtros.dataFim) p.set('fim', filtros.dataFim);
+                if (filtros.aeroporto && filtros.aeroporto !== 'todos') p.set('aeroporto', filtros.aeroporto);
+                navigate('/PowerBi?' + p.toString());
+              }} className="border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950">
               <FileEdit className="w-4 h-4 mr-2" />
               {t('kpis.gerarRelatorio')}
             </Button>
@@ -999,7 +1011,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="medicoes" className="flex items-center gap-2">
               <ClipboardCheck className="w-4 h-4" />
               {t('kpis.tabMedicoes')}
@@ -1012,13 +1024,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <BarChart3 className="w-4 h-4" />
               {t('kpis.tabDashboard')}
             </TabsTrigger>
-            {/* Power BI só disponível para SGA (superadmin sem empresa_id) */}
-            {!currentUser?.empresa_id && (
-            <TabsTrigger value="powerbi" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Power BI
-            </TabsTrigger>
-            )}
+            {/* Aba Power BI removida (2026-07-02) — embed cloud aposentado; usar Dashboard/Exportar ou a página Relatórios de Voos */}
           </TabsList>
 
           <TabsContent value="medicoes" className="space-y-6">
@@ -1318,27 +1324,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             </Suspense>
           </TabsContent>
 
-          <TabsContent value="powerbi" className="space-y-6">
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  {t('kpis.powerBITitle')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="w-full" style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
-                  <iframe 
-                    title="KPIs Operacionais" 
-                    src="https://app.powerbi.com/view?r=eyJrIjoiYTY3NmZmMmMtZWQ3Zi00MmJlLTgwYTItNTQ2MDcyOGY4NGFhIiwidCI6IjYwMzA1NmIzLWZmNDItNDQ4Mi1iOWQzLWRjYmU5YjJkOTNiNiJ9" 
-                    frameBorder="0" 
-                    allowFullScreen={true}
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {/* Conteúdo Power BI removido (embed cloud aposentado) */}
           </Tabs>
           </div>
 
@@ -1422,12 +1408,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
         tiposKPI={tiposKPI}
         aeroportos={aeroportos} />
 
-      <AssistenteRelatorio
-        isOpen={isAssistenteOpen}
-        onClose={() => setIsAssistenteOpen(false)}
-        dados={filteredAndSortedMedicoes.slice(0, 20)}
-        contexto={`Análise de ${filteredAndSortedMedicoes.length} medições de KPI`}
-        tipo="kpi" />
+      {/* "Gerar Relatório" agora abre a página Relatórios de Voos em KPIs (Assistente IA removido) */}
 
       </div>);
 

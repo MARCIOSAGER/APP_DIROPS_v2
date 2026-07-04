@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -78,29 +78,44 @@ function VoosLigadosTable({
     return `${hours}h ${mins.toString().padStart(2, '0')}min`;
   };
 
-  const detectarDuplicatas = () => {
-    const duplicatasMap = new Map();
+  // Índices O(1) — evitam .find()/.some() aninhados (O(n²)) a cada render, que
+  // com até 2000 voos ligados × 5000 cálculos causavam jank a cada interação.
+  const voosById = useMemo(() => {
+    const m = new Map();
+    for (const v of voos) m.set(v.id, v);
+    return m;
+  }, [voos]);
 
+  const { calcByVooLigadoId, calcByVooId } = useMemo(() => {
+    const byVL = new Map(), byVoo = new Map();
+    for (const ct of calculosTarifa) {
+      if (ct.voo_ligado_id != null) byVL.set(ct.voo_ligado_id, ct);
+      if (ct.voo_id != null && !byVoo.has(ct.voo_id)) byVoo.set(ct.voo_id, ct);
+    }
+    return { calcByVooLigadoId: byVL, calcByVooId: byVoo };
+  }, [calculosTarifa]);
+
+  // Réplica exata da regra original: cálculo por voo_ligado_id; senão, pelo
+  // voo de partida (que precisa existir em `voos`) via voo_id.
+  const getCalculo = useCallback((vl) => {
+    if (!vl) return undefined;
+    const byVL = calcByVooLigadoId.get(vl.id);
+    if (byVL) return byVL;
+    const depVoo = voosById.get(vl.id_voo_dep);
+    return depVoo ? calcByVooId.get(depVoo.id) : undefined;
+  }, [calcByVooLigadoId, calcByVooId, voosById]);
+
+  const duplicataIds = useMemo(() => {
+    const duplicatasMap = new Map();
     voosLigados.forEach((vl) => {
       const key = `${vl.id_voo_arr}_${vl.id_voo_dep}`;
-
-      if (!duplicatasMap.has(key)) {
-        duplicatasMap.set(key, []);
-      }
+      if (!duplicatasMap.has(key)) duplicatasMap.set(key, []);
       duplicatasMap.get(key).push(vl.id);
     });
-
-    const duplicataIds = new Set();
-    duplicatasMap.forEach((ids) => {
-      if (ids.length > 1) {
-        ids.forEach(id => duplicataIds.add(id));
-      }
-    });
-
-    return duplicataIds;
-  };
-
-  const duplicataIds = detectarDuplicatas();
+    const ids = new Set();
+    duplicatasMap.forEach((arr) => { if (arr.length > 1) arr.forEach(id => ids.add(id)); });
+    return ids;
+  }, [voosLigados]);
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -121,13 +136,17 @@ function VoosLigadosTable({
     setSelectedVoos(newSelected);
   };
 
+  const voosLigadosById = useMemo(() => {
+    const m = new Map();
+    for (const vl of voosLigados) m.set(vl.id, vl);
+    return m;
+  }, [voosLigados]);
+
   const handleGerarProformasLote = () => {
     const selectedCalculos = Array.from(selectedVoos).
     map((vooLigadoId) => {
-      const vl = voosLigados.find((v) => v.id === vooLigadoId);
-      const depVoo = voos.find((v) => v.id === vl?.id_voo_dep);
-      const calculo = calculosTarifa.find((ct) => ct.voo_ligado_id === vl?.id || ct.voo_id === depVoo?.id);
-      return { vooLigado: vl, calculo };
+      const vl = voosLigadosById.get(vooLigadoId);
+      return { vooLigado: vl, calculo: getCalculo(vl) };
     }).
     filter((item) => item.vooLigado && item.calculo && item.calculo.tipo_tarifa !== 'Voo Isento de Tarifas');
 
@@ -145,19 +164,22 @@ function VoosLigadosTable({
     }
   };
 
-  const voosComCalculoValido = Array.from(selectedVoos).filter((vooLigadoId) => {
-    const vl = voosLigados.find((v) => v.id === vooLigadoId);
-    if (!vl) return false;
-    const depVoo = voos.find((v) => v.id === vl.id_voo_dep);
-    const calculo = calculosTarifa.find((ct) => ct.voo_ligado_id === vl.id || ct.voo_id === depVoo?.id);
-    return calculo && calculo.tipo_tarifa !== 'Voo Isento de Tarifas';
-  }).length;
+  const voosComCalculoValido = useMemo(() => {
+    let count = 0;
+    for (const vooLigadoId of selectedVoos) {
+      const calculo = getCalculo(voosLigadosById.get(vooLigadoId));
+      if (calculo && calculo.tipo_tarifa !== 'Voo Isento de Tarifas') count++;
+    }
+    return count;
+  }, [selectedVoos, voosLigadosById, getCalculo]);
 
   const hasValidSelection = selectedVoos.size > 0;
 
-  const voosComCalculo = voosLigados.filter(vl => {
-    return calculosTarifa.some(ct => ct.voo_ligado_id === vl.id);
-  }).length;
+  const voosComCalculo = useMemo(() => {
+    let count = 0;
+    for (const vl of voosLigados) if (calcByVooLigadoId.has(vl.id)) count++;
+    return count;
+  }, [voosLigados, calcByVooLigadoId]);
 
   const totalPages = Math.ceil(voosLigados.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -331,7 +353,7 @@ function VoosLigadosTable({
                 currentSortDirection={sortDirection}
                 onSort={onSort}
               />
-              <TableHead className="text-right w-16">{t('voosLigados.acoes')}</TableHead>
+              <TableHead className="text-right w-16 sticky right-0 bg-slate-50 z-20 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.15)]">{t('voosLigados.acoes')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -346,9 +368,9 @@ function VoosLigadosTable({
                 </TableRow>
               ) :
               currentVoosLigados.map((vooLigado) => {
-                const arrVoo = voos.find((v) => v.id === vooLigado.id_voo_arr);
-                const depVoo = voos.find((v) => v.id === vooLigado.id_voo_dep);
-                const calculo = calculosTarifa.find((ct) => ct.voo_ligado_id === vooLigado.id || ct.voo_id === depVoo?.id);
+                const arrVoo = voosById.get(vooLigado.id_voo_arr);
+                const depVoo = voosById.get(vooLigado.id_voo_dep);
+                const calculo = getCalculo(vooLigado);
 
                 if (!arrVoo || !depVoo) return null;
 
@@ -364,7 +386,7 @@ function VoosLigadosTable({
                 return (
                   <TableRow
                     key={vooLigado.id}
-                    className={`hover:bg-slate-50 transition-colors ${
+                    className={`group hover:bg-slate-50 transition-colors ${
                       isDuplicata ? 'bg-red-50 border-l-4 border-l-red-500' : ''
                     }`}
                   >
@@ -557,7 +579,7 @@ function VoosLigadosTable({
                       })()}
                     </TableCell>
 
-                    <TableCell className="text-right py-2">
+                    <TableCell className={`text-right py-2 sticky right-0 z-10 border-l border-slate-100 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.15)] ${isDuplicata ? 'bg-red-50' : 'bg-white'} group-hover:bg-slate-50`}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Mais opções">

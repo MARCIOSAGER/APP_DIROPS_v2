@@ -49,10 +49,15 @@ export default function EditarFaturaModal({ isOpen, onClose, onSave, fatura }) {
       setIsSubmitting(true);
 
       try {
+        // Enviar apenas os campos editaveis (nao spread ...fatura: evita reenviar
+        // id/created_date e poluir o update). Limpar pagamento quando nao 'paga'.
         await onSave({
-          ...fatura,
-          ...formData,
-          numero_fatura: fatura.numero_fatura
+          data_emissao: formData.data_emissao,
+          data_vencimento: formData.data_vencimento,
+          status: formData.status,
+          observacoes: formData.observacoes,
+          data_pagamento: formData.status === 'paga' ? formData.data_pagamento : null,
+          forma_pagamento: formData.status === 'paga' ? formData.forma_pagamento : null,
         });
       } catch (error) {
         console.error('Erro ao atualizar proforma:', error);
@@ -70,7 +75,7 @@ export default function EditarFaturaModal({ isOpen, onClose, onSave, fatura }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Edit className="w-5 h-5 text-blue-600" />
-            {t('editarFatura.titulo')} - {fatura.numero_fatura}
+            {t('editarFatura.titulo')} - {fatura.numero_proforma}
           </DialogTitle>
         </DialogHeader>
 
@@ -79,7 +84,7 @@ export default function EditarFaturaModal({ isOpen, onClose, onSave, fatura }) {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="text-slate-600 font-medium">{t('editarFatura.numProforma')}</span>
-                <span className="ml-2 font-mono font-bold">{fatura.numero_fatura}</span>
+                <span className="ml-2 font-mono font-bold">{fatura.numero_proforma}</span>
               </div>
               <div>
                 <span className="text-slate-600 font-medium">{t('editarFatura.valorTotalUSD')}</span>

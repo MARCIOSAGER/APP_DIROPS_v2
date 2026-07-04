@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Users, MailCheck, User } from 'lucide-react';
+import { Users, MailCheck, User, Megaphone } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -19,6 +20,7 @@ import { useGestaoAcessos } from '@/hooks/useGestaoAcessos';
 import AprovarAcessoModal from '../components/gestao/AprovarAcessoModal';
 import EditUserModal from '../components/gestao/EditUserModal';
 import AddUserModal from '../components/gestao/AddUserModal';
+import ComunicadoMassaModal from '../components/gestao/ComunicadoMassaModal';
 import AlertModal from '../components/shared/AlertModal';
 import AccessDenied from '../components/shared/AccessDenied';
 
@@ -58,6 +60,7 @@ export default function GestaoAcessos() {
 
   const [sendingInvite, setSendingInvite] = useState(null);
   const [sendingBatch, setSendingBatch] = useState(false);
+  const [comunicadoOpen, setComunicadoOpen] = useState(false);
 
   const modals = useGestaoModals();
 
@@ -104,7 +107,9 @@ export default function GestaoAcessos() {
           empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list(),
           Empresa.list(),
         ]);
-        setAeroportos((aeroportosData || []).filter(a => a.pais === 'AO'));
+        // Two-layer filter: must be Angola AND must belong to an empresa (SGA-managed).
+        // Empty empresa_id = airport in catalog but not operated by SGA — hide it.
+        setAeroportos((aeroportosData || []).filter(a => a.pais === 'AO' && a.empresa_id));
         setEmpresas(empresasData || []);
       } catch (error) {
         console.error('Erro ao carregar dados secundários:', error);
@@ -254,7 +259,7 @@ export default function GestaoAcessos() {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #10b981;">✅ Solicitação de Acesso Aprovada</h2>
           <p>Olá <strong>${nomeUtilizador}</strong>,</p>
-          <p>A sua solicitação de acesso ao sistema DIROPS foi <strong>aprovada</strong>!</p>
+          <p>A sua solicitação de acesso ao sistema SGA foi <strong>aprovada</strong>!</p>
 
           <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
             <p><strong>📋 Detalhes da Aprovação:</strong></p>
@@ -266,7 +271,7 @@ export default function GestaoAcessos() {
           </div>
 
           <p><strong>Próximos Passos:</strong></p>
-          <p>Já pode aceder ao sistema DIROPS usando o seu e-mail <strong>${solicitacao.email}</strong>.</p>
+          <p>Já pode aceder ao sistema SGA usando o seu e-mail <strong>${solicitacao.email}</strong>.</p>
 
           <div style="text-align: center; margin: 30px 0;">
             <a href="${window.location.origin}" style="background-color: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
@@ -275,15 +280,15 @@ export default function GestaoAcessos() {
           </div>
 
           <p>Bem-vindo(a) à equipa!</p>
-          <p>Atenciosamente,<br><strong>Equipa DIROPS</strong></p>
+          <p>Atenciosamente,<br><strong>Equipa SGA</strong></p>
         </div>
       `;
 
       await base44.integrations.Core.SendEmail({
         to: solicitacao.email,
-        subject: 'DIROPS: Solicitação de Acesso Aprovada ✅',
+        subject: 'SGA: Solicitação de Acesso Aprovada ✅',
         body: emailBody,
-        from_name: 'DIROPS'
+        from_name: 'SGA'
       });
 
       modals.closeAprovarModal();
@@ -307,17 +312,17 @@ export default function GestaoAcessos() {
 
       await base44.integrations.Core.SendEmail({
         to: solicitacao.email,
-        subject: "DIROPS: Solicitação de Acesso Rejeitada",
+        subject: "SGA: Solicitação de Acesso Rejeitada",
         body: `
           <div style="font-family: Arial, sans-serif;">
             <h2>Solicitação Rejeitada</h2>
             <p>Olá ${solicitacao.nome_completo},</p>
-            <p>Lamentamos informar que a sua solicitação de acesso ao sistema DIROPS foi rejeitada.</p>
+            <p>Lamentamos informar que a sua solicitação de acesso ao sistema SGA foi rejeitada.</p>
             <p>Para mais informações, por favor, entre em contacto com o administrador do sistema.</p>
-            <p style="margin-top: 20px; font-size: 0.9em; color: #555;">Atenciosamente,<br>Equipe DIROPS</p>
+            <p style="margin-top: 20px; font-size: 0.9em; color: #555;">Atenciosamente,<br>Equipe SGA</p>
           </div>
         `,
-        from_name: "DIROPS Notificações"
+        from_name: "SGA Notificações"
       });
 
       modals.closeRejeitarModal();
@@ -482,8 +487,12 @@ export default function GestaoAcessos() {
         'Aeroportos de Acesso': (user.aeroportos_acesso || []).map(icao => getAeroportoNome(icao)).join(', ') || 'Nenhum',
       };
     });
-    downloadAsCSV(dataToExport, `utilizadores_dirops_${new Date().toISOString().split('T')[0]}`);
-    modals.showAlert('success', 'Exportação Concluída', 'A lista de utilizadores foi exportada para CSV com sucesso.');
+    const ok = downloadAsCSV(dataToExport, `utilizadores_dirops_${new Date().toISOString().split('T')[0]}`);
+    if (ok) {
+      modals.showAlert('success', 'Exportação Concluída', 'A lista de utilizadores foi exportada para CSV com sucesso.');
+    } else {
+      modals.showAlert('error', 'Falha na Exportação', 'Não foi possível exportar a lista de utilizadores. Verifique se há dados para exportar.');
+    }
   }, [getAeroportoNome, getEmpresaNome, modals.showAlert]);
 
   // --- Early returns ---
@@ -511,6 +520,11 @@ export default function GestaoAcessos() {
             </h1>
             <p className="text-slate-600 dark:text-slate-400 mt-1">{t('page.gestao_acessos.subtitle')}</p>
           </div>
+          {isAdmin && (
+            <Button onClick={() => setComunicadoOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Megaphone className="w-4 h-4 mr-2" /> Comunicado em massa
+            </Button>
+          )}
         </div>
 
         <AcessosStatsCards stats={stats} />
@@ -561,6 +575,9 @@ export default function GestaoAcessos() {
       </div>
 
       {/* Modals */}
+      {comunicadoOpen && (
+        <ComunicadoMassaModal isOpen={comunicadoOpen} onClose={() => setComunicadoOpen(false)} users={users} />
+      )}
       {modals.isAprovarModalOpen && modals.selectedSolicitacao && (
         <AprovarAcessoModal
           isOpen={modals.isAprovarModalOpen}

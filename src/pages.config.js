@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazyWithRetry as lazy } from '@/lib/lazyWithRetry';
 import __Layout from './Layout.jsx';
 
 const AguardandoAprovacao = lazy(() => import('./pages/AguardandoAprovacao'));
@@ -36,7 +36,9 @@ const PoliticaPrivacidade = lazy(() => import('./pages/PoliticaPrivacidade'));
 const PortalEmpresa = lazy(() => import('./pages/PortalEmpresa'));
 const PowerBi = lazy(() => import('./pages/PowerBi'));
 const Proforma = lazy(() => import('./pages/Proforma'));
+const ProntoPagamento = lazy(() => import('./pages/ProntoPagamento'));
 const Reclamacoes = lazy(() => import('./pages/Reclamacoes'));
+const Relatorios = lazy(() => import('./pages/Relatorios'));
 const Safety = lazy(() => import('./pages/Safety'));
 const ServicosAeroportuarios = lazy(() => import('./pages/ServicosAeroportuarios'));
 const SolicitacaoPerfil = lazy(() => import('./pages/SolicitacaoPerfil'));
@@ -82,7 +84,9 @@ export const PAGES = {
     "PortalEmpresa": PortalEmpresa,
     "PowerBi": PowerBi,
     "Proforma": Proforma,
+    "ProntoPagamento": ProntoPagamento,
     "Reclamacoes": Reclamacoes,
+    "Relatorios": Relatorios,
     "Safety": Safety,
     "ServicosAeroportuarios": ServicosAeroportuarios,
     "PoliticaPrivacidade": PoliticaPrivacidade,

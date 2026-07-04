@@ -18,6 +18,7 @@ import { OutraTarifa } from '@/entities/OutraTarifa';
 import { Imposto } from '@/entities/Imposto';
 import { TarifaRecurso } from '@/entities/TarifaRecurso';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
+import { TaxaCambio } from '@/entities/TaxaCambio';
 import { Aeroporto } from '@/entities/Aeroporto';
 import { TipoOutraTarifa } from '@/entities/TipoOutraTarifa';
 import { TipoServicoGeral } from '@/entities/TipoServicoGeral';
@@ -55,6 +56,8 @@ export default function ConfiguracaoTarifas() {
 
   const [aeroportos, setAeroportos] = useState([]);
   const [configuracao, setConfiguracao] = useState(null);
+  const [taxaCambioAtual, setTaxaCambioAtual] = useState(850);
+  const [historicoTaxa, setHistoricoTaxa] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [activeTab, setActiveTab] = useState('tarifas_pouso');
@@ -101,7 +104,8 @@ export default function ConfiguracaoTarifas() {
         configsData,
         tiposData,
         tiposServicoGeralData,
-        clientesData
+        clientesData,
+        taxasData
       ] = await Promise.all([
         (effectiveEmpresaId || user.empresa_id) ? Aeroporto.filter({ empresa_id: effectiveEmpresaId || user.empresa_id }) : Aeroporto.list(),
         (async () => {
@@ -112,7 +116,8 @@ export default function ConfiguracaoTarifas() {
         })(),
         TipoOutraTarifa.list().catch(() => []),
         TipoServicoGeral.list().catch(() => []),
-        Cliente.list().catch(() => [])
+        Cliente.list().catch(() => []),
+        TaxaCambio.list('-data_vigencia').catch(() => [])
       ]);
 
       const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
@@ -120,6 +125,8 @@ export default function ConfiguracaoTarifas() {
       setAeroportos(userAccessibleAeroportos);
 
       setConfiguracao(configsData);
+      setHistoricoTaxa(taxasData || []);
+      setTaxaCambioAtual(taxasData?.[0]?.taxa_usd_aoa ?? (configsData?.taxa_cambio_usd_aoa || 850));
       setTiposOutraTarifa((tiposData || []).filter(t => t.status === 'ativa').sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
       setTiposServicoGeral((tiposServicoGeralData || []).sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
       setClientes(clientesData || []);
@@ -149,7 +156,8 @@ export default function ConfiguracaoTarifas() {
     try {
       // Convert empty strings to null for UUID fields
       ['aeroporto_id', 'empresa_id'].forEach(f => {
-        if (data[f] === '' || data[f] === undefined) data[f] = null;
+        if (data[f] === '') data[f] = null;
+        else if (data[f] === undefined) delete data[f];
       });
 
       if (effectiveEmpresaId) {
@@ -183,16 +191,20 @@ export default function ConfiguracaoTarifas() {
 
   const handleConfiguracaoSubmit = async (data) => {
     try {
-      if (configuracao && configuracao.id) {
-        await ConfiguracaoSistema.update(configuracao.id, data);
+      const vigencia = (data.data_vigencia || new Date().toISOString().slice(0, 10));
+      const novaTaxa = parseFloat(data.taxa_usd_aoa);
+      // Uma taxa por data de vigência: se já existe uma linha para a data, atualiza; senão insere.
+      const existente = (historicoTaxa || []).find(h => (h.data_vigencia || '').slice(0, 10) === vigencia);
+      if (existente) {
+        await TaxaCambio.update(existente.id, { taxa_usd_aoa: novaTaxa, fonte: 'manual', created_by: user?.email });
       } else {
-        await ConfiguracaoSistema.create(data);
+        await TaxaCambio.create({ data_vigencia: vigencia, taxa_usd_aoa: novaTaxa, fonte: 'manual', created_by: user?.email });
       }
       setIsConfiguracaoFormOpen(false);
       await loadData();
-      setAlertInfo({ isOpen: true, type: 'success', title: t('tarifas.config_updated_title'), message: `Taxa de câmbio alterada para ${data.taxa_cambio_usd_aoa} AOA/USD.` });
+      setAlertInfo({ isOpen: true, type: 'success', title: t('tarifas.config_updated_title'), message: `Taxa ${novaTaxa} AOA/USD válida a partir de ${vigencia}. Voos que operarem a partir dessa data passam a usá-la.` });
     } catch (error) {
-      console.error('Erro ao atualizar configuração:', error);
+      console.error('Erro ao atualizar taxa de câmbio:', error);
       setAlertInfo({ isOpen: true, type: 'error', title: t('tarifas.error_title'), message: t('tarifas.error_config_msg') });
     }
   };
@@ -358,7 +370,7 @@ export default function ConfiguracaoTarifas() {
                 <div>
                   <p className="text-sm text-blue-700 dark:text-blue-300">{t('tarifas.exchange_rate')}</p>
                   <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
-                    {configuracao?.taxa_cambio_usd_aoa || 850} <span className="text-sm font-normal">AOA/USD</span>
+                    {taxaCambioAtual} <span className="text-sm font-normal">AOA/USD</span>
                   </p>
                 </div>
               </div>
@@ -833,7 +845,7 @@ export default function ConfiguracaoTarifas() {
         tarifa={editingTarifaRecurso}
       />
 
-      <FormConfiguracaoSistema isOpen={isConfiguracaoFormOpen} onClose={() => setIsConfiguracaoFormOpen(false)} onSubmit={handleConfiguracaoSubmit} configuracao={configuracao} />
+      <FormConfiguracaoSistema isOpen={isConfiguracaoFormOpen} onClose={() => setIsConfiguracaoFormOpen(false)} onSubmit={handleConfiguracaoSubmit} taxaAtual={taxaCambioAtual} historico={historicoTaxa} />
 
       <AlertModal isOpen={deleteInfo.isOpen} onClose={() => setDeleteInfo({ isOpen: false, entity: null, id: null })} onConfirm={handleDeleteConfirm} type="warning" title={t('tarifas.confirm_delete_title')} message={t('tarifas.confirm_delete_msg')} confirmText={t('tarifas.delete_btn')} showCancel />
       <AlertModal isOpen={alertInfo.isOpen} onClose={() => setAlertInfo({ ...alertInfo, isOpen: false })} type={alertInfo.type} title={alertInfo.title} message={alertInfo.message} />

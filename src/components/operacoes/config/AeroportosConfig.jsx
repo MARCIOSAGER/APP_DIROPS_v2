@@ -16,6 +16,7 @@ import { Empresa } from '@/entities/Empresa';
 import { isSuperAdmin } from '@/components/lib/userUtils';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { useI18n } from '@/components/lib/i18n';
+import { useQueryClient } from '@tanstack/react-query';
 
 const PAISES_ISO = [
   { code: 'AD', name: 'Andorra' }, { code: 'AE', name: 'Emirados Árabes Unidos' }, { code: 'AF', name: 'Afeganistão' },
@@ -297,21 +298,6 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 
         </div>
 
-        <div className="col-span-2">
-          <Label>{t('configAeroportos.empresa')}</Label>
-          <select
-            value={formData.empresa_id || ''}
-            onChange={(e) => setFormData({ ...formData, empresa_id: e.target.value })}
-            className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            {empresaOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
         <div className="col-span-2 flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <Checkbox
             id="isSGA"
@@ -338,6 +324,7 @@ export function FormAeroporto({ aeroporto, onSave, onCancel, empresas = [] }) {
 
 export default function AeroportosConfig({ aeroportos, onReload }) {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAeroporto, setEditingAeroporto] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -417,11 +404,22 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
         return;
       }
 
+      // Aeroportos são globais: NÃO atribuir empresa. Normaliza '' -> null (coluna uuid)
+      // e garante isSGA booleano (default "Não" quando o campo não é marcado).
+      const dadosSalvar = {
+        ...formData,
+        isSGA: !!formData.isSGA,
+        empresa_id: formData.empresa_id || null,
+      };
+
       if (editingAeroporto) {
-        await base44.entities.Aeroporto.update(editingAeroporto.id, formData);
+        await base44.entities.Aeroporto.update(editingAeroporto.id, dadosSalvar);
       } else {
-        await base44.entities.Aeroporto.create(formData);
+        await base44.entities.Aeroporto.create(dadosSalvar);
       }
+
+      // Invalida o cache global de aeroportos (staleTime 5min) para aparecer já nos voos.
+      queryClient.invalidateQueries({ queryKey: ['aeroportos'] });
 
       setIsFormOpen(false);
       setEditingAeroporto(null);
@@ -476,17 +474,15 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
     }
 
     try {
-      // Verificar se há voos associados
-      const voosComAeroporto = await base44.entities.Voo.filter({
-        aeroporto_operacao: aeroporto.codigo_icao
-      });
+      // Count-only check (HEAD request, no row payload)
+      const voosCount = await base44.entities.Voo.count({ aeroporto_operacao: aeroporto.codigo_icao });
 
-      if (voosComAeroporto.length > 0) {
+      if (voosCount > 0) {
         setAlertInfo({
           isOpen: true,
           type: 'error',
           title: 'Não É Possível Excluir',
-          message: `❌ Este aeroporto não pode ser excluído porque existem ${voosComAeroporto.length} voo(s) registado(s) nele.\n\n⚠️ Excluir este aeroporto causaria inconsistências nos dados históricos de voos.\n\n💡 Sugestão: Em vez de excluir, considere alterar o status do aeroporto para "Inativo" ou "Crítico" nas configurações.`
+          message: `❌ Este aeroporto não pode ser excluído porque existem ${voosCount} voo(s) registado(s) nele.\n\n⚠️ Excluir este aeroporto causaria inconsistências nos dados históricos de voos.\n\n💡 Sugestão: Em vez de excluir, considere alterar o status do aeroporto para "Inativo" ou "Crítico" nas configurações.`
         });
         return;
       }
@@ -675,16 +671,6 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                 value={filterPais}
                 onValueChange={setFilterPais}
                 className="flex-[1]" />
-              {isSuperAdmin(currentUser) && (
-                <Select
-                  options={[
-                    { value: 'todos', label: t('configAeroportos.todasEmpresas') },
-                    ...empresas.map(e => ({ value: e.id, label: e.nome }))
-                  ]}
-                  value={filterEmpresa}
-                  onValueChange={setFilterEmpresa}
-                  className="flex-[1]" />
-              )}
             </div>
           </div>
 
@@ -776,15 +762,6 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                   </th>
                   <th className="px-4 py-3 text-left">
                     <SortableTableHeader
-                      field="empresa_id"
-                      label={t('configAeroportos.empresa')}
-                      currentSortField={sortField}
-                      currentSortDirection={sortDirection}
-                      onSort={handleSort}
-                    />
-                  </th>
-                  <th className="px-4 py-3 text-left">
-                    <SortableTableHeader
                       field="status"
                       label={t('configAeroportos.status')}
                       currentSortField={sortField}
@@ -831,9 +808,6 @@ export default function AeroportosConfig({ aeroportos, onReload }) {
                       ) : (
                         <Badge variant="secondary">{t('configAeroportos.nao')}</Badge>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">
-                      {empresas.find(e => e.id === aeroporto.empresa_id)?.nome || '-'}
                     </td>
                     <td className="px-4 py-3">
                       <Badge className={STATUS_CONFIG[aeroporto.status]?.color}>

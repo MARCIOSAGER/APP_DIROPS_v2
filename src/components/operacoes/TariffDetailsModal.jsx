@@ -617,7 +617,7 @@ export default function TariffDetailsModal({ isOpen, onClose, tariffCalculation,
           </div>
 
           <p style="margin-top: 30px; color: #64748b; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-            Este relatório foi gerado automaticamente pelo DIROPS.<br>
+            Este relatório foi gerado automaticamente pelo SGA.<br>
             Direcção de Operações
           </p>
         </div>

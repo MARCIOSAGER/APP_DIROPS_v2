@@ -53,7 +53,7 @@ export default function CredenciamentoDetailModal({ isOpen, onClose, credenciame
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-blue-600" />
-              Credenciamento - {credenciamento.protocolo_numero}
+              Credenciamento - {credenciamento.numero_protocolo}
             </div>
             <Badge className={`${statusConfig.color} border`}>
               <StatusIcon className="w-3 h-3 mr-1" />

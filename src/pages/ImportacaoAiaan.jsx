@@ -37,7 +37,7 @@ import { useI18n } from '@/components/lib/i18n';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-const SHEET_NAME = 'AIAAN VOOS 2025';
+const SHEET_NAME = 'VOOS';
 const AIRPORT_ICAO = 'FNBJ';
 const BATCH_SIZE = 50;
 const BATCH_DELAY_MS = 300;
@@ -215,8 +215,10 @@ export default function ImportacaoAiaan() {
         // Try exact sheet name, fallback to first sheet
         let sheetName = SHEET_NAME;
         if (!workbook.SheetNames.includes(sheetName)) {
-          // Try partial match
-          const match = workbook.SheetNames.find(s => s.toUpperCase().includes('AIAAN'));
+          // Try partial match (legacy AIAAN sheets or generic VOOS sheets)
+          const match = workbook.SheetNames.find(s =>
+            s.toUpperCase().includes('VOOS') || s.toUpperCase().includes('AIAAN') || s.toUpperCase().includes('BASE44')
+          );
           if (match) {
             sheetName = match;
           } else {
@@ -528,7 +530,7 @@ export default function ImportacaoAiaan() {
               aeroporto_origem_destino: icaoDest,
               tipo_voo: 'Regular',
               status: 'Realizado',
-              origem_dados: 'AIAAN_IMPORT',
+              origem_dados: 'BASE44_IMPORT',
               empresa_id: empresaId,
               // Horarios
               horario_previsto: f.tipo_movimento === 'ARR' ? (f.ata || '') : (f.std || ''),
@@ -538,15 +540,12 @@ export default function ImportacaoAiaan() {
               passageiros_transito_direto: f.pax_transito,
               // Carga
               carga_kg: f.carga_kg,
-              // Crew
-              crew: f.crew,
-              // Stand
-              stand: f.stand,
-              pista: f.pista,
+              // Tripulacao
+              tripulacao: f.crew,
               // Companhia
-              companhia_icao: f.operador_icao_final || f.operador_icao || '',
+              companhia_aerea: f.operador_icao_final || f.operador_icao || '',
               // Observacoes
-              observacoes: f.obs ? `[AIAAN] ${f.obs}` : '[AIAAN] Importado automaticamente',
+              observacoes: f.obs ? `[BASE44] ${f.obs}` : '[BASE44] Importado automaticamente',
             };
 
             const created = await Voo.create(vooData);
@@ -614,12 +613,8 @@ export default function ImportacaoAiaan() {
           }
 
           const vooLigado = await VooLigado.create({
-            voo_arr_id: arrVoo.id,
-            voo_dep_id: depVoo.id,
-            data_operacao: arrFlight.data_operacao,
-            registo_aeronave: arrFlight.registo,
-            numero_voo: arrFlight.callsign,
-            aeroporto_operacao: AIRPORT_ICAO,
+            id_voo_arr: arrVoo.id,
+            id_voo_dep: depVoo.id,
             tempo_permanencia_min: tempoPermanenciaMin,
             empresa_id: empresaId,
           });
@@ -760,10 +755,10 @@ export default function ImportacaoAiaan() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <FileSpreadsheet className="w-5 h-5" />
-          Upload Ficheiro Excel AIAAN
+          Upload Ficheiro Excel Base44
         </CardTitle>
         <CardDescription>
-          Selecione o ficheiro Excel exportado do sistema AIAAN com os dados de voos.
+          Selecione o ficheiro Excel exportado do Base44 com os dados de voos.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

@@ -1,5 +1,5 @@
 /**
- * Mapeamentos para importação de dados AIAAN Excel → DIROPS
+ * Mapeamentos para importação de dados AIAAN Excel → SGA
  * - Cidades (como aparecem no Excel) → Códigos ICAO
  * - Operadores (como aparecem no Excel) → Códigos ICAO de companhia aérea
  */

@@ -1,4 +1,4 @@
-const LOGO_URL = '/logo-dirops.png';
+const LOGO_URL = '/logo-sga.png';
 
 function escHtml(str) {
   if (!str) return '';

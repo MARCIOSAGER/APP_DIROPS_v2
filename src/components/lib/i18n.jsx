@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { translations } from '@/i18n';
 
 const I18nContext = createContext();
@@ -17,12 +17,16 @@ export function I18nProvider({ children }) {
     }
   }, [language]);
 
-  const t = (key) => {
+  // t só muda quando o idioma muda; value memoizado evita re-render global
+  // (useI18n é consumido por quase todos os componentes).
+  const t = useCallback((key) => {
     return translations[language]?.[key] || key;
-  };
+  }, [language]);
+
+  const value = useMemo(() => ({ language, setLanguage, t }), [language, t]);
 
   return (
-    <I18nContext.Provider value={{ language, setLanguage, t }}>
+    <I18nContext.Provider value={value}>
       {children}
     </I18nContext.Provider>
   );

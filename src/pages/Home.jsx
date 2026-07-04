@@ -116,11 +116,13 @@ export default function DashboardInterno() {
       }
 
       setLoadingStatus(t('common.loading'));
+      // Filter by empresa_id when present to avoid pulling other tenants' rows.
+      const empresaFilter = empresaId ? { empresa_id: empresaId } : {};
       const [ocorrenciasDataResult, inspecoesDataResult, ordensServicoResult] = await Promise.allSettled([
-      OcorrenciaSafety.list('-data_ocorrencia', 50),
-      Inspecao.list('-data_inspecao', 50),
-      OrdemServico.list('-created_date', 10)]
-      );
+        OcorrenciaSafety.filter(empresaFilter, '-data_ocorrencia', 50),
+        Inspecao.filter(empresaFilter, '-data_inspecao', 50),
+        OrdemServico.filter(empresaFilter, '-created_date', 10),
+      ]);
 
       let ocorrenciasData = ocorrenciasDataResult.status === 'fulfilled' ? ocorrenciasDataResult.value : [];
       let inspecoesData = inspecoesDataResult.status === 'fulfilled' ? inspecoesDataResult.value : [];
@@ -394,7 +396,7 @@ export default function DashboardInterno() {
           <div>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('page.home.title')}</h1>
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
-              Sistema DIROPS • {new Date().toLocaleDateString('pt-AO')}
+              Sistema SGA • {new Date().toLocaleDateString('pt-AO')}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

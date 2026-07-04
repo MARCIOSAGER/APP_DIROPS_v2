@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { hasUserProfile, getAeroportosPermitidos } from '@/components/lib/userUtils';
 import { ConfiguracaoSistema } from '@/entities/ConfiguracaoSistema';
+import { TaxaCambio } from '@/entities/TaxaCambio';
 import { useAeroportos, useCompanhias, useAeronaves, useModelosAeronave, useTarifasPouso, useTarifasPermanencia, useOutrasTarifas, useImpostos } from '@/components/lib/useStaticData';
 import { useCompanyView } from '@/lib/CompanyViewContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -57,8 +58,15 @@ export function useOperacoesData() {
     }
     setIsLoading(true);
     try {
-      const configData = await ConfiguracaoSistema.list().catch(() => []);
-      const configuracaoSistemaData = configData.length > 0 ? configData[0] : { taxa_cambio_usd_aoa: 850 };
+      const [configData, taxasData] = await Promise.all([
+        ConfiguracaoSistema.list().catch(() => []),
+        TaxaCambio.list('-data_vigencia', 1).catch(() => [])
+      ]);
+      const baseConfig = configData.length > 0 ? configData[0] : {};
+      // Câmbio vem da vigência atual de taxa_cambio (fonte única); usado apenas
+      // como fallback do cálculo client-side — o motor real (RPC) resolve por data.
+      const vigente = taxasData?.[0]?.taxa_usd_aoa;
+      const configuracaoSistemaData = { ...baseConfig, taxa_cambio_usd_aoa: vigente ?? baseConfig.taxa_cambio_usd_aoa ?? 850 };
       setConfiguracaoSistema(configuracaoSistemaData);
     } catch (error) {
       console.error('Erro ao carregar configuracao:', error);
@@ -90,13 +98,12 @@ export function useOperacoesData() {
 
   // Deduped valid linked flights
   const voosLigadosValidos = useMemo(() => {
+    const vooIds = new Set(voos.map(v => v.id)); // indice O(1) (antes era voos.some O(n) por ligado)
     const seen = new Set();
     return voosLigados.filter(vooLigado => {
       if (seen.has(vooLigado.id)) return false;
       seen.add(vooLigado.id);
-      const vooArrExiste = voos.some(v => v.id === vooLigado.id_voo_arr);
-      const vooDepExiste = voos.some(v => v.id === vooLigado.id_voo_dep);
-      return vooArrExiste && vooDepExiste;
+      return vooIds.has(vooLigado.id_voo_arr) && vooIds.has(vooLigado.id_voo_dep);
     });
   }, [voos, voosLigados]);
 

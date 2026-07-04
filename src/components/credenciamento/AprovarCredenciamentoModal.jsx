@@ -46,7 +46,7 @@ export default function AprovarCredenciamentoModal({ isOpen, onClose, credenciam
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-green-600" />
-            {t('cred.aprovar.titulo')} - {credenciamento.protocolo_numero}
+            {t('cred.aprovar.titulo')} - {credenciamento.numero_protocolo}
           </DialogTitle>
         </DialogHeader>
 

@@ -134,7 +134,7 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
             <div class="container">
               <div class="header">
                 <h2 style="margin: 0;">📄 ${documentoParaEmail.titulo}</h2>
-                <p style="margin: 5px 0 0 0; font-size: 14px;">Sistema DIROPS</p>
+                <p style="margin: 5px 0 0 0; font-size: 14px;">Sistema SGA</p>
               </div>
               
               <div class="content">
@@ -187,7 +187,7 @@ export default function DocumentosVooModal({ isOpen, onClose, vooLigado, voos, o
               </div>
               
               <div class="footer">
-                <p>Este é um email automático do sistema DIROPS.</p>
+                <p>Este é um email automático do sistema SGA.</p>
                 <p>Data de envio: ${new Date().toLocaleString('pt-AO')}</p>
               </div>
             </div>

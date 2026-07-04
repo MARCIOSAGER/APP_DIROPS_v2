@@ -21,16 +21,12 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
     setSelectedIds([]);
     
     try {
-      const response = await verificarDuplicacoesTipoKPI();
-      
-      if (response.status === 200) {
-        setDiagnostico(response.data);
-      } else {
-        alert('Erro ao verificar duplicações: ' + (response.data?.error || 'Erro desconhecido'));
-      }
+      // A função devolve o objeto de diagnóstico diretamente (não { status, data }).
+      const diag = await verificarDuplicacoesTipoKPI();
+      setDiagnostico(diag);
     } catch (error) {
       console.error('Erro:', error);
-      alert('Erro ao verificar duplicações');
+      alert('Erro ao verificar duplicações: ' + (error?.message || 'Erro desconhecido'));
     } finally {
       setIsLoading(false);
     }
@@ -49,19 +45,14 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
     setIsRemoving(true);
     
     try {
-      const response = await removerDuplicacoesTipoKPI({ ids_para_remover: selectedIds });
-      
-      if (response.status === 200) {
-        alert(`${response.data.quantidade_removida} registo(s) removido(s) com sucesso!`);
-        setSelectedIds([]);
-        await handleVerificar(); // Verificar novamente
-        if (onSuccess) onSuccess();
-      } else {
-        alert('Erro ao remover: ' + (response.data?.error || 'Erro desconhecido'));
-      }
+      const res = await removerDuplicacoesTipoKPI({ ids_para_remover: selectedIds });
+      alert(`${res.quantidade_removida} registo(s) removido(s) com sucesso!`);
+      setSelectedIds([]);
+      await handleVerificar(); // Verificar novamente
+      if (onSuccess) onSuccess();
     } catch (error) {
       console.error('Erro:', error);
-      alert('Erro ao remover duplicações');
+      alert('Erro ao remover duplicações: ' + (error?.message || 'Erro desconhecido'));
     } finally {
       setIsRemoving(false);
     }

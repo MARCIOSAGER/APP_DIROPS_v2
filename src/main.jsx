@@ -28,7 +28,7 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
-// Auto-reload when Service Worker activates new version (skipWaiting)
+// Auto-reload when Service Worker activates new version (skipWaiting / kill-switch)
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     const lastSWReload = sessionStorage.getItem('sw_reload_at');
@@ -38,6 +38,16 @@ if ('serviceWorker' in navigator) {
       window.location.reload();
     }
   });
+
+  // O app atual NÃO usa Service Worker. Remove proativamente qualquer SW antigo
+  // (de versões PWA) que fique a servir cache velho — evita ter de forçar refresh.
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    if (regs && regs.length) {
+      Promise.all(regs.map((r) => r.unregister()))
+        .then(() => (self.caches ? caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k)))) : null))
+        .catch(() => {});
+    }
+  }).catch(() => {});
 }
 
 // A-02: Lazy-load Sentry after first paint (~30KB saved from critical path)
@@ -46,18 +56,20 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     Sentry.init({
       dsn: import.meta.env.VITE_SENTRY_DSN,
       environment: import.meta.env.MODE,
+      // Replay integration removed — saves ~300KB from the lazy Sentry chunk.
+      // If session replay is ever needed for debugging, re-add Sentry.replayIntegration().
       integrations: [
         Sentry.browserTracingIntegration(),
-        Sentry.replayIntegration(),
       ],
       tracesSampleRate: 1.0,
-      replaysSessionSampleRate: 0.1,
-      replaysOnErrorSampleRate: 1.0,
-      tracePropagationTargets: [
-        'localhost',
-        /^https:\/\/glernwcsuwcyzwsnelad\.supabase\.co/,
-        /^https:\/\/app\.marciosager\.com/,
-      ],
+      tracePropagationTargets: (() => {
+        const targets = ['localhost'];
+        const sbUrl = import.meta.env.VITE_SUPABASE_URL;
+        if (sbUrl) {
+          try { targets.push(new RegExp('^' + sbUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))); } catch { /* ignore */ }
+        }
+        return targets;
+      })(),
     });
     // window.__SENTRY__ is set by Sentry.init() internally — do not overwrite
   });

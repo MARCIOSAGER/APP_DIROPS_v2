@@ -191,7 +191,7 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
   }));
 
   const aeroportoOptions = aeroportos.map(aeroporto => ({
-    value: aeroporto.codigo_icao,
+    value: aeroporto.id,
     label: `${aeroporto.nome} (${aeroporto.codigo_icao})`
   }));
 

@@ -19,9 +19,16 @@ export const downloadAsCSV = (data, filename = 'export') => {
 
     for (const row of data) {
       const values = headers.map(header => {
-        const value = row[header];
-        // Garante que o valor é uma string e escapa aspas
-        const escaped = ('' + (value !== null && value !== undefined ? value : '')).replace(/"/g, '\\"');
+        let value = row[header];
+        // Valores não-primitivos (objeto/array) viram JSON para evitar "[object Object]".
+        // Datas, números e strings permanecem como estão.
+        if (typeof value === 'object' && value !== null && !(value instanceof Date)) {
+          value = JSON.stringify(value);
+        }
+        // Garante que o valor é uma string e escapa aspas segundo o padrão CSV
+        // (RFC 4180): aspas internas são DUPLICADAS ("") — não barra+aspas (\"),
+        // que quebrava o parsing no Excel.
+        const escaped = ('' + (value !== null && value !== undefined ? value : '')).replace(/"/g, '""');
         return `"${escaped}"`;
       });
       csvRows.push(values.join(','));
@@ -64,9 +71,20 @@ export const downloadAsExcel = async (data, filename = 'export') => {
 
   try {
     const XLSX = await import('xlsx');
-    
+
+    // Normaliza valores não-primitivos (objeto/array) para JSON, evitando "[object Object]".
+    // Datas, números e strings permanecem como estão.
+    const normalizedData = data.map(row => {
+      const normalizedRow = {};
+      for (const key of Object.keys(row)) {
+        const value = row[key];
+        normalizedRow[key] = (typeof value === 'object' && value !== null && !(value instanceof Date)) ? JSON.stringify(value) : value;
+      }
+      return normalizedRow;
+    });
+
     // Criar worksheet a partir dos dados
-    const worksheet = XLSX.utils.json_to_sheet(data);
+    const worksheet = XLSX.utils.json_to_sheet(normalizedData);
     
     // Ajustar largura das colunas automaticamente
     const headers = Object.keys(data[0]);

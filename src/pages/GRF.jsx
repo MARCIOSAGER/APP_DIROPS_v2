@@ -202,7 +202,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="/logo-dirops.png" alt="DIROPS Logo" style="height: 60px;">
+            <img src="/logo-sga.png" alt="SGA Logo" style="height: 60px;">
             <h1 style="color: #1e40af; margin-top: 20px;">Relatório GRF - Condições da Pista</h1>
             <p style="color: #64748b;">Data: ${new Date().toLocaleDateString('pt-AO')}</p>
           </div>
@@ -283,7 +283,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
           
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
             <p><strong>Melhores Cumprimentos,</strong></p>
-            <p>Sistema DIROPS<br>Direcção de Operações</p>
+            <p>Sistema SGA<br>Direcção de Operações</p>
           </div>
         </div>
       `;
@@ -292,7 +292,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
         to: recipient,
         subject: subject,
         body: emailBody,
-        from_name: 'DIROPS'
+        from_name: 'SGA'
       });
 
       if (result.status !== 200) {
@@ -306,7 +306,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
           errorTitle = 'Destinatário Não Autorizado';
           errorMessage = `Não foi possível enviar o relatório para "${recipient}". 
 
-O sistema apenas permite o envio de e-mails para utilizadores registados na aplicação DIROPS.
+O sistema apenas permite o envio de e-mails para utilizadores registados na aplicação SGA.
 
 Soluções:
 • Registe o destinatário como utilizador no sistema
@@ -409,7 +409,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
 
     const dataToExport = registosParaExportar.map(reg => ({
       'Aeroporto': reg.aeroporto,
-      'Data': `${reg.dia}/${reg.mes}/2025`,
+      'Data': `${reg.dia}/${reg.mes}/${reg.created_date ? new Date(reg.created_date).getFullYear() : new Date().getFullYear()}`,
       'Hora UTC': reg.hora_utc,
       'Pista': reg.pista,
       'RWYCC': `${reg.rwycc1}/${reg.rwycc2}/${reg.rwycc3}`,
@@ -418,7 +418,10 @@ Por favor tente novamente ou contacte o suporte técnico.`;
       'Condição': `${reg.condicao1}/${reg.condicao2}/${reg.condicao3}`,
       'Observações': reg.observacoes
     }));
-    downloadAsCSV(dataToExport, `grf_registos_${new Date().toISOString().split('T')[0]}`);
+    const ok = downloadAsCSV(dataToExport, `grf_registos_${new Date().toISOString().split('T')[0]}`);
+    if (!ok) {
+      setAlertInfo({ isOpen: true, type: 'error', title: 'Falha na Exportação', message: 'Não foi possível gerar o CSV.', showCancel: false, confirmText: 'Ok' });
+    }
   };
 
   const handleExportPDF = async () => {

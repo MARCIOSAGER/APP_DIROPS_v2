@@ -441,7 +441,15 @@ export default function RegistosAeronaveConfig({ registos, modelos, companhias, 
       'Economy': r.num_economy || '',
       'Última Atualização': r.updated_by ? r.updated_by.split('@')[0] : r.created_by ? r.created_by.split('@')[0] : 'N/A'
     }));
-    downloadAsCSV(dataToExport, `registos_aeronave_${new Date().toISOString().split('T')[0]}`);
+    const exported = downloadAsCSV(dataToExport, `registos_aeronave_${new Date().toISOString().split('T')[0]}`);
+    if (!exported) {
+      setAlertInfo({
+        isOpen: true,
+        type: 'warning',
+        title: 'Sem Dados',
+        message: 'Não há registos para exportar (verifique os filtros).'
+      });
+    }
   };
 
   const handleDelete = async (registo) => {// Changed parameter to full registo object
@@ -456,16 +464,14 @@ export default function RegistosAeronaveConfig({ registos, modelos, companhias, 
     }
 
     try {
-      const voosComRegisto = await Voo.filter({
-        registo_aeronave: registo.registo
-      }).catch(() => []);
+      const voosCount = await Voo.count({ registo_aeronave: registo.registo }).catch(() => 0);
 
-      if (voosComRegisto.length > 0) {
+      if (voosCount > 0) {
         setAlertInfo({
           isOpen: true,
           type: 'error',
           title: 'Não É Possível Excluir',
-          message: `Este registo não pode ser excluído porque existem ${voosComRegisto.length} voo(s) registado(s) com esta aeronave. Por favor, remova ou migre os voos primeiro.`
+          message: `Este registo não pode ser excluído porque existem ${voosCount} voo(s) registado(s) com esta aeronave. Por favor, remova ou migre os voos primeiro.`
         });
         return;
       }

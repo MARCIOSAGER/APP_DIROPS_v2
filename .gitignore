@@ -35,6 +35,10 @@ build-check
 scripts/data/
 scripts/_archive/data/
 
+# Dados brutos de faturação (produção) — não versionar
+docs/Facturacao_Trafego_PP_*.xls
+docs/BD_Facturacao_Trafego_PP.txt
+
 # Claude Code local settings (may contain tokens)
 .claude/settings.local.json
 .claude/worktrees/
