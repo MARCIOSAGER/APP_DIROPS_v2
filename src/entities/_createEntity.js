@@ -4,6 +4,22 @@ import { invalidateEntityQueries } from '@/lib/query-client';
 // On-premise: DB is local, fetch bigger pages = fewer round-trips
 const PAGE_SIZE = 5000;
 
+// Timeout de segurança para MUTAÇÕES (create/update/delete). Um insert/update
+// pendurado — tipicamente o lock de sessão do supabase-js à espera de um refresh
+// de token lento do GoTrue sobre HTTP, ANTES de a requisição sequer sair — deixava
+// o botão preso em "A guardar..." para sempre. Aqui vira um erro visível para o
+// utilizador tentar de novo. (Leituras já têm o timeout de 20s do fetch global.)
+const MUTATION_TIMEOUT_MS = 20000;
+function withTimeout(promise, action, table) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(
+      () => reject(new Error(`Sem resposta do servidor ao ${action} ${table} após 20s (timeout). Verifique a ligação ou faça login novamente.`)),
+      MUTATION_TIMEOUT_MS,
+    )),
+  ]);
+}
+
 async function fetchAll(query) {
   let allData = [];
   let from = 0;
@@ -158,11 +174,11 @@ export function createEntity(tableName) {
       // id nulo/vazio quebra o DEFAULT do Postgres (NULL explícito != coluna omitida).
       // Omitir deixa o uuid_generate_v4() gerar o id.
       if (payload.id == null || payload.id === '') delete payload.id;
-      const { data, error } = await supabase
+      const { data, error } = await withTimeout(supabase
         .from(tableName)
         .insert(payload)
         .select()
-        .single();
+        .single(), 'criar', tableName);
       if (error) throw new Error(`Erro ao criar ${tableName}: ${error.message}`);
       invalidateEntityQueries(tableName);
       return data;
@@ -195,22 +211,22 @@ export function createEntity(tableName) {
         ...changes,
         updated_date: new Date().toISOString(),
       };
-      const { data, error } = await supabase
+      const { data, error } = await withTimeout(supabase
         .from(tableName)
         .update(payload)
         .eq('id', id)
         .select()
-        .single();
+        .single(), 'atualizar', tableName);
       if (error) throw new Error(`Erro ao atualizar ${tableName}: ${error.message}`);
       invalidateEntityQueries(tableName);
       return data;
     },
 
     async delete(id) {
-      const { error } = await supabase
+      const { error } = await withTimeout(supabase
         .from(tableName)
         .delete()
-        .eq('id', id);
+        .eq('id', id), 'eliminar', tableName);
       if (error) throw new Error(`Erro ao eliminar ${tableName}: ${error.message}`);
       invalidateEntityQueries(tableName);
     },

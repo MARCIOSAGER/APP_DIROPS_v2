@@ -19,13 +19,24 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     fetch: (url, options = {}) => {
-      // Respeita um signal do chamador (ex.: cancelamento do react-query).
-      if (options.signal) return fetch(url, options);
       const u = typeof url === 'string' ? url : (url && url.url) || '';
       // Endpoints de functions (ex.: envio de email em lote) podem demorar
       // muito mais que uma query normal — 15s abortava o comunicado no meio.
       const timeoutMs = u.includes('/functions/') ? 180000 : 20000;
-      return fetch(url, { ...options, signal: AbortSignal.timeout(timeoutMs) });
+      const timeoutSignal = AbortSignal.timeout(timeoutMs);
+      // SEMPRE aplica um timeout — inclusive quando o chamador já passa o próprio
+      // signal (cancelamento do react-query OU o refresh de token do GoTrue).
+      // Antes, um `if (options.signal) return fetch(...)` deixava esses pedidos
+      // SEM timeout: um refresh de token pendurado segurava o processLock para
+      // sempre e TODAS as gravações congelavam ("A guardar..." infinito). Aqui
+      // combinamos o signal do chamador com o de timeout.
+      let signal = timeoutSignal;
+      if (options.signal) {
+        signal = (typeof AbortSignal.any === 'function')
+          ? AbortSignal.any([options.signal, timeoutSignal])
+          : options.signal;
+      }
+      return fetch(url, { ...options, signal });
     },
   },
 });
