@@ -85,10 +85,23 @@ export const ENTITY_TABLE_MAP = {
   'ValorCampoKPI': 'valor_campo_kpi',
   'Voo': 'voo',
   'VooLigado': 'voo_ligado',
-  'CacheVooFR24': 'cache_voo_fr24',
+  'CacheVooFR24': 'cache_voo_f_r24',
   'GrupoWhatsApp': 'grupo_whats_app',
   'HistoricoNotificacao': 'historico_notificacao',
   'LogAcessoDocumento': 'log_acesso_documento',
+};
+
+// Overrides for tables that PostgreSQL named with snake_case-around-acronyms pattern.
+// Used by 03c-migrate-data-uuid-v5.mjs to remap entity name → actual table name.
+export const TABLE_NAME_OVERRIDES = {
+  'tipo_kpi': 'tipo_k_p_i',
+  'campo_kpi': 'campo_k_p_i',
+  'medicao_kpi': 'medicao_k_p_i',
+  'valor_campo_kpi': 'valor_campo_k_p_i',
+  'item_pac': 'item_p_a_c',
+  'configuracao_opt_in_zapi': 'configuracao_opt_in_z_a_p_i',
+  'registo_grf': 'registo_g_r_f',
+  'cache_voo_fr24': 'cache_voo_f_r24',
 };
 
 // Entidades que NAO devem ser migradas (dados efemeros ou gerados)
@@ -96,6 +109,7 @@ export const SKIP_ENTITIES = [
   'CacheVooFR24',      // Cache temporario
   'LogAuditoria',      // Logs serao gerados novamente
   'LogAcessoDocumento', // Logs serao gerados novamente
+  'Empresa',           // Empresas geridas no DIROPS - o sync recriava duplicados; nao re-sincronizar
 ];
 
 // --- Mapeamento de empresa_id ---

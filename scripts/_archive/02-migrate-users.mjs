@@ -181,6 +181,19 @@ async function migrateUser(base44User, index, total) {
 async function main() {
   console.log('=== MIGRACAO DE USUARIOS ===\n');
 
+  // KILL SWITCH (2026-07-03): a migracao Cloud->on-premise ja foi concluida e o
+  // sistema esta em producao. Este script fazia UPSERT dos usuarios do Base44
+  // (users.json), RESSUSCITANDO qualquer utilizador apagado na Gestao de Acessos.
+  // Foi desativado. Para uma re-migracao DELIBERADA, rode com --force ou
+  // MIGRATION_ENABLED=1.
+  const forcado = process.argv.includes('--force') || process.env.MIGRATION_ENABLED === '1';
+  if (!forcado) {
+    console.log('SYNC DESATIVADA: migracao de usuarios do Base44 esta desligada (sistema em producao).');
+    console.log('Nada foi alterado. Para forcar uma re-migracao deliberada: node scripts/02-migrate-users.mjs --force');
+    return;
+  }
+  console.log('AVISO: execucao FORCADA — vai fazer upsert dos usuarios do Base44 no sistema atual.\n');
+
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error('ERRO: Credenciais Supabase nao encontradas.');
     console.error('Copie scripts/.env.migration.example -> scripts/.env.migration e preencha.');

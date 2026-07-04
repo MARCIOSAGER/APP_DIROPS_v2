@@ -33,6 +33,7 @@ build-check
 
 # Migration data (contains sensitive production data)
 scripts/data/
+scripts/_archive/data/
 
 # Claude Code local settings (may contain tokens)
 .claude/settings.local.json
