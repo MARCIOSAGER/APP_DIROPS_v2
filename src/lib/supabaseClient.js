@@ -32,9 +32,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       // combinamos o signal do chamador com o de timeout.
       let signal = timeoutSignal;
       if (options.signal) {
-        signal = (typeof AbortSignal.any === 'function')
-          ? AbortSignal.any([options.signal, timeoutSignal])
-          : options.signal;
+        if (typeof AbortSignal.any === 'function') {
+          signal = AbortSignal.any([options.signal, timeoutSignal]);
+        } else {
+          // Fallback p/ browsers sem AbortSignal.any (Chrome 103-115): combina
+          // manualmente — aborta no primeiro dos dois. O timeout NUNCA é descartado.
+          const ctrl = new AbortController();
+          const onAbort = () => ctrl.abort();
+          options.signal.addEventListener('abort', onAbort, { once: true });
+          timeoutSignal.addEventListener('abort', onAbort, { once: true });
+          signal = ctrl.signal;
+        }
       }
       return fetch(url, { ...options, signal });
     },

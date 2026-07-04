@@ -18,8 +18,16 @@ function parseXlsInWorker(buffer, meta) {
     try {
       worker = new Worker(new URL('../workers/ppParser.worker.js', import.meta.url), { type: 'module' });
     } catch (err) { reject(err); return; }
-    worker.onmessage = (ev) => { resolve(ev.data); worker.terminate(); };
-    worker.onerror = (err) => { reject(new Error(err?.message || 'Falha no processamento do ficheiro.')); worker.terminate(); };
+    // Timeout: se o worker não responder (ex.: falhou ao carregar sem disparar
+    // onerror, ou o chunk foi evictado após um deploy), o "A processar…" ficaria
+    // preso para sempre — o timeout de rede não alcança um Web Worker.
+    const timer = setTimeout(() => {
+      try { worker.terminate(); } catch { /* */ }
+      reject(new Error('O processamento do ficheiro demorou demais (timeout). Recarregue a página e tente novamente.'));
+    }, 60000);
+    const settle = (fn) => (arg) => { clearTimeout(timer); try { worker.terminate(); } catch { /* */ } fn(arg); };
+    worker.onmessage = settle((ev) => resolve(ev.data));
+    worker.onerror = settle((err) => reject(new Error(err?.message || 'Falha no processamento do ficheiro.')));
     // Transfere o ArrayBuffer (zero-copy) para o worker.
     worker.postMessage({ buffer, ...meta }, [buffer]);
   });

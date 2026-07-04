@@ -265,9 +265,16 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
     setIsUploading(true);
     setUploadProgress(0);
 
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
+    const reader = new FileReader();
+    // Sem estes, uma falha de leitura (ficheiro bloqueado/removido) deixava o
+    // spinner "A processar" preso para sempre → F5.
+    reader.onerror = () => {
+      setUploadMessage({ type: 'error', text: 'Não foi possível ler o ficheiro. Tente novamente.' });
+      setIsUploading(false);
+    };
+    reader.onabort = () => { setIsUploading(false); };
+    reader.onload = async (e) => {
+      try {
         const XLSX = await import('xlsx');
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
@@ -277,7 +284,6 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
 
         if (json.length < 2) {
           setUploadMessage({ type: 'error', text: 'O ficheiro Excel está vazio ou inválido.' });
-          setIsUploading(false);
           return;
         }
 
@@ -298,7 +304,6 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
 
         if (itemsToProcess.length === 0) {
           setUploadMessage({ type: 'error', text: 'Nenhum item válido encontrado no ficheiro Excel.' });
-          setIsUploading(false);
           return;
         }
 
@@ -312,16 +317,23 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoAuditor
         setUploadMessage({ type: 'success', text: `${successfulUploads} itens adicionados com sucesso!` });
         loadItems();
         if (onUpdate) onUpdate();
-
-        setIsUploading(false);
         setSelectedFile(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
-      };
+      } catch (error) {
+        // Se um ItemAuditoria.create rejeitar (ex.: timeout de 20s), cai aqui —
+        // antes, o reset da linha final nunca era alcançado e o spinner prendia.
+        console.error('Erro ao processar ficheiro Excel:', error);
+        setUploadMessage({ type: 'error', text: `Erro ao processar o ficheiro: ${error?.message || 'formato inválido'}` });
+      } finally {
+        setIsUploading(false); // SEMPRE reseta, em qualquer caminho
+      }
+    };
+    try {
       reader.readAsArrayBuffer(selectedFile);
     } catch (error) {
-      console.error('Erro ao processar ficheiro Excel:', error);
+      console.error('Erro ao iniciar leitura do ficheiro:', error);
       setUploadMessage({ type: 'error', text: 'Erro ao ler o ficheiro Excel. Verifique o formato.' });
       setIsUploading(false);
     }
