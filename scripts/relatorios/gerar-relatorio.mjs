@@ -267,6 +267,22 @@ async function enviar(recipients, subject, html, anexos) {
   return { sent, failed, blocked };
 }
 
+// Alerta central de falhas -> responsável de operações (best-effort, com retry).
+const ALERT_TO = 'oaeroportos@sga.co.ao';
+async function alertar(assunto, detalhe) {
+  try {
+    const esc = (s) => String(s || '').replace(/</g, '&lt;');
+    const html = `<div style="font-family:Arial,sans-serif;color:#0f172a;max-width:640px">
+      <h2 style="color:#b91c1c;margin:0 0 8px">⚠️ Alerta do Sistema DIROPS</h2>
+      <p style="margin:0 0 12px"><strong>${esc(assunto)}</strong></p>
+      <pre style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;white-space:pre-wrap;font-size:13px">${esc(detalhe)}</pre>
+      <p style="color:#94a3b8;font-size:12px;margin-top:16px">Gerado automaticamente pelo agendador de relatórios.</p>
+    </div>`;
+    const res = await sendOne(ALERT_TO, `⚠️ DIROPS — ${assunto}`, html, null);
+    console.log(res.ok ? `[relatorio] alerta enviado a ${ALERT_TO}` : `[relatorio] FALHA ao alertar: ${res.error || 'bloqueado'}`);
+  } catch (e) { console.log('[relatorio] erro ao alertar:', e?.message || e); }
+}
+
 // ---------- main ----------
 (async () => {
   const isKpis = TIPO === 'kpis';
@@ -349,6 +365,15 @@ async function enviar(recipients, subject, html, anexos) {
   console.log('[relatorio] enviando para:', to.join(', '));
   const res = await enviar(to, assunto, html, anexos);
   console.log(`[relatorio] resultado: enviados=${res.sent.length} falhas=${res.failed.length} bloqueados=${res.blocked.length}`);
-  if (res.failed.length) console.log('[relatorio] falhas:', JSON.stringify(res.failed));
+  if (res.failed.length) {
+    console.log('[relatorio] falhas:', JSON.stringify(res.failed));
+    await alertar(`Falha no envio do relatório (${TIPO})`,
+      `${res.failed.length} destinatário(s) não receberam após retentativas:\n` +
+      res.failed.map(f => `• ${f.to}: ${f.error}`).join('\n'));
+  }
   if (res.blocked.length) console.log('[relatorio] bloqueados (externos):', res.blocked.join(', '));
-})().catch((e) => { console.error('[relatorio] ERRO:', e.message); process.exit(1); });
+})().catch(async (e) => {
+  console.error('[relatorio] ERRO:', e.message);
+  await alertar(`Falha ao gerar o relatório (${typeof TIPO !== 'undefined' ? TIPO : '?'})`, String(e?.stack || e?.message || e));
+  process.exit(1);
+});
