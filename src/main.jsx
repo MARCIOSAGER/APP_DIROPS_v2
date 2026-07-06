@@ -2,6 +2,34 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
+import { supabase } from '@/lib/supabaseClient'
+
+// Reporta erros GRAVES do frontend ao alerta central (-> oaeroportos), que
+// deduplica no servidor (1 email por tipo/1h). Dedup também no browser + filtro
+// de ruído (rede, chunk velho, ResizeObserver) para não spammar. Fire-and-forget.
+const _reportedErrors = new Set();
+function reportSystemError(titulo, detalhe) {
+  try {
+    const sig = String(titulo + '|' + (detalhe || '')).slice(0, 200);
+    if (!sig) return;
+    if (/ResizeObserver|dynamically imported module|module script failed|Load failed|NetworkError|Failed to fetch|AbortError|timeout/i.test(sig)) return;
+    if (_reportedErrors.has(sig)) return;
+    if (_reportedErrors.size > 50) _reportedErrors.clear();
+    _reportedErrors.add(sig);
+    supabase.functions.invoke('system-alert', {
+      body: {
+        origem: 'frontend ' + (location.pathname || ''),
+        titulo,
+        detalhe: `${detalhe}\n\nURL: ${location.href}`,
+        assinatura: 'frontend:' + sig,
+      },
+    }).catch(() => {});
+  } catch { /* o reporter nunca deve quebrar */ }
+}
+
+window.addEventListener('error', (event) => {
+  reportSystemError('Erro JS (frontend)', event.error?.stack || event.message || String(event));
+});
 
 window.addEventListener('unhandledrejection', (event) => {
   console.error('[Unhandled Promise Rejection]', event.reason);
@@ -26,6 +54,8 @@ window.addEventListener('unhandledrejection', (event) => {
   if (window.__SENTRY__ && typeof window.__SENTRY__ === 'object') {
     import('@sentry/react').then(Sentry => Sentry.captureException(event.reason));
   }
+
+  reportSystemError('Promise rejeitada (frontend)', event.reason?.stack || event.reason?.message || String(event.reason));
 });
 
 // Auto-reload when Service Worker activates new version (skipWaiting / kill-switch)
