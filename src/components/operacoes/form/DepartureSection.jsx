@@ -202,7 +202,7 @@ export default function DepartureSection({
                   noResultsMessage={t('formVoo.nenhumRegisto')}
                   onSearch={(term) => searchRegistos(term, true)}
                   getInitialOption={getRegistoInicial}
-                  minSearchLength={1}
+                  minSearchLength={0}
                   className={errors.registo_dep ? 'border-red-500' : ''}
                 />
                 {errors.registo_dep && <p className="text-red-500 text-sm">{errors.registo_dep}</p>}

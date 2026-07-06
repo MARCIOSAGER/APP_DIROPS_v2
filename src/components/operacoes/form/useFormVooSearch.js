@@ -135,8 +135,12 @@ export default function useFormVooSearch({
 
       let results;
       if (allCompanies) {
-        if (!searchTerm) return [];
-        results = await RegistoAeronave.filter({ registo: { $like: `%${searchTerm}%` } });
+        // Poucos registos (~224). Sem termo (dropdown recém-aberto) mostra a lista
+        // de imediato — antes retornava vazio e o utilizador via um dropdown "sem
+        // informação" até digitar. Com termo, filtra no servidor.
+        results = searchTerm
+          ? await RegistoAeronave.filter({ registo: { $like: `%${searchTerm}%` } })
+          : await RegistoAeronave.list('registo');
       } else {
         const allCompanhias = await loadCompanhiasCache();
         const companhiaSelecionada = allCompanhias.find(c => c.codigo_icao === formData.companhia_aerea)
