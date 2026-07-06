@@ -233,9 +233,12 @@ async function buscarKpis(per) {
 }
 
 // ---------- envio (INDIVIDUAL via send-email; suporta anexo; pacing anti-spam) ----------
-async function enviar(recipients, subject, html, anexos) {
-  const sent = [], failed = [], blocked = [];
-  for (const to of recipients) {
+// Retentativa com backoff em falhas TRANSITÓRIAS (timeout de SMTP, blip de rede,
+// 5xx). NÃO retenta 422 (externo bloqueado pelo relay = permanente). Antes: 1
+// tentativa só → um timeout pontual do relay deixava um destinatário de fora.
+async function sendOne(to, subject, html, anexos, attempts = 3) {
+  let lastErr = '';
+  for (let i = 1; i <= attempts; i++) {
     try {
       const payload = { to, subject, html };
       if (anexos && anexos.length) payload.attachments = anexos;
@@ -243,10 +246,22 @@ async function enviar(recipients, subject, html, anexos) {
         method: 'POST', headers: HDR, body: JSON.stringify(payload),
       });
       const j = await r.json().catch(() => ({}));
-      if (r.ok && j.success) sent.push(to);
-      else if (r.status === 422) blocked.push(to);
-      else failed.push({ to, error: j.error || `HTTP ${r.status}` });
-    } catch (e) { failed.push({ to, error: e.message || String(e) }); }
+      if (r.ok && j.success) return { ok: true, tries: i };
+      if (r.status === 422) return { ok: false, blocked: true };
+      lastErr = j.error || `HTTP ${r.status}`;
+    } catch (e) { lastErr = e.message || String(e); }
+    if (i < attempts) await new Promise((res) => setTimeout(res, 4000 * i)); // backoff 4s, 8s
+  }
+  return { ok: false, error: lastErr };
+}
+
+async function enviar(recipients, subject, html, anexos) {
+  const sent = [], failed = [], blocked = [];
+  for (const to of recipients) {
+    const res = await sendOne(to, subject, html, anexos);
+    if (res.ok) sent.push(to);
+    else if (res.blocked) blocked.push(to);
+    else failed.push({ to, error: res.error });
     await new Promise((res) => setTimeout(res, 600)); // pacing p/ relay SGA
   }
   return { sent, failed, blocked };

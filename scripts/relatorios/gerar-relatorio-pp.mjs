@@ -98,17 +98,33 @@ function buildHtml(agg, label) {
   </div>`;
 }
 
-async function enviar(recipients, subject, html, anexos) {
-  const sent = [], failed = [], blocked = [];
-  for (const to of recipients) {
+// Envia para UM destinatário, com retentativa (backoff) em falhas transitórias
+// (timeout de SMTP, blip de rede, HTTP 5xx). NÃO retenta 422 (externo bloqueado
+// pelo relay = falha permanente). Antes: 1 tentativa só → um timeout pontual do
+// relay deixava um destinatário de fora (ex.: MMartins em 06/07).
+async function sendOne(to, subject, html, anexos, attempts = 3) {
+  let lastErr = '';
+  for (let i = 1; i <= attempts; i++) {
     try {
       const payload = { to, subject, html, attachments: anexos };
       const r = await fetch(`${FUNCTIONS}/functions/send-email`, { method: 'POST', headers: HDR, body: JSON.stringify(payload) });
       const j = await r.json().catch(() => ({}));
-      if (r.ok && j.success) sent.push(to);
-      else if (r.status === 422) blocked.push(to);
-      else failed.push({ to, error: j.error || `HTTP ${r.status}` });
-    } catch (e) { failed.push({ to, error: e.message }); }
+      if (r.ok && j.success) return { ok: true, tries: i };
+      if (r.status === 422) return { ok: false, blocked: true };
+      lastErr = j.error || `HTTP ${r.status}`;
+    } catch (e) { lastErr = e.message; }
+    if (i < attempts) await new Promise(res => setTimeout(res, 4000 * i)); // backoff 4s, 8s
+  }
+  return { ok: false, error: lastErr };
+}
+
+async function enviar(recipients, subject, html, anexos) {
+  const sent = [], failed = [], blocked = [];
+  for (const to of recipients) {
+    const res = await sendOne(to, subject, html, anexos);
+    if (res.ok) { sent.push(to); if (res.tries > 1) log(`  ${to}: entregue na tentativa ${res.tries}`); }
+    else if (res.blocked) blocked.push(to);
+    else failed.push({ to, error: res.error });
     await new Promise(res => setTimeout(res, 600)); // pacing relay SGA
   }
   return { sent, failed, blocked };
@@ -132,7 +148,11 @@ async function enviar(recipients, subject, html, anexos) {
     log(`PDF salvo: ${outPath}`); return;
   }
 
-  const recipients = await buscarDestinatarios();
+  // --to=a@x,b@y : override manual (ex.: reenvio a um destinatário que falhou);
+  // sem --to usa a lista configurada em relatorio_destinatario.
+  const recipients = args.to
+    ? String(args.to).split(',').map(s => s.trim()).filter(Boolean)
+    : await buscarDestinatarios();
   if (!recipients.length) { log('sem destinatários ativos — nada enviado'); return; }
   const html = htmlRelatorioPP(rows, { periodo: per.label, consolidadoRows, anoConsolidado: ano });
   const anexos = [{ filename: `Pronto_Pagamento_${per.fim || per.likeDia}.pdf`, content: pdfB64, encoding: 'base64', contentType: 'application/pdf' }];
