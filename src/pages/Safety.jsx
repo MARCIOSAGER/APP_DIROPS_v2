@@ -14,7 +14,6 @@ import { useOcorrencias } from '@/hooks/useOcorrencias';
 import SafetyOccurrencesList from '../components/safety/SafetyOccurrencesList';
 import FormSafetyOccurrence from '../components/safety/FormSafetyOccurrence';
 import TreinamentosLicencasTab from '../components/safety/TreinamentosLicencasTab';
-import { downloadAsCSV } from '../components/lib/export';
 import { createPdfDoc, addHeader, addFooter, addTable, addSectionTitle, addKeyValuePairs, checkPageBreak, loadImageAsBase64, PDF } from '@/lib/pdfTemplate';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import SendEmailModal from '../components/shared/SendEmailModal';
@@ -205,7 +204,7 @@ export default function Safety() {
     }
   }, [ocorrenciasFiltradas]);
   
-  const handleExportCSV = () => {
+  const handleExportExcel = async () => {
     const dataToExport = (selectedOcorrencias.length > 0
       ? ocorrencias.filter(o => selectedOcorrencias.includes(o.id))
       : ocorrenciasFiltradas
@@ -226,25 +225,20 @@ export default function Safety() {
       return;
     }
 
-    const ok = downloadAsCSV(dataToExport, `ocorrencias_safety_${new Date().toISOString().split('T')[0]}`);
-    if (ok) {
-      setSuccessInfo({ isOpen: true, title: t('safety.csv_gerado'), message: t('safety.csv_gerado_msg') });
-    } else {
+    try {
+      const XLSX = await import('xlsx');
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Ocorrências');
+      XLSX.writeFile(wb, `ocorrencias_safety_${new Date().toISOString().split('T')[0]}.xlsx`);
+      setSuccessInfo({ isOpen: true, title: t('safety.excel_gerado'), message: t('safety.excel_gerado_msg') });
+    } catch {
       setAlertInfo({ isOpen: true, type: 'error', title: t('safety.nenhum_dado'), message: t('safety.nenhum_dado_exportar') });
     }
   };
 
-  const handleExportPDF = async () => {
-    const dataToExport = selectedOcorrencias.length > 0
-      ? ocorrencias.filter(o => selectedOcorrencias.includes(o.id))
-      : ocorrenciasFiltradas;
-      
-    if (dataToExport.length === 0) {
-      setAlertInfo({ isOpen: true, type: 'warning', title: t('safety.nenhum_dado'), message: t('safety.nenhum_dado_exportar') });
-      return;
-    }
-
-    try {
+  // Constrói o PDF detalhado do Safety (partilhado pelo botão "PDF" e pelo anexo do email).
+  const buildSafetyPdfDoc = async (dataToExport) => {
       const doc = await createPdfDoc();
       const logoBase64 = await loadImageAsBase64('/logo-sga.png').catch(() => null);
       const today = new Date().toLocaleDateString('pt-AO');
@@ -342,6 +336,62 @@ export default function Safety() {
       }
 
       addFooter(doc);
+      return doc;
+  };
+
+  // Corpo do email — HTML estilizado (cabeçalho SGA + tabela com badges) e menção ao PDF anexo.
+  const buildSafetyEmailHtml = (subject, message, data) => {
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    const gravBg = { baixa: '#dcfce7', media: '#fef3c7', alta: '#fee2e2', critica: '#ede9fe' };
+    const gravFg = { baixa: '#166534', media: '#92400e', alta: '#991b1b', critica: '#5b21b6' };
+    const statBg = { aberta: '#fee2e2', em_investigacao: '#fef3c7', fechada: '#dcfce7' };
+    const badge = (txt, bg, fg) => `<span style="display:inline-block;padding:2px 9px;border-radius:10px;background:${bg};color:${fg};font-size:11px;font-weight:600;text-transform:capitalize;">${esc(txt)}</span>`;
+    const rows = data.map((occ, i) => {
+      const tipo = (occ.tipo_ocorrencia || '').replace(/_/g, ' ');
+      const aero = aeroportos.find((a) => a.codigo_icao === occ.aeroporto)?.nome || occ.aeroporto || '—';
+      const dataOcc = occ.data_ocorrencia ? new Date(occ.data_ocorrencia).toLocaleDateString('pt-AO') : '—';
+      const g = (occ.gravidade || '').toLowerCase();
+      const st = (occ.status || '').toLowerCase();
+      const td = 'padding:8px 10px;border-bottom:1px solid #eef2f7;font-size:13px;color:#334155;';
+      return `<tr style="background:${i % 2 ? '#ffffff' : '#f8fafc'};">
+        <td style="${td}color:#0f172a;font-weight:600;text-transform:capitalize;">${esc(tipo)}</td>
+        <td style="${td}">${esc(aero)}</td>
+        <td style="${td}white-space:nowrap;">${esc(dataOcc)}${occ.hora_ocorrencia ? ' ' + esc(occ.hora_ocorrencia) : ''}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eef2f7;">${badge(g, gravBg[g] || '#f1f5f9', gravFg[g] || '#475569')}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eef2f7;">${badge((occ.status || '').replace(/_/g, ' '), statBg[st] || '#f1f5f9', '#475569')}</td>
+      </tr>`;
+    }).join('');
+    const th = 'padding:9px 10px;color:#cbd5e1;font-size:11px;text-transform:uppercase;letter-spacing:.5px;text-align:left;font-weight:600;';
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;background:#eef2f7;font-family:Segoe UI,Arial,sans-serif;">
+<div style="max-width:720px;margin:0 auto;padding:20px;">
+  <div style="background:#1e3a5f;border-radius:12px 12px 0 0;padding:20px 30px;">
+    <div style="color:#cbd5e1;font-size:12px;text-transform:uppercase;letter-spacing:.6px;">SGA · Direção de Operações</div>
+    <div style="color:#ffffff;font-size:20px;font-weight:700;margin-top:4px;">Safety &amp; Segurança Operacional</div>
+  </div>
+  <div style="background:#ffffff;padding:26px 30px 32px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;">
+    <h1 style="font-size:17px;color:#1e3a5f;margin:0 0 6px;">${esc(subject)}</h1>
+    ${message ? `<p style="color:#334155;font-size:14px;margin:0 0 14px;">${esc(message)}</p>` : ''}
+    <p style="color:#64748b;font-size:13px;margin:0 0 16px;">Segue o resumo de <strong>${data.length}</strong> ocorrência(s) de safety. O relatório detalhado (descrições, ações tomadas e evidências fotográficas) segue em <strong>PDF anexo</strong>.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+      <tr style="background:#1e3a5f;"><th style="${th}">Tipo</th><th style="${th}">Aeroporto</th><th style="${th}">Data</th><th style="${th}">Gravidade</th><th style="${th}">Status</th></tr>
+      ${rows}
+    </table>
+  </div>
+  <div style="text-align:center;padding:14px;color:#94a3b8;font-size:11px;">Gerado automaticamente pelo Sistema DIROPS · SGA</div>
+</div></body></html>`;
+  };
+
+  const handleExportPDF = async () => {
+    const dataToExport = selectedOcorrencias.length > 0
+      ? ocorrencias.filter(o => selectedOcorrencias.includes(o.id))
+      : ocorrenciasFiltradas;
+    if (dataToExport.length === 0) {
+      setAlertInfo({ isOpen: true, type: 'warning', title: t('safety.nenhum_dado'), message: t('safety.nenhum_dado_exportar') });
+      return;
+    }
+    try {
+      const doc = await buildSafetyPdfDoc(dataToExport);
       doc.save(`relatorio_safety_${new Date().toISOString().split('T')[0]}.pdf`);
       setSuccessInfo({ isOpen: true, title: t('safety.pdf_gerado'), message: t('safety.pdf_gerado_msg') });
     } catch (error) {
@@ -350,31 +400,29 @@ export default function Safety() {
     }
   };
   
-  const handleSendEmail = async (recipient, subject) => {
+  const handleSendEmail = async ({ to, subject, message }) => {
+    const recipient = to;
     const dataToSend = selectedOcorrencias.length > 0
       ? ocorrencias.filter(o => selectedOcorrencias.includes(o.id))
       : ocorrenciasFiltradas;
-      
+
     if (dataToSend.length === 0) {
       setAlertInfo({ isOpen: true, type: 'warning', title: t('safety.nenhum_dado'), message: t('safety.selecione_ocorrencias') });
       return false;
     }
 
-    let body = `<h1>${subject}</h1><p>${t('safety.resumo_email')} ${dataToSend.length} ${t('safety.ocorrencias_de_safety')}:</p>`;
-    body += `<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;"><thead><tr><th>${t('safety.col_tipo')}</th><th>${t('safety.col_aeroporto')}</th><th>${t('safety.col_data')}</th><th>${t('safety.col_gravidade')}</th><th>${t('safety.col_status')}</th></tr></thead><tbody>`;
-    dataToSend.forEach(occ => {
-      body += `<tr>
-        <td>${occ.tipo_ocorrencia.replace(/_/g, ' ')}</td>
-        <td>${aeroportos.find(a => a.codigo_icao === occ.aeroporto)?.nome || occ.aeroporto}</td>
-        <td>${new Date(occ.data_ocorrencia).toLocaleDateString('pt-AO')}</td>
-        <td>${occ.gravidade}</td>
-        <td>${occ.status.replace(/_/g, ' ')}</td>
-      </tr>`;
-    });
-    body += '</tbody></table>';
+    const body = buildSafetyEmailHtml(subject, message, dataToSend);
+
+    // Anexa o PDF detalhado (o mesmo do botão "PDF"): descrições, ações e fotos.
+    let attachments;
+    try {
+      const doc = await buildSafetyPdfDoc(dataToSend);
+      const b64 = doc.output('datauristring').split(',')[1];
+      if (b64) attachments = [{ filename: `relatorio_safety_${new Date().toISOString().split('T')[0]}.pdf`, content: b64, encoding: 'base64', contentType: 'application/pdf' }];
+    } catch (e) { console.warn('Anexo PDF do Safety falhou:', e); }
 
     try {
-      await sendEmailDirect({ to: recipient, subject, body });
+      await sendEmailDirect({ to: recipient, subject, body, attachments });
       setSuccessInfo({ isOpen: true, title: t('safety.email_enviado'), message: `${t('safety.email_enviado_msg')} ${recipient}.` });
       return true;
     } catch (error) {
@@ -436,9 +484,9 @@ export default function Safety() {
               <RefreshCw className="w-4 h-4 mr-2" />
               {t('btn.refresh')}
             </Button>
-            <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+            <Button variant="outline" onClick={handleExportExcel} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileDown className="w-4 h-4 mr-2" />
-              CSV
+              Excel
             </Button>
             <Button variant="outline" onClick={handleExportPDF} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileText className="w-4 h-4 mr-2" />
