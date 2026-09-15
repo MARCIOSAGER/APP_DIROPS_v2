@@ -165,13 +165,16 @@ describe('VoosTab', () => {
     expect(passed.onSort).toBe(baseProps.onSort);
   });
 
-  it('shows loading overlay when isFiltering is true', () => {
+  it('shows inline "Buscando..." on the button when isFiltering is true', () => {
+    // Overlay bloqueante foi removido (ver VoosTab.jsx: "Overlay bloqueante removido");
+    // agora o feedback e apenas o texto "Buscando..." + spinner no proprio botao.
     render(<VoosTab {...baseProps} isFiltering={true} />);
-    expect(screen.getByText('operacoes.carregando_voos')).toBeInTheDocument();
+    expect(screen.getByText(/Buscando/i)).toBeInTheDocument();
   });
 
-  it('does not show loading overlay when isFiltering is false', () => {
+  it('shows "Buscar" on the button when isFiltering is false', () => {
     render(<VoosTab {...baseProps} isFiltering={false} />);
-    expect(screen.queryByText('operacoes.carregando_voos')).not.toBeInTheDocument();
+    expect(screen.getByText(/Buscar/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Buscando/i)).not.toBeInTheDocument();
   });
 });

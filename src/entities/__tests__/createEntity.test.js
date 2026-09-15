@@ -44,13 +44,17 @@ describe('createEntity', () => {
   let entity;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    // Re-chain after clear
+    // mockReset limpa implementations tambem (mockResolvedValue*Once do teste
+    // anterior herdaria o queue senao); clearAllMocks so limpa call history.
+    Object.values(mockQuery).forEach(fn => fn.mockReset());
     Object.values(mockQuery).forEach(fn => fn.mockReturnValue(mockQuery));
     entity = createEntity('test_table');
+    mockSupabase.auth.getUser.mockReset();
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: { email: 'user@test.com' } },
     });
+    mockSupabase.from.mockReset();
+    mockSupabase.from.mockReturnValue(mockQuery);
   });
 
   // ── applyFilters ──────────────────────────────────────────────────
@@ -229,6 +233,17 @@ describe('createEntity', () => {
 
   // ── fetchAll pagination ───────────────────────────────────────────
   describe('fetchAll pagination', () => {
+    // PAGE_SIZE ao vivo em _createEntity.js (2026-09: 5000). Manter estas
+    // constantes em sincronia; se mudar la, actualizar aqui.
+    const PAGE_SIZE = 5000;
+
+    beforeEach(() => {
+      // Reset ao mock range: mockResolvedValueOnce sobrevive entre testes
+      // e o queue herdado corrompe as assertivas dos testes seguintes.
+      mockQuery.range.mockReset();
+      mockQuery.range.mockReturnValue(mockQuery);
+    });
+
     it('fetches single page when results < PAGE_SIZE', async () => {
       const items = Array.from({ length: 10 }, (_, i) => ({ id: i }));
       mockQuery.range.mockResolvedValueOnce({ data: items, error: null });
@@ -236,32 +251,32 @@ describe('createEntity', () => {
       const result = await entity.list();
       expect(result).toHaveLength(10);
       expect(mockQuery.range).toHaveBeenCalledTimes(1);
-      expect(mockQuery.range).toHaveBeenCalledWith(0, 499);
+      expect(mockQuery.range).toHaveBeenCalledWith(0, PAGE_SIZE - 1);
     });
 
     it('fetches multiple pages when results fill PAGE_SIZE', async () => {
-      const page1 = Array.from({ length: 500 }, (_, i) => ({ id: i }));
-      const page2 = Array.from({ length: 200 }, (_, i) => ({ id: 500 + i }));
+      const page1 = Array.from({ length: PAGE_SIZE }, (_, i) => ({ id: i }));
+      const page2 = Array.from({ length: 200 }, (_, i) => ({ id: PAGE_SIZE + i }));
 
       mockQuery.range
         .mockResolvedValueOnce({ data: page1, error: null })
         .mockResolvedValueOnce({ data: page2, error: null });
 
       const result = await entity.list();
-      expect(result).toHaveLength(700);
+      expect(result).toHaveLength(PAGE_SIZE + 200);
       expect(mockQuery.range).toHaveBeenCalledTimes(2);
-      expect(mockQuery.range).toHaveBeenNthCalledWith(1, 0, 499);
-      expect(mockQuery.range).toHaveBeenNthCalledWith(2, 500, 999);
+      expect(mockQuery.range).toHaveBeenNthCalledWith(1, 0, PAGE_SIZE - 1);
+      expect(mockQuery.range).toHaveBeenNthCalledWith(2, PAGE_SIZE, PAGE_SIZE * 2 - 1);
     });
 
     it('stops when empty page is returned', async () => {
-      const page1 = Array.from({ length: 500 }, (_, i) => ({ id: i }));
+      const page1 = Array.from({ length: PAGE_SIZE }, (_, i) => ({ id: i }));
       mockQuery.range
         .mockResolvedValueOnce({ data: page1, error: null })
         .mockResolvedValueOnce({ data: [], error: null });
 
       const result = await entity.list();
-      expect(result).toHaveLength(500);
+      expect(result).toHaveLength(PAGE_SIZE);
       expect(mockQuery.range).toHaveBeenCalledTimes(2);
     });
 

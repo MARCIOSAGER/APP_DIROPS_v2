@@ -119,7 +119,8 @@ describe('sanitizeFilename', () => {
 
   it('preserves normal filenames', () => {
     expect(sanitizeFilename('report-2024.pdf')).toBe('report-2024.pdf');
-    expect(sanitizeFilename('my_file (1).docx')).toBe('my_file (1).docx');
+    // Espacos e parenteses viram '_' (URL-safe); _+ colapsados em um so.
+    expect(sanitizeFilename('my_file (1).docx')).toBe('my_file_1_.docx');
   });
 
   it('returns "arquivo" if all characters are stripped', () => {

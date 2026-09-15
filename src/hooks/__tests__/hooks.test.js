@@ -77,11 +77,13 @@ describe('useVoos', () => {
     );
   });
 
-  it('is disabled when empresaId is falsy', () => {
-    const { result } = renderHook(() => useVoos({ empresaId: null }), {
+  it('is disabled when enabled=false regardless of empresaId', () => {
+    const { result } = renderHook(() => useVoos({ empresaId: null, enabled: false }), {
       wrapper: createWrapper(),
     });
-    // Should not fetch at all - stays in loading/idle
+    // Comportamento actual do useVoos: nao ha branch "sem empresaId";
+    // apenas o enabled externo desliga a query. Sem empresaId + enabled=true
+    // chama Voo.filter apenas com deleted_at (superadmin ve tudo).
     expect(mockFilter).not.toHaveBeenCalled();
     expect(result.current.data).toBeUndefined();
   });

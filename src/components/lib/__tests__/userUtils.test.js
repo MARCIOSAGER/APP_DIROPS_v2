@@ -210,13 +210,13 @@ describe('getEmpresaLogoByAeroporto', () => {
     expect(getEmpresaLogoByAeroporto('FNLU', aeroportos, empresas)).toBe('https://cdn.example.com/logo1.png');
   });
   it('returns default logo when empresa has no logo', () => {
-    expect(getEmpresaLogoByAeroporto('FNHU', aeroportos, empresas)).toBe('/logo-dirops.png');
+    expect(getEmpresaLogoByAeroporto('FNHU', aeroportos, empresas)).toBe('/logo-sga.png');
   });
   it('returns default logo for unknown airport', () => {
-    expect(getEmpresaLogoByAeroporto('XXXX', aeroportos, empresas)).toBe('/logo-dirops.png');
+    expect(getEmpresaLogoByAeroporto('XXXX', aeroportos, empresas)).toBe('/logo-sga.png');
   });
   it('returns default for null input', () => {
-    expect(getEmpresaLogoByAeroporto(null, aeroportos, empresas)).toBe('/logo-dirops.png');
+    expect(getEmpresaLogoByAeroporto(null, aeroportos, empresas)).toBe('/logo-sga.png');
   });
 });
 
@@ -228,9 +228,9 @@ describe('getEmpresaLogoByUser', () => {
     expect(getEmpresaLogoByUser(empresaAdmin, empresas)).toBe('https://cdn.example.com/logo1.png');
   });
   it('returns default for superadmin (no empresa)', () => {
-    expect(getEmpresaLogoByUser(superAdmin, empresas)).toBe('/logo-dirops.png');
+    expect(getEmpresaLogoByUser(superAdmin, empresas)).toBe('/logo-sga.png');
   });
   it('returns default for null user', () => {
-    expect(getEmpresaLogoByUser(null, empresas)).toBe('/logo-dirops.png');
+    expect(getEmpresaLogoByUser(null, empresas)).toBe('/logo-sga.png');
   });
 });
