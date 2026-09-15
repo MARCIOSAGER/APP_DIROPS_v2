@@ -61,15 +61,15 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p 65002 62.72.62.61 >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -p 65002 82.25.72.201 >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Clean remote assets
-        run: ssh -p 65002 -i ~/.ssh/id_ed25519 u617589611@62.72.62.61 "rm -rf domains/app.marciosager.com/public_html/assets/"
+        run: ssh -p 65002 -i ~/.ssh/id_ed25519 u617589611@82.25.72.201 "rm -rf domains/app.marciosager.com/public_html/assets/"
 
       - name: Deploy files
         run: |
-          scp -P 65002 -r -i ~/.ssh/id_ed25519 dist/* u617589611@62.72.62.61:domains/app.marciosager.com/public_html/
-          scp -P 65002 -i ~/.ssh/id_ed25519 dist/.htaccess u617589611@62.72.62.61:domains/app.marciosager.com/public_html/
+          scp -P 65002 -r -i ~/.ssh/id_ed25519 dist/* u617589611@82.25.72.201:domains/app.marciosager.com/public_html/
+          scp -P 65002 -i ~/.ssh/id_ed25519 dist/.htaccess u617589611@82.25.72.201:domains/app.marciosager.com/public_html/
 
       - name: Cleanup SSH
         if: always()
