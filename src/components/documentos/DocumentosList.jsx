@@ -36,6 +36,26 @@ const STATUS_CONFIG = {
   revisao: { color: 'bg-yellow-100 text-yellow-800', label: 'Em Revisão' }
 };
 
+// Devolve { color, text } para o badge de validade do doc, ou null se sem expiracao.
+// Thresholds: verde >90d, amarelo 30-90d, vermelho <30d, cinza escuro se expirado.
+function getValidadeInfo(dataExpiracao) {
+  if (!dataExpiracao) return null;
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const exp = new Date(dataExpiracao); exp.setHours(0, 0, 0, 0);
+  if (Number.isNaN(exp.getTime())) return null;
+  const diasRestantes = Math.round((exp - hoje) / 86400000);
+  if (diasRestantes < 0) {
+    return { color: 'bg-slate-700 text-white', text: `Expirou há ${-diasRestantes}d` };
+  }
+  if (diasRestantes < 30) {
+    return { color: 'bg-red-100 text-red-800 border-red-300', text: `Expira em ${diasRestantes}d` };
+  }
+  if (diasRestantes <= 90) {
+    return { color: 'bg-amber-100 text-amber-800 border-amber-300', text: `Expira em ${diasRestantes}d` };
+  }
+  return { color: 'bg-green-100 text-green-800 border-green-300', text: `Válido até ${format(exp, 'dd/MM/yyyy')}` };
+}
+
 export default function DocumentosList({ documentos, aeroportos, isLoading, onReload, onEdit, onDelete, onMove, onGerenciarAcesso, user, viewMode = 'list' }) {
   const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
@@ -527,9 +547,19 @@ export default function DocumentosList({ documentos, aeroportos, isLoading, onRe
                           <span className="font-mono text-sm">{documento.versao}</span>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm">
-                            {format(parseISO(documento.data_publicacao), 'dd/MM/yyyy', { locale: pt })}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm">
+                              {format(parseISO(documento.data_publicacao), 'dd/MM/yyyy', { locale: pt })}
+                            </span>
+                            {(() => {
+                              const v = getValidadeInfo(documento.data_expiracao);
+                              return v ? (
+                                <Badge variant="outline" className={`${v.color} border text-[10px] w-fit`}>
+                                  {v.text}
+                                </Badge>
+                              ) : null;
+                            })()}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`${statusConfig.color} border`}>

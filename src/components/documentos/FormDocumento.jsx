@@ -47,6 +47,8 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
     aeroporto: '',
     versao: '1.0',
     data_publicacao: new Date().toISOString().split('T')[0],
+    data_expiracao: '',
+    dias_alerta_expiracao: 30,
     descricao: '',
     nivel_acesso: [],
     nivel_confidencialidade: 'interno',
@@ -75,6 +77,8 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
         aeroporto: '',
         versao: '1.0',
         data_publicacao: new Date().toISOString().split('T')[0],
+        data_expiracao: '',
+        dias_alerta_expiracao: 30,
         descricao: '',
         nivel_acesso: [],
         status: 'ativo',
@@ -278,6 +282,31 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
                 value={formData.data_publicacao}
                 onChange={(e) => handleChange('data_publicacao', e.target.value)} />
 
+            </div>
+          </div>
+
+          {/* Validade (opcional) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Data de Validade <span className="text-slate-400 font-normal">(opcional)</span></Label>
+              <Input
+                type="date"
+                value={formData.data_expiracao || ''}
+                onChange={(e) => handleChange('data_expiracao', e.target.value)}
+                min={formData.data_publicacao} />
+              <p className="text-xs text-slate-500">Deixe vazio se o documento não expira.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Alertar antes (dias)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={365}
+                value={formData.dias_alerta_expiracao ?? 30}
+                onChange={(e) => handleChange('dias_alerta_expiracao', parseInt(e.target.value, 10) || 30)}
+                disabled={!formData.data_expiracao}
+                placeholder="30" />
+              <p className="text-xs text-slate-500">Aparece no relatório de alerta quando faltarem X dias.</p>
             </div>
           </div>
 
