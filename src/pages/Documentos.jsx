@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, FileText, Upload, FileDown, BookOpen, BarChart2, FolderUp, Home, ChevronRight, FolderPlus, Grid3x3, List } from 'lucide-react';
+import { RefreshCw, FileText, Upload, FileDown, BookOpen, BarChart2, FolderUp, Home, ChevronRight, FolderPlus, Grid3x3, List, Link2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 import { Documento } from '@/entities/Documento';
@@ -14,6 +14,7 @@ import { useDocumentos } from '@/hooks/useDocumentos';
 import DocumentosList from '../components/documentos/DocumentosList';
 import FormDocumento from '../components/documentos/FormDocumento';
 import UploadMassaModal from '../components/documentos/UploadMassaModal';
+import GerirLinksPartilhaModal from '../components/documentos/GerirLinksPartilhaModal';
 import BuscaInteligente from '../components/documentos/BuscaInteligente';
 import DragDropUpload from '../components/documentos/DragDropUpload';
 import PastaCard from '../components/documentos/PastaCard';
@@ -56,6 +57,7 @@ export default function Documentos() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDocumento, setEditingDocumento] = useState(null);
   const [isUploadMassaOpen, setIsUploadMassaOpen] = useState(false);
+  const [isGerirLinksOpen, setIsGerirLinksOpen] = useState(false);
   const [buscaInteligente, setBuscaInteligente] = useState(null);
   const [pastaAtual, setPastaAtual] = useState(null);
   const [caminhoPasta, setCaminhoPasta] = useState([]);
@@ -556,6 +558,10 @@ export default function Documentos() {
               <FolderUp className="w-4 h-4 mr-2" />
               {t('documentos.uploadMassa')}
             </Button>
+            <Button variant="outline" onClick={() => setIsGerirLinksOpen(true)} className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+              <Link2 className="w-4 h-4 mr-2" />
+              Links partilháveis
+            </Button>
             <Button onClick={() => { setEditingDocumento(null); setIsFormOpen(true); }}>
               <Upload className="w-4 h-4 mr-2" />
               {t('documentos.novoDocumento')}
@@ -804,6 +810,12 @@ export default function Documentos() {
           currentUser={currentUser}
         />
       )}
+
+      <GerirLinksPartilhaModal
+        isOpen={isGerirLinksOpen}
+        onClose={() => setIsGerirLinksOpen(false)}
+      />
+
 
       {isFormPastaOpen && (
         <FormPasta

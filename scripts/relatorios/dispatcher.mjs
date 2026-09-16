@@ -28,9 +28,11 @@ const ARGS = {
   kpis_semanal: ['--tipo=kpis', '--periodo=semanal'],
   kpis_mensal: ['--tipo=kpis', '--periodo=mensal'],
   pronto_pagamento: [],   // o gerador-pp calcula o período (seg cobre sex→dom)
+  chegadas_abertas: [],   // backlog de chegadas sem partida (o gerador calcula tudo)
+  docs_a_expirar: [],     // GED: documentos com data_expiracao proxima ou expirada
 };
-// chave -> script (default gerar-relatorio.mjs). PP usa o seu próprio gerador.
-const SCRIPT = { pronto_pagamento: 'gerar-relatorio-pp.mjs' };
+// chave -> script (default gerar-relatorio.mjs). PP e chegadas usam geradores próprios.
+const SCRIPT = { pronto_pagamento: 'gerar-relatorio-pp.mjs', chegadas_abertas: 'chegadas-abertas.mjs', docs_a_expirar: 'docs-a-expirar.mjs' };
 
 const pad = (n) => String(n).padStart(2, '0');
 const log = (m) => console.log(`[dispatcher ${new Date().toISOString()}]${DRY ? ' (DRY)' : ''} ${m}`);
@@ -68,12 +70,18 @@ const log = (m) => console.log(`[dispatcher ${new Date().toISOString()}]${DRY ? 
     for (const job of jobs) {
       const jaHoje = job.ultimo_envio === today;
       const horaChegou = hhmm >= (job.hora || '99:99');
+      // diaria: se dias_semana estiver definido (CSV ISO 1=Seg..7=Dom), só roda nesses dias; vazio/null = todos.
+      const diasDiario = String(job.dias_semana || '').split(',').map((d) => Number(d.trim())).filter(Boolean);
       const diaOk = (job.frequencia !== 'semanal' || Number(job.dia_semana) === isoDow)
-                 && (job.frequencia !== 'mensal' || Number(job.dia_mes) === dom);
+                 && (job.frequencia !== 'mensal' || Number(job.dia_mes) === dom)
+                 && (job.frequencia !== 'diaria' || diasDiario.length === 0 || diasDiario.includes(isoDow));
       if (!(!jaHoje && horaChegou && diaOk)) { log(`skip ${job.chave} (jaHoje=${jaHoje} horaChegou=${horaChegou} diaOk=${diaOk})`); continue; }
 
-      const args = ARGS[job.chave];
-      if (!args) { log(`chave desconhecida: ${job.chave} — ignorado`); continue; }
+      const base = ARGS[job.chave];
+      if (!base) { log(`chave desconhecida: ${job.chave} — ignorado`); continue; }
+      const args = [...base];
+      // Início da semana configurável na agenda (0=Dom…6=Sáb) — só p/ relatórios semanais.
+      if (job.inicio_semana != null && String(job.chave).includes('semanal')) args.push('--inicio-semana=' + job.inicio_semana);
       if (DRY) { disparados++; log(`DISPARARIA ${job.chave} -> ${SCRIPT[job.chave] || 'gerar-relatorio.mjs'} ${args.join(' ')}`); continue; }
 
       // RESERVA ATÔMICA antes de enviar: marca ultimo_envio=hoje SÓ se ainda != hoje.

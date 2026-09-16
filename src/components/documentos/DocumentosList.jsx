@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, FileText, Edit, Eye, Archive, FolderInput, Lock, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, Trash2, FolderOpen, DownloadCloud, UserCog } from 'lucide-react';
+import { Search, FileText, Edit, Eye, Archive, FolderInput, Lock, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, Trash2, FolderOpen, DownloadCloud, UserCog, Link2 } from 'lucide-react';
+import CriarLinkPartilhaModal from './CriarLinkPartilhaModal';
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -63,6 +64,7 @@ export default function DocumentosList({ documentos, aeroportos, isLoading, onRe
   const [statusFilter, setStatusFilter] = useState('todos');
   const [viewingDocument, setViewingDocument] = useState(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [linkPartilhaDoc, setLinkPartilhaDoc] = useState(null);
   const [sortField, setSortField] = useState('data_publicacao');
   const [sortDirection, setSortDirection] = useState('desc');
   const [selectedDocs, setSelectedDocs] = useState([]);
@@ -587,14 +589,25 @@ export default function DocumentosList({ documentos, aeroportos, isLoading, onRe
                               <Edit className="w-4 h-4" />
                             </Button>
                             {onGerenciarAcesso && (
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                 onClick={() => onGerenciarAcesso(documento)}
                                 title="Gerenciar acesso"
                               >
                                 <UserCog className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {documento.nivel_confidencialidade !== 'secreto' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                onClick={() => setLinkPartilhaDoc(documento)}
+                                title="Criar link partilhável"
+                              >
+                                <Link2 className="w-4 h-4" />
                               </Button>
                             )}
                             {onMove && (
@@ -639,6 +652,13 @@ export default function DocumentosList({ documentos, aeroportos, isLoading, onRe
         }}
         documento={viewingDocument}
         aeroportos={aeroportos}
+      />
+
+      {/* GED - link partilhavel */}
+      <CriarLinkPartilhaModal
+        isOpen={!!linkPartilhaDoc}
+        onClose={() => setLinkPartilhaDoc(null)}
+        documento={linkPartilhaDoc}
       />
     </div>
   );
