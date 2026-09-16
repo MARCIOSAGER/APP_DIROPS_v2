@@ -1,19 +1,30 @@
 import React from 'react';
 import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent } from '@/components/ui/card';
-import { FolderOpen, Edit, Trash2 } from 'lucide-react';
+import { FolderOpen, Edit, Trash2, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function PastaCard({ pasta, numSubpastas, numDocumentos, onOpen, onEdit, onDelete, canDelete = true }) {
+export default function PastaCard({ pasta, numSubpastas, numDocumentos, onOpen, onEdit, onDelete, onPartilhar, canDelete = true }) {
   const { t } = useI18n();
   return (
-    <Card 
+    <Card
       className="group hover:shadow-md transition-all cursor-pointer border border-slate-200 bg-white overflow-hidden"
       onClick={() => onOpen(pasta)}
     >
       <CardContent className="p-0 relative">
         {/* Botões de ação (visíveis no hover) */}
         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          {onPartilhar && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 bg-white/90 hover:bg-white text-emerald-600 hover:text-emerald-700 shadow-sm"
+              onClick={(e) => { e.stopPropagation(); onPartilhar(pasta); }}
+              title="Partilhar pasta com link externo"
+            >
+              <Link2 className="w-3.5 h-3.5" />
+            </Button>
+          )}
           {onEdit && (
             <Button
               variant="ghost"

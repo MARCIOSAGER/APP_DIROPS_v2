@@ -15,6 +15,7 @@ import DocumentosList from '../components/documentos/DocumentosList';
 import FormDocumento from '../components/documentos/FormDocumento';
 import UploadMassaModal from '../components/documentos/UploadMassaModal';
 import GerirLinksPartilhaModal from '../components/documentos/GerirLinksPartilhaModal';
+import CriarLinkPartilhaModal from '../components/documentos/CriarLinkPartilhaModal';
 import BuscaInteligente from '../components/documentos/BuscaInteligente';
 import DragDropUpload from '../components/documentos/DragDropUpload';
 import PastaCard from '../components/documentos/PastaCard';
@@ -58,6 +59,7 @@ export default function Documentos() {
   const [editingDocumento, setEditingDocumento] = useState(null);
   const [isUploadMassaOpen, setIsUploadMassaOpen] = useState(false);
   const [isGerirLinksOpen, setIsGerirLinksOpen] = useState(false);
+  const [linkPartilhaPasta, setLinkPartilhaPasta] = useState(null);
   const [buscaInteligente, setBuscaInteligente] = useState(null);
   const [pastaAtual, setPastaAtual] = useState(null);
   const [caminhoPasta, setCaminhoPasta] = useState([]);
@@ -718,6 +720,7 @@ export default function Documentos() {
                     onOpen={handleAbrirPasta}
                     onEdit={(p) => { setEditingPasta(p); setIsFormPastaOpen(true); }}
                     onDelete={handleDeletePasta}
+                    onPartilhar={setLinkPartilhaPasta}
                     canDelete={canDeleteFolder(pasta)}
                   />
                 );
@@ -814,6 +817,13 @@ export default function Documentos() {
       <GerirLinksPartilhaModal
         isOpen={isGerirLinksOpen}
         onClose={() => setIsGerirLinksOpen(false)}
+      />
+
+      {/* Modal para partilhar pasta com auditores/ANAC */}
+      <CriarLinkPartilhaModal
+        isOpen={!!linkPartilhaPasta}
+        onClose={() => setLinkPartilhaPasta(null)}
+        pasta={linkPartilhaPasta}
       />
 
 

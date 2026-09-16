@@ -37,7 +37,7 @@ export default function GerirLinksPartilhaModal({ isOpen, onClose }) {
     try {
       const { data, error } = await supabase
         .from('documento_link_partilha')
-        .select('id, token, criado_por, criado_em, expira_em, senha_hash, max_downloads, downloads_count, ultimo_acesso_em, revogado_em, revogado_por, documento:documento_id(id, titulo, categoria, versao)')
+        .select('id, token, criado_por, criado_em, expira_em, senha_hash, max_downloads, downloads_count, ultimo_acesso_em, revogado_em, revogado_por, pasta_id, recursivo, documento:documento_id(id, titulo, categoria, versao), pasta:pasta_id(id, nome)')
         .order('criado_em', { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -68,7 +68,8 @@ export default function GerirLinksPartilhaModal({ isOpen, onClose }) {
 
   const copiar = (link) => {
     const origin = window.location.origin;
-    const url = `${origin}/s/${link.token}`;
+    const prefix = link.pasta_id ? '/p/' : '/s/';
+    const url = `${origin}${prefix}${link.token}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopiadoId(link.id);
       setTimeout(() => setCopiadoId(null), 2000);
@@ -82,7 +83,7 @@ export default function GerirLinksPartilhaModal({ isOpen, onClose }) {
     if (filtro === 'expirados' && !(new Date(l.expira_em).getTime() < Date.now()) && !(l.max_downloads !== null && l.downloads_count >= l.max_downloads)) return false;
     if (busca) {
       const q = busca.toLowerCase();
-      const inTitulo = l.documento?.titulo?.toLowerCase().includes(q);
+      const inTitulo = l.documento?.titulo?.toLowerCase().includes(q) || l.pasta?.nome?.toLowerCase().includes(q);
       const inCriador = l.criado_por?.toLowerCase().includes(q);
       if (!inTitulo && !inCriador) return false;
     }
@@ -133,7 +134,17 @@ export default function GerirLinksPartilhaModal({ isOpen, onClose }) {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium text-slate-900 truncate">{link.documento?.titulo || '(documento removido)'}</p>
+                          {link.pasta_id ? (
+                            <>
+                              <p className="font-medium text-slate-900 truncate">📁 {link.pasta?.nome || '(pasta removida)'}</p>
+                              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">Pasta{link.recursivo ? ' (recursivo)' : ''}</Badge>
+                            </>
+                          ) : (
+                            <>
+                              <p className="font-medium text-slate-900 truncate">{link.documento?.titulo || '(documento removido)'}</p>
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">Documento</Badge>
+                            </>
+                          )}
                           <Badge variant="outline" className={`${st.color} border text-[10px]`}>{st.text}</Badge>
                           {link.senha_hash && <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">🔒 password</Badge>}
                         </div>
