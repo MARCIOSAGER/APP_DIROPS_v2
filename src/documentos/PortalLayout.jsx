@@ -10,7 +10,7 @@ import {
   AlertTriangle, BarChart3, BookOpenCheck, Building2, CalendarClock, ChevronDown, ChevronRight, CircleSlash,
   FileText, FolderLock, FolderTree, Home, Inbox, LayoutDashboard, Library, Link2, LogOut, Menu, Moon,
   PanelLeftClose, PanelLeftOpen, RefreshCw, ScrollText, Search, Settings, ShieldCheck, Sun, User as UserIcon,
-  Users, X, FileClock, Stamp, Hash, Scale, HelpCircle, BookMarked, GraduationCap,
+  Users, X, FileClock, FilePen, Stamp, Hash, Scale, HelpCircle, BookMarked, GraduationCap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -222,6 +222,7 @@ export const NAV_CONSULTA = [
 export const NAV_GESTAO = [
   { to: `${PORTAL_BASE}/gestao`, label: 'Painel', icon: LayoutDashboard, end: true, pagina: 'gestao' },
   { to: `${PORTAL_BASE}/gestao/documentos`, label: 'Documentos', icon: FileText, pagina: 'gestao_documentos' },
+  { to: `${PORTAL_BASE}/gestao/redigir`, label: 'Redigir documentos', icon: FilePen, pagina: 'gestao_documentos', editor: true },
   { to: `${PORTAL_BASE}/gestao/pastas`, label: 'Pastas', icon: FolderTree, pagina: 'gestao_pastas' },
   { to: `${PORTAL_BASE}/gestao/emendas`, label: 'Emendas', icon: FileClock, pagina: 'gestao_emendas' },
   { to: `${PORTAL_BASE}/gestao/avsec`, label: 'Regime AVSEC', icon: FolderLock, pagina: 'gestao_avsec' },
@@ -237,6 +238,11 @@ export const gestaoActiva = (item, loc) => (item.end ? loc.pathname === item.to 
 
 // Quem entra na área de gestão documental (o servidor manda na mesma; isto é só para a interface fazer sentido).
 export const ehGestor = (user) => !!user && perfisPortal(user).gestor;
+// Editores (sem gestão) só vêem na gestão as páginas marcadas `editor` — hoje, «Redigir documentos».
+export const navGestaoDe = (user, podeVer) => {
+  const p = user ? perfisPortal(user) : {};
+  return NAV_GESTAO.filter(n => podeVer(n.pagina) && (p.gestor || (p.editor && n.editor)));
+};
 
 const rotuloPerfil = (user) => {
   const p = perfisPortal(user);
@@ -287,7 +293,6 @@ export default function PortalLayout({ children }) {
   const [escuro, setEscuro] = useTemaEscuro();
   const [menuAberto, setMenuAberto] = useState(false);
   const podeVer = usePodeVer();
-  const gestor = ehGestor(user);
   const nomePortal = cfg?.nome_portal || NOME_PADRAO;
   const nome = user?.full_name || user?.email || '';
 
@@ -301,7 +306,7 @@ export default function PortalLayout({ children }) {
   }, [menuAberto]);
 
   const navConsulta = useMemo(() => NAV_CONSULTA.filter(n => podeVer(n.pagina)).map(n => ({ ...n, activo: n.activo(loc) })), [loc, podeVer]);
-  const navGestao = useMemo(() => NAV_GESTAO.filter(n => podeVer(n.pagina)).map(n => ({ ...n, activo: gestaoActiva(n, loc) })), [loc, podeVer]);
+  const navGestao = useMemo(() => navGestaoDe(user, podeVer).map(n => ({ ...n, activo: gestaoActiva(n, loc) })), [loc, podeVer, user]);
   const emGestao = loc.pathname.startsWith(`${PORTAL_BASE}/gestao`);
   const perfil = rotuloPerfil(user);
 
@@ -324,7 +329,7 @@ export default function PortalLayout({ children }) {
                 <n.icon className="h-4 w-4" aria-hidden="true" />{n.label}
               </Link>
             ))}
-            {gestor && navGestao.length > 0 && (
+            {navGestao.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button type="button" className={classeNav(emGestao)} aria-haspopup="menu">
@@ -396,7 +401,7 @@ export default function PortalLayout({ children }) {
                 <li key={n.to}><Link to={n.to} aria-current={n.activo ? 'page' : undefined} className={classeNav(n.activo, 'min-h-[3rem] px-3')}><n.icon className="h-5 w-5" aria-hidden="true" />{n.label}</Link></li>
               ))}
               <li><Link to={`${PORTAL_BASE}/conta`} aria-current={loc.pathname.startsWith(`${PORTAL_BASE}/conta`) ? 'page' : undefined} className={classeNav(loc.pathname.startsWith(`${PORTAL_BASE}/conta`), 'min-h-[3rem] px-3')}><UserIcon className="h-5 w-5" aria-hidden="true" />A minha conta</Link></li>
-              {gestor && navGestao.length > 0 && (
+              {navGestao.length > 0 && (
                 <>
                   <li className={cn('mt-2 px-3 pt-2 text-xs font-semibold uppercase tracking-wider', T.tintaFraca)}>Gestão documental</li>
                   {navGestao.map(n => (
@@ -440,7 +445,8 @@ export function PaginaGestao({ titulo, descricao, accoes, children }) {
   const podeVer = usePodeVer();
   const [compacto, setCompacto] = useState(() => { try { return localStorage.getItem(CHAVE_MENU_GESTAO) === 'compacto'; } catch { return false; } });
   const alternar = () => setCompacto(v => { const n = !v; try { localStorage.setItem(CHAVE_MENU_GESTAO, n ? 'compacto' : 'largo'); } catch { /* */ } return n; });
-  const itens = NAV_GESTAO.filter(n => podeVer(n.pagina)).map(n => ({ ...n, activo: gestaoActiva(n, loc) }));
+  const { user } = useAuth();
+  const itens = navGestaoDe(user, podeVer).map(n => ({ ...n, activo: gestaoActiva(n, loc) }));
   const classeItem = (activo) => cn(
     'flex min-h-[2.75rem] items-center gap-2.5 rounded-lg px-3 text-sm font-medium transition-colors',
     activo ? 'bg-teal-50 text-teal-900 dark:bg-teal-950/60 dark:text-teal-100' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',

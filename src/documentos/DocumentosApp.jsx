@@ -32,6 +32,9 @@ const PortalCodificacao = lazy(() => import('./pages/gestao/PortalCodificacao'))
 const PortalConformidade = lazy(() => import('./pages/gestao/PortalConformidade'));
 const PortalAvsec = lazy(() => import('./PortalAvsec'));
 const PortalFluxo = lazy(() => import('./PortalFluxo'));
+const PortalRedigir = lazy(() => import('./pages/gestao/PortalRedigir'));
+const PortalRedigirAssistente = lazy(() => import('./pages/gestao/PortalRedigirAssistente'));
+const RedigirPorDocumento = lazy(() => import('./pages/gestao/PortalRedigirAssistente').then(m => ({ default: m.RedigirPorDocumento })));
 const PortalFluxoDocumento = lazy(() => import('./PortalFluxoDocumento'));
 
 const Carregar = () => <div className="py-16"><LoadingWatchdog message="A carregar…" /></div>;
@@ -60,6 +63,14 @@ function Gestor({ user, children }) {
   if (ehGestor(user)) return children;
   if (isLoading) return null;
   return <Aviso titulo="Área reservada à gestão documental" texto="Só gestores e administradores de documentos podem entrar aqui." />;
+}
+
+// Redigir documentos: editores também (o servidor limita aos documentos/aeroportos de cada um — migração 182).
+function Editor({ user, children }) {
+  const { isLoading } = usePermissoesPortalDocs();
+  if (perfisPortal(user).editor) return children;
+  if (isLoading) return null;
+  return <Aviso titulo="Área reservada a editores e gestores de documentos" texto="Só editores, gestores e administradores de documentos podem redigir documentos." />;
 }
 
 function PortalAguardando({ user, logout, onVerificar }) {
@@ -134,6 +145,9 @@ export default function DocumentosApp() {
           <Route path="guia" element={<PortalGuia />} />
           <Route path="gestao" element={<Gestor user={user}><Permitido pagina="gestao"><PortalGestaoPainel /></Permitido></Gestor>} />
           <Route path="gestao/documentos" element={<Gestor user={user}><Permitido pagina="gestao_documentos"><PaginaGestao><PortalDocumentosGestao /></PaginaGestao></Permitido></Gestor>} />
+          <Route path="gestao/redigir" element={<Editor user={user}><Permitido pagina="gestao_documentos"><PortalRedigir /></Permitido></Editor>} />
+          <Route path="gestao/redigir/documento/:documentoId" element={<Editor user={user}><Permitido pagina="gestao_documentos"><RedigirPorDocumento /></Permitido></Editor>} />
+          <Route path="gestao/redigir/:id" element={<Editor user={user}><Permitido pagina="gestao_documentos"><PortalRedigirAssistente /></Permitido></Editor>} />
           <Route path="gestao/pastas" element={<Gestor user={user}><Permitido pagina="gestao_pastas"><PortalPastas /></Permitido></Gestor>} />
           <Route path="gestao/emendas" element={<Gestor user={user}><Permitido pagina="gestao_emendas"><PortalEmendas /></Permitido></Gestor>} />
           <Route path="gestao/links" element={<Gestor user={user}><Permitido pagina="gestao_links"><PortalLinks /></Permitido></Gestor>} />

@@ -52,6 +52,8 @@ import { useCodificacaoActiva, useNumeroSeguinte, useCodificacaoDocumentos } fro
 import { analisarNumero, EXEMPLO_NUMERO } from '../../apiCodificacao';
 import { Ref } from '../../PortalLayout';
 import { tituloLimpoDoc, formatoFicheiroDoc } from '../../nomeDocumento';
+// Reserva para edição (migração 181): com o documento reservado por outra pessoa, não se cria revisão nova.
+import { useReservaDocumento, bloqueioCarregamento } from '../../hooksEdicao';
 import {
   EstadoChip, ValidadeChip, Vazio, Falha, mapaPorId, rotuloTipo, nomeAero, versaoDoc,
   OPCOES_ESTADO, OPCOES_VALIDADE, correspondeValidade, opcoesTipo, urlDoc, SEM_TIPO, correspondeTipo, FichasFiltro,
@@ -499,11 +501,15 @@ function DialogNovaVersao({ doc, actor, podeSubstituirSemRevisao, onFechar, onFe
   const [rotulo, setRotulo] = useState('');
   const [nota, setNota] = useState('');
   const [ficheiro, setFicheiro] = useState({ caminho: '', nome: '', tamanho: null, mime: null, sha256: null });
-  const [modo, setModo] = useState('revisao');
+  // Por omissão a revisão nova entra em RASCUNHO e o documento em vigor não muda (segue depois o fluxo de aprovação).
+  const [modo, setModo] = useState('rascunho');
   const [dataVigor, setDataVigor] = useState('');
   const [busy, setBusy] = useState(false);
+  const reservaQ = useReservaDocumento(doc.id);
+  const bloqueio = bloqueioCarregamento(reservaQ.data, actor?.email, { fmt: (d) => fmtData(d) });
 
   const submeter = async () => {
+    if (bloqueio) { toast({ title: 'Documento reservado para edição', description: bloqueio, variant: 'destructive' }); return; }
     if (!ficheiro.caminho) { toast({ title: 'Carregue o ficheiro da nova versão', variant: 'destructive' }); return; }
     if (modo === 'agendar' && !dataVigor) { toast({ title: 'Indique a data de entrada em vigor', description: 'É a data que a autoridade aprovou.', variant: 'destructive' }); return; }
     if (modo === 'agendar' && dataVigor < hoje()) { toast({ title: 'A data já passou', description: 'Para pôr em vigor agora, escolha «Substituir sem revisão».', variant: 'destructive' }); return; }
@@ -512,7 +518,7 @@ function DialogNovaVersao({ doc, actor, podeSubstituirSemRevisao, onFechar, onFe
       const agora = new Date().toISOString();
       // Estado da REVISÃO nova. No agendamento fica «aprovado» à espera da data: o documento continua a servir a
       // revisão anterior, que é o que a lei manda — até à data marcada, em vigor está a antiga.
-      const estadoVersao = modo === 'revisao' ? 'em_revisao' : modo === 'agendar' ? 'aprovado' : (doc.estado || 'em_vigor');
+      const estadoVersao = modo === 'rascunho' ? 'rascunho' : modo === 'revisao' ? 'em_revisao' : modo === 'agendar' ? 'aprovado' : (doc.estado || 'em_vigor');
 
       // Nunca duas revisões em vigor: a anterior sai antes de a nova entrar (a base também o recusa, por índice
       // único — isto evita o erro em vez de o apanhar).
@@ -534,7 +540,8 @@ function DialogNovaVersao({ doc, actor, podeSubstituirSemRevisao, onFechar, onFe
       if (erroV) throw erroV;
 
       // O agendamento NÃO mexe no documento: só na data marcada é que a revisão nova passa a ser a do documento.
-      if (modo !== 'agendar') {
+      // O rascunho também não: o documento continua a servir a revisão em vigor até a nova ser aprovada.
+      if (modo !== 'agendar' && modo !== 'rascunho') {
         const { error } = await supabase.from('documento').update({
           versao: rotulo.trim() || String(proxima), versao_atual: proxima,
           arquivo_privado_uri: ficheiro.caminho, usar_storage_privado: true, arquivo_url: null,
@@ -544,13 +551,14 @@ function DialogNovaVersao({ doc, actor, podeSubstituirSemRevisao, onFechar, onFe
         if (error) throw error;
       }
 
-      const descricaoModo = modo === 'revisao' ? ' (enviada para revisão)'
+      const descricaoModo = modo === 'rascunho' ? ' (rascunho)' : modo === 'revisao' ? ' (enviada para revisão)'
         : modo === 'agendar' ? ` (entra em vigor em ${fmtData(dataVigor)})`
           : ' (substituição sem revisão)';
       await auditarDocs(actor, { acao: 'documento_nova_versao', id: doc.id, detalhes: `Versão ${proxima} de «${doc.titulo}»${descricaoModo}` });
       toast({
         title: `Versão ${proxima} criada`,
-        description: modo === 'revisao' ? 'O documento ficou em revisão até ser aprovado de novo.'
+        description: modo === 'rascunho' ? 'Ficou em rascunho: o documento em vigor não mudou. Peça a aprovação na ficha do documento.'
+          : modo === 'revisao' ? 'O documento ficou em revisão até ser aprovado de novo.'
           : modo === 'agendar' ? `Fica à espera: em ${fmtData(dataVigor)} entra em vigor sozinha e a anterior passa a obsoleta. Até lá, quem consulta vê a versão ${versaoDoc(doc)}.`
             : 'O ficheiro foi substituído; o estado do documento manteve-se.',
       });
@@ -561,7 +569,7 @@ function DialogNovaVersao({ doc, actor, podeSubstituirSemRevisao, onFechar, onFe
   };
 
   const opcoesModo = [
-    { value: 'revisao', label: 'Enviar para revisão (sai de vigor até ser aprovada)' },
+    { value: 'rascunho', label: 'Guardar em rascunho (o documento em vigor não muda; segue depois para aprovação)' },
     ...(podeSubstituirSemRevisao ? [
       { value: 'agendar', label: 'Agendar a entrada em vigor para uma data' },
       { value: 'substituir', label: 'Substituir sem revisão (mantém o estado actual)' },
@@ -576,6 +584,7 @@ function DialogNovaVersao({ doc, actor, podeSubstituirSemRevisao, onFechar, onFe
           <DialogDescription className="break-words">{doc.titulo} · versão actual {versaoDoc(doc)} → nova versão {proxima}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          {bloqueio && <p role="alert" className={cn('flex items-start gap-2 rounded-lg border p-3 text-sm', GD.avisoSuave)}><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{bloqueio}</p>}
           <CampoFicheiro id="nv-ficheiro" valor={ficheiro.caminho} nome={ficheiro.nome} onCarregado={setFicheiro} ajuda="A versão anterior mantém-se no histórico do documento." />
           <Campo id="nv-rotulo" label="Rótulo da versão" ajuda={`Vazio = «${proxima}». Use por exemplo «3.ª edição» ou «Rev. B».`}><Input id="nv-rotulo" value={rotulo} onChange={e => setRotulo(e.target.value)} maxLength={60} autoComplete="off" /></Campo>
           <Campo id="nv-nota" label="O que mudou" ajuda="Fica no histórico de versões e ajuda quem lê a saber o que rever."><Textarea id="nv-nota" value={nota} onChange={e => setNota(e.target.value)} rows={3} maxLength={1000} /></Campo>
@@ -595,7 +604,6 @@ function DialogNovaVersao({ doc, actor, podeSubstituirSemRevisao, onFechar, onFe
               </p>
             </>
           )}
-          {modo === 'revisao' && <p className={cn('flex items-start gap-2 rounded-lg border p-3 text-sm', GD.avisoSuave)}><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />Enquanto a nova versão não for aprovada, o documento deixa de aparecer a quem só consulta.</p>}
           {!isLoading && versoes.length > 0 && (
             <div className={cn('rounded-lg border p-3 text-sm', GD.borda)}>
               <p className={cn('mb-1 font-medium', GD.tintaMedia)}>Histórico</p>
@@ -605,7 +613,7 @@ function DialogNovaVersao({ doc, actor, podeSubstituirSemRevisao, onFechar, onFe
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onFechar} disabled={busy}>Cancelar</Button>
-          <Button onClick={submeter} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <FilePlus2 className="h-4 w-4" aria-hidden="true" />}Criar versão {proxima}</Button>
+          <Button onClick={submeter} disabled={busy || !!bloqueio}>{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <FilePlus2 className="h-4 w-4" aria-hidden="true" />}Criar versão {proxima}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

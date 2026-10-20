@@ -28,7 +28,7 @@ import { cn, copyToClipboard } from '@/lib/utils';
 import { fmtData, fmtDataHora } from '@/lib/safeDate';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
-import { PORTAL_BASE, ehGestorDocs, estadoValidade } from '@/lib/portalDocumentos';
+import { PORTAL_BASE, ehGestorDocs, ehEditorDocs, estadoValidade } from '@/lib/portalDocumentos';
 import { obterUrlAssinadaDocumento } from '@/functions/obterUrlAssinadaDocumento';
 import { registrarAcessoDocumento } from '@/functions/registrarAcessoDocumento';
 import { validarSenhaDocs } from '@/documentos/api';
@@ -56,6 +56,12 @@ import { nomeFicheiroDoc } from '../nomeDocumento';
 // O leitor próprio (pdf.js) substitui o <iframe> do visualizador nativo. É ele que torna a página um estado desta
 // aplicação — sem isso não há «abrir na página 47», nem realçar o termo, nem ler uma cópia guardada sem rede.
 import LeitorPdf from '../components/leitor/LeitorPdf';
+import { BotaoCompararVersoes } from '../components/edicao/CompararVersoes';
+// Reserva para edição (check-out) e «Carregar nova versão (rascunho)» — Fase F0 do plano de edição.
+import ReservaDocumento from '../components/edicao/ReservaDocumento';
+import BotaoEditarNavegador from '../components/edicao/BotaoEditarNavegador';
+import { useReservaDocumento, reservaActiva, reservadaPorMim } from '../hooksEdicao';
+import { rascunhoDoDocumento } from '../edicao/hooksEstruturado';
 
 const PROVAS_GESTAO = ['leituras', 'acessos'];
 // O registo de emendas não é prova de gestão: é a peça que a lei manda ter à mão de quem usa o manual, e é
@@ -477,6 +483,7 @@ export default function PortalDocumento() {
   const [sp, setSp] = useSearchParams();
   const { user } = useAuth();
   const gestor = ehGestorDocs(user);
+  const editor = ehEditorDocs(user);
   const recarregar = useRecarregarDocs();
   // separador no endereço; quem não faz gestão não tem os separadores de prova e cai nas versões
   const abaPedida = sp.get('prova') || 'versoes';
@@ -492,6 +499,14 @@ export default function PortalDocumento() {
   const termoPedido = sp.get('termo') || '';
 
   const docQ = useDocumentoDocs(id);
+  const reserva = useReservaDocumento(editor ? id : null).data;
+  // «Rever com o editor» só para documentos redigidos no editor estruturado (tabela da migração 182)
+  const estruturadoQ = useQuery({
+    queryKey: ['docs-rascunho-estruturado-doc', id],
+    queryFn: () => rascunhoDoDocumento(id).catch(() => null),
+    enabled: !!id && editor,
+    staleTime: 60_000,
+  });
   const versoesQ = useVersoesDocumento(id);
   const aeroQ = useAeroportosDocs();
   const tiposQ = useTiposDocumento();
@@ -845,6 +860,16 @@ export default function PortalDocumento() {
         </p>
       )}
 
+      <ReservaDocumento doc={doc} user={user} gestor={gestor} editor={editor} onPedirAprovacao={() => actualizar({ aprovar: '1' })} />
+      {editor && (
+        <div className="flex flex-wrap gap-2">
+          <BotaoEditarNavegador documentoId={doc.id} versoes={versoes} titulo={doc.titulo} reservadoPorMim={reservaActiva(reserva) && reservadaPorMim(reserva, user?.email)} onFechado={recarregar} />
+          {estruturadoQ.data && (
+            <Button asChild size="sm" variant="outline"><Link to={`${PORTAL_BASE}/gestao/redigir/documento/${doc.id}`}>Rever com o editor</Link></Button>
+          )}
+        </div>
+      )}
+
       {gestor && partilhaAberta && <PartilhaExterna doc={doc} aoFechar={() => actualizar({ partilhar: '' })} />}
       {gestor && aprovacaoAberta && (
         <section id="gd-aprovacao" className={cn(cartao, 'p-5')} aria-label="Pedir aprovação">
@@ -921,6 +946,7 @@ export default function PortalDocumento() {
 
             <TabsContent value="versoes" className="mt-3">
               <Painel titulo="Histórico de versões" icone={History}>
+                <BotaoCompararVersoes doc={doc} versoes={versoes} vActual={vActual} desactivado={trancado} />
                 {versoesQ.isLoading ? (
                   <div className="space-y-2 p-4">{[0, 1].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div>
                 ) : versoesQ.isError ? (
