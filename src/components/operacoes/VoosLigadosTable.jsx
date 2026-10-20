@@ -402,7 +402,7 @@ function VoosLigadosTable({
                       <div className="flex items-center gap-2 whitespace-nowrap">
                         {isDuplicata && (
                           <div className="flex items-center gap-1">
-                            <Badge className="bg-red-600 text-white text-[10px] px-1.5 py-0.5 animate-pulse">
+                            <Badge className="bg-red-600 text-white text-[10px] px-1.5 py-0.5">
                               ⚠️ {t('voosLigados.duplicataBadge')}
                             </Badge>
                           </div>
@@ -548,10 +548,10 @@ function VoosLigadosTable({
                              {t('voosLigados.isentoTarifas')}
                            </Badge> :
                            <div className="flex flex-col gap-0.5">
-                             <div className="font-bold text-green-700 text-sm whitespace-nowrap">
+                             <div className="font-bold text-green-700 text-base whitespace-nowrap leading-tight">
                                {formatCurrency(calculo.total_tarifa || 0)}
                              </div>
-                             <div className="text-[10px] text-slate-500 whitespace-nowrap">
+                             <div className="text-xs text-slate-500 whitespace-nowrap">
                                ${(calculo.total_tarifa_usd || 0).toFixed(2)}
                              </div>
                              <div className="text-[10px] text-slate-400">

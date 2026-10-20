@@ -26,6 +26,7 @@ function VoosSemLinkTab({
   onFilterChange,
   onDeleteVoo,
   getSugestoesPar,
+  aeroportos = [],
 }) {
   return (
     <Card className="shadow-sm border-0">
@@ -41,6 +42,7 @@ function VoosSemLinkTab({
         </div>
         <div className="flex flex-wrap gap-1.5 sm:gap-2">
           <Button
+            type="button"
             onClick={onLinkarAutomatico}
             disabled={isLinkingAuto}
             className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 sm:h-10 px-2 sm:px-4"
@@ -49,6 +51,7 @@ function VoosSemLinkTab({
             <span className="ml-2 text-sm">Linkar Autom&aacute;tico</span>
           </Button>
           <Button
+            type="button"
             variant="outline"
             onClick={onLoadSemLink}
             disabled={isLoadingSemLink}
@@ -97,7 +100,7 @@ function VoosSemLinkTab({
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 sm:p-4 pt-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
               <div>
                 <Label className="text-xs">Data In&iacute;cio</Label>
                 <Input
@@ -125,6 +128,17 @@ function VoosSemLinkTab({
                     { value: 'todos', label: 'Todos' },
                     { value: 'ARR', label: 'ARR' },
                     { value: 'DEP', label: 'DEP' }
+                  ]}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Aeroporto</Label>
+                <Select
+                  value={filtrosSemLink.aeroporto || 'todos'}
+                  onValueChange={(v) => onFilterChange('aeroporto', v)}
+                  options={[
+                    { value: 'todos', label: 'Todos os aeroportos' },
+                    ...aeroportos.filter(a => a.codigo_icao).map(a => ({ value: a.codigo_icao, label: `${a.codigo_icao} — ${a.nome}` })),
                   ]}
                 />
               </div>
@@ -161,6 +175,7 @@ function VoosSemLinkTab({
               </div>
               <div className="flex items-end">
                 <Button
+                  type="button"
                   onClick={onLoadSemLink}
                   disabled={isLoadingSemLink}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 sm:h-9 w-full"

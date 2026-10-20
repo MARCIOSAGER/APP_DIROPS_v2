@@ -76,8 +76,9 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
         Proforma.list(),
       ]);
 
-      // Only non-deleted voos
-      const activeVoos = voosData.filter(v => !v.deleted);
+      // Only non-deleted voos (campo é deleted_at, não deleted — bug antigo: o
+      // filtro nunca excluía nada e cálculos de voo deletado entravam na proforma)
+      const activeVoos = voosData.filter(v => !v.deleted_at);
       const vooMap = new Map(activeVoos.map(v => [v.id, v]));
 
       // Build aeroporto lookup sets (UUID + ICAO) for empresa isolation
@@ -252,7 +253,7 @@ export default function GerarProformaConsolidadaModal({ isOpen, onClose, onConfi
   const companhiaOptions = companhias.map(c => ({ value: c.id, label: `${c.nome} (${c.codigo_icao})` }));
   const aeroportoOptions = [
     { value: '', label: t('gerarConsolidada.todosAeroportos') },
-    ...aeroportos.map(a => ({ value: a.id, label: `${a.nome} (${a.codigo_icao})` }))
+    ...aeroportos.map(a => ({ value: a.id, label: `${a.codigo_icao} — ${a.nome}` }))
   ];
 
   return (

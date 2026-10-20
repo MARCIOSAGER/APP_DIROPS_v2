@@ -292,6 +292,57 @@ function InspecoesList({ inspecoes, tiposInspecao, aeroportos, isLoading, onRelo
         { label: t('inspecoesList.conformidade'), value: `${getConformityPercentage(inspecao)}%` },
       ], { twoColumns: true });
 
+      // Condições da Pista (GRF) — as inspeções de pista carregam sempre um registo
+      // GRF (ligado por inspecao_id). Para outros tipos, o filter volta vazio e a
+      // secção é ignorada. Vai no topo da ficha, logo após as estatísticas.
+      try {
+        const { RegistoGRF } = await import('@/entities/RegistoGRF');
+        const grfs = await RegistoGRF.filter({ inspecao_id: inspecao.id });
+        const grf = (grfs || []).slice().sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0))[0];
+        if (grf) {
+          const pageW = doc.internal.pageSize.getWidth();
+          const contentW = pageW - m.left - m.right;
+          yPos = checkPageBreak(doc, yPos, 55);
+          yPos = addSectionTitle(doc, yPos, 'Condições da Pista (GRF)');
+
+          // contexto: pista · aeroporto · data/hora
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(PDF.font.small); doc.setTextColor(...PDF.colors.muted);
+          const dataGrf = `${String(grf.dia).padStart(2, '0')}/${String(grf.mes).padStart(2, '0')}/${grf.ano}`;
+          doc.text(`Pista ${grf.pista}  ·  ${grf.aeroporto || ''}  ·  ${dataGrf}${grf.hora_utc ? '  ' + grf.hora_utc + ' UTC' : ''}`, m.left, yPos);
+          yPos += 5;
+
+          // tabela dos 3 troços
+          const gcols = [
+            { t: 'Troço', w: contentW * 0.16, a: 'left' },
+            { t: 'RWYCC', w: contentW * 0.15, a: 'center' },
+            { t: 'Condição', w: contentW * 0.34, a: 'left' },
+            { t: '% Cobertura', w: contentW * 0.18, a: 'center' },
+            { t: 'Lâmina (mm)', w: contentW * 0.17, a: 'center' },
+          ];
+          const grh = 6.5;
+          doc.setFillColor(...PDF.colors.tableHeader); doc.rect(m.left, yPos, contentW, grh, 'F');
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(PDF.font.caption); doc.setTextColor(...PDF.colors.tableHeaderFg);
+          let hx = m.left;
+          gcols.forEach((c) => { doc.text(c.t, c.a === 'center' ? hx + c.w / 2 : hx + 2, yPos + 4.4, { align: c.a === 'center' ? 'center' : 'left' }); hx += c.w; });
+          yPos += grh;
+          [1, 2, 3].forEach((tr, i) => {
+            if (i % 2 === 0) { doc.setFillColor(...PDF.colors.bgStripe); doc.rect(m.left, yPos, contentW, grh, 'F'); }
+            const vals = [`Troço ${tr}`, String(grf[`rwycc${tr}`] ?? '—'), String(grf[`condicao${tr}`] ?? '—'), String(grf[`perc${tr}`] ?? 'NR'), String(grf[`lamina${tr}`] ?? 'NR')];
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(PDF.font.small); doc.setTextColor(...PDF.colors.dark);
+            let rx = m.left;
+            gcols.forEach((c, ci) => { doc.text(vals[ci], c.a === 'center' ? rx + c.w / 2 : rx + 2, yPos + 4.6, { align: c.a === 'center' ? 'center' : 'left' }); rx += c.w; });
+            yPos += grh;
+          });
+          if (grf.observacoes) {
+            doc.setFont('helvetica', 'italic'); doc.setFontSize(PDF.font.small); doc.setTextColor(...PDF.colors.muted);
+            const gobs = doc.splitTextToSize(`Obs.: ${grf.observacoes}`, contentW);
+            yPos = checkPageBreak(doc, yPos + 2, gobs.length * 4 + 4);
+            doc.text(gobs, m.left, yPos + 3); yPos += gobs.length * 4 + 3;
+          }
+          yPos += 4;
+        }
+      } catch (grfErr) { console.debug('GRF não carregado:', grfErr); }
+
       // Resumo Geral
       if (inspecao.resumo_geral) {
         yPos = checkPageBreak(doc, yPos, 30);
@@ -340,8 +391,11 @@ function InspecoesList({ inspecoes, tiposInspecao, aeroportos, isLoading, onRelo
         ]);
         const respostaPorItem = {};
         respostas.forEach(r => { respostaPorItem[r.item_checklist_id] = r; });
+        // Só os itens realmente inspecionados (com resposta); se nenhum, os ativos.
+        const respondidos = itens.filter(it => respostaPorItem[it.id]);
+        const itensExibir = respondidos.length ? respondidos : itens.filter(it => it.status === 'ativo');
 
-        if (itens.length > 0) {
+        if (itensExibir.length > 0) {
           const pageW = doc.internal.pageSize.getWidth();
           const contentW = pageW - m.left - m.right;
           const resultadoMeta = {
@@ -353,7 +407,28 @@ function InspecoesList({ inspecoes, tiposInspecao, aeroportos, isLoading, onRelo
           yPos = checkPageBreak(doc, yPos, 30);
           yPos = addSectionTitle(doc, yPos, t('inspecaoDetail.checklistDetalhado'));
 
-          for (const item of itens) {
+          // Agrupar por categoria, preservando a ordem de aparição dos itens.
+          const gruposCat = [];
+          const catIdx = {};
+          for (const it of itensExibir) {
+            const cat = (it.categoria || 'Checklist').trim() || 'Checklist';
+            if (!(cat in catIdx)) { catIdx[cat] = gruposCat.length; gruposCat.push({ cat, itens: [] }); }
+            gruposCat[catIdx[cat]].itens.push(it);
+          }
+
+          const mostrarCategorias = gruposCat.length > 1; // 1 só categoria = redundante com o título
+          for (const grupo of gruposCat) {
+            // Cabeçalho da categoria (barra) — reserva espaço p/ não ficar órfão no fim da página.
+            if (mostrarCategorias) {
+              yPos = checkPageBreak(doc, yPos, 26);
+              doc.setFillColor(...PDF.colors.primary);
+              doc.roundedRect(m.left, yPos, contentW, 7, 1.5, 1.5, 'F');
+              doc.setFont('helvetica', 'bold'); doc.setFontSize(PDF.font.small); doc.setTextColor(...PDF.colors.white);
+              doc.text(grupo.cat.toUpperCase(), m.left + 3, yPos + 4.8);
+              yPos += 11;
+            }
+
+            for (const item of grupo.itens) {
             const resposta = respostaPorItem[item.id];
             const meta = resultadoMeta[resposta?.resultado] || { label: t('inspecoesList.pdfSemResposta'), color: PDF.colors.light };
 
@@ -470,6 +545,7 @@ function InspecoesList({ inspecoes, tiposInspecao, aeroportos, isLoading, onRelo
             doc.setLineWidth(0.2);
             doc.line(m.left, yPos, pageW - m.right, yPos);
             yPos += 5;
+            }
           }
         }
       } catch (error) {

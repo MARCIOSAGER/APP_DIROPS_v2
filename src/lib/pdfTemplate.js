@@ -279,7 +279,7 @@ export function addHeader(doc, opts = {}) {
  * @param {Object} [opts]
  * @param {string} [opts.generatedBy] - User name
  */
-export function addFooter(doc, { generatedBy } = {}) {
+export function addFooter(doc, { generatedBy, systemName = 'DIROPS — Sistema de Gestão Aeroportuária' } = {}) {
   const totalPages = doc.internal.getNumberOfPages();
   const { w, h } = getPageDims(doc);
   const m = PDF.margin;
@@ -298,7 +298,7 @@ export function addFooter(doc, { generatedBy } = {}) {
     setColor(doc, PDF.colors.light);
 
     // Left: system name
-    doc.text('DIROPS — Sistema de Gestão Aeroportuária', m.left, h - m.bottom + 4);
+    doc.text(systemName, m.left, h - m.bottom + 4);
 
     // Center: generated info
     const centerText = generatedBy

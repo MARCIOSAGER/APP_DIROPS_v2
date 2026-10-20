@@ -43,7 +43,9 @@ export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = nu
 
   useEffect(() => {
     if (pastaInitial) {
-      setFormData(pastaInitial);
+      // Campo de senha começa SEMPRE vazio ao editar (o hash guardado nunca é
+      // pré-preenchido). Deixar em branco mantém a senha atual; escrever define uma nova.
+      setFormData({ ...pastaInitial, senha: '' });
     } else {
       setFormData({
         nome: '',
@@ -61,17 +63,19 @@ export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = nu
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validar senhas se a pasta estiver protegida
+    // Validar senhas se a pasta estiver protegida.
+    // Se já existe proteção e o campo fica vazio, mantém-se a senha atual.
     if (formData.protegida_senha) {
-      if (!formData.senha) {
+      const jaProtegida = !!pastaInitial?.senha_hash;
+      if (!formData.senha && !jaProtegida) {
         setErroSenha('Por favor, digite uma senha');
         return;
       }
-      if (formData.senha !== confirmaSenha) {
+      if (formData.senha && formData.senha !== confirmaSenha) {
         setErroSenha('As senhas não coincidem');
         return;
       }
-      if (formData.senha.length < 6) {
+      if (formData.senha && formData.senha.length < 6) {
         setErroSenha('A senha deve ter pelo menos 6 caracteres');
         return;
       }
@@ -79,11 +83,15 @@ export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = nu
 
     guardedSubmit(async () => {
       const dataToSubmit = { ...formData };
-      // Hash the password before storing so it is never saved as plaintext
-      if (dataToSubmit.protegida_senha && dataToSubmit.senha) {
+      if (!dataToSubmit.protegida_senha) {
+        // Proteção removida: limpar o hash para desbloquear a pasta.
+        dataToSubmit.senha_hash = null;
+      } else if (dataToSubmit.senha) {
+        // Nova senha (ou senha alterada): gravar o hash.
         dataToSubmit.senha_hash = await hashPassword(dataToSubmit.senha);
-        delete dataToSubmit.senha;
       }
+      // senha em branco com proteção mantida: nao mexe no senha_hash existente.
+      delete dataToSubmit.senha;
       await onSubmit(dataToSubmit);
     });
   };
@@ -99,7 +107,7 @@ export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = nu
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Folder className="w-5 h-5" style={{ color: formData.cor }} />
@@ -107,7 +115,8 @@ export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = nu
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+          <div className="space-y-4 overflow-y-auto flex-1 pr-1 -mr-1">
           <div className="space-y-2">
             <Label>Nome da Pasta</Label>
             <Input
@@ -263,7 +272,8 @@ export default function FormPasta({ isOpen, onClose, onSubmit, pastaInitial = nu
             }
           </div>
 
-          <DialogFooter>
+          </div>
+          <DialogFooter className="pt-4 mt-2 border-t">
             <Button type="button" variant="outline" onClick={onClose}>
               {t('btn.cancel')}
             </Button>

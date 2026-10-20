@@ -1,0 +1,104 @@
+{
+  "slug": "seguranca-na-placa",
+  "titulo": "Segurança na Placa: 5 regras essenciais",
+  "subtitulo": "Curso interactivo de exemplo — padrão curso-html5 da Universidade Corporativa",
+  "versao": "1.0",
+  "idioma": "pt-PT",
+  "autor": "Direcção de Operações — SGA",
+  "duracao_min": 30,
+  "nota_minima": 70,
+  "identidade": { "cor_primaria": "#1e3a5f", "cor_acento": "#a1823a", "logo": "assets/logo-sga.png", "logo_alt": "SGA — Sociedade Gestora de Aeroportos" },
+  "certificado": { "ativo": true },
+  "modulos": [
+    {
+      "titulo": "Antes de entrar na placa",
+      "paginas": [
+        {
+          "titulo": "Porque é que a placa é perigosa",
+          "blocos": [
+            { "tipo": "texto", "html": "<p>A placa (apron) é o espaço onde aeronaves, viaturas, equipamentos e pessoas partilham o mesmo pavimento, muitas vezes de noite, com ruído e sob pressão de tempo. A maior parte dos acidentes no lado ar acontece aqui — e quase todos têm origem em regras simples que não foram cumpridas.</p><p>Este curso resume as <strong>cinco regras essenciais</strong> que qualquer colaborador da SGA tem de dominar antes de pisar a placa.</p>" },
+            { "tipo": "callout", "estilo": "perigo", "titulo": "Regra zero", "html": "<p>Sem <strong>colete de alta visibilidade</strong>, <strong>cartão de acesso visível</strong> e <strong>protecção auditiva</strong> ninguém entra na placa. Sem excepções.</p>" },
+            { "tipo": "imagem", "src": "assets/placa.svg", "alt": "Esquema de uma posição de estacionamento com a zona de segurança do equipamento, a linha de segurança da placa e a via de serviço", "legenda": "Posição de estacionamento: zona de segurança do equipamento (ERA), linha de segurança da placa e via de serviço." },
+            { "tipo": "flashcards", "titulo": "Termos que tem de conhecer", "cartas": [
+              { "frente": "<strong>FOD</strong>", "verso": "Foreign Object Debris — qualquer objecto solto na placa (parafuso, plástico, pedra) que pode ser ingerido por um motor ou danificar pneus." },
+              { "frente": "<strong>ERA</strong>", "verso": "Equipment Restraint Area — a zona pintada à volta da aeronave onde só entra equipamento a operar e só depois de a aeronave parar, calços colocados e luzes anti-colisão desligadas." },
+              { "frente": "<strong>Jet blast</strong>", "verso": "Sopro dos motores a jacto: a 25 m pode derrubar uma pessoa e virar uma viatura ligeira. Nunca atravessar atrás de uma aeronave com motores a trabalhar." },
+              { "frente": "<strong>Marshaller</strong>", "verso": "O sinaleiro que guia a aeronave até à posição. As suas ordens prevalecem sobre qualquer outra na área de manobra da posição." }
+            ] }
+          ]
+        },
+        {
+          "titulo": "Regra 1 — Equipamento de protecção",
+          "blocos": [
+            { "tipo": "passos", "titulo": "Antes de sair da viatura ou do edifício", "itens": ["Vista o <strong>colete de alta visibilidade</strong> fechado e limpo.", "Confirme que o <strong>cartão de acesso</strong> está visível acima da cintura.", "Coloque a <strong>protecção auditiva</strong> quando houver aeronaves com motores a trabalhar.", "Calce <strong>calçado fechado</strong> com sola antiderrapante; nada solto (lenços, cordões, bonés sem fita)."] },
+            { "tipo": "checklist", "titulo": "A minha lista antes de entrar", "instrucao": "Marque cada item — só depois de todos marcados a página fica concluída.", "itens": ["Colete de alta visibilidade vestido e fechado", "Cartão de acesso visível", "Protecção auditiva à mão", "Calçado fechado, sem objectos soltos", "Telemóvel guardado (não se usa a andar na placa)"] }
+          ]
+        }
+      ]
+    },
+    {
+      "titulo": "Na placa",
+      "paginas": [
+        {
+          "titulo": "Regra 2 — Circular só onde é permitido",
+          "blocos": [
+            { "tipo": "colunas", "colunas": ["<p><strong>Peões</strong></p><ul><li>Andam pelas <strong>vias pedonais</strong> marcadas ou pela via de serviço, sempre de frente para o tráfego.</li><li>Nunca atravessam a zona de manobra de uma aeronave em movimento.</li><li>Param e olham antes de cruzar qualquer via de serviço.</li></ul>", "<p><strong>Viaturas</strong></p><ul><li>Circulam apenas pelas <strong>vias de serviço</strong>, à velocidade definida na Instrução de Trabalho de condução no lado ar.</li><li>Só entram na ERA depois de a aeronave parar e das luzes anti-colisão apagarem.</li><li>Prioridade absoluta: aeronaves, depois veículos de emergência, depois os restantes.</li></ul>"] },
+            { "tipo": "callout", "estilo": "atencao", "titulo": "Linha de segurança da placa", "html": "<p>A linha vermelha contínua separa a via de serviço da zona de manobra. Do lado da aeronave só entra quem está a operar naquela posição.</p>" },
+            { "tipo": "acordeao", "titulo": "Perguntas frequentes", "itens": [
+              { "titulo": "Posso atravessar a placa a direito para poupar tempo?", "html": "<p>Não. O caminho mais curto passa quase sempre por zonas de manobra de aeronaves. Use sempre as vias marcadas.</p>" },
+              { "titulo": "E se o marshaller me mandar parar?", "html": "<p>Pára imediatamente, mesmo que esteja na via de serviço. As ordens do sinaleiro prevalecem enquanto há uma aeronave a manobrar.</p>" },
+              { "titulo": "Vi um objecto solto no pavimento. Que faço?", "html": "<p>Se for seguro, apanhe-o e coloque-o no recipiente de FOD mais próximo; se não for, comunique ao supervisor ou ao OPA com a localização exacta.</p>" }
+            ] }
+          ]
+        },
+        {
+          "titulo": "Regra 3 — FOD: tolerância zero",
+          "blocos": [
+            { "tipo": "texto", "html": "<p>Um simples parafuso ingerido por um motor pode custar milhões e pôr vidas em risco. Cada colaborador é responsável por <strong>ver, apanhar e comunicar</strong> FOD.</p>" },
+            { "tipo": "arrastar", "titulo": "É FOD ou não é?", "instrucao": "Arraste cada item para a categoria certa e carregue em \"Verificar\".", "categorias": ["É FOD — apanhar e comunicar", "Não é FOD"], "itens": [
+              { "texto": "Parafuso solto junto à posição 12", "categoria": "É FOD — apanhar e comunicar" },
+              { "texto": "Saco de plástico a voar na placa", "categoria": "É FOD — apanhar e comunicar" },
+              { "texto": "Calço colocado nas rodas da aeronave", "categoria": "Não é FOD" },
+              { "texto": "Pedra de brita no pavimento", "categoria": "É FOD — apanhar e comunicar" },
+              { "texto": "Cone de sinalização em uso", "categoria": "Não é FOD" },
+              { "texto": "Luva de trabalho abandonada", "categoria": "É FOD — apanhar e comunicar" }
+            ] },
+            { "tipo": "callout", "estilo": "dica", "titulo": "Boa prática", "html": "<p>Antes da chegada de cada aeronave, faça um varrimento visual de 360° à posição. Demora 30 segundos e evita a maioria dos incidentes com FOD.</p>" }
+          ]
+        },
+        {
+          "titulo": "Regra 4 — Aeronaves com motores a trabalhar",
+          "blocos": [
+            { "tipo": "tabela", "titulo": "Distâncias de segurança de referência", "cabecalho": ["Situação", "Distância mínima", "Porquê"], "linhas": [["Atrás de motor a jacto em ralenti", "<strong>50 m</strong>", "Jet blast derruba pessoas e vira equipamento leve"], ["À frente de motor a jacto", "<strong>8 m</strong>", "Sucção de ingestão"], ["Hélice / rotor em movimento", "<strong>Nunca aproximar</strong>", "A hélice é invisível a rodar"], ["Aeronave com luzes anti-colisão ligadas", "<strong>Fora da ERA</strong>", "Motores podem arrancar a qualquer momento"]] },
+            { "tipo": "ordenar", "titulo": "Chegada de uma aeronave: coloque os passos pela ordem correcta", "itens": ["Aeronave pára na posição guiada pelo marshaller", "Luzes anti-colisão apagam-se", "Calços colocados e sinal de \"calços em posição\"", "Equipamento entra na ERA", "Abertura das portas e início da assistência"] }
+          ]
+        },
+        {
+          "titulo": "Regra 5 — Comunicar sempre",
+          "blocos": [
+            { "tipo": "texto", "html": "<p>Quase-acidentes, danos, FOD, derrames e comportamentos inseguros <strong>comunicam-se sempre</strong>, sem procurar culpados. É assim que o Sistema de Gestão de Segurança Operacional (SGSO) aprende antes de acontecer o acidente.</p>" },
+            { "tipo": "video", "youtube": "dHVRcmbd7xA", "legenda": "Vídeo complementar (EN, legendas automáticas em português): condução na placa — boas práticas." },
+            { "tipo": "callout", "estilo": "info", "titulo": "Como reportar na SGA", "html": "<p>No DIROPS, módulo <strong>Safety › Ocorrências</strong>, ou directamente ao Oficial de Segurança Operacional. Um reporte feito em 5 minutos vale mais do que um relatório perfeito uma semana depois.</p>" }
+          ]
+        }
+      ]
+    },
+    {
+      "titulo": "Avaliação",
+      "paginas": [
+        {
+          "titulo": "Teste final",
+          "blocos": [
+            { "tipo": "quiz", "titulo": "Verifique o que aprendeu", "tentativas": 2, "perguntas": [
+              { "tipo": "escolha_unica", "enunciado": "Qual destes itens é obrigatório para entrar na placa?", "opcoes": ["Óculos escuros", "Colete de alta visibilidade fechado", "Rádio portátil", "Luvas de couro"], "correta": 1, "explicacao": "O colete de alta visibilidade é obrigatório para todos, sempre." },
+              { "tipo": "vf", "enunciado": "Posso atravessar atrás de uma aeronave com motores a trabalhar desde que vá rápido.", "correta": false, "explicacao": "O jet blast a 25–50 m derruba pessoas e vira viaturas. Nunca atravessar atrás de motores a trabalhar." },
+              { "tipo": "escolha_multipla", "enunciado": "Quais destas situações são FOD?", "opcoes": ["Um parafuso no pavimento", "Um calço nas rodas", "Um saco de plástico solto", "Um cone em uso"], "correta": [0, 2], "explicacao": "FOD é qualquer objecto solto que não devia estar ali; calços e cones em uso são equipamento." },
+              { "tipo": "escolha_unica", "enunciado": "Quando é que o equipamento pode entrar na zona de segurança (ERA)?", "opcoes": ["Assim que a aeronave estiver à vista", "Quando o motorista achar seguro", "Depois de a aeronave parar, calços colocados e luzes anti-colisão apagadas", "Nunca"], "correta": 2, "explicacao": "A sequência é: pára, luzes apagam, calços, só então entra o equipamento." },
+              { "tipo": "vf", "enunciado": "Um quase-acidente sem danos não precisa de ser reportado.", "correta": false, "explicacao": "Os quase-acidentes são a melhor fonte de aprendizagem do SGSO — reportam-se sempre." }
+            ] }
+          ]
+        }
+      ]
+    }
+  ]
+}

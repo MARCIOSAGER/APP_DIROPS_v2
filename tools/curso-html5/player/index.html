@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="notranslate" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{{TITULO}}</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="sr-only" href="#conteudo">Saltar para o conteúdo</a>
+  <header class="topo">
+    <div class="topo-linha">
+      <button id="btn-menu" class="btn-menu" type="button" aria-controls="indice" aria-expanded="false">☰ Índice</button>
+      <img id="logo" src="" alt="">
+      <h1 id="titulo-curso"></h1>
+      <span class="pct" id="pct" aria-label="Progresso">0%</span>
+    </div>
+    <div class="progresso" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progresso do curso"><span id="barra" style="width:0%"></span></div>
+  </header>
+  <div class="corpo">
+    <nav id="indice" class="indice" aria-label="Índice do curso"></nav>
+    <main id="conteudo" tabindex="-1"></main>
+  </div>
+  <script id="course-data" type="application/json">{{COURSE_JSON}}</script>
+  <script src="logica.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

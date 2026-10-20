@@ -192,7 +192,7 @@ export default function FormCredenciamento({ isOpen, onClose, onSubmit, empresas
 
   const aeroportoOptions = aeroportos.map(aeroporto => ({
     value: aeroporto.id,
-    label: `${aeroporto.nome} (${aeroporto.codigo_icao})`
+    label: `${aeroporto.codigo_icao} — ${aeroporto.nome}`
   }));
 
   // Verificar se é gestor de empresa para desabilitar campo empresa

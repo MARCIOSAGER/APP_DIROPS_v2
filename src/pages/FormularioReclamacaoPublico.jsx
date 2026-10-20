@@ -227,7 +227,7 @@ export default function FormularioReclamacaoPublico() {
   
   const aeroportoOptions = aeroportos.map(a => ({
     value: a.codigo_icao,
-    label: `${a.nome} (${a.codigo_icao})`
+    label: `${a.codigo_icao} — ${a.nome}`
   }));
 
   const categoriaOptions = [

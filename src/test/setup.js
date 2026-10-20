@@ -32,6 +32,11 @@ if (!window.matchMedia) {
   });
 }
 
+// ResizeObserver não existe no jsdom; Radix (Switch/Checkbox dentro de <form>) usa-o.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
+}
+
 // Mock window.location for safeRedirectUrl tests
 if (!globalThis.window) {
   globalThis.window = globalThis;

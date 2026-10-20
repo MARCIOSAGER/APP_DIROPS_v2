@@ -43,3 +43,35 @@ docs/BD_Facturacao_Trafego_PP.txt
 .claude/settings.local.json
 .claude/worktrees/
 dist-check/
+
+# Segredos legados / scratch da CLI — nao versionar (auditoria seguranca 2026-08-29)
+scripts/_archive/
+supabase/.temp/
+
+# Documentos reais, dados e cópias — ficam só no servidor (não vão para o GitHub). Caderno Técnico R10, 2026-10-20.
+docs/01-Versao Antiga/
+docs/01-Versao Antiga.zip
+docs/treinamentos/
+docs/normas-anac/
+docs/imagens-ged/
+docs/security-audit/
+docs/avsec-data.json
+docs/avsec-sga-risk-assessment.html
+docs/*.xlsx
+docs/*.pdf
+relatorios-exemplo/
+tools/**/backup-*.json
+tools/**/*.csv
+tools/ingest-ged/*.json
+tools/ingest-ged/*.html
+tools/ingest-ged/*.pdf
+tools/ingest-fnlu/*.json
+tools/caderno-tecnico/*.pdf
+tools/caderno-tecnico/*.html
+tools/caderno-tecnico/dados/
+tools/curso-uc/*.pdf
+.agents/
+.claude/skills/
+skills-lock.json
+docs/Assinatura/
+tools/ingest-ged/copiar-psa-fnlu.ps1

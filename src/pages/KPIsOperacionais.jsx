@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { fmtData } from '@/lib/safeDate';
 
 import { TipoKPI } from '@/entities/TipoKPI';
 import { MedicaoKPI } from '@/entities/MedicaoKPI';
@@ -33,6 +34,7 @@ import { useCompanyView } from '@/lib/CompanyViewContext';
 import SendEmailModal from '@/components/shared/SendEmailModal';
 import { registarExclusao, registarExportacao } from '@/components/lib/auditoria';
 import { createPdfDoc, addHeader, addFooter, addTable, addInfoBox, addSectionTitle, checkPageBreak, fetchEmpresaLogo, PDF } from '@/lib/pdfTemplate';
+import { exportKpiOnePagerPDF, renderKpiOnePagerBase64, buildKpiEmailSummaryHtml } from '@/lib/kpiOnePager';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import SortableTableHeader from '@/components/shared/SortableTableHeader';
 import { useI18n } from '@/components/lib/i18n';
@@ -62,12 +64,17 @@ export default function KPIsOperacionais() {
   const [isAnalisadorOpen, setIsAnalisadorOpen] = useState(false);
   const navigate = useNavigate();
   const [selectedTipoKPI, setSelectedTipoKPI] = useState(null);
+  const [tipoFiltroDI, setTipoFiltroDI] = useState('dom'); // aba Doméstico/Internacional/Geral no seletor de tipo
   const [editingMedicao, setEditingMedicao] = useState(null);
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
   const [deleteInfo, setDeleteInfo] = useState({ isOpen: false, id: null });
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
+  // IDs a enviar por email: quando acionado pelo Dashboard, usa o período filtrado; senão, a seleção da lista
+  const [emailMedicaoIds, setEmailMedicaoIds] = useState([]);
+  const [emailFiltros, setEmailFiltros] = useState(null);          // filtros do Dashboard no momento do envio
+  const [emailDashboardPdf, setEmailDashboardPdf] = useState(null); // base64 do PDF de captura do Dashboard
   const [activeTab, setActiveTab] = useState('medicoes');
   const [selectedMedicoes, setSelectedMedicoes] = useState([]);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
@@ -160,9 +167,24 @@ export default function KPIsOperacionais() {
   };
 
   const handleFormSubmit = async (data) => {
+    // Rastreio de utilizador da app (quem registou/atualizou). Guardamos o nome
+    // (ou email) para exibir direto na coluna "Atualizado Por".
+    const userLabel = currentUser?.full_name || currentUser?.email || null;
+    // Resiliente à ordem do deploy: se a migr 081 (created_by/updated_by) ainda
+    // não correu, o PostgREST rejeita a coluna -> tentamos de novo SEM os _by,
+    // para não bloquear a gravação (só não regista o utilizador até correr a 081).
+    const semColunaBy = (e) => /(created_by|updated_by)/i.test(e?.message || '') && /(schema cache|column|PGRST204)/i.test(e?.message || '');
+    const criarMedicao = async (rec) => {
+      try { return await MedicaoKPI.create(rec); }
+      catch (e) { if (semColunaBy(e)) { const { created_by, updated_by, ...r } = rec; return await MedicaoKPI.create(r); } throw e; }
+    };
+    const atualizarMedicao = async (id, ch) => {
+      try { return await MedicaoKPI.update(id, ch); }
+      catch (e) { if (semColunaBy(e)) { const { created_by, updated_by, ...r } = ch; return await MedicaoKPI.update(id, r); } throw e; }
+    };
     try {
       if (editingMedicao) {
-        await MedicaoKPI.update(editingMedicao.id, data.medicao);
+        await atualizarMedicao(editingMedicao.id, { ...data.medicao, updated_by: userLabel });
         // Atualizar valores dos campos
         await Promise.all(data.valores.map((valor) => {
           if (valor.id) {
@@ -173,7 +195,7 @@ export default function KPIsOperacionais() {
         }));
         setSuccessInfo({ isOpen: true, title: 'Sucesso!', message: 'Medição atualizada com sucesso.' });
       } else {
-        const novaMedicao = await MedicaoKPI.create({ ...data.medicao, empresa_id: currentUser?.empresa_id });
+        const novaMedicao = await criarMedicao({ ...data.medicao, empresa_id: currentUser?.empresa_id, created_by: userLabel });
         // Criar valores dos campos
         await Promise.all(data.valores.map((valor) =>
         ValorCampoKPI.create({ ...valor, medicao_kpi_id: novaMedicao.id })
@@ -186,11 +208,14 @@ export default function KPIsOperacionais() {
       loadData();
     } catch (error) {
       console.error("Erro ao salvar medição:", error);
+      const detalhe = (error?.message || String(error || '')).trim() || 'erro desconhecido';
       setAlertInfo({
         isOpen: true,
         type: 'error',
         title: 'Erro ao Salvar',
-        message: 'Não foi possível salvar a medição. Verifique os dados e tente novamente.'
+        // Mostrar o motivo REAL (RLS/coluna/constraint) — antes ficava genérico e
+        // mandava o utilizador rever dados que estavam corretos.
+        message: `Não foi possível salvar a medição.\n\nMotivo: ${detalhe}`
       });
     }
   };
@@ -320,7 +345,70 @@ export default function KPIsOperacionais() {
     }
   };
 
-  const handleExportPDF = async (medicoesFiltradas = null, filtrosDashboard = null) => {
+  // Relatório Executivo (one-pager A4) — dossiê de 1 página para o Conselho.
+  // Computa o payload do Relatório Executivo (partilhado pelo PDF e pelo corpo do email).
+  const buildOnePagerPayload = async (meds, fil) => {
+    const logoDataUrl = await fetchEmpresaLogo(currentUser?.empresa_id);
+
+    const total = meds.length;
+    const dentro = meds.filter(m => m.dentro_da_meta).length;
+    const pct = total ? Math.round((dentro / total) * 100) : 0;
+
+    // Conformidade por aeroporto (match por id, com fallback ICAO)
+    const apMap = new Map();
+    meds.forEach(m => {
+      const o = apMap.get(m.aeroporto_id) || { total: 0, dentro: 0 };
+      o.total++; if (m.dentro_da_meta) o.dentro++;
+      apMap.set(m.aeroporto_id, o);
+    });
+    const aeroportosArr = [...apMap.entries()].map(([id, o]) => {
+      const ap = aeroportos.find(a => a.id === id || a.codigo_icao === id);
+      return { nome: ap?.cidade || ap?.nome || 'Aeroporto', icao: ap?.codigo_icao || '—', total: o.total, pct: o.total ? Math.round((o.dentro / o.total) * 100) : 0 };
+    }).sort((a, b) => b.total - a.total);
+
+    // Desempenho por indicador
+    const kpiArr = tiposKPI.map(tp => {
+      const md = meds.filter(m => m.tipo_kpi_id === tp.id);
+      if (!md.length) return null;
+      const d = md.filter(m => m.dentro_da_meta).length;
+      const res = md.filter(m => m.resultado_principal != null).map(m => m.resultado_principal);
+      const media = res.length ? res.reduce((a, v) => a + v, 0) / res.length : 0;
+      return { nome: tp.nome, total: md.length, media, meta: tp.meta_objetivo || 0, pct: md.length ? Math.round((d / md.length) * 100) : 0 };
+    }).filter(Boolean).sort((a, b) => b.total - a.total);
+
+    const atencao = kpiArr.filter(k => k.pct < 90).sort((a, b) => a.pct - b.pct).slice(0, 4);
+    const topBoa = kpiArr.filter(k => k.pct >= 95).slice(0, 3).map(k => k.nome);
+    const destaque = topBoa.length ? `Destaque positivo: <b>${topBoa.join('</b>, <b>')}</b> com alta conformidade.` : '';
+
+    const periodo = (fil?.dataInicio || fil?.dataFim)
+      ? `${fil.dataInicio ? format(new Date(fil.dataInicio), 'dd/MM/yyyy', { locale: pt }) : '—'} a ${fil.dataFim ? format(new Date(fil.dataFim), 'dd/MM/yyyy', { locale: pt }) : 'Hoje'}`
+      : 'Todo o período';
+    const emitido = new Date().toLocaleDateString('pt-AO');
+
+    return {
+      periodo, emitido, logoDataUrl,
+      total, dentro, pct,
+      nAeroportos: aeroportosArr.length, nKpis: kpiArr.length,
+      aeroportos: aeroportosArr, atencao, indicadores: kpiArr.slice(0, 12), destaque,
+    };
+  };
+
+  const handleExportOnePager = async (medicoesFiltradas = null, filtrosDashboard = null) => {
+    setIsExportingPDF(true);
+    try {
+      const meds = medicoesFiltradas || filteredAndSortedMedicoes;
+      const fil = filtrosDashboard || filtros;
+      await registarExportacao('MedicaoKPI', 'PDF', fil, 'kpis');
+      const payload = await buildOnePagerPayload(meds, fil);
+      await exportKpiOnePagerPDF(payload, { fileName: `Relatorio_Executivo_KPIs_${payload.emitido.replace(/\//g, '-')}.pdf` });
+    } catch (e) {
+      console.error('Erro ao gerar Relatório Executivo:', e);
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
+  const handleExportPDF = async (medicoesFiltradas = null, filtrosDashboard = null, opts = {}) => {
     setIsExportingPDF(true);
     try {
       // Usar medições filtradas se fornecidas, caso contrário usar as da página
@@ -548,6 +636,12 @@ export default function KPIsOperacionais() {
       // Rodapé em todas as páginas
       addFooter(doc);
 
+      // Modo anexo de email: devolve base64 puro em vez de salvar/alertar
+      if (opts.returnBase64) {
+        const uri = doc.output('datauristring');
+        return uri.substring(uri.indexOf('base64,') + 7);
+      }
+
       doc.save(`relatorio_kpis_${new Date().toISOString().split('T')[0]}.pdf`);
 
       setSuccessInfo({
@@ -557,101 +651,72 @@ export default function KPIsOperacionais() {
       });
     } catch (error) {
       console.error("Erro ao exportar PDF:", error);
-      setAlertInfo({
-        isOpen: true,
-        type: 'error',
-        title: 'Erro na Exportação',
-        message: 'Não foi possível gerar o PDF. Verifique a consola para mais detalhes.'
-      });
+      if (!opts.returnBase64) {
+        setAlertInfo({
+          isOpen: true,
+          type: 'error',
+          title: 'Erro na Exportação',
+          message: 'Não foi possível gerar o PDF. Verifique a consola para mais detalhes.'
+        });
+      }
     } finally {
       setIsExportingPDF(false);
     }
   };
 
-  const handleSendEmail = async (destinatario, assunto) => {
-    if (selectedMedicoes.length === 0) {
+  const handleSendEmail = async ({ to, subject, message } = {}) => {
+    // O SendEmailModal partilhado entrega { to, subject, message }. Suporta múltiplos
+    // destinatários separados por vírgula.
+    const destinatarios = (to || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const destinatario = destinatarios.join(', ');
+    const assunto = subject;
+    // Origem: Dashboard (período filtrado) tem prioridade; senão, seleção da lista
+    const idsToSend = emailMedicaoIds.length > 0 ? emailMedicaoIds : selectedMedicoes;
+    if (idsToSend.length === 0) {
       setAlertInfo({
         isOpen: true,
         type: 'warning',
-        title: 'Nenhuma Seleção',
-        message: 'Por favor, selecione pelo menos uma medição para enviar por e-mail.'
+        title: 'Sem Medições',
+        message: 'Não há medições no período/seleção para enviar por e-mail.'
       });
       return false;
     }
 
     try {
-      const medicoesParaEnviar = medicoesKPI.filter((m) => selectedMedicoes.includes(m.id)); // Changed medicoes to medicoesKPI
-      const tiposKPIMap = new Map(tiposKPI.map((t) => [t.id, t]));
-      const aeroportosMap = new Map(aeroportos.map((a) => [a.codigo_icao, a]));
+      const meds = medicoesKPI.filter((m) => idsToSend.includes(m.id));
+      const payload = await buildOnePagerPayload(meds, emailFiltros);
 
-      const emailBody = `
-        <div style="font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; color: #333;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <img src="/logo-sga.png" alt="SGA Logo" style="height: 60px;">
-            <h1 style="color: #1e40af; margin-top: 20px;">SGA</h1>
-            <h2 style="color: #1e40af; margin: 10px 0;">Relatório de KPIs Operacionais</h2>
-            <p style="color: #64748b; margin-bottom: 10px;">Data de Geração: ${new Date().toLocaleDateString('pt-AO')}</p>
-            <p style="color: #64748b;">Total de Medições: ${medicoesParaEnviar.length}</p>
-          </div>
+      // Anexos: Relatório Executivo (one-pager, sempre) + Dashboard capturado (se houver)
+      const attachments = [];
+      const anexos = [];
+      try {
+        const onePagerB64 = await renderKpiOnePagerBase64(payload);
+        attachments.push({ filename: `Relatorio_Executivo_KPIs_${payload.emitido.replace(/\//g, '-')}.pdf`, content: onePagerB64, contentType: 'application/pdf' });
+        anexos.push('Relatório Executivo (PDF, 1 página)');
+      } catch (e) { console.error('Falha ao gerar one-pager p/ anexo:', e); }
+      // 2º anexo: Relatório Detalhado (nativo, multi-página) — mesmo período filtrado
+      try {
+        const detalhadoB64 = await handleExportPDF(meds, emailFiltros, { returnBase64: true });
+        if (detalhadoB64) {
+          attachments.push({ filename: `Relatorio_Detalhado_KPIs_${payload.emitido.replace(/\//g, '-')}.pdf`, content: detalhadoB64, contentType: 'application/pdf' });
+          anexos.push('Relatório Detalhado (PDF)');
+        }
+      } catch (e) { console.error('Falha ao gerar relatório detalhado p/ anexo:', e); }
 
-          <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
-              <thead>
-                <tr style="background-color: #f1f5f9; border-bottom: 2px solid #e2e8f0;">
-                  <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: 1px solid #e2e8f0;">KPI</th>
-                  <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: 1px solid #e2e8f0;">Aeroporto</th>
-                  <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: 1px solid #e2e8f0;">Data</th>
-                  <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: 1px solid #e2e8f0;">Início</th>
-                  <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: 1px solid #e2e8f0;">Fim</th>
-                  <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: 1px solid #e2e8f0;">Voo</th>
-                  <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: 1px solid #e2e8f0;">Responsável</th>
-                  <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: 1px solid #e2e8f0;">Resultado</th>
-                  <th style="padding: 12px 8px; text-align: left; font-weight: bold; border: 1px solid #e2e8f0;">Meta</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${medicoesParaEnviar.map((medicao, index) => {
-        const tipo = tiposKPIMap.get(medicao.tipo_kpi_id);
-        const aeroporto = aeroportosMap.get(medicao.aeroporto_id);
-        const resultadoTexto = medicao.resultado_inicio !== undefined && medicao.resultado_inicio !== null &&
-        medicao.resultado_fim !== undefined && medicao.resultado_fim !== null ?
-        `${medicao.resultado_inicio} - ${medicao.resultado_fim} ${tipo?.unidade_medida || ''}` :
-        medicao.resultado_principal !== null ?
-        `${medicao.resultado_principal} ${tipo?.unidade_medida || ''}` :
-        '-';
-        return `
-                  <tr style="border-bottom: 1px solid #e2e8f0; ${index % 2 === 0 ? 'background-color: #fafafa;' : ''}">
-                    <td style="padding: 10px 8px; border: 1px solid #e2e8f0;">${tipo?.nome || 'N/A'}</td>
-                    <td style="padding: 10px 8px; border: 1px solid #e2e8f0;">${aeroporto?.codigo_icao || medicao.aeroporto_id}</td>
-                    <td style="padding: 10px 8px; border: 1px solid #e2e8f0;">${format(new Date(medicao.data_medicao), 'dd/MM/yyyy', { locale: pt })}</td>
-                    <td style="padding: 10px 8px; border: 1px solid #e2e8f0;">${medicao.hora_inicio || '-'}</td>
-                    <td style="padding: 10px 8px; border: 1px solid #e2e8f0;">${medicao.hora_fim || '-'}</td>
-                    <td style="padding: 10px 8px; border: 1px solid #e2e8f0;">${medicao.numero_voo || '-'}</td>
-                    <td style="padding: 10px 8px; border: 1px solid #e2e8f0;">${medicao.responsavel_medicao || '-'}</td>
-                    <td style="padding: 10px 8px; border: 1px solid #e2e8f0; font-weight: bold;">${resultadoTexto}</td>
-                    <td style="padding: 10px 8px; border: 1px solid #e2e8f0; color: ${medicao.dentro_da_meta ? '#16a34a' : '#dc2626'}; font-weight: bold;">${medicao.dentro_da_meta ? 'Dentro' : 'Fora'}</td>
-                  </tr>`;
-      }).join('')}
-              </tbody>
-            </table>
-          </div>
-
-          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
-            <p><strong>Melhores Cumprimentos,</strong></p>
-            <p>Sistema SGA<br>Direcção de Operações</p>
-          </div>
-        </div>
-      `;
+      // Corpo: resumo institucional "email-safe" (números-chave + aeroportos + em atenção)
+      const emailBody = buildKpiEmailSummaryHtml(payload, { anexos, mensagem: message });
 
       const result = await sendEmailDirect({
-        to: destinatario,
+        to: destinatarios,
         subject: assunto,
-        body: emailBody,
-        from_name: 'SGA'
+        html: emailBody,
+        from_name: 'SGA',
+        attachments,
       });
 
-      if (result.status !== 200) {
-        const errorData = result.data || { error: 'Falha desconhecida no backend' };
+      const emailOk = !!result && (result.success === true || result.status === 200 || result?.data?.success === true);
+      if (!emailOk) {
+        const errorData = (result && (result.data || result)) || { error: 'Falha desconhecida no backend' };
 
         // Analisar o tipo de erro e criar mensagem personalizada
         let errorTitle = 'Erro ao Enviar E-mail';
@@ -701,6 +766,11 @@ Por favor tente novamente ou contacte o suporte técnico se o problema persistir
         return false;
       }
 
+      // Fecha o modal de envio (senão fica por cima e esconde a confirmação) e limpa o contexto
+      setEmailModalOpen(false);
+      setEmailMedicaoIds([]);
+      setEmailFiltros(null);
+      setEmailDashboardPdf(null);
       setSuccessInfo({
         isOpen: true,
         title: 'E-mail Enviado com Sucesso',
@@ -869,7 +939,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
 
   const aeroportoOptions = useMemo(() => [
   { value: 'todos', label: 'Todos os Aeroportos' },
-  ...aeroportos.map((a) => ({ value: a.codigo_icao, label: `${a.nome} (${a.codigo_icao})` }))],
+  ...aeroportos.map((a) => ({ value: a.codigo_icao, label: `${a.codigo_icao} — ${a.nome}` }))],
   [aeroportos]);
 
   const tipoKpiOptions = useMemo(() => [
@@ -895,6 +965,19 @@ Por favor tente novamente ou contacte o suporte técnico.`;
       return a.nome.localeCompare(b.nome, 'pt');
     });
   }, [tiposKPI]);
+
+  // Classifica o tipo em Doméstico / Internacional / Geral (feedback David/Catumbela:
+  // separar p/ o técnico não lançar Internacional como Doméstico). Deriva do nome/código.
+  const classifyTipoDI = (tipo) => {
+    const s = `${tipo?.nome || ''} ${tipo?.codigo || ''}`.toLowerCase();
+    if (s.includes('internacional')) return 'int';
+    if (s.includes('doméstico') || s.includes('domestico')) return 'dom';
+    return 'geral';
+  };
+  const tiposFiltradosDI = useMemo(
+    () => sortedTiposKPI.filter((t) => classifyTipoDI(t) === tipoFiltroDI),
+    [sortedTiposKPI, tipoFiltroDI]
+  );
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -923,14 +1006,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <Download className="w-4 h-4 mr-2" />
               {t('kpis.exportarExcel')}
             </Button>
-            <Button variant="outline" onClick={() => handleExportPDF()}>
-              <FileText className="w-4 h-4 mr-2" />
-              {t('kpis.exportarPDF')}
-            </Button>
-            <Button variant="outline" onClick={() => setEmailModalOpen(true)} disabled={selectedMedicoes.length === 0}>
-              <Mail className="w-4 h-4 mr-2" />
-              {t('kpis.enviarEmail')} {selectedMedicoes.length > 0 && `(${selectedMedicoes.length})`}
-            </Button>
+            {/* "Exportar PDF" e "Enviar Email" movidos para o card de Filtros do Dashboard (baseados no período filtrado) */}
             <Button
               variant="destructive"
               onClick={() => setIsBulkDeleteModalOpen(true)}
@@ -1215,7 +1291,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                                 </div>
                               </TableCell>
                               <TableCell>{aeroporto?.codigo_icao || medicao.aeroporto_id}</TableCell>
-                              <TableCell>{format(new Date(medicao.data_medicao), 'dd/MM/yyyy', { locale: pt })}</TableCell>
+                              <TableCell>{fmtData(medicao.data_medicao, 'dd/MM/yyyy')}</TableCell>
                               <TableCell>{medicao.numero_voo || '-'}</TableCell>
                               <TableCell>{medicao.responsavel_medicao}</TableCell>
                               <TableCell>
@@ -1229,7 +1305,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                               </TableCell>
                               <TableCell>
                                 <div className="text-xs">
-                                  <div className="font-medium text-slate-700 dark:text-slate-300">{medicao.updated_by || medicao.created_by || '-'}</div>
+                                  <div className="font-medium text-slate-700 dark:text-slate-300">{medicao.updated_by || medicao.created_by || medicao.responsavel_medicao || '-'}</div>
                                   {(medicao.updated_date || medicao.created_date) && (
                                     <div className="text-slate-500 dark:text-slate-400">
                                       {format(new Date(medicao.updated_date || medicao.created_date), 'dd/MM/yyyy HH:mm', { locale: pt })}
@@ -1274,8 +1350,30 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                 <CardTitle className="text-lg">{t('kpis.selecionarTipoKPI')}</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Abas Doméstico / Internacional / Geral — separa p/ evitar lançar Internacional como Doméstico (feedback David/Catumbela) */}
+                <div className="flex flex-wrap gap-2 mb-5">
+                  {[
+                    { key: 'dom', label: 'Doméstico' },
+                    { key: 'int', label: 'Internacional' },
+                    { key: 'geral', label: 'Geral' },
+                  ].map((tab) => {
+                    const count = sortedTiposKPI.filter((tp) => classifyTipoDI(tp) === tab.key).length;
+                    const active = tipoFiltroDI === tab.key;
+                    return (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setTipoFiltroDI(tab.key)}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${active ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                      >
+                        {tab.label} <span className={active ? 'opacity-80' : 'text-slate-400'}>({count})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {sortedTiposKPI.map((tipo) =>
+                  {tiposFiltradosDI.map((tipo) =>
                   <Card key={tipo.id} className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-blue-300"
                   onClick={() => handleNovaMedicao(tipo)}>
                       <CardHeader>
@@ -1302,6 +1400,12 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                   )}
                 </div>
 
+                {tiposFiltradosDI.length === 0 && sortedTiposKPI.length > 0 &&
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                    Nenhum KPI {tipoFiltroDI === 'dom' ? 'Doméstico' : tipoFiltroDI === 'int' ? 'Internacional' : 'Geral'} configurado nesta aba.
+                  </div>
+                }
+
                 {sortedTiposKPI.length === 0 &&
                 <div className="text-center py-8 text-slate-500">
                     <Settings className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
@@ -1326,7 +1430,14 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                 medicoes={medicoesKPI}
                 tiposKPI={tiposKPI}
                 aeroportos={aeroportos}
-                onExportPDF={handleExportPDF}
+                onExportPDF={handleExportOnePager}
+                onExportDetailedPDF={handleExportPDF}
+                onEnviarEmail={(meds, f, extras) => {
+                  setEmailMedicaoIds((meds || []).map((m) => m.id));
+                  setEmailFiltros(f || null);
+                  setEmailDashboardPdf(extras?.dashboardPdfBase64 || null);
+                  setEmailModalOpen(true);
+                }}
                 isExporting={isExportingPDF}
               />
             </Suspense>
@@ -1404,10 +1515,10 @@ Por favor tente novamente ou contacte o suporte técnico.`;
 
       <SendEmailModal
         isOpen={emailModalOpen}
-        onClose={() => setEmailModalOpen(false)}
+        onClose={() => { setEmailModalOpen(false); setEmailMedicaoIds([]); setEmailFiltros(null); setEmailDashboardPdf(null); }}
         onSend={handleSendEmail}
         title="Enviar Relatório de KPIs"
-        defaultSubject={`Relatório de Medições de KPI (${selectedMedicoes.length} itens)`} />
+        defaultSubject={`Relatório de Medições de KPI (${(emailMedicaoIds.length || selectedMedicoes.length)} itens)`} />
 
       <AnalisadorInteligente
         isOpen={isAnalisadorOpen}

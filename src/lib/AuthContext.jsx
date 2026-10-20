@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, NO_PORTAL_UC, CHAVE_SESSAO_UC } from '@/lib/supabaseClient';
 import { queryClientInstance } from '@/lib/query-client';
 
 const AuthContext = createContext();
@@ -53,6 +53,9 @@ export const AuthProvider = ({ children }) => {
   // (que captura `user` do primeiro render, sempre null → guarda de TOKEN_REFRESHED
   // falhava e recarregava o perfil a cada refresh de token).
   const userIdRef = useRef(null);
+  // Expõe o utilizador atual num global para o coletor de erros (errorLogger)
+  // registar QUEM sofreu o crash (ex.: identificar o pgoncalves no log).
+  useEffect(() => { try { window.__DIROPS_USER__ = user?.email || ''; } catch { /* */ } }, [user]);
 
   const loadUserProfile = useCallback(async (authUser) => {
     userIdRef.current = authUser.id;
@@ -162,27 +165,32 @@ export const AuthProvider = ({ children }) => {
     }, 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Auth state change handled
+      // CALLBACK SÍNCRONO (sem async/await). Chamar supabase aqui com `await` deadlocka:
+      // o callback pode correr COM o lock de auth (processLock) segurado — durante um
+      // refresh ou recuperação de sessão — e loadUserProfile faz uma query que internamente
+      // chama getSession() → tenta re-entrar no MESMO lock → pendura para sempre (o
+      // "spinner até F5"). Por isso adiamos o trabalho async com setTimeout(0), que corre
+      // já FORA do lock. É o padrão recomendado pelo supabase-js.
+      (event, session) => {
         if (cancelled) return;
 
-        if (event === 'SIGNED_IN' && session?.user) {
-          await loadUserProfile(session.user);
-          setIsLoadingAuth(false);
-        } else if (event === 'SIGNED_OUT') {
+        if (event === 'SIGNED_OUT') {
           queryClientInstance.clear();
           userIdRef.current = null;
           setUser(null);
           setIsAuthenticated(false);
           setIsLoadingAuth(false);
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          setTimeout(() => {
+            if (cancelled) return;
+            loadUserProfile(session.user).finally(() => { if (!cancelled) setIsLoadingAuth(false); });
+          }, 0);
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          // Guard: only reload profile if the user identity actually changed.
-          // TOKEN_REFRESHED fires every ~55 minutes (Supabase token lifetime).
-          // Comparamos com userIdRef (não com `user`, que aqui é o valor do
-          // primeiro render = null). Sem isto, a guarda falhava e recarregava
-          // o perfil a cada refresh → re-render fantasma de toda a árvore.
+          // TOKEN_REFRESHED dispara ~a cada 55 min. Só recarrega o perfil se a identidade
+          // mudou (comparado com userIdRef, não com `user` do 1º render = null). Sem isto,
+          // recarregava o perfil a cada refresh → re-render fantasma de toda a árvore.
           if (session.user.id !== userIdRef.current) {
-            await loadUserProfile(session.user);
+            setTimeout(() => { if (!cancelled) loadUserProfile(session.user); }, 0);
           }
         }
       }
@@ -236,7 +244,7 @@ export const AuthProvider = ({ children }) => {
     // Limpar as chaves de sessão do supabase pra não reusar sessão meio-revogada.
     try {
       Object.keys(localStorage)
-        .filter(k => k.startsWith('sb-') || k.startsWith('supabase.'))
+        .filter(k => (NO_PORTAL_UC ? k.startsWith(CHAVE_SESSAO_UC) : ((k.startsWith('sb-') && !k.startsWith(CHAVE_SESSAO_UC)) || k.startsWith('supabase.'))))
         .forEach(k => localStorage.removeItem(k));
     } catch {}
     if (shouldRedirect) {

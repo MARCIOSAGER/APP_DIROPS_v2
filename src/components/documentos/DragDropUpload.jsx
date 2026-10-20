@@ -1,3 +1,6 @@
+// Arrastar e largar ficheiros para o portal. A detecção de repetidos é por IMPRESSÃO DIGITAL do ficheiro
+// (SHA-256, migração 152) e não pelo nome: o nome muda, o ficheiro é o mesmo. E nunca trava o carregamento —
+// mostra o par e deixa carregar, porque rejeitar à entrada esconde o problema (desenho do Paperless).
 import React, { useState } from 'react';
 import { Upload, FileText, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -6,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import Select from '@/components/ui/select';
 import { Pasta } from '@/entities/Pasta';
 import { sanitizeFilename, validateFileType } from '@/lib/sanitize';
+import { impressaoDigital, documentosComMesmoFicheiro } from '@/documentos/hooks';
 
 export default function DragDropUpload({ onUploadComplete, pastaAtual, documentosExistentes = [] }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -14,7 +18,10 @@ export default function DragDropUpload({ onUploadComplete, pastaAtual, documento
   const [showPastaModal, setShowPastaModal] = useState(false);
   const [selectedPasta, setSelectedPasta] = useState(null);
   const [pastas, setPastas] = useState([]);
-  const [duplicateWarning, setDuplicateWarning] = useState([]);
+  // Uma entrada por ficheiro largado: { nome, sha256, pares } — `pares` são os documentos que já têm este
+  // ficheiro. Mostram-se; não impedem nada.
+  const [impressoes, setImpressoes] = useState([]);
+  const [aIdentificar, setAIdentificar] = useState(false);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -38,39 +45,36 @@ export default function DragDropUpload({ onUploadComplete, pastaAtual, documento
       setPastas(pastasData);
       setPendingFiles(files);
       setSelectedPasta(pastaAtual?.id || null);
+      setImpressoes(files.map((f) => ({ nome: f.name, sha256: null, pares: [] })));
       setShowPastaModal(true);
+      identificar(files);
     } catch (error) {
       console.error('Erro ao carregar pastas:', error);
     }
   };
 
-  const checkDuplicates = () => {
-    const duplicates = [];
-
-    pendingFiles.forEach((file) => {
-      const fileName = file.name.replace(/\.[^/.]+$/, '');
-      const existingDoc = documentosExistentes.find((doc) =>
-      doc.titulo === fileName && (
-      selectedPasta ? doc.pasta_id === selectedPasta : !doc.pasta_id)
-      );
-
-      if (existingDoc) {
-        duplicates.push(fileName);
+  // Impressão digital de cada ficheiro largado, e o par que já exista no portal. Corre enquanto a pessoa escolhe
+  // a pasta: quando ela clicar em carregar, a informação já está na janela.
+  const identificar = async (files) => {
+    setAIdentificar(true);
+    try {
+      const resultado = [];
+      for (const file of files) {
+        const sha256 = await impressaoDigital(file);
+        const pares = sha256 ? await documentosComMesmoFicheiro(sha256) : [];
+        resultado.push({ nome: file.name, sha256, pares });
+        setImpressoes([...resultado, ...files.slice(resultado.length).map((f) => ({ nome: f.name, sha256: null, pares: [] }))]);
       }
-    });
-
-    setDuplicateWarning(duplicates);
-    return duplicates.length > 0;
+    } catch (error) {
+      console.error('Não foi possível calcular a impressão digital:', error);
+    } finally {
+      setAIdentificar(false);
+    }
   };
 
   const handleConfirmUpload = async () => {
     if (pendingFiles.length === 0) return;
 
-    // Verificar duplicatas
-    if (checkDuplicates()) {
-      return; // Mostra aviso mas não fecha o modal
-    }
-
     setIsUploading(true);
     setShowPastaModal(false);
 
@@ -104,18 +108,24 @@ export default function DragDropUpload({ onUploadComplete, pastaAtual, documento
           continue;
         }
 
-        const result = await base44.integrations.Core.UploadFile({ file });
+        // storage privado: o ficheiro só é servido por URL assinada de curta duração
+        const result = await base44.integrations.Core.UploadPrivateFile({ file });
 
-        if (!result || !result.file_url) {
+        if (!result || !result.path) {
           console.error(`Falha no upload de ${file.name}`);
           continue;
         }
 
+        // Impressão digital: a calculada quando a janela abriu, ou, se faltar, calculada agora.
+        const digital = impressoes.find((i) => i.nome === file.name)?.sha256 || (await impressaoDigital(file));
+
         const docData = {
           titulo: sanitizeFilename(file.name).replace(/\.[^/.]+$/, ''),
-          arquivo_url: result.file_url,
+          arquivo_privado_uri: result.path,
+          usar_storage_privado: true,
           descricao: 'Carregado via drag-and-drop',
-          pasta_id: selectedPasta
+          pasta_id: selectedPasta,
+          ...(digital ? { sha256: digital } : {})
         };
 
         await onUploadComplete(docData);
@@ -125,66 +135,7 @@ export default function DragDropUpload({ onUploadComplete, pastaAtual, documento
     }
 
     setPendingFiles([]);
-    setDuplicateWarning([]);
-    setIsUploading(false);
-  };
-
-  const handleForceUpload = async () => {
-    setIsUploading(true);
-    setShowPastaModal(false);
-    setDuplicateWarning([]);
-
-    for (const file of pendingFiles) {
-      try {
-        // Validar tipo de arquivo
-        const validTypes = ['application/pdf', 'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/csv',
-        'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'image/png', 'image/jpeg'];
-
-        if (!validTypes.includes(file.type)) {
-          console.warn(`Tipo não suportado: ${file.name}`);
-          continue;
-        }
-
-        // Validar magic bytes do ficheiro
-        const fileCheck = await validateFileType(file);
-        if (!fileCheck.valid) {
-          console.warn(`Ficheiro rejeitado (${fileCheck.reason}): ${file.name}`);
-          continue;
-        }
-
-        // Validar tamanho (máx 50MB)
-        if (file.size > 50 * 1024 * 1024) {
-          console.warn(`Arquivo muito grande: ${file.name}`);
-          continue;
-        }
-
-        const result = await base44.integrations.Core.UploadFile({ file });
-
-        if (!result || !result.file_url) {
-          console.error(`Falha no upload de ${file.name}`);
-          continue;
-        }
-
-        const docData = {
-          titulo: sanitizeFilename(file.name).replace(/\.[^/.]+$/, ''),
-          arquivo_url: result.file_url,
-          descricao: 'Carregado via drag-and-drop',
-          pasta_id: selectedPasta
-        };
-
-        await onUploadComplete(docData);
-      } catch (error) {
-        console.error('Erro ao fazer upload:', error);
-      }
-    }
-
-    setPendingFiles([]);
+    setImpressoes([]);
     setIsUploading(false);
   };
 
@@ -252,16 +203,36 @@ export default function DragDropUpload({ onUploadComplete, pastaAtual, documento
               </div>
             </div>
 
-            {/* Aviso de duplicatas */}
-            {duplicateWarning.length > 0 &&
-            <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
-                <p className="text-sm font-semibold text-yellow-900 mb-2">⚠️ Arquivos duplicados encontrados:</p>
-                <div className="max-h-24 overflow-y-auto space-y-1">
-                  {duplicateWarning.map((name, idx) =>
-                <p key={idx} className="text-xs text-yellow-800 pl-6">• {name}</p>
+            {/* Ficheiros já no portal: avisa-se, não se trava. A decisão é de uma pessoa, na gestão. */}
+            {aIdentificar &&
+            <p className="text-xs text-slate-600 flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                A calcular a impressão digital dos ficheiros...
+              </p>
+            }
+            {impressoes.some((i) => i.pares.length > 0) &&
+            <div className="bg-amber-50 border border-amber-300 rounded-lg p-3">
+                <p className="text-sm font-semibold text-amber-900 mb-2">
+                  Ficheiros que já estão no portal
+                </p>
+                <div className="max-h-32 overflow-y-auto space-y-1.5">
+                  {impressoes.filter((i) => i.pares.length > 0).map((i) =>
+                <div key={i.nome} className="text-xs text-amber-900">
+                      <p className="font-medium truncate">• {i.nome}</p>
+                      <ul className="pl-4">
+                        {i.pares.map((d) =>
+                    <li key={d.id} className="truncate">
+                            igual a {d.numero ? <span className="font-mono tabular-nums">{d.numero} · </span> : null}{d.titulo}
+                          </li>
+                    )}
+                      </ul>
+                    </div>
                 )}
                 </div>
-                <p className="text-xs text-yellow-700 mt-2">Já existem documentos com estes nomes nesta pasta.</p>
+                <p className="text-xs text-amber-800 mt-2">
+                  O ficheiro é byte a byte o mesmo. Pode carregar: o par fica marcado em Gestão › Documentos ›
+                  Repetidos, para alguém decidir se são dois exemplares legítimos.
+                </p>
               </div>
             }
 
@@ -271,10 +242,7 @@ export default function DragDropUpload({ onUploadComplete, pastaAtual, documento
               <Select
                 options={pastasOptions}
                 value={selectedPasta || 'null'}
-                onValueChange={(value) => {
-                  setSelectedPasta(value === 'null' ? null : value);
-                  setDuplicateWarning([]);
-                }} />
+                onValueChange={(value) => setSelectedPasta(value === 'null' ? null : value)} />
 
             </div>
           </div>
@@ -285,26 +253,17 @@ export default function DragDropUpload({ onUploadComplete, pastaAtual, documento
               onClick={() => {
                 setShowPastaModal(false);
                 setPendingFiles([]);
-                setDuplicateWarning([]);
+                setImpressoes([]);
               }}>
 
               Cancelar
             </Button>
-            {duplicateWarning.length > 0 ?
-            <Button
-              onClick={handleForceUpload}
-              className="bg-yellow-600 hover:bg-yellow-700">
-
-                Carregar Mesmo Assim
-              </Button> :
-
             <Button
               onClick={handleConfirmUpload} className="bg-blue-600 text-slate-50 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow h-9 hover:bg-blue-700">
 
 
-                Carregar {pendingFiles.length} arquivo{pendingFiles.length > 1 ? 's' : ''}
-              </Button>
-            }
+              Carregar {pendingFiles.length} arquivo{pendingFiles.length > 1 ? 's' : ''}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

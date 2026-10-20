@@ -18,11 +18,12 @@ const RWYCC_CONDITIONS = {
   "2": "STANDING WATER"
 };
 
-export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registoInicial }) {
+export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registoInicial, aeroportoPreSelecionado }) {
   const { t } = useI18n();
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [formData, setFormData] = useState({
     aeroporto: '',
+    ano: new Date().getFullYear(),
     mes: new Date().getMonth() + 1,
     dia: new Date().getDate(),
     hora_utc: '',
@@ -32,6 +33,7 @@ export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registo
     rwycc3: '6', perc3: 'NR', lamina3: 'NR', condicao3: 'DRY',
     observacoes: ''
   });
+  const [errors, setErrors] = useState({});
 
   // Função para obter o menor número da soleira
   const getMenorSoleira = (soleiras) => {
@@ -61,6 +63,7 @@ export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registo
         const initialPista = registoInicial.pista ? String(registoInicial.pista).padStart(2, '0') : '';
         setFormData({
           aeroporto: registoInicial.aeroporto || '',
+          ano: registoInicial.ano || new Date().getFullYear(),
           mes: registoInicial.mes || new Date().getMonth() + 1,
           dia: registoInicial.dia || new Date().getDate(),
           hora_utc: registoInicial.hora_utc || '',
@@ -80,12 +83,20 @@ export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registo
           observacoes: registoInicial.observacoes || ''
         });
       } else {
-        // Modo criação - valores padrão
-        const defaultAeroporto = aeroportos.length === 1 ? aeroportos[0].codigo_icao : '';
-        const defaultPista = defaultAeroporto ? getMenorSoleira(aeroportos[0].soleiras) : '';
+        // Modo criação - valores padrão. Pré-seleciona o aeroporto vindo da inspeção
+        // de pista (aeroportoPreSelecionado = aeroporto_id uuid OU codigo_icao); senão,
+        // se só houver 1 aeroporto acessível, usa esse.
+        const preAero = aeroportoPreSelecionado
+          ? (aeroportos.find((a) => a.id === aeroportoPreSelecionado || a.codigo_icao === aeroportoPreSelecionado)?.codigo_icao || '')
+          : '';
+        const defaultAeroporto = preAero || (aeroportos.length === 1 ? aeroportos[0].codigo_icao : '');
+        // pista padrão = menor soleira DO aeroporto escolhido (antes usava sempre o 1.º)
+        const aeroObj = aeroportos.find((a) => a.codigo_icao === defaultAeroporto);
+        const defaultPista = aeroObj ? getMenorSoleira(aeroObj.soleiras) : '';
 
         setFormData({
           aeroporto: defaultAeroporto,
+          ano: new Date().getFullYear(),
           mes: new Date().getMonth() + 1,
           dia: new Date().getDate(),
           hora_utc: '',
@@ -97,7 +108,7 @@ export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registo
         });
       }
     }
-  }, [isOpen, registoInicial, aeroportos]);
+  }, [isOpen, registoInicial, aeroportos, aeroportoPreSelecionado]);
 
   // Generic handler for input changes
   const handleChange = (name, value) => {
@@ -130,6 +141,20 @@ export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registo
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Validação: aeroporto, pista, dia, mês e hora UTC são obrigatórios. Antes não
+    // havia validação -> era possível gravar registos sem aeroporto/pista (incompletos).
+    const faltam = [];
+    if (!formData.aeroporto) faltam.push('Aeroporto');
+    if (!formData.pista) faltam.push('Pista');
+    if (formData.ano == null || formData.ano === '') faltam.push('Ano');
+    if (formData.dia == null || formData.dia === '') faltam.push('Dia');
+    if (formData.mes == null || formData.mes === '') faltam.push('Mês');
+    if (!formData.hora_utc) faltam.push('Hora UTC');
+    if (faltam.length) {
+      setErrors({ geral: `Preencha os campos obrigatórios: ${faltam.join(', ')}.` });
+      return;
+    }
+    setErrors({});
     guardedSubmit(async () => {
       await onSubmit(formData);
     });
@@ -139,11 +164,13 @@ export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registo
 
   const aeroportoOptions = aeroportos.map(a => ({
     value: a.codigo_icao,
-    label: `${a.nome} (${a.codigo_icao})`
+    label: `${a.codigo_icao} — ${a.nome}`
   }));
 
   const pistaOptions = getPistaOptions();
 
+  const anoAtual = new Date().getFullYear();
+  const anoOptions = Array.from({ length: 5 }, (_, i) => { const y = anoAtual - 2 + i; return { value: y.toString(), label: y.toString() }; });
   const mesOptions = Array.from({ length: 12 }, (_, i) => ({ value: (i + 1).toString(), label: (i + 1).toString() }));
   const diaOptions = Array.from({ length: 31 }, (_, i) => ({ value: (i + 1).toString(), label: (i + 1).toString() }));
   const rwyccOptions = [{ value: "6", label: "6" }, { value: "5", label: "5" }, { value: "3", label: "3" }, { value: "2", label: "2" }];
@@ -190,7 +217,16 @@ export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registo
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label>Ano *</Label>
+              <Select
+                options={anoOptions}
+                value={formData.ano?.toString()}
+                onValueChange={(v) => handleChange('ano', parseInt(v))}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label>Mês *</Label>
               <Select
@@ -270,6 +306,11 @@ export default function FormGRF({ isOpen, onClose, onSubmit, aeroportos, registo
             />
           </div>
 
+          {errors.geral && (
+            <div className="rounded-md border border-red-300 bg-red-50 dark:bg-red-950/30 px-3 py-2 text-sm text-red-700 dark:text-red-300">
+              {errors.geral}
+            </div>
+          )}
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline">{t('btn.cancel')}</Button>

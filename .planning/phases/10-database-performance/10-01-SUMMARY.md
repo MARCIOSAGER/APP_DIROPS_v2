@@ -84,7 +84,7 @@ None in Task 1 — migration file written exactly as specified in plan.
 
 **Task 2 — Apply migration via Management API — BLOCKED**
 
-During Task 2, the Supabase Management API PAT token provided in the objective (`sbp_c8d01ec2c738bc1a6a9481b734a932cdcd6b18da`) returned `HTTP 401 Unauthorized` for all endpoints tested:
+During Task 2, the Supabase Management API PAT token provided in the objective (`REVOGADA`) returned `HTTP 401 Unauthorized` for all endpoints tested:
 - `POST https://api.supabase.com/v1/projects/glernwcsuwcyzwsnelad/database/query`
 - `POST https://api.supabase.com/v1/projects/glernwcsuwcyzwsnelad/database/migrations`
 - `POST https://api.supabase.com/v1/projects/glernwcsuwcyzwsnelad/sql`
@@ -130,7 +130,7 @@ EXPLAIN ANALYZE
 Expected: `Index Scan using idx_voo_empresa_deleted_data`
 
 ## Issues Encountered
-- Supabase Management API PAT (`sbp_c8d01ec2c738bc1a6a9481b734a932cdcd6b18da`) returned 401 Unauthorized — token may be expired or revoked
+- Supabase Management API PAT (`REVOGADA`) returned 401 Unauthorized — token may be expired or revoked
 - No service role key available in project `.env` file
 - `psql` and `pg` Node.js module not available in local environment
 - Migration must be applied manually via Supabase SQL Editor

@@ -4,6 +4,7 @@ import './App.css'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
+import { logClientError } from '@/lib/errorLogger'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
@@ -12,17 +13,27 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { CompanyViewProvider } from '@/lib/CompanyViewContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Login from '@/pages/Login';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
+const PortalAuth = lazyWithRetry(() => import('@/universidade/PortalAuth'));
+const PortalPrivacidade = lazyWithRetry(() => import('@/universidade/PortalPrivacidade'));
+const UniversidadeApp = lazyWithRetry(() => import('@/universidade/UniversidadeApp'));
+const PortalAuthDocs = lazyWithRetry(() => import('@/documentos/PortalAuth'));
+const PortalPrivacidadeDocs = lazyWithRetry(() => import('@/documentos/PortalPrivacidade'));
+const DocumentosApp = lazyWithRetry(() => import('@/documentos/DocumentosApp'));
+// A formação saiu do DIROPS: as rotas antigas levam ao site da Universidade (com a mesma query: curso, aula, quiz, tab).
+const REDIRECIONAR_PORTAL = { Formacao: 'formacao', GestaoFormacao: 'gestao/cursos' };
+function RedirecionarPortal({ destino }) {
+  React.useEffect(() => { window.location.replace(`/universidade/${destino}${window.location.search || ''}`); }, [destino]);
+  return <LoadingWatchdog message="A abrir a Universidade Corporativa…" />;
+}
 import CookieConsent from '@/components/shared/CookieConsent';
 import { I18nProvider } from '@/components/lib/i18n';
 import AppUpdateBanner from '@/components/shared/AppUpdateBanner';
 import { initWebVitals } from '@/lib/webVitals';
 import { LoadingSpinner, PageLoading } from '@/components/ui/loading-spinner';
+import LoadingWatchdog from '@/components/shared/LoadingWatchdog';
 
-const PageLoader = () => (
-  <div className="flex items-center justify-center h-screen">
-    <LoadingSpinner size="lg" />
-  </div>
-);
+const PageLoader = () => <LoadingWatchdog message="A carregar…" />;
 
 // Error Boundary to prevent white screen crashes
 class ErrorBoundary extends React.Component {
@@ -44,6 +55,9 @@ class ErrorBoundary extends React.Component {
     // Auto-reloads once (30s cooldown). Shows manual button if cooldown active.
     // Covers all lazy routes via tree propagation from outer boundary.
     console.error('[ErrorBoundary]', error, errorInfo);
+    // Registo DURÁVEL no servidor (logs/client-errors.jsonl) — antes um crash de
+    // render só ia para o console e ficava invisível (ex.: crash do Google Tradutor).
+    logClientError('react-boundary', error, { componentStack: String(errorInfo?.componentStack || '').slice(0, 2000) });
     import('@sentry/react').then(Sentry => Sentry.captureException(error, { extra: errorInfo })).catch(() => {});
     // Auto-reload on chunk load failure (stale cache after deploy)
     const msg = error?.message || '';
@@ -115,11 +129,7 @@ const AuthenticatedApp = () => {
   }, [isAuthenticated, user?.id]);
 
   if (isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
+    return <LoadingWatchdog message="A iniciar sessão…" />;
   }
 
   if (authError) {
@@ -144,7 +154,7 @@ const AuthenticatedApp = () => {
             <MainPage />
           </LayoutWrapper>
         } />
-        {Object.entries(Pages).map(([path, Page]) => (
+        {Object.entries(Pages).filter(([path]) => !REDIRECIONAR_PORTAL[path]).map(([path, Page]) => (
           <Route
             key={path}
             path={`/${path}`}
@@ -174,6 +184,23 @@ function App() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<Login />} />
+              {/* Universidade Corporativa — site próprio em /universidade (login, pedido de acesso, convite, portal) */}
+              <Route path="/universidade/login" element={<PortalAuth modo="entrar" />} />
+              <Route path="/universidade/pedir-acesso" element={<PortalAuth modo="pedir" />} />
+              <Route path="/universidade/recuperar" element={<PortalAuth modo="recuperar" />} />
+              <Route path="/universidade/alterar-senha" element={<PortalAuth modo="senha" />} />
+              <Route path="/universidade/privacidade" element={<PortalPrivacidade />} />
+              <Route path="/universidade/convite/:token" element={<PortalAuth modo="convite" />} />
+              <Route path="/universidade/*" element={<UniversidadeApp />} />
+              {/* Portal de Documentos — site próprio em /documentos (login, pedido de acesso, convite, portal) */}
+              <Route path="/documentos/login" element={<PortalAuthDocs modo="entrar" />} />
+              <Route path="/documentos/pedir-acesso" element={<PortalAuthDocs modo="pedir" />} />
+              <Route path="/documentos/recuperar" element={<PortalAuthDocs modo="recuperar" />} />
+              <Route path="/documentos/alterar-senha" element={<PortalAuthDocs modo="senha" />} />
+              <Route path="/documentos/privacidade" element={<PortalPrivacidadeDocs />} />
+              <Route path="/documentos/convite/:token" element={<PortalAuthDocs modo="convite" />} />
+              <Route path="/documentos/*" element={<DocumentosApp />} />
+              {Object.entries(REDIRECIONAR_PORTAL).map(([pagina, destino]) => <Route key={pagina} path={`/${pagina}`} element={<RedirecionarPortal destino={destino} />} />)}
               {PublicPages.map(page => {
                 const Page = Pages[page];
                 return Page ? <Route key={page} path={`/${page}`} element={<Page />} /> : null;

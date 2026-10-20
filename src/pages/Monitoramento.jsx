@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabaseClient";
 import MonitoramentoSuperAdmin from '@/components/suporte/MonitoramentoSuperAdmin';
+import ErrosClientePanel from '@/components/monitoramento/ErrosClientePanel';
 import { useI18n } from '@/components/lib/i18n';
 import {
   Activity, RefreshCw, Gauge, Clock, BarChart2, Globe, Smartphone,
@@ -215,6 +216,9 @@ export default function Monitoramento() {
 
       {/* Cloudflare Worker + App stats */}
       <MonitoramentoSuperAdmin />
+
+      {/* Erros do cliente (coletor on-premise) */}
+      <ErrosClientePanel />
 
       {/* Web Vitals */}
       <div>

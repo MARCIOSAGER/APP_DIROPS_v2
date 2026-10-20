@@ -12,6 +12,10 @@ import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { analisarDocumento } from '@/functions/analisarDocumento';
 import { useI18n } from '@/components/lib/i18n';
 import { hashPassword } from '@/lib/hashPassword';
+// Impressão digital SHA-256 do ficheiro (migração 152). Vive na camada de dados do Portal de Documentos porque é
+// lá que a detecção de repetidos é usada; aqui serve-se o mesmo cálculo para não haver duas implementações.
+// NOTA DE ORDEM: só gravar `sha256` depois de a migração 152 estar aplicada — antes dela a coluna não existe.
+import { impressaoDigital, documentosComMesmoFicheiro } from '@/documentos/hooks';
 
 const CATEGORIA_OPTIONS = [
 { value: 'manual_operacoes', label: 'Manual de Operações' },
@@ -58,10 +62,14 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
     adicionar_marca_dagua: false,
     status: 'ativo',
     arquivo_url: '',
-    usar_storage_privado: false
+    sha256: null, // impressão digital do ficheiro: é o que deixa ver que dois documentos são o mesmo ficheiro
+    usar_storage_privado: true // Portal de Documentos: ficheiros privados por omissão (servidos por URL assinada)
   });
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  // Pares encontrados à entrada. Mostram-se, não travam: rejeitar o carregamento esconde o problema e faz a
+  // pessoa guardar o ficheiro noutro sítio (desenho do Paperless).
+  const [repetidos, setRepetidos] = useState([]);
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
   const [confirmaSenha, setConfirmaSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -82,9 +90,11 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
         descricao: '',
         nivel_acesso: [],
         status: 'ativo',
-        arquivo_url: ''
+        arquivo_url: '',
+        sha256: null
       });
     }
+    setRepetidos([]);
   }, [documentoInitial, isOpen]);
 
   const handleSubmit = async (e) => {
@@ -108,6 +118,7 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
 
     guardedSubmit(async () => {
       const dataToSubmit = { ...formData };
+      if (!dataToSubmit.sha256) delete dataToSubmit.sha256; // sem ficheiro novo, não se mexe na impressão digital
       // Hash the password before storing so it is never saved as plaintext
       if (dataToSubmit.requer_senha_adicional && dataToSubmit.senha) {
         dataToSubmit.senha_hash = await hashPassword(dataToSubmit.senha);
@@ -135,11 +146,19 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
     if (!file) return;
 
     setIsUploading(true);
+    setRepetidos([]);
     try {
+      // Impressão digital antes de qualquer coisa: é do ficheiro escolhido, não do que o servidor devolve.
+      const digital = await impressaoDigital(file);
+      if (digital) {
+        handleChange('sha256', digital);
+        const pares = await documentosComMesmoFicheiro(digital, { excepto: documentoInitial?.id });
+        setRepetidos(pares);
+      }
       // Se marcado como storage privado, usar UploadPrivateFile
       if (formData.usar_storage_privado) {
         const result = await base44.integrations.Core.UploadPrivateFile({ file });
-        handleChange('arquivo_privado_uri', result.file_uri);
+        handleChange('arquivo_privado_uri', result.file_uri || result.path); // o upload privado devolve {path}
         handleChange('arquivo_url', ''); // Limpar URL pública
       } else {
         const result = await base44.integrations.Core.UploadFile({ file });
@@ -193,7 +212,7 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
   { value: '', label: 'Geral (Todos)' },
   ...aeroportos.map((aeroporto) => ({
     value: aeroporto.codigo_icao,
-    label: `${aeroporto.nome} (${aeroporto.codigo_icao})`
+    label: `${aeroporto.codigo_icao} — ${aeroporto.nome}`
   }))];
 
 
@@ -487,10 +506,29 @@ export default function FormDocumento({ isOpen, onClose, onSubmit, aeroportos, d
               {isUploading &&
               <p className="text-xs text-blue-600 flex items-center gap-2">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  A carregar ficheiro...
+                  A calcular a impressão digital e a carregar o ficheiro...
                 </p>
               }
-              
+
+              {/* Repetido: avisa-se e carrega-se. A decisão é de uma pessoa, no separador «Repetidos» da gestão. */}
+              {repetidos.length > 0 && !isUploading &&
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs dark:border-amber-900 dark:bg-amber-950/50">
+                  <p className="font-semibold text-amber-900 dark:text-amber-100">
+                    Este ficheiro já está no portal{repetidos.length > 1 ? ` (${repetidos.length} vezes)` : ''}.
+                  </p>
+                  <ul className="mt-1 space-y-0.5 text-amber-900 dark:text-amber-200">
+                    {repetidos.map((d) =>
+                  <li key={d.id} className="truncate">
+                        {d.numero ? <span className="font-mono tabular-nums">{d.numero} · </span> : null}{d.titulo}
+                      </li>
+                  )}
+                  </ul>
+                  <p className="mt-1 text-amber-800 dark:text-amber-300">
+                    O carregamento segue: o par fica marcado e alguém decide se são dois exemplares legítimos.
+                  </p>
+                </div>
+              }
+
               {/* Current file info */}
               {formData.arquivo_url && !isUploading &&
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">

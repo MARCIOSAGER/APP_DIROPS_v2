@@ -110,9 +110,9 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
                   <br />
                   {diagnostico.tem_duplicacoes ? (
                     <>
-                      <strong>{t('kpis.diag_dup_codigo')}:</strong> {diagnostico.duplicacoes_por_codigo.length}
+                      <strong>{t('kpis.diag_dup_codigo')}:</strong> {(diagnostico.duplicacoes_por_codigo || []).length}
                       <br />
-                      <strong>{t('kpis.diag_dup_nome')}:</strong> {diagnostico.duplicacoes_por_nome.length}
+                      <strong>{t('kpis.diag_dup_nome')}:</strong> {(diagnostico.duplicacoes_por_nome || []).length}
                     </>
                   ) : (
                     t('kpis.diag_sem_duplicacoes')
@@ -120,7 +120,7 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
                 </AlertDescription>
               </Alert>
 
-              {diagnostico.duplicacoes_por_codigo.length > 0 && (
+              {(diagnostico.duplicacoes_por_codigo || []).length > 0 && (
                 <div className="space-y-3">
                   <h3 className="font-semibold text-lg">{t('kpis.diag_dup_codigo')}</h3>
                   {diagnostico.duplicacoes_por_codigo.map((dup, idx) => (
@@ -153,7 +153,7 @@ export default function DiagnosticoDuplicacoesModal({ isOpen, onClose, onSuccess
                 </div>
               )}
 
-              {diagnostico.duplicacoes_por_nome.length > 0 && (
+              {(diagnostico.duplicacoes_por_nome || []).length > 0 && (
                 <div className="space-y-3">
                   <h3 className="font-semibold text-lg">{t('kpis.diag_dup_nome')}</h3>
                   {diagnostico.duplicacoes_por_nome.map((dup, idx) => (

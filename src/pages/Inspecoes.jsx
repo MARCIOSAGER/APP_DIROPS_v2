@@ -57,11 +57,15 @@ export default function Inspecoes() {
           empId ? Aeroporto.filter({ empresa_id: empId }) : Aeroporto.list()
         ]);
         setAeroportosAll(aeroportosData);
-        setAeroportos(getAeroportosPermitidos(currentUser, aeroportosData, effectiveEmpresaId));
+        // Inspeção é só para aeroportos GERIDOS pela SGA (isSGA=true) — não todos de Angola/estrangeiros.
+        setAeroportos(getAeroportosPermitidos(currentUser, aeroportosData, effectiveEmpresaId).filter(a => a.pais === 'AO' && a.isSGA === true));
         setTiposInspecao(tiposData);
-        setSecondaryLoaded(true);
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
+      } finally {
+        // Sempre libera o loading — senão uma falha (ou timeout) na carga
+        // secundária deixaria "A carregar inspeções..." preso para sempre.
+        setSecondaryLoaded(true);
       }
     })();
   }, [effectiveEmpresaId]);

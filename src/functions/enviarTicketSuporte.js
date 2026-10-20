@@ -2,12 +2,24 @@ import { supabase } from '@/lib/supabaseClient';
 import { sendNotificationEmail } from '@/functions/sendNotificationEmail';
 
 // Inbox da equipa de suporte que recebe aviso de cada novo ticket.
-const SUPORTE_EMAIL = 'oaeroportos@sga.co.ao';
+// Editável na UI (configuracao_sistema.email_suporte); fallback = default.
+const SUPORTE_EMAIL_DEFAULT = 'oaeroportos@sga.co.ao';
+async function getSuporteEmail() {
+  try {
+    const { data } = await supabase
+      .from('configuracao_sistema')
+      .select('email_suporte')
+      .order('created_date', { ascending: true })
+      .limit(1)
+      .single();
+    return (data?.email_suporte || '').trim() || SUPORTE_EMAIL_DEFAULT;
+  } catch { return SUPORTE_EMAIL_DEFAULT; }
+}
 const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 // Grava o ticket na tabela dedicada public.ticket_suporte (numero_ticket TKT-XXXXX
 // gerado pelo DEFAULT da tabela) e avisa a equipa de suporte por email.
-export async function enviarTicketSuporte({ assunto, categoria, mensagem, anexos = [] }) {
+export async function enviarTicketSuporte({ assunto, categoria, mensagem, anexos = [], destino = null }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Não autenticado');
 
@@ -68,8 +80,9 @@ export async function enviarTicketSuporte({ assunto, categoria, mensagem, anexos
       '<div style="background:#f8fafc;border-radius:0 0 12px 12px;padding:14px 40px;border:1px solid #e2e8f0;border-top:none;text-align:center;">' +
       '<p style="margin:0;color:#94a3b8;font-size:11px;">Aceda em DIROPS → Suporte → Gerir Tickets</p></div></div></body></html>';
 
+    const suporteTo = (Array.isArray(destino) && destino.length) ? destino : (typeof destino === 'string' && destino.trim()) || await getSuporteEmail();
     await sendNotificationEmail({
-      to: SUPORTE_EMAIL,
+      to: suporteTo,
       subject: `Novo Ticket ${ticket.numero_ticket}: ${assunto}`,
       body: html,
     });

@@ -8,6 +8,7 @@ export function useConfiguracaoSistema({ enabled = true } = {}) {
       const { data, error } = await supabase
         .from('configuracao_sistema')
         .select('*')
+        .order('created_date', { ascending: true }) // singleton determinístico (mesma linha p/ todos)
         .limit(1);
 
       if (error) {

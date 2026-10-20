@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { User, Save, X } from 'lucide-react';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { useI18n } from '@/components/lib/i18n';
+import { useRegrasPermissao } from '@/hooks/useRegrasPermissao';
 
 const PERFIL_OPTIONS_KEYS = [
   { value: 'administrador', key: 'gestao.perfil.administrador' },
@@ -30,7 +31,15 @@ export default function EditUserModal({ isOpen, onClose, user, aeroportos, empre
   const [formData, setFormData] = useState({});
   const { isSubmitting, guardedSubmit } = useSubmitGuard();
 
-  const PERFIL_OPTIONS = PERFIL_OPTIONS_KEYS.map(p => ({ value: p.value, label: t(p.key) }));
+  const { data: regras = [] } = useRegrasPermissao();
+  const perfisSistema = PERFIL_OPTIONS_KEYS.map(p => p.value);
+  // Perfis de sistema + perfis personalizados criados em Gestão de Permissões.
+  const PERFIL_OPTIONS = [
+    ...PERFIL_OPTIONS_KEYS.map(p => ({ value: p.value, label: t(p.key) })),
+    ...regras
+      .filter(r => r.perfil && !perfisSistema.includes(r.perfil))
+      .map(r => ({ value: r.perfil, label: r.label || r.perfil })),
+  ];
   const STATUS_OPTIONS = STATUS_OPTIONS_KEYS.map(s => ({ value: s.value, label: t(s.key) }));
 
   useEffect(() => {

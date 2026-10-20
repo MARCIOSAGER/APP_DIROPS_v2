@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="1000" height="300" font-family="Segoe UI, Arial, sans-serif" role="img" aria-labelledby="t">
+  <title id="t">O percurso do aluno em seis passos: catálogo, inscrição, aulas, avaliação, certificado e recertificação quando a validade termina</title>
+  <rect width="1000" height="300" fill="#f4f6fa"/>
+  <defs><marker id="s" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a1823a"/></marker></defs>
+  <g font-size="13" text-anchor="middle">
+    <g><rect x="20" y="90" width="140" height="90" rx="14" fill="#1e3a5f"/><text x="90" y="126" fill="#fff" font-size="26">🔍</text><text x="90" y="156" fill="#fff" font-weight="700">1. Catálogo</text></g>
+    <g><rect x="184" y="90" width="140" height="90" rx="14" fill="#1e3a5f"/><text x="254" y="126" fill="#fff" font-size="26">✍</text><text x="254" y="156" fill="#fff" font-weight="700">2. Inscrição</text></g>
+    <g><rect x="348" y="90" width="140" height="90" rx="14" fill="#1e3a5f"/><text x="418" y="126" fill="#fff" font-size="26">📚</text><text x="418" y="156" fill="#fff" font-weight="700">3. Aulas</text></g>
+    <g><rect x="512" y="90" width="140" height="90" rx="14" fill="#1e3a5f"/><text x="582" y="126" fill="#fff" font-size="26">📝</text><text x="582" y="156" fill="#fff" font-weight="700">4. Avaliação</text></g>
+    <g><rect x="676" y="90" width="140" height="90" rx="14" fill="#a1823a"/><text x="746" y="126" fill="#fff" font-size="26">🏅</text><text x="746" y="156" fill="#fff" font-weight="700">5. Certificado</text></g>
+    <g><rect x="840" y="90" width="140" height="90" rx="14" fill="#0f766e"/><text x="910" y="126" fill="#fff" font-size="26">🔁</text><text x="910" y="156" fill="#fff" font-weight="700">6. Recertificar</text></g>
+  </g>
+  <g stroke="#a1823a" stroke-width="3" fill="none" marker-end="url(#s)">
+    <path d="M160 135 H182"/><path d="M324 135 H346"/><path d="M488 135 H510"/><path d="M652 135 H674"/><path d="M816 135 H838"/>
+  </g>
+  <path d="M910 180 V230 H90 V182" stroke="#0f766e" stroke-width="2" fill="none" stroke-dasharray="6 4" marker-end="url(#s)"/>
+  <g font-size="11" fill="#334155" text-anchor="middle">
+    <text x="90" y="205">veja os cursos e</text><text x="90" y="220">os obrigatórios</text>
+    <text x="254" y="205">um clique;</text><text x="254" y="220">acesso imediato</text>
+    <text x="418" y="205">ao seu ritmo;</text><text x="418" y="220">progresso guardado</text>
+    <text x="582" y="205">tentativas, tempo,</text><text x="582" y="220">nota mínima</text>
+    <text x="746" y="205">emitido na hora,</text><text x="746" y="220">com validade</text>
+    <text x="910" y="205">quando a validade</text><text x="910" y="220">está a terminar</text>
+  </g>
+  <text x="500" y="262" font-size="12" fill="#0f766e" text-anchor="middle">o curso reabre num novo ciclo (ou abre o curso de refrescamento) e o certificado renova-se</text>
+</svg>

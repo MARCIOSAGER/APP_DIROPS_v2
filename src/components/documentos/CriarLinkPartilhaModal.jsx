@@ -5,7 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/lib/supabaseClient';
+import { isExternalEmail } from '@/lib/emailDomain';
+import { copyToClipboard } from '@/lib/utils';
 import { Link2, Copy, Check, Loader2, Mail, ExternalLink, Shield, AlertCircle, FolderOpen } from 'lucide-react';
+
+// Escape minimo para nao partir o HTML do email com titulos que tenham < > &.
+const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const OPCOES_VALIDADE = [
   { label: '24 horas', dias: 1 },
@@ -24,6 +29,9 @@ export default function CriarLinkPartilhaModal({ isOpen, onClose, documento, pas
   const [erro, setErro] = useState('');
   const [linkCriado, setLinkCriado] = useState(null);
   const [copiado, setCopiado] = useState(false);
+  const [destino, setDestino] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [envioMsg, setEnvioMsg] = useState(null); // { tipo: 'ok' | 'erro', texto }
 
   const isPasta = !!pasta;
   const alvo = pasta || documento;
@@ -32,6 +40,7 @@ export default function CriarLinkPartilhaModal({ isOpen, onClose, documento, pas
   const resetForm = () => {
     setDias(7); setPassword(''); setMaxDownloads(''); setRecursivo(true);
     setLinkCriado(null); setCopiado(false); setErro('');
+    setDestino(''); setEnviando(false); setEnvioMsg(null);
   };
 
   const handleClose = () => { resetForm(); onClose(); };
@@ -57,31 +66,66 @@ export default function CriarLinkPartilhaModal({ isOpen, onClose, documento, pas
     }
   };
 
-  const copiar = () => {
+  const copiar = async () => {
     if (!linkCriado?.url) return;
-    navigator.clipboard.writeText(linkCriado.url).then(() => {
+    const ok = await copyToClipboard(linkCriado.url);
+    if (ok) {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
-    });
+    } else {
+      setEnvioMsg({ tipo: 'erro', texto: 'Não foi possível copiar. Seleccione o link e copie manualmente.' });
+    }
   };
 
-  const enviarEmail = () => {
-    if (!linkCriado?.url || !alvo) return;
+  // Envia o link pelo SISTEMA (relay @sga.co.ao), com registo na auditoria.
+  // O relay so entrega a enderecos @sga.co.ao; externos sao avisados aqui e
+  // recusados pelo backend (422). Para externos: copiar o link e enviar do email proprio.
+  const enviarEmail = async () => {
+    if (!linkCriado?.url || !alvo || !destino.trim()) return;
+    const to = destino.trim();
+    if (isExternalEmail(to)) {
+      setEnvioMsg({
+        tipo: 'erro',
+        texto: 'Endereço externo. O relay da SGA só entrega a @sga.co.ao. Copie o link e envie pelo seu próprio email.',
+      });
+      return;
+    }
     const nome = isPasta ? alvo.nome : alvo.titulo;
-    const subject = encodeURIComponent(
-      isPasta ? `Pasta partilhada: ${nome}` : `Documento partilhado: ${nome}`
-    );
-    const body = encodeURIComponent(
-      (isPasta
-        ? `Olá,\n\nO acesso à pasta "${nome}" está disponível através do link abaixo:\n\n${linkCriado.url}\n\n`
-          + (linkCriado.recursivo ? 'Todas as subpastas estão incluídas.\n' : 'Apenas os documentos directos desta pasta.\n')
-        : `Olá,\n\nO documento "${nome}" está disponível através do link abaixo:\n\n${linkCriado.url}\n\n`)
-      + `Este link expira em ${new Date(linkCriado.expira_em).toLocaleString('pt-PT')}.\n`
-      + (linkCriado.tem_password ? '⚠️ Este link é protegido por password (partilhada em separado).\n' : '')
-      + (linkCriado.max_downloads ? `Limite de ${linkCriado.max_downloads} acessos.\n` : '')
-      + `\nSistema DIROPS-SGA`
-    );
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    const subject = isPasta ? `Pasta partilhada: ${nome}` : `Documento partilhado: ${nome}`;
+    const expira = new Date(linkCriado.expira_em).toLocaleString('pt-PT');
+    const intro = isPasta
+      ? `O acesso à pasta <strong>${esc(nome)}</strong> está disponível através do link abaixo:`
+      : `O documento <strong>${esc(nome)}</strong> está disponível através do link abaixo:`;
+    const extra = [
+      isPasta ? (linkCriado.recursivo ? 'Todas as subpastas estão incluídas.' : 'Apenas os documentos directos desta pasta.') : '',
+      `Este link expira em ${expira}.`,
+      linkCriado.tem_password ? '🔒 Protegido por password (partilhada em separado).' : '',
+      linkCriado.max_downloads ? `Limite de ${linkCriado.max_downloads} acessos.` : '',
+    ].filter(Boolean);
+    const html =
+      `<p>Olá,</p><p>${intro}</p>`
+      + `<p><a href="${linkCriado.url}">${esc(linkCriado.url)}</a></p>`
+      + extra.map((l) => `<p style="margin:2px 0;color:#475569;font-size:13px">${esc(l)}</p>`).join('')
+      + `<p style="margin-top:16px;color:#94a3b8;font-size:12px">Sistema DIROPS-SGA</p>`;
+    const text =
+      `Olá,\n\n${intro.replace(/<[^>]+>/g, '')}\n\n${linkCriado.url}\n\n`
+      + extra.map((l) => l.replace(/<[^>]+>/g, '')).join('\n')
+      + `\n\nSistema DIROPS-SGA`;
+
+    setEnviando(true); setEnvioMsg(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: { to, subject, html, text },
+      });
+      if (error) throw new Error(error.message || 'Falha no envio');
+      if (data?.error) throw new Error(data.error);
+      setEnvioMsg({ tipo: 'ok', texto: `Enviado a ${to}.` });
+      setDestino('');
+    } catch (e) {
+      setEnvioMsg({ tipo: 'erro', texto: e.message || 'Falha no envio' });
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -214,13 +258,34 @@ export default function CriarLinkPartilhaModal({ isOpen, onClose, documento, pas
               <p>{linkCriado.max_downloads ? `📊 Máx ${linkCriado.max_downloads} downloads` : '♾️ Downloads ilimitados'}</p>
             </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={enviarEmail} className="flex-1">
-                <Mail className="w-4 h-4 mr-2" /> Enviar por email
-              </Button>
-              <Button variant="outline" onClick={() => window.open(linkCriado.url, '_blank')} className="flex-1">
-                <ExternalLink className="w-4 h-4 mr-2" /> Abrir
-              </Button>
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <Label className="text-xs text-slate-600">Enviar por email (destinatário @sga.co.ao)</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  value={destino}
+                  onChange={(e) => { setDestino(e.target.value); setEnvioMsg(null); }}
+                  placeholder="nome@sga.co.ao"
+                  className="text-sm"
+                  onKeyDown={(e) => { if (e.key === 'Enter' && destino.trim() && !enviando) enviarEmail(); }}
+                />
+                <Button variant="outline" onClick={enviarEmail} disabled={!destino.trim() || enviando}>
+                  {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                  <span className="ml-2">Enviar</span>
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => window.open(linkCriado.url, '_blank')} title="Abrir">
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </div>
+              {envioMsg && (
+                <p className={`text-xs flex items-center gap-1 ${envioMsg.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                  {envioMsg.tipo === 'ok' ? <Check className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                  {envioMsg.texto}
+                </p>
+              )}
+              <p className="text-[11px] text-slate-400">
+                Para auditores/ANAC (externos), copie o link e envie pelo seu próprio email — o relay da SGA só entrega a @sga.co.ao.
+              </p>
             </div>
           </div>
         )}

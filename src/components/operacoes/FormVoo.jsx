@@ -109,6 +109,7 @@ export default function FormVoo({
     passageiros_local: 0,
     passageiros_transito_transbordo: 0,
     passageiros_transito_direto: 0,
+    passageiros_infant: 0,
     passageiros_total: 0,
     tripulacao: 0,
     carga_kg: 0,
@@ -310,6 +311,7 @@ export default function FormVoo({
         passageiros_local: vooInicial.passageiros_local || 0,
         passageiros_transito_transbordo: vooInicial.passageiros_transito_transbordo || 0,
         passageiros_transito_direto: vooInicial.passageiros_transito_direto || 0,
+        passageiros_infant: vooInicial.passageiros_infant || 0,
         passageiros_total: vooInicial.passageiros_total || 0,
         tripulacao: vooInicial.tripulacao || 0,
         carga_kg: vooInicial.carga_kg || 0,
@@ -369,6 +371,7 @@ export default function FormVoo({
         passageiros_local: 0,
         passageiros_transito_transbordo: 0,
         passageiros_transito_direto: 0,
+        passageiros_infant: 0,
         passageiros_total: 0,
         tripulacao: 0,
         carga_kg: 0,
@@ -392,12 +395,15 @@ export default function FormVoo({
     (async () => {
       if (formData.tipo_movimento !== 'DEP' || !formData.data_operacao) { setServerArrVoos([]); return; }
       try {
-        const dep = new Date(formData.data_operacao);
-        const ini = new Date(dep); ini.setDate(ini.getDate() - 7);
+        // Busca os arrivals LIVRES (nao ligados) ate a data da partida. Sao POUCOS (so os
+        // linkaveis — a maioria ja esta ligada), entao os 300 mais recentes cobrem inclusive
+        // chegadas ANTIGAS livres (ex.: ARR de 27/jun de aviao parado 15 dias). Antes a busca
+        // trazia os 300 mais recentes de TODOS -> so ~4 dias -> perdia a chegada antiga livre.
         const q = {
           tipo_movimento: 'ARR',
           deleted_at: { $is: null },
-          data_operacao: { $gte: ini.toISOString().split('T')[0], $lte: formData.data_operacao },
+          voo_ligado_id: { $is: null },
+          data_operacao: { $lte: formData.data_operacao },
         };
         if (formData.registo_aeronave) q.registo_aeronave = formData.registo_aeronave;
         const res = await Voo.filter(q, '-data_operacao', 300);
@@ -511,12 +517,13 @@ export default function FormVoo({
   useEffect(() => {
     const total = (parseInt(formData.passageiros_local) || 0) +
       (parseInt(formData.passageiros_transito_transbordo) || 0) +
-      (parseInt(formData.passageiros_transito_direto) || 0);
+      (parseInt(formData.passageiros_transito_direto) || 0) +
+      (parseInt(formData.passageiros_infant) || 0);
 
     if (total !== formData.passageiros_total) {
       setFormData((prev) => ({ ...prev, passageiros_total: total }));
     }
-  }, [formData.passageiros_local, formData.passageiros_transito_transbordo, formData.passageiros_transito_direto, formData.passageiros_total]);
+  }, [formData.passageiros_local, formData.passageiros_transito_transbordo, formData.passageiros_transito_direto, formData.passageiros_infant, formData.passageiros_total]);
 
   // Calculate total bagagem automatically (ARR only)
   useEffect(() => {
@@ -554,7 +561,9 @@ export default function FormVoo({
           const isInternacional = (aeroportoOrigem && aeroportoOrigem.pais !== 'AO') ||
                                   (aeroportoDestino && aeroportoDestino.pais !== 'AO') ||
                                   (aeroportoOp && aeroportoOp.pais !== 'AO');
-          const minMinutos = isInternacional ? 30 : 20;
+          // Permanência mínima entre a chegada e a partida (turnaround). Doméstico reduzido de 20 para 10 min a
+          // 13/10/2026 (operadores com turnaround curto não conseguiam lançar os voos). Internacional mantém 30 min.
+          const minMinutos = isInternacional ? 30 : 10;
           const tipoLabel = isInternacional ? t('formVoo.tipoInternacional') : t('formVoo.tipoDomestico');
 
           if (formData.horario_previsto) {
@@ -702,12 +711,47 @@ export default function FormVoo({
     };
   }, [formData, vooInicial, t]);
 
+  // Aviso de "chegada em aberto": um aviao nao pode CHEGAR de novo sem ter PARTIDO.
+  // Ao lancar uma ARR, se o ultimo movimento dessa matricula (antes desta data/hora)
+  // for uma CHEGADA ainda SEM partida (voo_ligado_id nulo), avisa — provavel partida
+  // nao lancada ou chegada duplicada. (Causa raiz de ~518 chegadas penduradas.)
+  const checkOpenArrivalDB = useCallback(async () => {
+    if (formData.tipo_movimento !== 'ARR') return null;
+    if (!formData.registo_aeronave || !formData.data_operacao) return null;
+    const hAtual = formData.horario_real || formData.horario_previsto || '23:59';
+    let anteriores = [];
+    try {
+      anteriores = await Voo.filter({
+        registo_aeronave: formData.registo_aeronave,
+        deleted_at: null,
+        data_operacao: { $lte: formData.data_operacao },
+      }, '-data_operacao', 30);
+    } catch (e) {
+      console.error('Erro na verificacao de chegada em aberto:', e);
+      return null;
+    }
+    const ultimo = (anteriores || [])
+      .filter((v) => !(vooInicial && v.id === vooInicial.id))
+      .map((v) => ({ v, key: `${v.data_operacao}T${v.horario_real || v.horario_previsto || '00:00'}` }))
+      .filter((x) => x.key < `${formData.data_operacao}T${hAtual}`)
+      .sort((a, b) => b.key.localeCompare(a.key))[0]?.v;
+    if (!ultimo) return null;
+    if (ultimo.tipo_movimento === 'ARR' && !ultimo.voo_ligado_id) {
+      return {
+        voo: ultimo,
+        message: `${formData.registo_aeronave} ja tem uma CHEGADA em ${ultimo.data_operacao}${ultimo.numero_voo ? ` (${ultimo.numero_voo})` : ''} ainda SEM PARTIDA registada. Um aviao nao chega duas vezes sem partir — verifique se falta lancar a PARTIDA dessa visita, ou se esta chegada e duplicada.`,
+      };
+    }
+    return null;
+  }, [formData, vooInicial]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     // Aviso em memória; se não houver, faz a verificação autoritativa no banco.
-    const aviso = duplicateWarning || await checkDuplicateVooDB();
+    // Inclui o aviso de "chegada em aberto" (aviao nao pode chegar 2x sem partir).
+    const aviso = duplicateWarning || await checkDuplicateVooDB() || await checkOpenArrivalDB();
 
     if (aviso && setAlertInfo) {
       setAlertInfo({
@@ -730,7 +774,7 @@ export default function FormVoo({
 
   // --- Options ---
   const aeroportoOperacaoOptions = useMemo(() => {
-    return aeroportosAcesso.map((a) => ({ value: a.codigo_icao, label: `${a.nome} (${a.codigo_icao})` }));
+    return aeroportosAcesso.map((a) => ({ value: a.codigo_icao, label: `${a.codigo_icao} — ${a.nome}` }));
   }, [aeroportosAcesso]);
 
   const aeroportoOrigemDestinoOptions = useMemo(() => {

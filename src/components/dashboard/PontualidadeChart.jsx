@@ -1,7 +1,7 @@
 import React from 'react';
 import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Label } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
@@ -43,6 +43,8 @@ export default function PontualidadeChart({ voos, isLoading }) {
     ].filter(item => item.value > 0);
   }, [voos]);
   const total = data.reduce((sum, item) => sum + item.value, 0);
+  const pontualVal = data.find(d => d.nameKey === 'dashboard.onTime')?.value || 0;
+  const pontualPct = total ? ((pontualVal / total) * 100).toFixed(1) : '0';
 
   return (
     <Card className="border-0 shadow-sm">
@@ -79,6 +81,18 @@ export default function PontualidadeChart({ voos, isLoading }) {
                   {data.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
+                  <Label
+                    position="center"
+                    content={({ viewBox }) => {
+                      const { cx, cy } = viewBox;
+                      return (
+                        <>
+                          <text x={cx} y={cy - 4} textAnchor="middle" dominantBaseline="middle" fontSize="21" fontWeight="700" fill="#10b981">{pontualPct}%</text>
+                          <text x={cx} y={cy + 15} textAnchor="middle" dominantBaseline="middle" fontSize="9" fill="#64748b">{t('dashboard.onTime')}</text>
+                        </>
+                      );
+                    }}
+                  />
                 </Pie>
                 <Tooltip
                   formatter={(value) => [`${value} ${t('dashboard.flights')}`, t('dashboard.quantity')]}

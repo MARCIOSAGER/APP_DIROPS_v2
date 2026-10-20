@@ -10,12 +10,32 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // -> o cliente pendurava e a página congelava (só F5 destravava). O processLock
 // serializa por nome, com re-entrância tratada, sem depender de navigator.locks.
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// O portal da Universidade (/universidade/*) guarda a sessão numa chave própria: entrar no DIROPS não entra na Universidade
+// nem vice-versa (as credenciais são as mesmas; as sessões e os refresh tokens são independentes). A escolha é feita no
+// arranque da página — as passagens entre as duas áreas são sempre carregamentos completos (<a href>), nunca navegação SPA.
+export const NO_PORTAL_UC = typeof window !== 'undefined' && window.location.pathname.startsWith('/universidade');
+export const CHAVE_SESSAO_UC = 'sb-universidade-auth';
+// Plataforma independente: compilado com VITE_UC_ISOLADO=1, o portal fala com o GoTrue próprio da Universidade (contas em
+// auth_uc) através do prefixo /uc/ do nginx (/uc/auth/v1, /uc/rest/v1, /uc/functions/v1, /uc/storage/v1). O DIROPS não muda.
+export const UC_ISOLADO = NO_PORTAL_UC && import.meta.env.VITE_UC_ISOLADO === '1';
+// O Portal de Documentos (/documentos/*) segue a mesma receita: chave de sessão própria e, quando compilado com
+// VITE_GD_ISOLADO=1, base de contas isolada (auth_docs) através do prefixo /gd do nginx.
+export const NO_PORTAL_GD = typeof window !== 'undefined' && window.location.pathname.startsWith('/documentos');
+export const CHAVE_SESSAO_GD = 'sb-documentos-auth';
+export const GD_ISOLADO = NO_PORTAL_GD && import.meta.env.VITE_GD_ISOLADO === '1';
+const prefixoPortal = UC_ISOLADO ? '/uc' : GD_ISOLADO ? '/gd' : '';
+const urlBase = prefixoPortal ? String(supabaseUrl || '').replace(/\/$/, '') + prefixoPortal : supabaseUrl;
+// Raiz da API que este separador usa (muda com o portal). Quem construir endereços à mão — URLs assinadas do
+// storage, por exemplo — tem de partir daqui, senão acerta no DIROPS em vez do portal.
+export const URL_BASE = String(urlBase || '').replace(/\/$/, '');
+
+export const supabase = createClient(urlBase, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
     lock: processLock,
+    ...(NO_PORTAL_UC ? { storageKey: CHAVE_SESSAO_UC } : NO_PORTAL_GD ? { storageKey: CHAVE_SESSAO_GD } : {}),
   },
   global: {
     fetch: (url, options = {}) => {

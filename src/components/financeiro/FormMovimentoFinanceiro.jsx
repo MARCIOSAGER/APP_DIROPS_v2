@@ -131,7 +131,7 @@ export default function FormMovimentoFinanceiro({
   const aeroportoOptions = useMemo(() => {
     return aeroportosAcesso.map(a => ({
       value: a.id,
-      label: `${a.nome} (${a.codigo_icao})`
+      label: `${a.codigo_icao} — ${a.nome}`
     }));
   }, [aeroportosAcesso]);
 

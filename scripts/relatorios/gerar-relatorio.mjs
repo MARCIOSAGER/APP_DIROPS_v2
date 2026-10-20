@@ -20,6 +20,9 @@ import { fileURLToPath } from 'url';
 import { gerarPdf } from './pdf.mjs';
 import { gerarTecnicoPdf, gerarXlsxDetalhe, MAX_TABELA } from './tecnico.mjs';
 import { buildKpisHtml, gerarKpisPdf } from './kpis.mjs';
+import { gerarExecutivoPdf } from './executivo.mjs';
+import { periodoAnterior } from '../../src/lib/operacionalOnePagerCore.js';
+import { serieColorListHex } from './_cores.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 const PGRST = 'http://127.0.0.1:3000';
@@ -49,7 +52,7 @@ const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','ag
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const dataExtenso = (isoStr) => { const [y,m,dd] = isoStr.split('-').map(Number); return `${String(dd).padStart(2,'0')} de ${MESES[m-1]} de ${y}`; };
 
-function periodo(tipo, dataArg) {
+function periodo(tipo, dataArg, inicioSemana = null) {
   const hoje = new Date();
   let ref;
   if (dataArg) { const [y,m,d] = String(dataArg).split('-').map(Number); ref = new Date(y, m-1, d); }
@@ -57,12 +60,27 @@ function periodo(tipo, dataArg) {
   else { ref = new Date(hoje); ref.setDate(ref.getDate() - 1); } // ontem
 
   if (tipo === 'diario')  return { inicio: iso(ref), fim: iso(ref) };
-  if (tipo === 'semanal') { const ini = new Date(ref); ini.setDate(ini.getDate() - 6); return { inicio: iso(ini), fim: iso(ref) }; }
+  if (tipo === 'semanal') {
+    // inicioSemana = dia em que a semana começa (getDay: 0=Dom … 6=Sáb), configurável
+    // por relatório. null = últimos 7 dias corridos (comportamento padrão do operacional).
+    const s = Number(inicioSemana);
+    if (inicioSemana != null && Number.isInteger(s) && s >= 0 && s <= 6) {
+      const endDay = (s + 6) % 7;                        // último dia da semana
+      const back = (ref.getDay() - endDay + 7) % 7;      // recua até esse fim ≤ ref
+      const fim = new Date(ref); fim.setDate(fim.getDate() - back);
+      const ini = new Date(fim); ini.setDate(ini.getDate() - 6);
+      return { inicio: iso(ini), fim: iso(fim) };        // semana de calendário completa
+    }
+    const ini = new Date(ref); ini.setDate(ini.getDate() - 6);
+    return { inicio: iso(ini), fim: iso(ref) };          // últimos 7 dias corridos
+  }
   if (tipo === 'mensal')  { const ini = new Date(ref.getFullYear(), ref.getMonth(), 1); const fim = new Date(ref.getFullYear(), ref.getMonth()+1, 0); return { inicio: iso(ini), fim: iso(fim) }; }
+  if (tipo === 'trimestral') { const a = dataArg ? ref : hoje; const fim = new Date(a.getFullYear(), a.getMonth(), 0); const ini = new Date(fim.getFullYear(), fim.getMonth()-2, 1); return { inicio: iso(ini), fim: iso(fim) }; }
+  if (tipo === 'semestral')  { const a = dataArg ? ref : hoje; const fim = new Date(a.getFullYear(), a.getMonth(), 0); const ini = new Date(fim.getFullYear(), fim.getMonth()-5, 1); return { inicio: iso(ini), fim: iso(fim) }; }
   throw new Error('tipo invalido: ' + tipo);
 }
 
-const TITULOS = { diario: 'Relatório Diário de Voos', semanal: 'Relatório Semanal de Voos', mensal: 'Relatório Mensal de Voos' };
+const TITULOS = { diario: 'Relatório Diário de Voos', semanal: 'Relatório Semanal de Voos', mensal: 'Relatório Mensal de Voos', trimestral: 'Relatório Trimestral de Voos', semestral: 'Relatório Semestral de Voos' };
 function subtitulo(tipo, per) {
   // Um só dia → uma data; período (início ≠ fim) → intervalo, independente do tipo.
   if (per.inicio === per.fim) return dataExtenso(per.inicio);
@@ -100,24 +118,27 @@ function card(label, valor, sub, cor = '#2563eb') {
 function barrasComponentes(comp) {
   const total = comp.reduce((s, x) => s + x.usd, 0) || 1;
   const max = Math.max(...comp.map((x) => x.usd), 1);
-  return `<table width="100%" cellpadding="0" cellspacing="0">` + comp.map((x) => {
+  const cores = serieColorListHex(comp.map((x) => x.label));
+  return `<table width="100%" cellpadding="0" cellspacing="0">` + comp.map((x, i) => {
     const w = Math.round(100 * x.usd / max);
     const p = (100 * x.usd / total).toFixed(1).replace('.', ',');
     return `<tr>
       <td style="padding:4px 8px 4px 0;font-size:12px;color:#334155;white-space:nowrap;">${esc(x.label)}</td>
-      <td style="padding:4px 0;width:100%;"><div style="background:#2563eb;height:14px;width:${w}%;border-radius:3px;min-width:2px;"></div></td>
+      <td style="padding:4px 0;width:100%;"><div style="background:${cores[i]};height:14px;width:${w}%;border-radius:3px;min-width:2px;"></div></td>
       <td style="padding:4px 0 4px 10px;font-size:12px;color:#0f172a;font-weight:600;text-align:right;white-space:nowrap;">${usd(x.usd)} · ${p}%</td>
     </tr>`;
   }).join('') + `</table>`;
 }
-function barras(itens, campo, cor) {
-  const max = Math.max(1, ...itens.map((i) => Number(i[campo])||0));
-  return itens.map((i) => {
-    const v = Number(i[campo])||0; const w = Math.round(100*v/max);
-    const nome = esc(i.tipo_voo || i.companhia || i.aeroporto || '');
+function barras(itens, campo) {
+  const max = Math.max(1, ...itens.map((it) => Number(it[campo])||0));
+  const cores = serieColorListHex(itens.map((it) => it.tipo_voo || it.companhia || it.aeroporto || ''));
+  return itens.map((it, idx) => {
+    const v = Number(it[campo])||0; const w = Math.round(100*v/max);
+    const rawNome = it.tipo_voo || it.companhia || it.aeroporto || '';
+    const nome = esc(rawNome);
     return `<tr>
       <td style="padding:3px 8px 3px 0;font-size:12px;color:#334155;white-space:nowrap;">${nome}</td>
-      <td style="padding:3px 0;width:100%;"><div style="background:${cor};height:14px;width:${w}%;border-radius:3px;min-width:2px;"></div></td>
+      <td style="padding:3px 0;width:100%;"><div style="background:${cores[idx]};height:14px;width:${w}%;border-radius:3px;min-width:2px;"></div></td>
       <td style="padding:3px 0 3px 8px;font-size:12px;color:#0f172a;font-weight:600;text-align:right;">${fmt(v)}</td>
     </tr>`;
   }).join('');
@@ -158,6 +179,13 @@ function buildHtml(tipo, per, d) {
   const titulo = TITULOS[tipo] || 'Relatório de Voos';
   const sub = subtitulo(tipo, per);
 
+  // Tipo de Voo + Companhias LADO A LADO (como no PDF). Se só houver uma, ocupa tudo.
+  const secTipo = tipos.length ? seccao('Por Tipo de Voo', `<table width="100%" cellpadding="0" cellspacing="0">${barras(tipos, 'voos')}</table>`) : '';
+  const secCias = cias.length ? seccao('Companhias com mais movimentos', `<table width="100%" cellpadding="0" cellspacing="0">${barras(cias, 'voos')}</table>`) : '';
+  const secTipoCias = (tipos.length && cias.length)
+    ? `<table width="100%" cellpadding="0" cellspacing="0"><tr><td width="49%" valign="top">${secTipo}</td><td width="2%">&nbsp;</td><td width="49%" valign="top">${secCias}</td></tr></table>`
+    : secTipo + secCias;
+
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;background:#eef2f7;font-family:Segoe UI,Arial,sans-serif;">
 <div style="max-width:680px;margin:0 auto;padding:20px;">
@@ -181,8 +209,7 @@ function buildHtml(tipo, per, d) {
 
     ${comp.length ? seccao('Faturação por Componente', barrasComponentes(comp)) : ''}
     ${aeroportos.length ? seccao('Por Aeroporto', tabelaAeroportos(aeroportos)) : ''}
-    ${tipos.length ? seccao('Por Tipo de Voo', `<table width="100%" cellpadding="0" cellspacing="0">${barras(tipos,'voos','#2563eb')}</table>`) : ''}
-    ${cias.length ? seccao('Companhias com mais movimentos', `<table width="100%" cellpadding="0" cellspacing="0">${barras(cias,'voos','#0ea5e9')}</table>`) : ''}
+    ${secTipoCias}
 
   </div>
   <div style="text-align:center;padding:16px;color:#94a3b8;font-size:11px;">
@@ -268,9 +295,19 @@ async function enviar(recipients, subject, html, anexos) {
 }
 
 // Alerta central de falhas -> responsável de operações (best-effort, com retry).
-const ALERT_TO = 'oaeroportos@sga.co.ao';
+const ALERT_TO_DEFAULT = 'oaeroportos@sga.co.ao';
+// Destino dos alertas — editável na UI (configuracao_sistema.email_alertas); fallback = default.
+async function emailAlertas() {
+  try {
+    const r = await fetch(`${PGRST}/configuracao_sistema?order=created_date.asc&limit=1&select=email_alertas`, { headers: HDR });
+    if (!r.ok) return ALERT_TO_DEFAULT;
+    const j = await r.json();
+    return (Array.isArray(j) && j[0] && String(j[0].email_alertas || '').trim()) || ALERT_TO_DEFAULT;
+  } catch { return ALERT_TO_DEFAULT; }
+}
 async function alertar(assunto, detalhe) {
   try {
+    const ALERT_TO = await emailAlertas();
     const esc = (s) => String(s || '').replace(/</g, '&lt;');
     const html = `<div style="font-family:Arial,sans-serif;color:#0f172a;max-width:640px">
       <h2 style="color:#b91c1c;margin:0 0 8px">⚠️ Alerta do Sistema DIROPS</h2>
@@ -287,10 +324,16 @@ async function alertar(assunto, detalhe) {
 (async () => {
   const isKpis = TIPO === 'kpis';
   const subPeriodo = args.periodo === 'mensal' ? 'mensal' : 'semanal';
+  // Início da semana (dia 0=Dom…6=Sáb) vem da agenda via --inicio-semana. Sem arg:
+  // KPI começa domingo (0), operacional = últimos 7 dias corridos (null).
+  const rawIS = args['inicio-semana'];
+  const inicioSemana = (rawIS != null && rawIS !== true && rawIS !== '' && !isNaN(Number(rawIS)))
+    ? Number(rawIS)
+    : (isKpis ? 0 : null);
   // Período personalizado (--inicio/--fim) tem prioridade sobre o período automático.
   const per = (args.inicio && args.fim)
     ? { inicio: String(args.inicio), fim: String(args.fim) }
-    : periodo(isKpis ? subPeriodo : TIPO, args.data);
+    : periodo(isKpis ? subPeriodo : TIPO, args.data, inicioSemana);
   const prefixo = args.prefixo ? String(args.prefixo) : '';
   const recipientTipo = isKpis ? 'kpis' : TIPO;
   console.log(`[relatorio] tipo=${TIPO}${isKpis ? '/' + subPeriodo : ''} periodo=${per.inicio}..${per.fim}`);
@@ -316,8 +359,20 @@ async function alertar(assunto, detalhe) {
     const k = dados.kpis || {};
     console.log(`[relatorio] voos=${k.total_voos} pax=${k.passageiros} carga=${k.carga_kg}kg fat=${usd(k.faturacao_usd)} pont=${pct(k.pontualidade_pct)}`);
     html = buildHtml(TIPO, per, dados);
-    assunto = `${prefixo}${TITULOS[TIPO]} — ${subtitulo(TIPO, per)}`;
+    assunto = `${prefixo}${TITULOS[TIPO] || 'Relatório de Voos'} — ${subtitulo(TIPO, per)}`;
     if (!SEM_PDF) {
+      // Relatório Executivo (one-pager) — anexado APENAS nos envios por email (1º anexo,
+      // Executivo + Detalhado). No preview on-demand (EMIT) NÃO entra: aí o utilizador usa
+      // o botão dedicado "PDF Executivo" — evita dois botões "PDF" iguais na barra.
+      if (!EMIT) {
+        try {
+          const prev = periodoAnterior(per.inicio, per.fim);
+          const anterior = await buscarDados(prev).catch(() => ({}));
+          const pdfExec = await gerarExecutivoPdf(per, dados, anterior, { comparadoCom: prev.label, aeroportoLabel: AERO || '' });
+          anexos.push({ filename: `Relatorio_Executivo_${per.fim}.pdf`, content: pdfExec, encoding: 'base64', contentType: 'application/pdf' });
+          console.log(`[relatorio] PDF executivo (${Math.round(pdfExec.length * 0.75 / 1024)} KB)`);
+        } catch (e) { console.warn('[relatorio] PDF executivo falhou:', e.message); }
+      }
       try {
         const pdfOp = await gerarPdf(TIPO, per, dados, helpers);
         anexos.push({ filename: `${TITULOS[TIPO].replace(/ /g,'_')}_${per.fim}.pdf`, content: pdfOp, encoding: 'base64', contentType: 'application/pdf' });

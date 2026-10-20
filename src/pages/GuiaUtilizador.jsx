@@ -6,7 +6,7 @@ import {
   BookOpen, Plane, DollarSign, Shield, ClipboardCheck,
   Users, FileText, MessageSquare, Settings, ChevronDown, ChevronRight,
   BarChart3, Wrench, Bell, Search, Layers, Upload, Gauge, FolderOpen,
-  Send, LifeBuoy, Building2, ExternalLink, Printer, ChevronsDownUp
+  Send, LifeBuoy, Building2, ExternalLink, Printer, ChevronsDownUp, GraduationCap, Presentation
 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import { useI18n } from '@/components/lib/i18n';
@@ -270,6 +270,37 @@ const sections = [
       { subtitulo: "Alterar Estado", texto: "Para cada ticket, altere o estado entre Aberta, Em Andamento e Resolvida. O sistema regista quem fez a alteração e a data." },
       { subtitulo: "Encaminhar", texto: "Clique em 'Encaminhar' para reencaminhar um ticket a um colega através de um email @sga.co.ao, com uma nota de contexto opcional." },
       { subtitulo: "Apagar Ticket", texto: "Clique em 'Apagar' para remover um ticket. Esta ação é irreversível e elimina o ticket definitivamente." },
+    ]
+  },
+  {
+    id: "universidade",
+    icon: GraduationCap,
+    color: "text-violet-600",
+    bg: "bg-violet-50",
+    title: "Universidade Corporativa (aluno)",
+    pageKey: "Formacao",
+    conteudo: [
+      { subtitulo: "Catálogo e inscrição", texto: "No separador 'Catálogo' vê os cursos publicados com capa, duração e nível. 'Inscrever-se' dá acesso imediato; os cursos obrigatórios para o seu perfil aparecem assinalados e com prazo." },
+      { subtitulo: "Aulas em modo foco", texto: "Ao abrir uma aula o menu e o cabeçalho da aplicação desaparecem para se concentrar no conteúdo ('Mostrar menus' volta a mostrá-los). Vídeos do YouTube correm dentro da plataforma com velocidade, legendas em português e ecrã inteiro; textos longos e PDFs abrem em modo livro (páginas, zoom, miniaturas); os pacotes interactivos (SCORM/H5P) concluem a aula sozinhos quando termina a actividade." },
+      { subtitulo: "Sessões presenciais e online", texto: "Cursos com componente prática mostram as sessões agendadas: inscreva-se (na sala ou online), receba o convite por email com o ficheiro de calendário e entre pela ligação Teams/Meet 30 minutos antes. A presença marcada pelo formador conclui a aula presencial." },
+      { subtitulo: "Avaliação e certificado", texto: "A avaliação final corrige-se no servidor; nas avaliações 'sem consulta' o ecrã fica inteiro e as saídas, cópias e ferramentas de programador ficam registadas. Ao aprovar, o certificado é emitido automaticamente e fica em 'Certificados' (com validade e recertificação quando o curso o exige)." },
+      { subtitulo: "Pontos, distintivos e comentários", texto: "Cada aula, curso, avaliação e presença dá pontos; os distintivos e o top 5 da empresa aparecem em 'Os meus cursos'. Em cada aula pode deixar perguntas e comentários — o instrutor responde com destaque." },
+    ]
+  },
+  {
+    id: "gestao-formacao",
+    icon: Presentation,
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+    title: "Gestão de Formação (instrutores)",
+    pageKey: "GestaoFormacao",
+    conteudo: [
+      { subtitulo: "Criar um curso", texto: "Em 'Cursos' › 'Novo curso' defina título, categoria, nível, instrutores, obrigatoriedade por perfil, validade e prazo. A carga horária é calculada automaticamente pela soma das aulas (arredondada para cima) e aparece no catálogo e no certificado." },
+      { subtitulo: "Tipos de aula", texto: "Vídeo (YouTube/Vimeo ou ficheiro; legendas .vtt/.srt e materiais para download), PDF (PowerPoint/Word convertem-se no servidor), texto com blocos ricos (notas, acordeões, perguntas escondidas, colunas, passos), pacote HTML5 (SCORM 1.2/2004, xAPI ou H5P) e sessão presencial. Todas aceitam créditos e materiais anexos." },
+      { subtitulo: "Produzir conteúdos interactivos", texto: "Três caminhos, todos gratuitos: (1) pedir ao assistente um curso no padrão 'curso-html5' (módulos, flashcards, arrastar-e-largar, quiz) que sai como .zip SCORM pronto a carregar; (2) eXeLearning (instalador em installers\\eXeLearning ou app.exelearning.net) — exporta SCORM 1.2 que carrega em 'Pacote HTML5'; (3) Lumi (installers\\Lumi) para criar conteúdos H5P (.h5p) — vídeo interactivo, apresentações, quizzes, lacunas, arrastar — reproduzidos pelo leitor interno. Ferramentas como Adapt, Articulate ou iSpring também servem, desde que exportem SCORM." },
+      { subtitulo: "Avaliação", texto: "No separador 'Avaliação' construa o quiz a partir do banco de perguntas do curso (10 tipos, incluindo ponto na imagem, rótulos e resposta aberta com correcção manual), com sorteio, tempo limite, tentativas, modo sem consulta e certificado automático. Os resultados e a correcção manual ficam no mesmo separador." },
+      { subtitulo: "Sessões, alunos e versões", texto: "'Sessões' agenda sessões presenciais, online ou híbridas com convocatória por email e folha de presenças; 'Alunos' inscreve, acompanha o progresso, emite certificados e envia lembretes; 'Versões' guarda retratos do conteúdo para comparar ou restaurar; 'Analítica' mostra o funil por aula, a dificuldade das perguntas e a comparação por aeroporto." },
+      { subtitulo: "Visão geral, matriz e exportações", texto: "A 'Visão geral' resume conformidade por perfil e aeroporto, vencimentos e pendências; a 'Matriz' cruza colaboradores e cursos obrigatórios (com formação externa incluída). Todas as tabelas exportam para Excel e PDF com o logo SGA, e os relatórios semanais e lembretes diários saem por email automaticamente." },
     ]
   },
 ];

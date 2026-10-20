@@ -41,7 +41,8 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
     companhia_aerea_codigo_icao: '',
     responsavel_medicao: '',
     turno: 'A',
-    observacoes_gerais: ''
+    observacoes_gerais: '',
+    justificativa_desvio: '' // motivo quando o resultado fica FORA da meta (feedback David/Catumbela)
   });
   const [valoresCampos, setValoresCampos] = useState({});
   const [errors, setErrors] = useState({});
@@ -53,7 +54,8 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
     if (isOpen && tipoKPI) {
       loadCampos();
       if (medicaoInicial) {
-        setMedicaoData(medicaoInicial);
+        // Garante que justificativa_desvio é sempre string (registos antigos não têm a coluna)
+        setMedicaoData({ ...medicaoInicial, justificativa_desvio: medicaoInicial.justificativa_desvio ?? '' });
         loadValoresExistentes();
       }
     }
@@ -387,8 +389,10 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
   };
 
   const aeroportoOptions = aeroportos.map((a) => ({
-    value: a.codigo_icao,
-    label: `${a.nome} (${a.codigo_icao})`
+    // aeroporto_id é uuid (FK lógica p/ aeroporto.id) — o value TEM de ser o id,
+    // não o codigo_icao (senão: "invalid input syntax for type uuid: FNCT").
+    value: a.id,
+    label: `${a.codigo_icao} — ${a.nome}`
   }));
 
   const companhiaOptions = companhias.map((c) => ({
@@ -558,6 +562,27 @@ export default function FormMedicaoKPI({ isOpen, onClose, onSubmit, tipoKPI, med
                 </div>
               </div>
           )}
+
+            {/* Motivo do desvio — aparece SÓ quando o resultado está FORA da meta (feedback David/Catumbela) */}
+            {(() => {
+              const r = (medicaoData.hora_inicio && medicaoData.hora_fim) ? diffMinutes(medicaoData.hora_inicio, medicaoData.hora_fim) : null;
+              const fora = r != null && Number.isFinite(r) && tipoKPI?.meta_objetivo != null && r > tipoKPI.meta_objetivo;
+              if (!fora) return null;
+              return (
+                <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 p-3">
+                  <Label htmlFor="justificativa_desvio" className="text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1">
+                    ⚠️ Fora da meta ({r} min &gt; meta {tipoKPI.meta_objetivo} min) — Motivo do desvio (opcional)
+                  </Label>
+                  <Textarea
+                    id="justificativa_desvio"
+                    value={medicaoData.justificativa_desvio}
+                    onChange={(e) => handleMedicaoChange('justificativa_desvio', e.target.value)}
+                    placeholder="Ex.: avaria do equipamento, fluxo excepcional de passageiros, falta de pessoal…"
+                    rows={2}
+                    className="border-amber-300 dark:border-amber-700 focus-visible:ring-amber-400" />
+                </div>
+              );
+            })()}
 
             {/* Observações Gerais */}
             <div className="space-y-2">

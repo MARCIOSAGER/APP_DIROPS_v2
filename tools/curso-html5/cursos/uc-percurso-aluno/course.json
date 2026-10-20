@@ -1,0 +1,67 @@
+{
+  "slug": "uc-percurso-aluno",
+  "titulo": "Prática guiada: o percurso do aluno",
+  "subtitulo": "Actividade interactiva do curso \"Como usar a Universidade Corporativa\"",
+  "versao": "1.0",
+  "idioma": "pt-PT",
+  "autor": "Direcção de Operações — SGA",
+  "duracao_min": 15,
+  "nota_minima": 70,
+  "identidade": { "cor_primaria": "#1e3a5f", "cor_acento": "#a1823a", "logo": "assets/logo-sga.png", "logo_alt": "SGA" },
+  "certificado": { "ativo": false },
+  "modulos": [
+    {
+      "titulo": "Do catálogo ao certificado",
+      "paginas": [
+        {
+          "titulo": "Os seis passos",
+          "blocos": [
+            { "tipo": "callout", "estilo": "info", "titulo": "Como funciona esta actividade", "html": "<p>Este é um <strong>pacote interactivo (SCORM)</strong> a correr dentro da aula. Percorra as páginas, faça as actividades e, no fim, a aula fica concluída sozinha — a plataforma recebe o resultado.</p>" },
+            { "tipo": "passos", "titulo": "O percurso de qualquer aluno", "itens": ["<strong>Catálogo</strong> — escolher o curso (os obrigatórios estão assinalados).", "<strong>Inscrição</strong> — um clique; o botão passa a \"Continuar\".", "<strong>Aulas</strong> — vídeo, leitura, PDF, actividades; concluir cada uma.", "<strong>Avaliação</strong> — tentativas, tempo e nota mínima do instrutor.", "<strong>Certificado</strong> — emitido na hora; validade quando o curso exige.", "<strong>Recertificação</strong> — quando a validade termina, o curso reabre."] },
+            { "tipo": "flashcards", "titulo": "Termos essenciais", "instrucao": "Vire os cartões; veja todos para concluir.", "cartas": [
+              { "frente": "<strong>Nota mínima</strong>", "verso": "A percentagem que precisa de atingir na avaliação para aprovar (normalmente 70 %)." },
+              { "frente": "<strong>Tentativa</strong>", "verso": "Cada vez que inicia e submete a avaliação. O instrutor define quantas tem." },
+              { "frente": "<strong>Modo foco</strong>", "verso": "Os menus escondem-se durante a aula. \"Mostrar menus\" volta a mostrá-los." },
+              { "frente": "<strong>Materiais para download</strong>", "verso": "Ficheiros anexados à aula (PDF, checklist, apresentação) que pode guardar." },
+              { "frente": "<strong>Validade</strong>", "verso": "Prazo do certificado. Antes do fim recebe avisos e pode recertificar." }
+            ] }
+          ]
+        },
+        {
+          "titulo": "Ponha os passos por ordem",
+          "blocos": [
+            { "tipo": "ordenar", "titulo": "Do catálogo ao certificado", "instrucao": "Coloque os passos pela ordem em que acontecem.", "itens": ["Escolher o curso no catálogo", "Carregar em \"Inscrever-se\"", "Concluir todas as aulas", "Fazer a avaliação final", "Descarregar o certificado em \"Certificados\""] },
+            { "tipo": "callout", "estilo": "dica", "titulo": "Dica", "html": "<p>Se a avaliação não abrir, verifique no índice do curso se falta alguma aula por concluir — o instrutor pode exigir todas as aulas antes do quiz.</p>" }
+          ]
+        },
+        {
+          "titulo": "Que tipo de aula é?",
+          "blocos": [
+            { "tipo": "arrastar", "titulo": "Como se conclui cada aula?", "instrucao": "Arraste cada situação para a categoria certa.", "categorias": ["Concluo eu, com \"Concluir e avançar\"", "Conclui-se sozinha"], "itens": [
+              { "texto": "Vi um vídeo até ao fim", "categoria": "Concluo eu, com \"Concluir e avançar\"" },
+              { "texto": "Li um PDF em modo livro", "categoria": "Concluo eu, com \"Concluir e avançar\"" },
+              { "texto": "Terminei um pacote SCORM com nota", "categoria": "Conclui-se sozinha" },
+              { "texto": "Acabei um quiz H5P", "categoria": "Conclui-se sozinha" },
+              { "texto": "O formador marcou a minha presença na sessão", "categoria": "Conclui-se sozinha" },
+              { "texto": "Abri a ligação para o módulo Safety", "categoria": "Concluo eu, com \"Concluir e avançar\"" }
+            ] },
+            { "tipo": "checklist", "titulo": "Antes de iniciar uma avaliação", "instrucao": "Marque tudo o que confirma antes de carregar em \"Iniciar avaliação\".", "itens": ["Li as regras: tentativas, tempo limite e nota mínima", "Concluí todas as aulas do curso", "Tenho ligação estável e tempo livre para terminar", "Sei que em modo sem consulta as saídas da janela ficam registadas", "Sei que as respostas se gravam sozinhas e que posso submeter no fim"] }
+          ]
+        },
+        {
+          "titulo": "Teste rápido",
+          "blocos": [
+            { "tipo": "quiz", "titulo": "Verifique o que aprendeu", "tentativas": 2, "perguntas": [
+              { "tipo": "escolha_unica", "enunciado": "Onde encontra os cursos que já começou?", "opcoes": ["No separador Catálogo", "No separador Os meus cursos", "No separador Certificados", "No menu Suporte"], "correta": 1, "explicacao": "\"Os meus cursos\" mostra o que já começou, o progresso e os pontos." },
+              { "tipo": "vf", "enunciado": "Um pacote SCORM ou H5P conclui a aula automaticamente quando termina a actividade.", "correta": true, "explicacao": "Sim — a plataforma recebe o resultado e conclui a aula." },
+              { "tipo": "escolha_multipla", "enunciado": "O que pode fazer no leitor de vídeo?", "opcoes": ["Mudar a velocidade", "Ligar legendas em português", "Descarregar o vídeo do YouTube", "Passar a ecrã inteiro"], "correta": [0, 1, 3], "explicacao": "Velocidade, legendas e ecrã inteiro sim; o vídeo corre dentro da plataforma e não há ligação para o YouTube." },
+              { "tipo": "escolha_unica", "enunciado": "Quando a validade do certificado está a terminar, o botão do curso passa a…", "opcoes": ["Inscrever-se", "Continuar", "Recertificar", "Apagar"], "correta": 2, "explicacao": "\"Recertificar\" reabre o curso num novo ciclo ou abre o curso de refrescamento." },
+              { "tipo": "vf", "enunciado": "Se o tempo da avaliação acabar, perde todas as respostas.", "correta": false, "explicacao": "As respostas gravam-se sozinhas e a avaliação é submetida automaticamente quando o tempo termina." },
+              { "tipo": "escolha_unica", "enunciado": "Onde fica o convite de calendário de uma sessão presencial ou online?", "opcoes": ["Só na plataforma", "No email de convocatória, como ficheiro .ics", "No certificado", "Nas trilhas"], "correta": 1, "explicacao": "A convocatória por email traz o convite .ics para aceitar no Outlook." }
+            ] }
+          ]
+        }
+      ]
+    }
+  ]
+}

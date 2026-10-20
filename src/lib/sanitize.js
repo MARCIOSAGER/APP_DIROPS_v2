@@ -94,11 +94,16 @@ export async function validateFileType(file) {
  */
 export function sanitizeFilename(name) {
   if (!name) return 'arquivo';
-  return name
-    .replace(/\.\.\//g, '')
-    .replace(/\.\.\\/g, '')
-    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
-    .replace(/^\.+/, '')
-    .trim()
-    || 'arquivo';
+  // Só caracteres URL-safe: acentos e espaços em nomes de ficheiro criavam URLs
+  // frágeis (o ficheiro no disco ficava com %C3%A3/%20 literais e o browser pedia
+  // outra forma -> 404 -> imagem partida). Aqui removemos acentos e trocamos tudo
+  // o que não seja [A-Za-z0-9._-] por '_', garantindo nomes estáveis e servíveis.
+  const cleaned = String(name)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // remove acentos (ã->a, ç->c)
+    .replace(/[^A-Za-z0-9._-]/g, '_')                 // só caracteres seguros em URL
+    .replace(/\.{2,}/g, '.')                          // sem '..' (traversal / nomes estranhos)
+    .replace(/_{2,}/g, '_')                           // colapsa múltiplos '_'
+    .replace(/^[._]+/, '')                            // sem '.'/'_' iniciais
+    .trim();
+  return cleaned || 'arquivo';
 }

@@ -7,6 +7,7 @@ import { jsPDF } from 'jspdf';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { serieColorList } from './_cores.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 // Logo SGA (versao p/ fundo claro) — carregada uma vez; fallback p/ texto se faltar.
@@ -20,12 +21,11 @@ const C = {
   ink: [15, 23, 42], text: [51, 65, 85], muted: [100, 116, 139],
   line: [226, 232, 240], soft: [248, 250, 252], white: [255, 255, 255],
 };
-
 export async function gerarPdf(tipo, per, dados, h) {
   const { fmt, kz, usd, pct, subtitulo, TITULOS, componentesArr } = h;
-  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-  const PW = doc.internal.pageSize.getWidth();   // ~595
-  const PH = doc.internal.pageSize.getHeight();  // ~842
+  const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' });
+  const PW = doc.internal.pageSize.getWidth();   // ~842 (paisagem)
+  const PH = doc.internal.pageSize.getHeight();  // ~595 (paisagem)
   const M = 40, CW = PW - 2 * M;
   let y = 0;
 
@@ -98,14 +98,15 @@ export async function gerarPdf(tipo, per, dados, h) {
     const totalComp = comp.reduce((s, x) => s + x.usd, 0) || 1;
     const maxUsd = Math.max(...comp.map((x) => x.usd), 1);
     const labelW = 188, valW = 118, barMax = CW - labelW - valW, rh = 19;
+    const coresComp = serieColorList(comp.map((x) => x.label));
     seccao('Faturação por Componente', 3 * rh);
-    comp.forEach((x) => {
+    comp.forEach((x, i) => {
       if (y + rh > PH - 46) { newPage(); }
       const pctv = 100 * x.usd / totalComp;
       const bw = Math.max(2, Math.round(barMax * x.usd / maxUsd));
       setText(C.text); doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
       doc.text(String(x.label).slice(0, 40), M, y + 12);
-      setFill(C.accent); doc.roundedRect(M + labelW, y + 4, bw, 10, 2, 2, 'F');
+      setFill(coresComp[i]); doc.roundedRect(M + labelW, y + 4, bw, 10, 2, 2, 'F');
       setText(C.ink); doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5);
       doc.text(`${usd(x.usd)}  ·  ${pctv.toFixed(1).replace('.', ',')}%`, M + CW, y + 12, { align: 'right' });
       y += rh;
@@ -156,26 +157,42 @@ export async function gerarPdf(tipo, per, dados, h) {
     y += rh + 22;
   }
 
-  // ---------- barras (Por Tipo de Voo / Companhias) ----------
-  function barras(t, itens, campo, cor) {
-    if (!itens.length) return;
-    const labelW = 96, valW = 46, barMax = CW - labelW - valW, rh = 18;
-    seccao(t, 3 * rh);
+  // ---------- barras lado a lado (Por Tipo de Voo | Companhias) ----------
+  // Em paisagem há largura para os dois gráficos na mesma faixa. Cada coluna
+  // desenha o seu título + barras a partir do MESMO topo (yTop) e devolve o y final.
+  function barrasCol(x, w, yTop, t, itens, campo) {
+    const labelW = Math.min(104, Math.round(w * 0.34)), valW = 42, barMax = w - labelW - valW, rh = 18;
+    let yy = yTop;
+    setFill(C.accent); doc.rect(x, yy - 9, 3.5, 14, 'F');
+    setText(C.primary); doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+    doc.text(t, x + 10, yy + 2); yy += 20;
+    if (!itens.length) {
+      setText(C.muted); doc.setFont('helvetica', 'italic'); doc.setFontSize(9);
+      doc.text('sem dados no período', x, yy + 10); return yy + 22;
+    }
     const max = Math.max(1, ...itens.map((i) => Number(i[campo]) || 0));
-    itens.forEach((it) => {
-      if (y + rh > PH - 46) { newPage(); }
+    const cores = serieColorList(itens.map((it) => it.tipo_voo || it.companhia || it.aeroporto || ''));
+    itens.forEach((it, i) => {
       const v = Number(it[campo]) || 0, bw = Math.max(2, Math.round(barMax * v / max));
       const nome = it.tipo_voo || it.companhia || it.aeroporto || '';
       setText(C.text); doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
-      doc.text(String(nome).slice(0, 22), M, y + 12);
-      setFill(cor); doc.roundedRect(M + labelW, y + 3, bw, 11, 2, 2, 'F');
-      setText(C.ink); doc.setFont('helvetica', 'bold'); doc.text(fmt(v), M + CW, y + 12, { align: 'right' });
-      y += rh;
+      doc.text(String(nome).slice(0, 18), x, yy + 12);
+      setFill(cores[i]); doc.roundedRect(x + labelW, yy + 3, bw, 11, 2, 2, 'F');
+      setText(C.ink); doc.setFont('helvetica', 'bold'); doc.text(fmt(v), x + w, yy + 12, { align: 'right' });
+      yy += rh;
     });
-    y += 18;
+    return yy;
   }
-  barras('Por Tipo de Voo', dados.por_tipo_voo || [], 'voos', C.accent);
-  barras('Companhias com mais movimentos', (dados.por_companhia || []).slice(0, 8), 'voos', C.sky);
+  const tipos = dados.por_tipo_voo || [];
+  const comps = (dados.por_companhia || []).slice(0, 8);
+  if (tipos.length || comps.length) {
+    const bgap = 28, colW = (CW - bgap) / 2;
+    checkBreak(20 + Math.max(tipos.length, comps.length, 1) * 18 + 24);
+    const topo = y;
+    const yL = barrasCol(M, colW, topo, 'Por Tipo de Voo', tipos, 'voos');
+    const yR = barrasCol(M + colW + bgap, colW, topo, 'Companhias com mais movimentos', comps, 'voos');
+    y = Math.max(yL, yR) + 18;
+  }
 
   // ---------- rodape em todas as paginas ----------
   const total = doc.getNumberOfPages();

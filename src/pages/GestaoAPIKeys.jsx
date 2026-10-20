@@ -14,6 +14,8 @@ import { ApiKey } from '@/entities/ApiKey';
 import { ApiAccessLog } from '@/entities/ApiAccessLog';
 import { isSuperAdmin } from '@/components/lib/userUtils';
 import { useCompanyView } from '@/lib/CompanyViewContext';
+import { copyToClipboard } from '@/lib/utils';
+import { hashPassword } from '@/lib/hashPassword';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useI18n } from '@/components/lib/i18n';
@@ -53,8 +55,8 @@ async function generateApiKey() {
   crypto.getRandomValues(array);
   const rawKey = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
   const apiKey = `dk_${rawKey}`;
-  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(apiKey));
-  const keyHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  // hashPassword faz SHA-256 hex com fallback JS puro (crypto.subtle nao existe em HTTP on-premise).
+  const keyHash = await hashPassword(apiKey);
   const keyPrefix = apiKey.substring(0, 11);
   return { apiKey, keyHash, keyPrefix };
 }
@@ -184,10 +186,12 @@ export default function GestaoAPIKeys() {
     }
   };
 
-  const handleCopy = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async (text) => {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const toggleScope = (scope) => {

@@ -281,6 +281,11 @@ export default function CompanhiasConfig({ companhias, onUpdate }) {
 
       if (editingCompanhia) {
         await CompanhiaAerea.update(editingCompanhia.id, formData);
+        // Notificação de EDIÇÃO por email (respeita o interruptor em Config Gerais)
+        try {
+          const { notifyAdminsUpdate } = await import('@/components/lib/notificacoes');
+          await notifyAdminsUpdate('companhia', { ...editingCompanhia, ...formData }, currentUser);
+        } catch (e) { console.error('Erro ao notificar edição de companhia:', e); }
       } else {
         await CompanhiaAerea.create(formData);
       }

@@ -83,8 +83,8 @@ button:focus-visible {
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 211 100% 30%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
@@ -118,8 +118,8 @@ button:focus-visible {
     --card-foreground: 210 40% 98%;
     --popover: 222.2 47.4% 11.2%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 211 100% 45%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
@@ -189,4 +189,79 @@ button:focus-visible {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ── Universidade Corporativa: conteúdo de aulas (texto rico) ─────────────── */
+.prose-aula h2 { margin: 1.25rem 0 0.5rem; font-size: 1.25rem; font-weight: 600; }
+.prose-aula h3 { margin: 1rem 0 0.5rem; font-size: 1.1rem; font-weight: 600; }
+.prose-aula p { margin: 0.5rem 0; }
+.prose-aula ul { margin: 0.5rem 0; padding-left: 1.5rem; list-style: disc; }
+.prose-aula ol { margin: 0.5rem 0; padding-left: 1.5rem; list-style: decimal; }
+.prose-aula a { color: #1d4ed8; text-decoration: underline; }
+.prose-aula blockquote { margin: 0.75rem 0; border-left: 4px solid #93c5fd; padding-left: 1rem; font-style: italic; }
+.prose-aula img { max-width: 100%; height: auto; border-radius: 0.5rem; }
+.prose-aula table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.925rem; }
+.prose-aula th, .prose-aula td { border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+.prose-aula th { background: #f1f5f9; font-weight: 600; }
+.dark .prose-aula th, .dark .prose-aula td { border-color: #334155; }
+.dark .prose-aula th { background: #1e293b; }
+.prose-aula pre { background: #0f172a; color: #e2e8f0; padding: 0.75rem 1rem; border-radius: 0.5rem; overflow-x: auto; font-size: 0.85rem; }
+.prose-aula code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; }
+/* blocos de autoria (Fase G) */
+.prose-aula .callout { display: flex; gap: 0.75rem; margin: 0.75rem 0; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid; }
+.prose-aula .callout > .callout-titulo { font-weight: 600; margin: 0 0 0.25rem; }
+.prose-aula .callout > .callout-corpo > :first-child { margin-top: 0; }
+.prose-aula .callout > .callout-corpo > :last-child { margin-bottom: 0; }
+.prose-aula .callout-info { background: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
+.prose-aula .callout-atencao { background: #fffbeb; border-color: #fde68a; color: #78350f; }
+.prose-aula .callout-perigo { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+.prose-aula .callout-dica { background: #ecfdf5; border-color: #a7f3d0; color: #064e3b; }
+.dark .prose-aula .callout-info { background: rgba(30,58,138,.25); border-color: #1e40af; color: #bfdbfe; }
+.dark .prose-aula .callout-atencao { background: rgba(120,53,15,.25); border-color: #92400e; color: #fde68a; }
+.dark .prose-aula .callout-perigo { background: rgba(127,29,29,.25); border-color: #991b1b; color: #fecaca; }
+.dark .prose-aula .callout-dica { background: rgba(6,78,59,.25); border-color: #065f46; color: #a7f3d0; }
+.prose-aula details.acordeao, .prose-aula details.pergunta-inline { margin: 0.75rem 0; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.5rem 1rem; background: #fff; }
+.dark .prose-aula details.acordeao, .dark .prose-aula details.pergunta-inline { border-color: #334155; background: #0f172a; }
+.prose-aula details > summary { cursor: pointer; font-weight: 600; padding: 0.25rem 0; list-style: none; display: flex; align-items: center; gap: 0.5rem; }
+.prose-aula details > summary::-webkit-details-marker { display: none; }
+.prose-aula details > summary::before { content: '▸'; display: inline-block; transition: transform .15s; color: #64748b; }
+.prose-aula details[open] > summary::before { transform: rotate(90deg); }
+.prose-aula details.pergunta-inline { border-color: #c4b5fd; background: #f5f3ff; }
+.dark .prose-aula details.pergunta-inline { border-color: #6d28d9; background: rgba(76,29,149,.25); }
+.prose-aula details.pergunta-inline > summary::after { content: 'clique para ver a resposta'; margin-left: auto; font-size: 0.75rem; font-weight: 400; color: #6d28d9; }
+.prose-aula details.pergunta-inline[open] > summary::after { content: ''; }
+.prose-aula .colunas { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0.75rem 0; }
+.prose-aula .colunas > div > :first-child { margin-top: 0; }
+@media (max-width: 640px) { .prose-aula .colunas { grid-template-columns: 1fr; } }
+.prose-aula .passos { counter-reset: passo; list-style: none; padding-left: 0; }
+.prose-aula .passos > li { counter-increment: passo; position: relative; padding-left: 2.5rem; margin: 0.5rem 0; }
+.prose-aula .passos > li::before { content: counter(passo); position: absolute; left: 0; top: 0; width: 1.75rem; height: 1.75rem; border-radius: 9999px; background: #1d4ed8; color: #fff; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; }
+.prose-aula figure { margin: 0.75rem 0; }
+.prose-aula figcaption { font-size: 0.8rem; color: #64748b; text-align: center; margin-top: 0.25rem; }
+
+/* ── Modo foco (aula / avaliação): sem menu lateral nem cabeçalho ───────── */
+[data-foco="1"] .foco-ocultar { display: none !important; }
+[data-foco="1"] #main-content { padding: 0.75rem 1rem 2rem; }
+@media (min-width: 1024px) { [data-foco="1"] #main-content { padding: 1rem 2rem 3rem; max-width: 1400px; margin: 0 auto; } }
+/* portal da Universidade: escala automática com a largura do ecrã (16 px a 1440 px → 17 px a 1920 px → 18 px a partir de ~2400 px),
+   multiplicada pela preferência do utilizador (--uc-escala: 0.92 pequeno · 1 normal · 1.12 grande). Só enquanto o portal está aberto. */
+html.portal-uc-html { font-size: calc(clamp(16px, 0.208vw + 13px, 18px) * var(--uc-escala, 1)); }
+@media (max-width: 1023px) { html.portal-uc-html { font-size: calc(16px * var(--uc-escala, 1)); } }
+/* portal da Universidade: cabeçalho fixo de 4 rem (índice da aula fica abaixo dele); em modo foco o conteúdo pode ser mais largo */
+.portal-uc { --topo-fixo: 5rem; }
+.portal-uc[data-foco="1"] { --topo-fixo: 1.5rem; }
+@media (min-width: 1024px) { .portal-uc[data-foco="1"] #main-content { max-width: 1700px; } }
+/* avaliação sem consulta: sem selecção/cópia do enunciado */
+.sem-consulta, .sem-consulta * { -webkit-user-select: none; user-select: none; }
+
+/* pdf.js (TextLayer) anexa ao <body> um <canvas class="hiddenCanvasElement"> opaco (alpha:false) para medir o texto
+   e conta com o CSS do próprio viewer (pdf_viewer.css) para o esconder. Como não carregamos esse CSS, aparecia um
+   rectângulo PRETO de 300×150 no fundo das páginas com PDF (leitor do GED, flipbook da Universidade). */
+.hiddenCanvasElement {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  display: none;
 }

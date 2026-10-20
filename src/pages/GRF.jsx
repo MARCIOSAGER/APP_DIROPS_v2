@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, RefreshCw, FileDown, FileText, Plane, Mail, Edit, Trash2 } from 'lucide-react';
+import Select from '@/components/ui/select';
+import { Plus, RefreshCw, FileDown, FileText, Plane, Mail, Edit, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +21,7 @@ import {
 
 import { RegistoGRF } from '@/entities/RegistoGRF';
 import { Aeroporto } from '@/entities/Aeroporto';
-import { downloadAsCSV } from '../components/lib/export';
+import { downloadAsExcel, excelBase64 } from '../components/lib/export';
 import { filtrarDadosPorAcesso } from '@/components/lib/userUtils';
 import { sendEmailDirect } from '@/functions/sendEmailDirect';
 
@@ -44,6 +45,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [selectedRegistos, setSelectedRegistos] = useState([]);
   const [editingRegisto, setEditingRegisto] = useState(null);
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: '', title: '', message: '', showCancel: false, onConfirm: () => {}, confirmText: 'Ok' });
@@ -51,9 +53,13 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
 
   const [filtros, setFiltros] = useState({
     aeroporto: 'todos',
+    ano: new Date().getFullYear(),
     mes: new Date().getMonth() + 1,
     pista: 'todas'
   });
+  // Ordenação por cabeçalho (clique alterna asc/desc). Default: data mais recente primeiro.
+  const [sortConfig, setSortConfig] = useState({ key: 'data', dir: 'desc' });
+  const handleSort = (key) => setSortConfig((p) => p.key === key ? { key, dir: p.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
 
   // Load secondary data (aeroportos only)
   useEffect(() => {
@@ -61,8 +67,9 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
       setIsLoading(true);
       try {
         const aeroportosData = empId ? await Aeroporto.filter({ empresa_id: empId }) : await Aeroporto.list();
-        const aeroportosAngola = aeroportosData.filter(a => a.pais === 'AO');
-        setAeroportos(aeroportosAngola);
+        // GRF é só para aeroportos GERIDOS pela SGA (isSGA=true) — não todos os de Angola.
+        const aeroportosSGA = aeroportosData.filter(a => a.pais === 'AO' && a.isSGA === true);
+        setAeroportos(aeroportosSGA);
       } catch (error) {
         console.error('Erro ao carregar dados GRF:', error);
         setAlertInfo({
@@ -89,16 +96,23 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
   );
 
   const handleFormSubmit = async (data) => {
+    // Rastreio de quem cria/edita (o form nao capturava -> created_by ficava vazio).
+    const userLabel = currentUser?.email || currentUser?.full_name || null;
+    // Resiliente: se a coluna 'ano' ainda nao existe (migr 085 por correr), grava
+    // sem ela em vez de bloquear (fica so sem ano ate correr a 085).
+    const semColuna = (e) => /(ano|created_by|updated_by)/i.test(e?.message || '') && /(schema cache|column|PGRST204)/i.test(e?.message || '');
+    const criar = async (rec) => { try { return await RegistoGRF.create(rec); } catch (e) { if (semColuna(e)) { const { ano, created_by, updated_by, ...r } = rec; return await RegistoGRF.create(r); } throw e; } };
+    const atualizar = async (id, ch) => { try { return await RegistoGRF.update(id, ch); } catch (e) { if (semColuna(e)) { const { ano, created_by, updated_by, ...r } = ch; return await RegistoGRF.update(id, r); } throw e; } };
     try {
       if (editingRegisto) {
-        await RegistoGRF.update(editingRegisto.id, data);
-        setSuccessInfo({ 
-          isOpen: true, 
-          title: 'GRF Atualizado!', 
-          message: 'O registo GRF foi atualizado com sucesso.' 
+        await atualizar(editingRegisto.id, { ...data, updated_by: userLabel });
+        setSuccessInfo({
+          isOpen: true,
+          title: 'GRF Atualizado!',
+          message: 'O registo GRF foi atualizado com sucesso.'
         });
       } else {
-        await RegistoGRF.create(data);
+        await criar({ ...data, created_by: userLabel });
         setSuccessInfo({ 
           isOpen: true, 
           title: 'GRF Registado!', 
@@ -175,15 +189,85 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
     }
   };
 
+  // valor comparável por coluna (as colunas compostas ordenam pelo 1.º troço)
+  const sortVal = (reg, key) => {
+    switch (key) {
+      case 'data': return Number(reg.ano || 0) * 10000 + Number(reg.mes || 0) * 100 + Number(reg.dia || 0);
+      case 'rwycc': return Number(reg.rwycc1 ?? -1);
+      case 'perc': return Number(reg.perc1 ?? -1);
+      case 'aeroporto': return (reg.aeroporto || '').toString();
+      case 'hora_utc': return (reg.hora_utc || '').toString();
+      case 'pista': return (reg.pista || '').toString();
+      case 'lamina': return (reg.lamina1 || '').toString();
+      case 'condicao': return (reg.condicao1 || '').toString();
+      case 'observacoes': return (reg.observacoes || '').toString();
+      case 'criado_por': return (reg.created_by || reg.updated_by || '').toString();
+      default: return '';
+    }
+  };
   const filteredRegistos = registos.filter(reg => {
     const aeroportoMatch = filtros.aeroporto === 'todos' || reg.aeroporto === filtros.aeroporto;
-    const mesMatch = !filtros.mes || reg.mes === filtros.mes;
+    const anoMatch = filtros.ano === 'todos' || !filtros.ano || reg.ano === filtros.ano;
+    const mesMatch = filtros.mes === 'todos' || !filtros.mes || reg.mes === filtros.mes;
     const pistaMatch = filtros.pista === 'todas' || reg.pista === filtros.pista;
-    
-    return aeroportoMatch && mesMatch && pistaMatch;
+
+    return aeroportoMatch && anoMatch && mesMatch && pistaMatch;
+  }).sort((a, b) => {
+    const va = sortVal(a, sortConfig.key), vb = sortVal(b, sortConfig.key);
+    const cmp = (typeof va === 'number' && typeof vb === 'number')
+      ? va - vb
+      : String(va).localeCompare(String(vb), 'pt', { numeric: true });
+    return sortConfig.dir === 'asc' ? cmp : -cmp;
   });
 
-  const handleSendEmail = async (recipient, subject) => {
+  // Gera o PDF do GRF (paisagem) e devolve o doc jsPDF — partilhado pelo download
+  // (handleExportPDF) e pelo anexo do email (handleSendEmail).
+  const buildGrfPdf = async (registosParaPdf) => {
+    const doc = await createPdfDoc({ orientation: 'landscape' });
+    const logoBase64 = await fetchEmpresaLogo(currentUser?.empresa_id);
+    const headerOpts = {
+      title: 'Relatório GRF — Condições da Pista',
+      logoBase64,
+      date: new Date().toLocaleDateString('pt-AO'),
+      meta: [`Total de registos: ${registosParaPdf.length}`],
+    };
+    const y = addHeader(doc, headerOpts);
+    const columns = [
+      { label: 'Aeroporto', width: 38 }, { label: 'Data', width: 28 }, { label: 'Hora', width: 24 },
+      { label: 'Pista', width: 22 }, { label: 'RWYCC', width: 34 }, { label: 'Perc.', width: 34 },
+      { label: 'Lâmina', width: 34 }, { label: 'Condição', width: 53 },
+    ];
+    const rows = registosParaPdf.map(reg => [
+      reg.aeroporto, `${reg.dia}/${reg.mes}/${reg.ano || ''}`, reg.hora_utc, reg.pista,
+      `${reg.rwycc1}/${reg.rwycc2}/${reg.rwycc3}`, `${reg.perc1}/${reg.perc2}/${reg.perc3}`,
+      `${reg.lamina1}/${reg.lamina2}/${reg.lamina3}`, `${reg.condicao1}/${reg.condicao2}/${reg.condicao3}`,
+    ]);
+    addTable(doc, y, { columns, rows, headerOpts });
+    addFooter(doc, { generatedBy: currentUser?.full_name || currentUser?.email });
+    return doc;
+  };
+
+  // Linhas do relatório em formato tabular (partilhado pelo Exportar XLSX e pelo anexo do email).
+  const buildGrfExcelRows = (rows) => rows.map(reg => ({
+    'Aeroporto': reg.aeroporto,
+    'Data': `${reg.dia}/${reg.mes}/${reg.ano || ''}`,
+    'Hora UTC': reg.hora_utc,
+    'Pista': reg.pista,
+    'RWYCC': `${reg.rwycc1}/${reg.rwycc2}/${reg.rwycc3}`,
+    'Perc. Troço': `${reg.perc1}/${reg.perc2}/${reg.perc3}`,
+    'Lâmina': `${reg.lamina1}/${reg.lamina2}/${reg.lamina3}`,
+    'Condição': `${reg.condicao1}/${reg.condicao2}/${reg.condicao3}`,
+    'Observações': reg.observacoes,
+    'Criado por': reg.created_by || reg.updated_by || ''
+  }));
+
+  const handleSendEmail = async (payload, maybeSubject) => {
+    // O SendEmailModal chama onSend({to, subject, message}) — um OBJETO. Antes o
+    // handler tratava-o como `recipient` (string) -> "[object Object]" -> erro.
+    const isObj = payload && typeof payload === 'object';
+    const recipient = (isObj ? payload.to : payload) || '';
+    const subject = (isObj ? payload.subject : maybeSubject) || 'Relatório GRF — Condições da Pista';
+    const mensagemExtra = isObj ? (payload.message || '') : '';
     if (selectedRegistos.length === 0) {
       setAlertInfo({
         isOpen: true,
@@ -196,6 +280,7 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
       return false;
     }
 
+    setIsSendingEmail(true);
     try {
       const registosParaEmail = filteredRegistos.filter(reg => selectedRegistos.includes(reg.id));
       
@@ -288,15 +373,37 @@ export default function GRFPage() { // Renamed from GRF to GRFPage
         </div>
       `;
 
+      // Suporta múltiplos destinatários (vírgula) — o endpoint aceita array.
+      const toArr = recipient.split(',').map((s) => s.trim()).filter(Boolean);
+      const corpoFinal = mensagemExtra
+        ? `<p style="font-family:Arial,sans-serif;font-size:14px;color:#334155;white-space:pre-line;margin:0 0 16px">${mensagemExtra.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</p>${emailBody}`
+        : emailBody;
+      // Anexa PDF (visual) + XLSX (dados) do GRF. Best-effort: se algum falhar,
+      // envia com o que der (e sempre o HTML no corpo).
+      const stamp = new Date().toISOString().split('T')[0];
+      const anexos = [];
+      try {
+        const doc = await buildGrfPdf(registosParaEmail);
+        const b64 = doc.output('datauristring').split('base64,')[1];
+        if (b64) anexos.push({ filename: `Relatorio_GRF_${stamp}.pdf`, content: b64, contentType: 'application/pdf' });
+      } catch (e) { console.warn('PDF GRF (anexo) falhou:', e); }
+      try {
+        const xlsxB64 = await excelBase64(buildGrfExcelRows(registosParaEmail));
+        if (xlsxB64) anexos.push({ filename: `Relatorio_GRF_${stamp}.xlsx`, content: xlsxB64, contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      } catch (e) { console.warn('XLSX GRF (anexo) falhou:', e); }
+
       const result = await sendEmailDirect({
-        to: recipient,
+        to: toArr,
         subject: subject,
-        body: emailBody,
-        from_name: 'SGA'
+        body: corpoFinal,
+        from_name: 'SGA',
+        attachments: anexos,
       });
 
-      if (result.status !== 200) {
-        const errorData = result.data || { error: 'Falha desconhecida no backend' };
+      // sendEmailDirect devolve o CORPO da resposta ({ success, ... }); em falha real
+      // ele LANÇA (vai para o catch). Aqui só tratamos sucesso=false (2xx sem success).
+      if (!result || !result.success) {
+        const errorData = (result && result.error) ? result : { error: 'Falha desconhecida no backend' };
         
         // Analisar o tipo de erro e criar mensagem personalizada
         let errorTitle = 'Erro ao Enviar E-mail';
@@ -348,13 +455,14 @@ Por favor tente novamente ou contacte o suporte técnico se o problema persistir
         return false;
       }
 
+      setIsEmailModalOpen(false); // fecha o modal de envio p/ o de sucesso ficar visível
       setSuccessInfo({
         isOpen: true,
         title: 'E-mail Enviado com Sucesso',
-        message: `O relatório GRF foi enviado com sucesso para "${recipient}".`
+        message: `Relatório GRF enviado para: ${toArr.join(', ')} (${registosParaEmail.length} registo(s)${anexos.length ? ` · anexos: ${anexos.map(a => a.filename.split('.').pop().toUpperCase()).join(' + ')}` : ''}).`
       });
       return true;
-      
+
     } catch (error) {
       console.error("Erro detalhado ao enviar email:", error);
       
@@ -387,11 +495,13 @@ Por favor tente novamente ou contacte o suporte técnico.`;
         confirmText: 'Ok'
       });
       return false;
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
-  const handleExportCSV = () => {
-    const registosParaExportar = selectedRegistos.length > 0 
+  const handleExportXLSX = async () => {
+    const registosParaExportar = selectedRegistos.length > 0
       ? filteredRegistos.filter(reg => selectedRegistos.includes(reg.id))
       : filteredRegistos;
 
@@ -407,20 +517,10 @@ Por favor tente novamente ou contacte o suporte técnico.`;
       return;
     }
 
-    const dataToExport = registosParaExportar.map(reg => ({
-      'Aeroporto': reg.aeroporto,
-      'Data': `${reg.dia}/${reg.mes}/${reg.created_date ? new Date(reg.created_date).getFullYear() : new Date().getFullYear()}`,
-      'Hora UTC': reg.hora_utc,
-      'Pista': reg.pista,
-      'RWYCC': `${reg.rwycc1}/${reg.rwycc2}/${reg.rwycc3}`,
-      'Perc. Troço': `${reg.perc1}/${reg.perc2}/${reg.perc3}`,
-      'Lâmina': `${reg.lamina1}/${reg.lamina2}/${reg.lamina3}`,
-      'Condição': `${reg.condicao1}/${reg.condicao2}/${reg.condicao3}`,
-      'Observações': reg.observacoes
-    }));
-    const ok = downloadAsCSV(dataToExport, `grf_registos_${new Date().toISOString().split('T')[0]}`);
+    const dataToExport = buildGrfExcelRows(registosParaExportar);
+    const ok = await downloadAsExcel(dataToExport, `grf_registos_${new Date().toISOString().split('T')[0]}`);
     if (!ok) {
-      setAlertInfo({ isOpen: true, type: 'error', title: 'Falha na Exportação', message: 'Não foi possível gerar o CSV.', showCancel: false, confirmText: 'Ok' });
+      setAlertInfo({ isOpen: true, type: 'error', title: 'Falha na Exportação', message: 'Não foi possível gerar o ficheiro Excel.', showCancel: false, confirmText: 'Ok' });
     }
   };
 
@@ -442,50 +542,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
         return;
       }
 
-      const doc = await createPdfDoc({ orientation: 'landscape' });
-
-      // Load empresa logo
-      const logoBase64 = await fetchEmpresaLogo(currentUser?.empresa_id);
-
-      // Header options (reused on page breaks)
-      const headerOpts = {
-        title: 'Relatório GRF — Condições da Pista',
-        logoBase64,
-        date: new Date().toLocaleDateString('pt-AO'),
-        meta: [`Total de registos: ${registosParaExportar.length}`],
-      };
-
-      let y = addHeader(doc, headerOpts);
-
-      // Table columns — total width fits landscape (297 - 15 - 15 = 267mm)
-      const columns = [
-        { label: 'Aeroporto', width: 38 },
-        { label: 'Data',      width: 28 },
-        { label: 'Hora',      width: 24 },
-        { label: 'Pista',     width: 22 },
-        { label: 'RWYCC',     width: 34 },
-        { label: 'Perc.',     width: 34 },
-        { label: 'Lâmina',    width: 34 },
-        { label: 'Condição',  width: 53 },
-      ];
-
-      // Build row data
-      const rows = registosParaExportar.map(reg => [
-        reg.aeroporto,
-        `${reg.dia}/${reg.mes}`,
-        reg.hora_utc,
-        reg.pista,
-        `${reg.rwycc1}/${reg.rwycc2}/${reg.rwycc3}`,
-        `${reg.perc1}/${reg.perc2}/${reg.perc3}`,
-        `${reg.lamina1}/${reg.lamina2}/${reg.lamina3}`,
-        `${reg.condicao1}/${reg.condicao2}/${reg.condicao3}`,
-      ]);
-
-      addTable(doc, y, { columns, rows, headerOpts });
-
-      // Footer on all pages
-      addFooter(doc, { generatedBy: currentUser?.full_name || currentUser?.email });
-
+      const doc = await buildGrfPdf(registosParaExportar);
       doc.save(`grf_relatorio_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
@@ -518,9 +575,9 @@ Por favor tente novamente ou contacte o suporte técnico.`;
               <RefreshCw className="w-4 h-4 mr-2" />
               {t('grf.atualizar')}
             </Button>
-            <Button variant="outline" onClick={handleExportCSV} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+            <Button variant="outline" onClick={handleExportXLSX} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
               <FileDown className="w-4 h-4 mr-2" />
-              {t('grf.exportarCSV')}
+              Exportar XLSX
               {selectedRegistos.length > 0 && ` (${selectedRegistos.length})`}
             </Button>
             <Button variant="outline" onClick={handleExportPDF} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
@@ -547,28 +604,41 @@ Por favor tente novamente ou contacte o suporte técnico.`;
             <CardTitle className="text-lg">{t('grf.filtros')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('grf.aeroporto')}</label>
-                <select
-                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                <Select
+                  options={[{ value: 'todos', label: t('grf.todos') }, ...aeroportos.map(a => ({ value: a.codigo_icao, label: `${a.codigo_icao} — ${a.nome}` }))]}
                   value={filtros.aeroporto}
-                  onChange={(e) => setFiltros({...filtros, aeroporto: e.target.value})}
-                >
-                  <option value="todos">{t('grf.todos')}</option>
-                  {aeroportos.map(a => (
-                    <option key={a.id} value={a.codigo_icao}>{a.nome} ({a.codigo_icao})</option>
-                  ))}
-                </select>
+                  onValueChange={(v) => setFiltros({ ...filtros, aeroporto: v || 'todos' })}
+                  placeholder={t('grf.todos')}
+                  searchPlaceholder="Procurar aeroporto..."
+                  noResultsMessage="Nenhum aeroporto encontrado"
+                />
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('grf.mes')}</label>
-                <select 
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Ano</label>
+                <select
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={filtros.mes?.toString()} 
-                  onChange={(e) => setFiltros({...filtros, mes: parseInt(e.target.value)})}
+                  value={filtros.ano === 'todos' ? 'todos' : filtros.ano?.toString()}
+                  onChange={(e) => setFiltros({...filtros, ano: e.target.value === 'todos' ? 'todos' : parseInt(e.target.value)})}
                 >
+                  <option value="todos">Todos os anos</option>
+                  {Array.from({length: 5}, (_, i) => new Date().getFullYear() - 3 + i).map(y => (
+                    <option key={y} value={y.toString()}>{y}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('grf.mes')}</label>
+                <select
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={filtros.mes === 'todos' ? 'todos' : filtros.mes?.toString()}
+                  onChange={(e) => setFiltros({...filtros, mes: e.target.value === 'todos' ? 'todos' : parseInt(e.target.value)})}
+                >
+                  <option value="todos">Todos os meses</option>
                   {Array.from({length: 12}, (_, i) => (
                     <option key={i+1} value={(i+1).toString()}>
                       {new Date(2025, i).toLocaleDateString('pt-AO', { month: 'long' })}
@@ -649,15 +719,28 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                         <TableHead className="w-12">
                           <span className="sr-only">Seleção</span>
                         </TableHead>
-                        <TableHead>{t('grf.aeroporto')}</TableHead>
-                        <TableHead>{t('grf.data')}</TableHead>
-                        <TableHead>{t('grf.horaUTC')}</TableHead>
-                        <TableHead>{t('grf.pista')}</TableHead>
-                        <TableHead>{t('grf.rwycc')}</TableHead>
-                        <TableHead>{t('grf.percTroco')}</TableHead>
-                        <TableHead>{t('grf.lamina')}</TableHead>
-                        <TableHead>{t('grf.condicao')}</TableHead>
-                        <TableHead>{t('grf.observacoes')}</TableHead>
+                        {[
+                          { key: 'aeroporto', label: t('grf.aeroporto') },
+                          { key: 'data', label: t('grf.data') },
+                          { key: 'hora_utc', label: t('grf.horaUTC') },
+                          { key: 'pista', label: t('grf.pista') },
+                          { key: 'rwycc', label: t('grf.rwycc') },
+                          { key: 'perc', label: t('grf.percTroco') },
+                          { key: 'lamina', label: t('grf.lamina') },
+                          { key: 'condicao', label: t('grf.condicao') },
+                          { key: 'observacoes', label: t('grf.observacoes') },
+                          { key: 'criado_por', label: 'Criado por' },
+                        ].map((col) => (
+                          <TableHead key={col.key} onClick={() => handleSort(col.key)}
+                            className="cursor-pointer select-none whitespace-nowrap hover:bg-slate-50 dark:hover:bg-slate-800">
+                            <span className="inline-flex items-center gap-1">
+                              {col.label}
+                              {sortConfig.key === col.key
+                                ? (sortConfig.dir === 'asc' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />)
+                                : <ChevronsUpDown className="w-3.5 h-3.5 opacity-40" />}
+                            </span>
+                          </TableHead>
+                        ))}
                         <TableHead className="text-center">{t('grf.acoes')}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -678,7 +761,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                                 {registo.aeroporto}
                               </span>
                             </TableCell>
-                            <TableCell>{registo.dia}/{registo.mes}/2025</TableCell>
+                            <TableCell>{registo.dia}/{registo.mes}/{registo.ano || '—'}</TableCell>
                             <TableCell>{registo.hora_utc}</TableCell>
                             <TableCell>
                               <Badge variant="outline">{registo.pista}</Badge>
@@ -704,8 +787,13 @@ Por favor tente novamente ou contacte o suporte técnico.`;
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="text-sm max-w-xs truncate">
+                              <div className="text-xs max-w-[180px] truncate" title={registo.observacoes || ''}>
                                 {registo.observacoes || '-'}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-xs text-slate-600 dark:text-slate-400 max-w-[110px] truncate" title={registo.created_by || registo.updated_by || ''}>
+                                {(registo.created_by || registo.updated_by || '').split('@')[0] || '—'}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -760,6 +848,7 @@ Por favor tente novamente ou contacte o suporte técnico.`;
           isOpen={isEmailModalOpen}
           onClose={() => setIsEmailModalOpen(false)}
           onSend={handleSendEmail}
+          isSending={isSendingEmail}
           defaultSubject={`Relatório GRF - ${selectedRegistos.length} registos selecionados`}
         />
       )}

@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, Area, AreaChart } from 'recharts';
-import { CheckCircle2, Shield, Users, Briefcase, Package, Plane, TrendingUp, TrendingDown, Target, Filter, X, FileText } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, Area, AreaChart, LabelList } from 'recharts';
+import { CheckCircle2, Shield, Users, Briefcase, Package, Plane, TrendingUp, TrendingDown, Target, Filter, X, FileText, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -20,7 +22,30 @@ const CATEGORY_CONFIG = {
   'embarque': { label: 'Embarque', icon: Plane, color: '#EC4899' }
 };
 
-export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExportPDF, isExporting }) {
+// Rótulo do eixo Y que quebra nomes longos em até 2 linhas (evita truncar).
+const WrappedTick = ({ x, y, payload }) => {
+  const text = String(payload?.value ?? '');
+  const max = 20;
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  words.forEach((w) => {
+    if ((cur + ' ' + w).trim().length > max) { if (cur) lines.push(cur); cur = w; }
+    else cur = (cur + ' ' + w).trim();
+  });
+  if (cur) lines.push(cur);
+  const shown = lines.slice(0, 2);
+  if (lines.length > 2 && shown[1]) shown[1] = shown[1].slice(0, max - 1) + '…';
+  return (
+    <text x={x} y={y} textAnchor="end" fill="#475569" fontSize={10.5}>
+      {shown.map((ln, i) => (
+        <tspan key={i} x={x} dy={i === 0 ? (shown.length > 1 ? -3 : 4) : 12}>{ln}</tspan>
+      ))}
+    </text>
+  );
+};
+
+export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExportPDF, onExportDetailedPDF, onEnviarEmail, isExporting }) {
   const { t } = useI18n();
   const [filtros, setFiltros] = useState({
     dataInicio: '',
@@ -97,7 +122,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
     // Agrupar por aeroporto (usando medicoesFiltradas)
     const medicoesPorAeroporto = {};
     aeroportos.forEach(aeroporto => {
-      const medicoesDoAeroporto = medicoesFiltradas.filter(m => m.aeroporto_id === aeroporto.codigo_icao);
+      const medicoesDoAeroporto = medicoesFiltradas.filter(m => m.aeroporto_id === aeroporto.id);
       const dentroDaMeta = medicoesDoAeroporto.filter(m => m.dentro_da_meta === true).length;
 
       medicoesPorAeroporto[aeroporto.codigo_icao] = {
@@ -109,19 +134,21 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
       };
     });
 
-    // Dados para gráfico de barras (Top 5 KPIs por volume)
+    // Dados para gráfico de barras (Top 5 KPIs por volume) — só com medições
     const topKPIs = Object.values(medicoesPorTipo)
+      .filter(item => item.total > 0)
       .sort((a, b) => b.total - a.total)
       .slice(0, 5)
       .map(item => ({
-        nome: item.tipo.nome.length > 25 ? item.tipo.nome.substring(0, 25) + '...' : item.tipo.nome,
+        nome: item.tipo.nome,
         total: item.total,
         dentroDaMeta: item.dentroDaMeta,
         foraDaMeta: item.foraDaMeta
       }));
 
-    // Dados para gráfico de aeroportos (Top 5)
+    // Dados para gráfico de aeroportos (Top 5) — só aeroportos com medições
     const topAeroportos = Object.values(medicoesPorAeroporto)
+      .filter(item => item.total > 0)
       .sort((a, b) => b.total - a.total)
       .slice(0, 5)
       .map(item => ({
@@ -167,7 +194,7 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
     // Análise por aeroporto individual
     const analiseAeroportoIndividual = {};
     if (filtros.aeroporto !== 'todos') {
-      const aeroporto = aeroportos.find(a => a.codigo_icao === filtros.aeroporto);
+      const aeroporto = aeroportos.find(a => a.id === filtros.aeroporto);
       if (aeroporto) {
         const medicoesAeroporto = medicoesFiltradas.filter(m => m.aeroporto_id === filtros.aeroporto);
         
@@ -224,13 +251,13 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
 
   const aeroportoOptions = useMemo(() => {
     // Apenas aeroportos que têm medições
-    const aeroportosComMedicoes = aeroportos.filter(a => 
-      medicoes.some(m => m.aeroporto_id === a.codigo_icao)
+    const aeroportosComMedicoes = aeroportos.filter(a =>
+      medicoes.some(m => m.aeroporto_id === a.id)
     );
-    
+
     return [
       { value: 'todos', label: t('kpis.todosAeroportos') },
-      ...aeroportosComMedicoes.map(a => ({ value: a.codigo_icao, label: `${a.nome} (${a.codigo_icao})` }))
+      ...aeroportosComMedicoes.map(a => ({ value: a.id, label: `${a.codigo_icao} — ${a.nome}` }))
     ];
   }, [aeroportos, medicoes]);
 
@@ -252,24 +279,49 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
     }
   };
 
+  const dashRef = useRef(null);
+
+  // "Enviar Email" pelo Dashboard: envia o período filtrado ao parent, que gera os
+  // anexos NATIVOS (jsPDF vetorial). Sem screenshot/html2canvas — evita truncagem,
+  // cortes de página no meio de cards e arquivos gigantes.
+  const handleEnviarEmailClick = () => {
+    if (onEnviarEmail) onEnviarEmail(medicoesFiltradas, filtros);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={dashRef}>
       {/* Filtros */}
       <Card className="border-slate-200">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Filter className="w-5 h-5 text-slate-500" />
               {t('kpis.filtrosDashboard')}
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 lg:justify-end" data-html2canvas-ignore="true">
               <Button
-                variant="outline"
                 onClick={handleExportPDF}
                 disabled={isExporting || medicoesFiltradas.length === 0}
+                className="bg-[#1e3a5f] hover:bg-[#16293f] text-white"
               >
                 <FileText className="w-4 h-4 mr-2" />
-                {isExporting ? t('kpis.gerandoPDF') : t('kpis.exportarPDF')}
+                {isExporting ? 'A gerar...' : 'Relatório Executivo'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => onExportDetailedPDF && onExportDetailedPDF(medicoesFiltradas, filtros)}
+                disabled={medicoesFiltradas.length === 0}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Relatório Detalhado
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleEnviarEmailClick}
+                disabled={medicoesFiltradas.length === 0}
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Enviar Email
               </Button>
               {hasActiveFilters && (
                 <Button variant="outline" size="sm" onClick={clearFilters} className="text-red-600 border-red-200 hover:bg-red-50">
@@ -323,58 +375,6 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
           </div>
         </CardContent>
       </Card>
-
-      {/* Cards de Estatísticas Gerais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">{t('kpis.totalMedicoesCard')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{dashboardData.totalMedicoes}</div>
-            <p className="text-xs text-slate-500 mt-1">{t('kpis.todasMedicoes')}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-orange-500">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">{t('kpis.hojeCard')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{dashboardData.medicoesHoje}</div>
-            <p className="text-xs text-slate-500 mt-1">{t('kpis.medicoesHoje')}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">{t('kpis.dentroMetaLabel')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{dashboardData.medicoesDentroDaMeta}</div>
-            <p className="text-xs text-slate-500 mt-1">
-              {dashboardData.percentualMeta}{t('kpis.percTotal')}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">{t('kpis.performanceGeral')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <div className="text-3xl font-bold text-purple-600">{dashboardData.percentualMeta}%</div>
-              {dashboardData.percentualMeta >= 80 ? (
-                <TrendingUp className="w-6 h-6 text-green-500" />
-              ) : (
-                <TrendingDown className="w-6 h-6 text-red-500" />
-              )}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">{t('kpis.taxaConformidade')}</p>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Análise Temporal do KPI Selecionado */}
       {filtros.tipoKPI !== 'todos' && dashboardData.analiseTemporalKPI?.dados && (
@@ -474,14 +474,18 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
           <CardContent>
             {dashboardData.topKPIs.length > 0 ? (
               <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={dashboardData.topKPIs} layout="vertical" margin={{ left: 20, right: 30, top: 10, bottom: 10 }}>
+                <BarChart data={dashboardData.topKPIs} layout="vertical" margin={{ left: 10, right: 46, top: 10, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
-                  <YAxis type="category" dataKey="nome" width={200} fontSize={11} />
+                  <YAxis type="category" dataKey="nome" width={150} interval={0} tick={<WrappedTick />} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="dentroDaMeta" name={t('kpis.dentroDaMetaBar')} fill="#10B981" stackId="a" />
-                  <Bar dataKey="foraDaMeta" name={t('kpis.foraDaMetaBar')} fill="#EF4444" stackId="a" />
+                  <Bar dataKey="dentroDaMeta" name={t('kpis.dentroDaMetaBar')} fill="#10B981" stackId="a">
+                    <LabelList dataKey="dentroDaMeta" position="center" fill="#fff" fontSize={11} fontWeight={600} formatter={(v) => (v > 0 ? v : '')} />
+                  </Bar>
+                  <Bar dataKey="foraDaMeta" name={t('kpis.foraDaMetaBar')} fill="#EF4444" stackId="a">
+                    <LabelList dataKey="foraDaMeta" position="center" fill="#fff" fontSize={11} fontWeight={600} formatter={(v) => (v > 0 ? v : '')} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -503,14 +507,18 @@ export default function DashboardKPIs({ medicoes, tiposKPI, aeroportos, onExport
           <CardContent>
             {dashboardData.topAeroportos.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dashboardData.topAeroportos}>
+                <BarChart data={dashboardData.topAeroportos} margin={{ top: 24, right: 12, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="nome" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="dentroDaMeta" name={t('kpis.dentroDaMetaBar')} fill="#10B981" />
-                  <Bar dataKey="foraDaMeta" name={t('kpis.foraDaMetaBar')} fill="#EF4444" />
+                  <Bar dataKey="dentroDaMeta" name={t('kpis.dentroDaMetaBar')} fill="#10B981">
+                    <LabelList dataKey="dentroDaMeta" position="top" fill="#334155" fontSize={11} formatter={(v) => (v > 0 ? v : '')} />
+                  </Bar>
+                  <Bar dataKey="foraDaMeta" name={t('kpis.foraDaMetaBar')} fill="#EF4444">
+                    <LabelList dataKey="foraDaMeta" position="top" fill="#334155" fontSize={11} formatter={(v) => (v > 0 ? v : '')} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (

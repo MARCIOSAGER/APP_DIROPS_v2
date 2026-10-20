@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { fmtData } from '@/lib/safeDate';
 import { useI18n } from '@/components/lib/i18n';
 
 const STATUS_CONFIG = {
@@ -89,7 +90,7 @@ export default function CredenciamentoDetailModal({ isOpen, onClose, credenciame
                   <Calendar className="w-4 h-4 text-slate-400" />
                   <span className="text-slate-600">Data Solicitação:</span>
                   <span className="font-medium">
-                    {format(parseISO(credenciamento.data_solicitacao), 'dd/MM/yyyy HH:mm', { locale: pt })}
+                    {fmtData(credenciamento.data_solicitacao, 'dd/MM/yyyy HH:mm')}
                   </span>
                 </div>
 
@@ -262,7 +263,7 @@ export default function CredenciamentoDetailModal({ isOpen, onClose, credenciame
                   <div className="flex-1">
                     <span className="text-sm font-medium">Solicitação Criada</span>
                     <p className="text-xs text-slate-500">
-                      {format(parseISO(credenciamento.data_solicitacao), 'dd/MM/yyyy HH:mm', { locale: pt })}
+                      {fmtData(credenciamento.data_solicitacao, 'dd/MM/yyyy HH:mm')}
                     </p>
                   </div>
                 </div>

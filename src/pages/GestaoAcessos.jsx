@@ -136,6 +136,22 @@ export default function GestaoAcessos() {
     return solicitacoes.filter(s => s.status === 'pendente');
   }, [solicitacoes]);
 
+  // Mapa (user_id | email) -> quem respondeu (aprovou/rejeitou) a solicitação mais
+  // recente, para mostrar "Aprovado por X · data" na lista de utilizadores.
+  const aprovacaoPorUser = useMemo(() => {
+    const m = {};
+    for (const s of solicitacoes) {
+      if (!s.aprovado_por) continue;
+      for (const k of [s.user_id, s.email].filter(Boolean)) {
+        const prev = m[k];
+        if (!prev || (s.data_resposta || '') > (prev.data_resposta || '')) {
+          m[k] = { aprovado_por: s.aprovado_por, data_resposta: s.data_resposta, status: s.status };
+        }
+      }
+    }
+    return m;
+  }, [solicitacoes]);
+
   // Utilizadores pendentes SEM solicitação (ex.: criou conta mas não concluiu o
   // formulário). Ficavam invisíveis na aba de solicitações — agora entram na
   // fila única, para ninguém cair no limbo.
@@ -252,11 +268,13 @@ export default function GestaoAcessos() {
       await SolicitacaoAcesso.update(solicitacaoId, {
         status: 'aprovado',
         data_resposta: new Date().toISOString(),
+        aprovado_por: currentUser?.full_name || currentUser?.email || null,
         perfil_aprovado: perfis,
         aeroportos_aprovados: aeroportosAprovados,
         observacoes_aprovacao: observacoes
       });
 
+      const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const nomeUtilizador = solicitacao.nome_completo || solicitacao.email.split('@')[0];
       const perfisFormatados = perfis.map(p => PERFIL_LABELS[p] || p).join(', ');
       const aeroportosNomes = aeroportosAprovados.length > 0
@@ -266,7 +284,7 @@ export default function GestaoAcessos() {
       const emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #10b981;">✅ Solicitação de Acesso Aprovada</h2>
-          <p>Olá <strong>${nomeUtilizador}</strong>,</p>
+          <p>Olá <strong>${esc(nomeUtilizador)}</strong>,</p>
           <p>A sua solicitação de acesso ao sistema SGA foi <strong>aprovada</strong>!</p>
 
           <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
@@ -274,12 +292,12 @@ export default function GestaoAcessos() {
             <ul style="margin: 10px 0;">
               <li><strong>Perfis Aprovados:</strong> ${perfisFormatados}</li>
               <li><strong>Aeroportos Autorizados:</strong> ${aeroportosNomes}</li>
-              ${observacoes ? `<li><strong>Observações:</strong> ${observacoes}</li>` : ''}
+              ${observacoes ? `<li><strong>Observações:</strong> ${esc(observacoes)}</li>` : ''}
             </ul>
           </div>
 
           <p><strong>Próximos Passos:</strong></p>
-          <p>Já pode aceder ao sistema SGA usando o seu e-mail <strong>${solicitacao.email}</strong>.</p>
+          <p>Já pode aceder ao sistema SGA usando o seu e-mail <strong>${esc(solicitacao.email)}</strong>.</p>
 
           <div style="text-align: center; margin: 30px 0;">
             <a href="${window.location.origin}" style="background-color: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
@@ -311,11 +329,13 @@ export default function GestaoAcessos() {
   const handleRejeitarSolicitacao = async () => {
     const { solicitacao } = modals.rejectionInfo;
     if (!solicitacao) return;
+    const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     try {
       await SolicitacaoAcesso.update(solicitacao.id, {
         status: 'rejeitado',
-        data_resposta: new Date().toISOString()
+        data_resposta: new Date().toISOString(),
+        aprovado_por: currentUser?.full_name || currentUser?.email || null
       });
 
       await base44.integrations.Core.SendEmail({
@@ -324,7 +344,7 @@ export default function GestaoAcessos() {
         body: `
           <div style="font-family: Arial, sans-serif;">
             <h2>Solicitação Rejeitada</h2>
-            <p>Olá ${solicitacao.nome_completo},</p>
+            <p>Olá ${esc(solicitacao.nome_completo)},</p>
             <p>Lamentamos informar que a sua solicitação de acesso ao sistema SGA foi rejeitada.</p>
             <p>Para mais informações, por favor, entre em contacto com o administrador do sistema.</p>
             <p style="margin-top: 20px; font-size: 0.9em; color: #555;">Atenciosamente,<br>Equipe SGA</p>
@@ -397,8 +417,14 @@ export default function GestaoAcessos() {
         console.warn('Erro ao verificar existência do utilizador antes da exclusão:', checkError);
       }
 
-      await UserEntity.delete(user.id);
-      modals.showAlert('success', 'Utilizador Excluído', 'O utilizador foi excluído com sucesso do sistema.');
+      // Remove a conta de login (GoTrue) E o perfil (users). UserEntity.delete
+      // sozinho tirava só o perfil -> o utilizador renascia no próximo login
+      // (o AuthContext recria o perfil). Por isso via admin-user (action delete).
+      const { data: delRes, error: delErr } = await supabase.functions.invoke('admin-user', {
+        body: { action: 'delete', user_id: user.auth_id, email: user.email },
+      });
+      if (delErr || delRes?.error) throw new Error(delErr?.message || delRes?.error || 'Falha ao excluir');
+      modals.showAlert('success', 'Utilizador Excluído', 'O utilizador e a conta de login foram removidos.');
       invalidateAndRefetch();
     } catch (error) {
       console.error('Erro ao excluir utilizador:', error);
@@ -559,6 +585,7 @@ export default function GestaoAcessos() {
               onAprovarUsuario={modals.openEditUserModal}
               onRejeitar={modals.openRejeitarModal}
               onExcluir={modals.openExcluirModal}
+              onRecusarUsuario={modals.openExcluirUserModal}
             />
           </TabsContent>
 
@@ -568,6 +595,7 @@ export default function GestaoAcessos() {
               aeroportos={aeroportos}
               empresas={empresas}
               currentUser={currentUser}
+              aprovacaoPorUser={aprovacaoPorUser}
               isLoading={isLoading}
               sendingInvite={sendingInvite}
               sendingBatch={sendingBatch}

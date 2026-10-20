@@ -10,6 +10,7 @@ import { sendEmailDirect } from '@/functions/sendEmailDirect';
 import { emailTemplates } from '@/lib/emailTemplates';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { useI18n } from '@/components/lib/i18n';
+import { useRegrasPermissao } from '@/hooks/useRegrasPermissao';
 import AlertModal from '@/components/shared/AlertModal';
 import { isExternalEmail, ADMIN_CREATING_EXTERNAL_NOTICE } from '@/lib/emailDomain';
 
@@ -47,7 +48,14 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
   const [error, setError] = useState(null);
   const { guardedSubmit } = useSubmitGuard();
 
-  const PERFIL_OPTIONS = PERFIL_OPTIONS_KEYS.map(p => ({ value: p.value, label: t(p.key) }));
+  const { data: regras = [] } = useRegrasPermissao();
+  const perfisSistema = PERFIL_OPTIONS_KEYS.map(p => p.value);
+  const PERFIL_OPTIONS = [
+    ...PERFIL_OPTIONS_KEYS.map(p => ({ value: p.value, label: t(p.key) })),
+    ...regras
+      .filter(r => r.perfil && !perfisSistema.includes(r.perfil))
+      .map(r => ({ value: r.perfil, label: r.label || r.perfil })),
+  ];
 
   useEffect(() => {
     if (isOpen) {
@@ -380,6 +388,7 @@ export default function AddUserModal({ isOpen, onClose, aeroportos, empresas, on
 }
 
 function generateInviteEmail(nome, empresa, perfis) {
+  const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return `
 <!DOCTYPE html>
 <html>
@@ -391,12 +400,12 @@ function generateInviteEmail(nome, empresa, perfis) {
       <p style="margin:4px 0 0;color:#93c5fd;font-size:12px;">Sistema de Gestao Aeroportuaria</p>
     </div>
     <div style="background:#ffffff;padding:32px 40px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">
-      <h2 style="margin:0 0 16px;color:#0f172a;font-size:20px;">Bem-vindo, ${nome}!</h2>
+      <h2 style="margin:0 0 16px;color:#0f172a;font-size:20px;">Bem-vindo, ${esc(nome)}!</h2>
       <p style="color:#475569;font-size:14px;line-height:1.6;">
         A sua conta no SGA foi criada por um administrador.
       </p>
-      ${empresa ? `<p style="color:#475569;font-size:14px;"><strong>Empresa:</strong> ${empresa}</p>` : ''}
-      <p style="color:#475569;font-size:14px;"><strong>Perfis:</strong> ${perfis}</p>
+      ${empresa ? `<p style="color:#475569;font-size:14px;"><strong>Empresa:</strong> ${esc(empresa)}</p>` : ''}
+      <p style="color:#475569;font-size:14px;"><strong>Perfis:</strong> ${esc(perfis)}</p>
       <p style="color:#475569;font-size:14px;line-height:1.6;">
         Verifique a sua caixa de entrada — enviámos um email separado com um link para definir a sua senha.
         Após definir a senha, aceda ao sistema em:

@@ -39,7 +39,7 @@
   "dashboard.revenue": "Revenue (Kz)",
   "dashboard.openOccurrences": "Open",
   "dashboard.pendingInspections": "Pending Inspections",
-  "dashboard.passengersToday": "Passengers Today",
+  "dashboard.passengersToday": "Passengers (period)",
   "dashboard.trendVsLastWeek": "vs. last week",
   "dashboard.trendVsYesterday": "vs. yesterday",
   "dashboard.recentFlights": "Recent Flights",

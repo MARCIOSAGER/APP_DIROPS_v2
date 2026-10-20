@@ -1,7 +1,7 @@
 import React from 'react';
 import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, subDays, startOfDay } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -75,8 +75,12 @@ export default function MovimentosChart({ voos, isLoading }) {
                   return label;
                 }}
               />
-              <Bar dataKey="ARR" fill="#3b82f6" name={t('dashboard.arrivals')} radius={[2, 2, 0, 0]} />
-              <Bar dataKey="DEP" fill="#06b6d4" name={t('dashboard.departures')} radius={[2, 2, 0, 0]} />
+              <Bar dataKey="ARR" fill="#3b82f6" name={t('dashboard.arrivals')} radius={[2, 2, 0, 0]}>
+                <LabelList dataKey="ARR" position="top" fontSize={10} fontWeight={600} fill="#2563eb" formatter={(v) => (v > 0 ? v : '')} />
+              </Bar>
+              <Bar dataKey="DEP" fill="#06b6d4" name={t('dashboard.departures')} radius={[2, 2, 0, 0]}>
+                <LabelList dataKey="DEP" position="top" fontSize={10} fontWeight={600} fill="#0891b2" formatter={(v) => (v > 0 ? v : '')} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         )}

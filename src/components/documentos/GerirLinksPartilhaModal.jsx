@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import Select from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabaseClient';
+import { copyToClipboard } from '@/lib/utils';
+import AlertModal from '@/components/shared/AlertModal';
 import { Link2, RefreshCw, Copy, Check, XCircle, Loader2, Filter } from 'lucide-react';
 
 const FILTROS = [
@@ -31,13 +33,15 @@ export default function GerirLinksPartilhaModal({ isOpen, onClose }) {
   const [busca, setBusca] = useState('');
   const [copiadoId, setCopiadoId] = useState(null);
   const [revogandoId, setRevogandoId] = useState(null);
+  const [confirmRevogarId, setConfirmRevogarId] = useState(null);
+  const [baseUrl, setBaseUrl] = useState(''); // base publica (Cloudflare) devolvida pelo backend
 
   const carregar = useCallback(async () => {
     setLoading(true); setErro('');
     try {
       const { data, error } = await supabase
         .from('documento_link_partilha')
-        .select('id, token, criado_por, criado_em, expira_em, senha_hash, max_downloads, downloads_count, ultimo_acesso_em, revogado_em, revogado_por, pasta_id, recursivo, documento:documento_id(id, titulo, categoria, versao), pasta:pasta_id(id, nome)')
+        .select('id, token, criado_por, criado_em, expira_em, senha_hash, max_downloads, downloads_count, ultimo_acesso_em, revogado_em, revogado_por, pasta_id, recursivo, aeroportos_ids, pastas_ids, documento:documento_id(id, titulo, categoria, versao), pasta:pasta_id(id, nome)')
         .order('criado_em', { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -49,10 +53,16 @@ export default function GerirLinksPartilhaModal({ isOpen, onClose }) {
     }
   }, []);
 
-  useEffect(() => { if (isOpen) carregar(); }, [isOpen, carregar]);
+  useEffect(() => {
+    if (!isOpen) return;
+    carregar();
+    supabase.functions.invoke('share-link-config')
+      .then(({ data }) => { if (data?.base_url) setBaseUrl(data.base_url); })
+      .catch(() => {});
+  }, [isOpen, carregar]);
 
-  const revogar = async (linkId) => {
-    if (!confirm('Revogar este link imediatamente? Utilizadores com o URL deixam de conseguir aceder.')) return;
+  const doRevogar = async (linkId) => {
+    setConfirmRevogarId(null);
     setRevogandoId(linkId);
     try {
       const { data, error } = await supabase.functions.invoke('share-link-revoke', { body: { link_id: linkId } });
@@ -60,19 +70,22 @@ export default function GerirLinksPartilhaModal({ isOpen, onClose }) {
       if (data?.error) throw new Error(data.error);
       await carregar();
     } catch (e) {
-      alert('Falhou: ' + (e.message || 'erro desconhecido'));
+      setErro('Falha ao revogar: ' + (e.message || 'erro desconhecido'));
     } finally {
       setRevogandoId(null);
     }
   };
 
   const copiar = (link) => {
-    const origin = window.location.origin;
-    const prefix = link.pasta_id ? '/p/' : '/s/';
+    const origin = baseUrl || window.location.origin;
+    const isSelecao = (link.aeroportos_ids?.length || link.pastas_ids?.length);
+    const prefix = isSelecao ? '/v/' : (link.pasta_id ? '/p/' : '/s/');
     const url = `${origin}${prefix}${link.token}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopiadoId(link.id);
-      setTimeout(() => setCopiadoId(null), 2000);
+    copyToClipboard(url).then((ok) => {
+      if (ok) {
+        setCopiadoId(link.id);
+        setTimeout(() => setCopiadoId(null), 2000);
+      }
     });
   };
 
@@ -91,6 +104,7 @@ export default function GerirLinksPartilhaModal({ isOpen, onClose }) {
   });
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -134,7 +148,14 @@ export default function GerirLinksPartilhaModal({ isOpen, onClose }) {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          {link.pasta_id ? (
+                          {(link.aeroportos_ids?.length || link.pastas_ids?.length) ? (
+                            <>
+                              <p className="font-medium text-slate-900 truncate">📚 Seleção</p>
+                              <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px]">
+                                {(link.aeroportos_ids?.length || 0)} aeroporto(s) · {(link.pastas_ids?.length || 0)} pasta(s)
+                              </Badge>
+                            </>
+                          ) : link.pasta_id ? (
                             <>
                               <p className="font-medium text-slate-900 truncate">📁 {link.pasta?.nome || '(pasta removida)'}</p>
                               <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">Pasta{link.recursivo ? ' (recursivo)' : ''}</Badge>
@@ -159,7 +180,7 @@ export default function GerirLinksPartilhaModal({ isOpen, onClose }) {
                           {copiadoId === link.id ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                         </Button>
                         {podeRevogar && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={() => revogar(link.id)} disabled={revogandoId === link.id} title="Revogar">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={() => setConfirmRevogarId(link.id)} disabled={revogandoId === link.id} title="Revogar">
                             {revogandoId === link.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                           </Button>
                         )}
@@ -177,5 +198,18 @@ export default function GerirLinksPartilhaModal({ isOpen, onClose }) {
         </div>
       </DialogContent>
     </Dialog>
+
+    <AlertModal
+      isOpen={!!confirmRevogarId}
+      onClose={() => setConfirmRevogarId(null)}
+      type="error"
+      title="Revogar link?"
+      message="O link deixa de funcionar imediatamente. Quem tiver o URL deixa de conseguir aceder. Esta acção não pode ser anulada."
+      confirmText="Revogar"
+      cancelText="Cancelar"
+      showCancel
+      onConfirm={() => doRevogar(confirmRevogarId)}
+    />
+    </>
   );
 }

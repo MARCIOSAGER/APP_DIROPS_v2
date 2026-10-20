@@ -15,7 +15,7 @@ export async function registrarAcessoDocumento({ documento_id, tipo_acesso }) {
     usuario_email: profile?.email || user.email,
     usuario_nome: profile?.full_name || user.email,
     tipo_acesso,
-    ip_address: 'client',
+    endereco_ip: 'client',
     data_hora_acesso: new Date().toISOString(),
     created_date: new Date().toISOString(),
   });

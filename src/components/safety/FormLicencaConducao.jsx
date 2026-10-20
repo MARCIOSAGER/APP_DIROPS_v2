@@ -116,7 +116,7 @@ export default function FormLicencaConducao({ isOpen, onClose, onSubmit, aeropor
   ];
   const aeroportoOptions = [
     { value: '', label: 'Selecione o aeroporto' },
-    ...aeroportos.map(a => ({ value: a.codigo_icao, label: `${a.nome} (${a.codigo_icao})` })),
+    ...aeroportos.map(a => ({ value: a.codigo_icao, label: `${a.codigo_icao} — ${a.nome}` })),
   ];
 
   return (

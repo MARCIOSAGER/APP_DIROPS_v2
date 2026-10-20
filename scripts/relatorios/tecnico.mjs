@@ -10,6 +10,7 @@ import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { serieColorList } from './_cores.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 let LOGO = null;
@@ -50,7 +51,7 @@ export async function gerarTecnicoPdf(tipo, per, dados, detalhe, h) {
   const _fatUsd = Number((dados.kpis || {}).faturacao_usd) || 0;
   const _fatAoa = Number((dados.kpis || {}).faturacao_aoa) || 0;
   const CAMBIO = _fatUsd > 0 ? (_fatAoa / _fatUsd) : 850;
-  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' });
   const PW = doc.internal.pageSize.getWidth(), PH = doc.internal.pageSize.getHeight();
   const M = 40, CW = PW - 2 * M;
   let y = 0;
@@ -124,6 +125,7 @@ export async function gerarTecnicoPdf(tipo, per, dados, detalhe, h) {
     const totalComp = comp.reduce((s, x) => s + x.usd, 0) || 1;
     const rh = 20;
     const cols = [ { t: 'Componente', w: CW - 210, a: 'left' }, { t: 'USD', w: 80, a: 'right' }, { t: 'AOA (Kz)', w: 90, a: 'right' }, { t: '%', w: 40, a: 'right' } ];
+    const coresComp = serieColorList(comp.map((x) => x.label));
     seccao('Decomposição da Faturação por Componente', rh + 4 * rh);
     setFill(C.primary); doc.rect(M, y, CW, rh, 'F');
     setText([203, 213, 225]); doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
@@ -134,7 +136,14 @@ export async function gerarTecnicoPdf(tipo, per, dados, detalhe, h) {
       const vals = [x.label, usd(x.usd), kzc(x.usd), (100 * x.usd / totalComp).toFixed(1).replace('.', ',') + '%'];
       cx = M; cols.forEach((c, ci) => {
         setText(ci === 0 ? C.ink : C.text); doc.setFont('helvetica', ci === 0 ? 'bold' : 'normal'); doc.setFontSize(9.5);
-        const tx = c.a === 'right' ? cx + c.w - 8 : cx + 8; doc.text(String(vals[ci]), tx, y + 13, { align: c.a }); cx += c.w;
+        if (ci === 0) {
+          // chip com a cor-padrão da série (igual à barra do relatório operacional)
+          setFill(coresComp[idx]); doc.roundedRect(cx + 8, y + 5, 9, 9, 2, 2, 'F');
+          setText(C.ink); doc.text(String(vals[ci]), cx + 23, y + 13);
+        } else {
+          const tx = c.a === 'right' ? cx + c.w - 8 : cx + 8; doc.text(String(vals[ci]), tx, y + 13, { align: c.a });
+        }
+        cx += c.w;
       });
       setDraw(C.line); doc.setLineWidth(0.5); doc.line(M, y + rh, M + CW, y + rh); y += rh;
     });
@@ -162,11 +171,13 @@ export async function gerarTecnicoPdf(tipo, per, dados, detalhe, h) {
   } else {
     const rh = 15, hh = 20;
     const cols = [
-      { t: 'Data', w: 46, a: 'left' }, { t: 'Voo', w: 46, a: 'left' }, { t: 'Aer', w: 30, a: 'left' },
-      { t: 'MTOW', u: 't', w: 40, a: 'right' }, { t: 'Estac', u: 'h', w: 42, a: 'right' },
-      { t: 'Pouso', u: 'USD', w: 48, a: 'right' }, { t: 'Perm', u: 'USD', w: 50, a: 'right' }, { t: 'Pax', u: 'USD', w: 50, a: 'right' }, { t: 'Outras', u: 'USD', w: 46, a: 'right' },
+      { t: 'Data', w: 52, a: 'left' }, { t: 'Voo', w: 50, a: 'left' }, { t: 'Aer', w: 32, a: 'left' }, { t: 'Companhia', w: 82, a: 'left' },
+      { t: 'MTOW', u: 't', w: 46, a: 'right' }, { t: 'Estac', u: 'h', w: 46, a: 'right' },
+      { t: 'Pouso', u: 'USD', w: 56, a: 'right' }, { t: 'Perm', u: 'USD', w: 58, a: 'right' }, { t: 'Pax', u: 'USD', w: 56, a: 'right' },
+      { t: 'Carga', u: 'USD', w: 52, a: 'right' }, { t: 'Outras', u: 'USD', w: 54, a: 'right' }, { t: 'Impostos', u: 'USD', w: 56, a: 'right' },
     ];
     cols.push({ t: 'Total', u: 'USD', w: CW - cols.reduce((s, c) => s + c.w, 0), a: 'right' });
+    const lastCol = cols.length - 1;
     const drawHead = () => {
       setFill(C.primary); doc.rect(M, y, CW, hh, 'F');
       let cx = M; cols.forEach((c) => {
@@ -181,11 +192,11 @@ export async function gerarTecnicoPdf(tipo, per, dados, detalhe, h) {
     detalhe.forEach((r, idx) => {
       if (y + rh > PH - 46) { y = newPage(); drawHead(); }
       if (idx % 2 === 0) { setFill(C.soft); doc.rect(M, y, CW, rh, 'F'); }
-      const vals = [String(r.data || '').slice(5), r.numero_voo, r.aeroporto,
+      const vals = [String(r.data || '').slice(5), r.numero_voo, r.aeroporto, String(r.companhia || '').slice(0, 14),
         String(Math.round(Number(r.mtow_t) || 0)), (Number(r.permanencia_h) || 0).toFixed(1).replace('.', ','),
-        fmt(r.pouso_usd), fmt(r.permanencia_usd), fmt(r.passageiros_usd), fmt(r.outras_usd), fmt(r.total_usd)];
+        fmt(r.pouso_usd), fmt(r.permanencia_usd), fmt(r.passageiros_usd), fmt(r.carga_usd), fmt(r.outras_usd), fmt(r.impostos_usd), fmt(r.total_usd)];
       let cx = M; cols.forEach((c, ci) => {
-        setText(ci === 9 ? C.ink : C.text); doc.setFont('helvetica', ci === 9 ? 'bold' : 'normal'); doc.setFontSize(7.5);
+        setText(ci === lastCol ? C.ink : C.text); doc.setFont('helvetica', ci === lastCol ? 'bold' : 'normal'); doc.setFontSize(7.5);
         const tx = c.a === 'right' ? cx + c.w - 6 : cx + 6; doc.text(String(vals[ci] == null ? '' : vals[ci]), tx, y + 10, { align: c.a }); cx += c.w;
       });
       y += rh;

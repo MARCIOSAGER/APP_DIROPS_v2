@@ -354,7 +354,7 @@ export default function TreinamentosLicencasTab({ aeroportos = [], user }) {
               <TableBody>
                 {licencasFiltradas.map(l => (
                   <TableRow key={l.id}>
-                    <TableCell className="font-medium">{l.nome_condutor}</TableCell>
+                    <TableCell className="font-medium">{l.nome_condutor}{l.certificado_id && <span className="ml-1.5 rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-800 dark:bg-violet-950/60 dark:text-violet-200" title="Criada ou renovada pela formação na Universidade Corporativa (DIROPS)">DIROPS</span>}</TableCell>
                     <TableCell>{l.entidade}</TableCell>
                     <TableCell className="max-w-[180px] truncate">{nomeAeroporto(l.aeroporto)}</TableCell>
                     <TableCell>{l.categoria}</TableCell>

@@ -201,6 +201,9 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
     const vooMap = new Map(voos.map(v => [v.id, v]));
     const vlMap = new Map(voosLigados.map(vl => [vl.id, vl]));
     return calculos.filter(calc => {
+      // Não conta tarifa de voo DELETADO (entidade não filtra deleted_at sozinha)
+      const pricedVoo = vooMap.get(calc.voo_id);
+      if (pricedVoo?.deleted_at) return false;
       // Only show calculos with complete ARR+DEP pair
       const vl = vlMap.get(calc.voo_ligado_id);
       if (!vl) return false;
@@ -502,7 +505,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
   ];
   const aeroportoOptions = [
     { value: '', label: t('dashFat.todosAeroportos') },
-    ...aeroportos.map(a => ({ value: a.id, label: `${a.nome} (${a.codigo_icao})` })),
+    ...aeroportos.map(a => ({ value: a.id, label: `${a.codigo_icao} — ${a.nome}` })),
   ];
 
   const companhiaNome = filtro.companhia_id === '_todas' ? 'Todas as Companhias' : (companhias.find(c => c.id === filtro.companhia_id)?.nome || '');
@@ -759,7 +762,7 @@ export default function DashboardFaturacao({ companhias, aeroportos }) {
                   <span className="font-bold text-emerald-800 text-lg">TOTAL GERAL</span>
                   <div className="text-right">
                     <p className="text-2xl font-bold text-emerald-700">${fmtNum(totals?.totalUsd)}</p>
-                    <p className="text-sm text-emerald-600">{fmtNum(totals?.totalUsd * (rows[0]?.calc?.taxa_cambio_usd_aoa || 900))} Kz</p>
+                    <p className="text-sm text-emerald-600">{fmtNum(totals?.totalUsd * (rows[0]?.calc?.taxa_cambio_usd_aoa || 850))} Kz</p>
                     <p className="text-xs text-slate-500">{rows.length} voos de {rowsByCompanhia.length} companhias</p>
                   </div>
                 </div>

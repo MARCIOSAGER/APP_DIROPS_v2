@@ -52,7 +52,7 @@ export default function VoosTab({
 
   const aeroportoOptions = useMemo(() => ([
     { value: 'todos', label: t('operacoes.todos_aeroportos') },
-    ...aeroportos.map(a => ({ value: a.codigo_icao, label: `${a.nome} (${a.codigo_icao})` }))
+    ...aeroportos.map(a => ({ value: a.codigo_icao, label: `${a.codigo_icao} — ${a.nome}` }))
   ]), [aeroportos, t]);
 
   const tipoMovimentoOptions = useMemo(() => [

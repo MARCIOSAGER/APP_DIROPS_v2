@@ -287,7 +287,13 @@ export default function Operacoes() {
         if (vooLigadoExistente) {
           try {
             const vooArrAtualizado = { ...savedVoo, ...vooData };
-            const vooDepAtualizado = voos.find(v => v.id === vooLigadoExistente.id_voo_dep);
+            let vooDepAtualizado = voos.find(v => v.id === vooLigadoExistente.id_voo_dep);
+            // Voo de partida ligado pode ser ANTIGO e estar fora do cache (~1000 voos ~15 dias):
+            // busca no servidor por id, senao o recalculo falha com "Dados incompletos".
+            if (!vooDepAtualizado && vooLigadoExistente.id_voo_dep) {
+              try { const r = await Voo.filter({ id: vooLigadoExistente.id_voo_dep }, null, 1); vooDepAtualizado = (r || [])[0] || null; }
+              catch (e) { console.warn('Falha ao buscar voo de partida p/ recalculo:', e?.message); }
+            }
             const aeroportoOp = todosAeroportos.find(a => a.codigo_icao === vooArrAtualizado?.aeroporto_operacao);
 
             if (vooArrAtualizado && vooDepAtualizado && aeroportoOp) {
@@ -401,15 +407,28 @@ export default function Operacoes() {
       proformasAtivas = pfs.filter(pf => pf.status !== 'cancelada' && pf.status !== 'paga');
     } catch (err) { console.warn('Operacao secundaria falhou:', err.message); }
 
+    // Aviso de brecha: apagar um voo VINCULADO deixa o par ORFAO (sem tarifa/faturacao).
+    // (Foi assim que o dedup de 2026-06-22 orfanou dezenas de partidas.)
+    let orfaoAviso = '';
+    try {
+      const linkAssoc = voosLigados.find(vl => vl.id_voo_arr === voo.id || vl.id_voo_dep === voo.id);
+      if (linkAssoc) {
+        const parceiroId = linkAssoc.id_voo_arr === voo.id ? linkAssoc.id_voo_dep : linkAssoc.id_voo_arr;
+        const parceiro = voos.find(v => v.id === parceiroId);
+        const parceiroTipo = voo.tipo_movimento === 'ARR' ? 'a partida' : 'a chegada';
+        orfaoAviso = `\n\n⚠️ ATENÇÃO: este voo está VINCULADO${parceiro ? ` a ${parceiroTipo} ${parceiro.numero_voo} (${parceiro.data_operacao})` : ''}. Ao excluir, o par ficará ÓRFÃO (sem tarifa/faturação). Se for duplicado, prefira religar o par à cópia correta.`;
+      }
+    } catch { /* aviso é best-effort */ }
+
     if (proformasAtivas.length > 0) {
       setCancelarProformaModal({
-        isOpen: true, proforma: proformasAtivas[0], descricao: t('proforma.descricao_cancel_voo'),
+        isOpen: true, proforma: proformasAtivas[0], descricao: `${t('proforma.descricao_cancel_voo')}${orfaoAviso}`,
         onConfirm: async (motivo) => { setCancelarProformaModal(prev => ({ ...prev, isOpen: false })); await doMoverLixeira(motivo); }
       });
     } else {
       setAlertInfo({
         isOpen: true, type: 'error', title: t('operacoes.mover_lixeira'),
-        message: `${voo.numero_voo}?`, showCancel: true, confirmText: t('operacoes.mover'),
+        message: `${voo.numero_voo}?${orfaoAviso}`, showCancel: true, confirmText: t('operacoes.mover'),
         onConfirm: async () => { setAlertInfo(prev => ({ ...prev, isOpen: false })); await doMoverLixeira('Movido para lixeira pelo utilizador.'); }
       });
     }
@@ -529,7 +548,8 @@ export default function Operacoes() {
   };
 
   const handleLinkarAutomatico = useCallback(async () => {
-    const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
+    // empId pode ser null p/ admin em vista "todas" -> fallback p/ o id dos dados (single-tenant).
+    const empId = empresaId || effectiveEmpresaIdRef.current || user?.empresa_id || voos?.[0]?.empresa_id;
     if (!empId) return;
     setIsLinkingAuto(true);
     try {
@@ -752,18 +772,10 @@ export default function Operacoes() {
   const handleConfirmarGerarProforma = async (dadosProforma) => {
     try {
       const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
-      const ano = new Date().getFullYear();
-      const prefixoProforma = `PF-${ano}-`;
-      const filterQuery = { numero_proforma: { $like: `${prefixoProforma}%` } };
-      if (empId) filterQuery.empresa_id = empId;
-      const proformasDoAno = await Proforma.filter(filterQuery);
-      const ultimaProformaDoAno = proformasDoAno.length > 0
-        ? proformasDoAno.sort((a, b) => parseInt(b.numero_proforma.split('-')[2]) - parseInt(a.numero_proforma.split('-')[2]))[0]
-        : null;
-
-      let proximoNumero = 1;
-      if (ultimaProformaDoAno) proximoNumero = parseInt(ultimaProformaDoAno.numero_proforma.split('-')[2]) + 1;
-      const numeroProforma = `${prefixoProforma}${String(proximoNumero).padStart(6, '0')}`;
+      // Número atómico e sequencial POR EMPRESA — RPC no servidor evita DUPLICADOS
+      // sob concorrência (antes: max+1 no cliente sobre lista truncada).
+      const { data: numeroProforma, error: numeroErr } = await supabase.rpc('proximo_numero_proforma', { p_empresa_id: empId || null });
+      if (numeroErr || !numeroProforma) throw new Error(`Não foi possível gerar o número da proforma: ${numeroErr?.message || 'sem resposta do servidor'}`);
 
       const proformaData = {
         ...dadosProforma,

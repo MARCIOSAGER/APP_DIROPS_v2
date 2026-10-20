@@ -223,7 +223,13 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="categoria">{t('checklist.categoria')}</Label>
-                  <Input id="categoria" value={formData.categoria} onChange={(e) => handleChange('categoria', e.target.value)} placeholder={t('checklist.categoriaPlaceholder')} required />
+                  {/* Combobox: sugere categorias já criadas (padronização) mas permite escrever uma nova */}
+                  <Input id="categoria" list="categorias-checklist" autoComplete="off" value={formData.categoria} onChange={(e) => handleChange('categoria', e.target.value)} placeholder={t('checklist.categoriaPlaceholder')} required />
+                  <datalist id="categorias-checklist">
+                    {[...new Set(items.map((i) => i.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt')).map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="ordem">{t('checklist.ordem')}</Label>
@@ -268,7 +274,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
           </div>
 
           {/* Tabela de Itens */}
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-4 overflow-hidden min-h-0">
             <div className="flex items-center justify-between border-b pb-2">
               <h3 className="text-lg font-semibold">{t('checklist.itensConfigurados')} ({items.length})</h3>
               <div className="flex gap-2">
@@ -289,7 +295,7 @@ export default function ManageChecklistItemsModal({ isOpen, onClose, tipoInspeca
                 />
               </div>
             </div>
-            <div className="overflow-y-auto border rounded-lg">
+            <div className="flex-1 min-h-0 overflow-y-auto border rounded-lg">
               {isLoading ? (
                 <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-slate-400"/></div>
               ) : (

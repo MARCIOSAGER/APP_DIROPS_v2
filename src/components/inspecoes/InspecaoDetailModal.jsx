@@ -55,7 +55,11 @@ export default function InspecaoDetailModal({ isOpen, onClose, inspecao, tipoIns
       ]);
       
       setRespostas(respostasData);
-      setItensChecklist(itensData);
+      // Mostrar só os itens REALMENTE inspecionados (com resposta). Se ainda não há
+      // respostas, mostrar os ativos (evita itens antigos/desativados na lista).
+      const respondidosIds = new Set(respostasData.map((r) => r.item_checklist_id));
+      const respondidos = itensData.filter((it) => respondidosIds.has(it.id));
+      setItensChecklist(respondidos.length ? respondidos : itensData.filter((it) => it.status === 'ativo'));
     } catch (error) {
       console.error('Erro ao carregar detalhes da inspeção:', error);
     } finally {

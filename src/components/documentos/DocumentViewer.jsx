@@ -27,6 +27,7 @@ export default function DocumentViewer({ isOpen, onClose, documento, aeroportos 
   const [isDownloading, setIsDownloading] = useState(false);
   const [signedUrl, setSignedUrl] = useState(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
   const [user, setUser] = useState(null);
   
   useEffect(() => {
@@ -74,9 +75,14 @@ export default function DocumentViewer({ isOpen, onClose, documento, aeroportos 
           return;
         }
         
-        // Para visualização, SEMPRE usar arquivo_url (público)
-        // Signed URLs forçam download, não servem para preview
-        setSignedUrl(null);
+        // Documentos privados: URL assinada (o backend serve inline, por isso serve para pré-visualização e download)
+        if (documento.usar_storage_privado || documento.arquivo_privado_uri) {
+          const { obterUrlAssinadaDocumento } = await import('@/functions/obterUrlAssinadaDocumento');
+          const r = await obterUrlAssinadaDocumento({ documento_id: documento.id });
+          setSignedUrl(r?.url || null);
+        } else {
+          setSignedUrl(null);
+        }
       } catch (error) {
         console.error('Erro ao carregar documento:', error);
       } finally {
@@ -150,7 +156,7 @@ export default function DocumentViewer({ isOpen, onClose, documento, aeroportos 
         }
       } else {
         // Download normal de arquivo público
-        const downloadUrl = documento.arquivo_url;
+        const downloadUrl = signedUrl || documento.arquivo_url;
 
         if (!downloadUrl) {
           alert('URL do documento não disponível');
@@ -186,6 +192,35 @@ export default function DocumentViewer({ isOpen, onClose, documento, aeroportos 
   };
 
   const displayUrl = signedUrl || documento?.arquivo_url;
+  // Extensao do ficheiro: PDF renderiza nativo no navegador (same-origin, on-premise);
+  // Word/Excel nao abrem inline sem servico externo -> oferecer Descarregar/Nova Aba.
+  const previewExt = ((documento?.arquivo_url || documento?.arquivo_privado_uri || '').split('?')[0].split('.').pop() || '').toLowerCase();
+  const isPdfPreview = previewExt === 'pdf';
+
+  // Pre-visualizacao de PDF: buscar via fetch same-origin e renderizar por blob: URL.
+  // O browser mostra o PDF nativo SEM depender de servico externo (Google Docs Viewer,
+  // que nao alcanca o IP interno) NEM dos headers do servidor (X-Frame-Options nao se
+  // aplica a blob:). Substitui o antigo iframe docs.google.com/viewer.
+  useEffect(() => {
+    if (!isOpen || !isPdfPreview || !displayUrl) { setPdfBlobUrl(null); return; }
+    let objUrl = null;
+    let cancelled = false;
+    setPdfBlobUrl(null);
+    (async () => {
+      try {
+        const resp = await fetch(displayUrl);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const blob = await resp.blob();
+        objUrl = URL.createObjectURL(blob);
+        if (cancelled) { URL.revokeObjectURL(objUrl); return; }
+        setPdfBlobUrl(objUrl);
+      } catch (e) {
+        console.error('Erro ao carregar PDF para pre-visualizacao:', e);
+        if (!cancelled) setPdfBlobUrl(null);
+      }
+    })();
+    return () => { cancelled = true; if (objUrl) URL.revokeObjectURL(objUrl); };
+  }, [isOpen, isPdfPreview, displayUrl]);
 
   if (!documento) return null;
 
@@ -305,15 +340,35 @@ export default function DocumentViewer({ isOpen, onClose, documento, aeroportos 
                 </div>
               </div>
             </div>
-          ) : documento.arquivo_url ? (
-            <div className="w-full h-full rounded-lg overflow-hidden bg-slate-100">
-              <iframe
-                src={`https://docs.google.com/viewer?url=${encodeURIComponent(documento.arquivo_url)}&embedded=true`}
-                className="w-full h-full border-0"
-                style={{ minHeight: '600px' }}
-                title="Visualizador de documento"
-              />
-            </div>
+          ) : (documento.arquivo_url || documento.arquivo_privado_uri) ? (
+            isPdfPreview ? (
+              <div className="w-full h-full rounded-lg overflow-hidden bg-slate-100">
+                {pdfBlobUrl ? (
+                  <iframe
+                    src={pdfBlobUrl}
+                    className="w-full h-full border-0"
+                    style={{ minHeight: '600px' }}
+                    title="Visualizador de documento"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full" style={{ minHeight: '600px' }}>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full bg-slate-50 rounded-lg">
+                <div className="text-center p-8 max-w-md">
+                  <FileText className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                    Pré-visualização não disponível para {previewExt ? previewExt.toUpperCase() : 'este tipo'}
+                  </h3>
+                  <p className="text-slate-500 mb-4">
+                    Ficheiros Word/Excel não abrem diretamente no navegador. Use <strong>Descarregar</strong> ou <strong>Nova Aba</strong> acima para abrir no Office.
+                  </p>
+                </div>
+              </div>
+            )
           ) : (
             <div className="flex items-center justify-center h-full bg-slate-50 rounded-lg">
               <div className="text-center">

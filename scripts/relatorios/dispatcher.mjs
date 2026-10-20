@@ -30,9 +30,12 @@ const ARGS = {
   pronto_pagamento: [],   // o gerador-pp calcula o período (seg cobre sex→dom)
   chegadas_abertas: [],   // backlog de chegadas sem partida (o gerador calcula tudo)
   docs_a_expirar: [],     // GED: documentos com data_expiracao proxima ou expirada
+  formacao_semanal: [],   // Universidade Corporativa: matriz colaborador x curso + alertas (Excel anexo)
+  formacao_notificacoes: [], // Universidade Corporativa: emails individuais aos colaboradores (inscrição, lembretes, expiração)
+  documentos_avisos: [],  // Portal de Documentos: emails individuais (documentos novos, leituras por confirmar, aprovações, validade)
 };
 // chave -> script (default gerar-relatorio.mjs). PP e chegadas usam geradores próprios.
-const SCRIPT = { pronto_pagamento: 'gerar-relatorio-pp.mjs', chegadas_abertas: 'chegadas-abertas.mjs', docs_a_expirar: 'docs-a-expirar.mjs' };
+const SCRIPT = { pronto_pagamento: 'gerar-relatorio-pp.mjs', chegadas_abertas: 'chegadas-abertas.mjs', docs_a_expirar: 'docs-a-expirar.mjs', formacao_semanal: 'formacao.mjs', formacao_notificacoes: 'formacao-notificacoes.mjs', documentos_avisos: 'documentos-notificacoes.mjs' };
 
 const pad = (n) => String(n).padStart(2, '0');
 const log = (m) => console.log(`[dispatcher ${new Date().toISOString()}]${DRY ? ' (DRY)' : ''} ${m}`);
@@ -58,6 +61,20 @@ const log = (m) => console.log(`[dispatcher ${new Date().toISOString()}]${DRY ? 
   }
 
   try {
+    // Portal de Documentos: trabalhos que contam o tempo e não dependem de nenhuma agenda (migrações 152/153).
+    // Corre a cada passagem (15 min) porque é disso que precisa a data de entrada em vigor agendada: na data
+    // marcada a revisão nova entra sozinha e a anterior passa a obsoleta, sem ninguém clicar. A própria função
+    // trava as propostas de retenção a uma vez por dia. É idempotente: repetir não faz mal.
+    // NADA é apagado aqui — a retenção só PROPÕE; a eliminação é autorizada por uma pessoa, no portal.
+    if (!DRY) {
+      try {
+        const r = await fetch(`${PGRST}/rpc/documentos_tarefas_periodicas`, { method: 'POST', headers: HDR, body: '{}' });
+        if (!r.ok) throw new Error(`HTTP ${r.status} — ${await r.text()}`);
+        const res = await r.json();
+        log(`portal-documentos: vigor aplicado=${res?.vigor_aplicado ?? 0} eliminações propostas=${res?.eliminacoes_propostas ?? (res?.retencao_ja_corrida_hoje ? 'já hoje' : 0)}`);
+      } catch (e) { log('AVISO tarefas do Portal de Documentos: ' + e.message); }
+    }
+
     let jobs;
     try {
       const r = await fetch(`${PGRST}/relatorio_agenda?select=*&ativo=eq.true`, { headers: HDR });

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" width="1000" height="520" font-family="Segoe UI, Arial, sans-serif" role="img" aria-labelledby="t">
+  <title id="t">Anatomia de um cartão do catálogo: capa, categoria e nível, título, duração, módulos e aulas, distintivo de obrigatório e estado</title>
+  <rect width="1000" height="520" fill="#f4f6fa"/>
+  <!-- cartão -->
+  <rect x="60" y="40" width="360" height="440" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+  <rect x="60" y="40" width="360" height="150" rx="16" fill="#1e3a5f"/><rect x="60" y="160" width="360" height="30" fill="#1e3a5f"/>
+  <circle cx="330" cy="110" r="40" fill="#a1823a" opacity=".9"/><path d="M300 118 l60 -36" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  <rect x="76" y="206" width="88" height="22" rx="6" fill="#e2e8f0"/><text x="88" y="221" font-size="11" fill="#334155">Operações</text>
+  <rect x="172" y="206" width="84" height="22" rx="6" fill="#ffffff" stroke="#cbd5e1"/><text x="184" y="221" font-size="11" fill="#334155">Intermédio</text>
+  <text x="76" y="262" font-size="20" font-weight="700" fill="#0f172a">Global Reporting Format</text>
+  <text x="76" y="286" font-size="20" font-weight="700" fill="#0f172a">(GRF)</text>
+  <text x="76" y="316" font-size="12" fill="#64748b">Aprenda a avaliar e a reportar a condição da pista…</text>
+  <text x="76" y="352" font-size="12" fill="#334155">⏱ 9 h   ▤ 8 módulos   ☑ 24 aulas</text>
+  <rect x="76" y="372" width="96" height="24" rx="6" fill="#f59e0b"/><text x="90" y="389" font-size="12" fill="#fff" font-weight="700">Obrigatório</text>
+  <rect x="180" y="372" width="120" height="24" rx="6" fill="#fef3c7"/><text x="190" y="389" font-size="12" fill="#92400e">prazo: 30 dias</text>
+  <rect x="76" y="420" width="328" height="40" rx="10" fill="#1e3a5f"/><text x="196" y="446" font-size="14" fill="#fff" font-weight="700">Inscrever-se</text>
+  <!-- anotações -->
+  <g font-size="14" fill="#1e3a5f" font-weight="700">
+    <text x="520" y="90">1 · Capa e categoria</text>
+    <text x="520" y="180">2 · Nível</text>
+    <text x="520" y="250">3 · Título e resumo</text>
+    <text x="520" y="330">4 · Duração e estrutura</text>
+    <text x="520" y="400">5 · Obrigatório e prazo</text>
+    <text x="520" y="460">6 · Botão de acção</text>
+  </g>
+  <g font-size="12" fill="#334155">
+    <text x="520" y="110">a cor e a imagem identificam a área (Operações, Safety…)</text>
+    <text x="520" y="200">iniciante, intermédio ou avançado — ajuda a escolher por onde começar</text>
+    <text x="520" y="270">o que vai aprender; clique no cartão para ver o programa completo</text>
+    <text x="520" y="350">horas calculadas pela soma das aulas; módulos = capítulos, aulas = passos</text>
+    <text x="520" y="420">só aparece se o curso é obrigatório para o seu perfil; o prazo conta desde a inscrição</text>
+    <text x="520" y="480">"Inscrever-se", "Continuar" (já inscrito) ou "Recertificar" (validade a terminar)</text>
+  </g>
+  <g stroke="#a1823a" stroke-width="2" fill="none" stroke-dasharray="4 3">
+    <path d="M420 100 H510"/><path d="M420 217 H510"/><path d="M420 270 H510"/><path d="M420 348 H510"/><path d="M420 384 H510"/><path d="M420 440 H510"/>
+  </g>
+</svg>

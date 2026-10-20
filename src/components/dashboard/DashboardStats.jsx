@@ -181,7 +181,9 @@ export default function DashboardStats({ voos, ocorrencias, inspecoes, calculosT
       icon: Clock,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      trendNode: <TrendIndicator trend={trends?.pontualidade} />,
+      // Sem trend: pontualidade é uma TAXA (%), e o calcTrend (feito p/ contagens,
+      // subtrai a janela dobro) produz valores absurdos (ex.: +622%) para taxas.
+      trendNode: null,
     },
     {
       title: t('dashboard.revenue'),

@@ -19,6 +19,7 @@ import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { useI18n } from '@/components/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { useEmpresas } from '@/hooks/useEmpresas';
+import { useRegrasPermissao } from '@/hooks/useRegrasPermissao';
 
 export default function SolicitacaoPerfil() {
   const { t } = useI18n();
@@ -31,6 +32,7 @@ export default function SolicitacaoPerfil() {
     enabled: !shouldRedirect,
   });
   const empresas = allEmpresas.filter(e => e.status === 'ativa');
+  const { data: regrasPerfis = [] } = useRegrasPermissao({ enabled: !shouldRedirect });
 
   const [aeroportos, setAeroportos] = useState([]);
   const [isLoadingAeroportos, setIsLoadingAeroportos] = useState(true);
@@ -173,12 +175,21 @@ export default function SolicitacaoPerfil() {
     });
   };
 
-  const perfilOptions = [
+  // Perfis de sistema oferecidos na auto-solicitação (NÃO inclui administrador — ninguém se auto-atribui admin).
+  const perfisBase = [
     { value: 'operacoes', label: 'Operações' },
     { value: 'safety', label: 'Safety' },
     { value: 'infraestrutura', label: 'Infraestrutura' },
     { value: 'credenciamento', label: 'Credenciamento' },
     { value: 'gestor_empresa', label: 'Gestor de Empresa' }
+  ];
+  // Perfis personalizados criados em Gestão de Permissões (o admin aprova cada pedido na mesma).
+  const PERFIS_SISTEMA = ['administrador', 'operacoes', 'infraestrutura', 'credenciamento', 'gestor_empresa', 'safety', 'visualizador'];
+  const perfilOptions = [
+    ...perfisBase,
+    ...regrasPerfis
+      .filter(r => r.perfil && !PERFIS_SISTEMA.includes(r.perfil))
+      .map(r => ({ value: r.perfil, label: r.label || r.perfil })),
   ];
 
   const empresaOptions = empresas.map(e => ({

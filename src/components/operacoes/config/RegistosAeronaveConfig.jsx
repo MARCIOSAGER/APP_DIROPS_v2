@@ -357,6 +357,18 @@ export default function RegistosAeronaveConfig({ registos, modelos, companhias, 
       if (editingRegisto) {
         await RegistoAeronave.update(editingRegisto.id, dataFromForm);
         savedRegisto = { ...editingRegisto, ...dataFromForm };
+        // Notificação de EDIÇÃO por email (respeita o interruptor em Config Gerais)
+        try {
+          const modelo = modelos.find(m => m.id === dataFromForm.id_modelo_aeronave);
+          const companhia = companhias.find(c => c.id === dataFromForm.id_companhia_aerea);
+          const { notifyAdminsUpdate } = await import('@/components/lib/notificacoes');
+          await notifyAdminsUpdate('registo', savedRegisto, currentUser, {
+            modeloNome: modelo?.modelo || 'N/A',
+            companhiaNome: companhia?.nome || 'N/A'
+          });
+        } catch (emailError) {
+          console.error('Erro ao enviar notificação de edição por email:', emailError);
+        }
         setAlertInfo({
           isOpen: true,
           type: 'success',

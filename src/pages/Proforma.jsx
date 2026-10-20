@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ import {
 "@/components/ui/dropdown-menu";
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { fmtData } from '@/lib/safeDate';
 import Select from '@/components/ui/select';
 
 import { Proforma } from '@/entities/Proforma';
@@ -314,24 +316,11 @@ export default function ProformaPage() {
       const items = dadosProforma._items || [];
       delete dadosProforma._items;
 
-      // Generate sequential proforma number (per empresa).
-      // Usa o MESMO empId do filtro da lista (empresaIdFiltro) para a numeracao
-      // bater com as proformas carregadas e nao reiniciar a sequencia.
-      const anoAtual = new Date().getFullYear();
+      // Número atómico e sequencial POR EMPRESA — a RPC no servidor evita números
+      // DUPLICADOS sob concorrência (antes: maxSeq+1 no cliente sobre lista truncada).
       const empId = effectiveEmpresaId || currentUser?.empresa_id;
-      const proformasAno = proformas.filter(p =>
-        p.numero_proforma?.startsWith(`PF-${anoAtual}`) &&
-        (!empId || p.empresa_id === empId)
-      );
-      let maxSeq = 0;
-      proformasAno.forEach(p => {
-        const parts = p.numero_proforma?.split('-');
-        if (parts?.length === 3) {
-          const seq = parseInt(parts[2], 10);
-          if (seq > maxSeq) maxSeq = seq;
-        }
-      });
-      const numeroProforma = `PF-${anoAtual}-${String(maxSeq + 1).padStart(6, '0')}`;
+      const { data: numeroProforma, error: numeroErr } = await supabase.rpc('proximo_numero_proforma', { p_empresa_id: empId || null });
+      if (numeroErr || !numeroProforma) throw new Error(`Não foi possível gerar o número da proforma: ${numeroErr?.message || 'sem resposta do servidor'}`);
 
       // Create the proforma record
       const proformaData = {
@@ -442,7 +431,7 @@ export default function ProformaPage() {
 
   const aeroportoOptions = [
   { value: 'todos', label: t('proforma.all_airports') },
-  ...aeroportos.map((a) => ({ value: a.id, label: `${a.nome} (${a.codigo_icao})` }))];
+  ...aeroportos.map((a) => ({ value: a.id, label: `${a.codigo_icao} — ${a.nome}` }))];
 
 
   const statusOptions = [
@@ -766,10 +755,10 @@ export default function ProformaPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {format(parseISO(proforma.data_emissao), 'dd MMM yyyy', { locale: pt })}
+                            {fmtData(proforma.data_emissao, 'dd MMM yyyy')}
                           </TableCell>
                           <TableCell>
-                            {format(parseISO(proforma.data_vencimento), 'dd MMM yyyy', { locale: pt })}
+                            {fmtData(proforma.data_vencimento, 'dd MMM yyyy')}
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-col">

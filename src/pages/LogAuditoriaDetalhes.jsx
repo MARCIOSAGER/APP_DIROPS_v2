@@ -19,6 +19,7 @@ import { LogAuditoria } from '@/entities/LogAuditoria';
 import { hasUserProfile, isAdminProfile } from '@/components/lib/userUtils';
 import { useAuth } from '@/lib/AuthContext';
 import { useI18n } from '@/components/lib/i18n';
+import { copyToClipboard as copyText } from '@/lib/utils';
 
 const ACTION_COLORS = {
   criar: 'bg-green-100 text-green-800',
@@ -116,10 +117,12 @@ export default function LogAuditoriaDetalhesPage() {
     }
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async (text) => {
+    const ok = await copyText(text);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   if (isLoading) {

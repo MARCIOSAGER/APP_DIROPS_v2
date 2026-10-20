@@ -58,6 +58,7 @@ export default function UtilizadoresTab({
   aeroportos,
   empresas,
   currentUser,
+  aprovacaoPorUser = {},
   isLoading,
   sendingInvite,
   sendingBatch,
@@ -174,7 +175,7 @@ export default function UtilizadoresTab({
 
   const aeroportoOptions = useMemo(() => [
     { value: 'todos', label: 'Todos os Aeroportos' },
-    ...aeroportos.map(a => ({ value: a.codigo_icao, label: `${a.nome} (${a.codigo_icao})` }))
+    ...aeroportos.map(a => ({ value: a.codigo_icao, label: `${a.codigo_icao} — ${a.nome}` }))
   ], [aeroportos]);
 
   const empresaOptions = useMemo(() => [
@@ -528,6 +529,17 @@ export default function UtilizadoresTab({
                     }>
                       {STATUS_CONFIG[user.status || 'desconhecido']?.label || 'Desconhecido'}
                     </Badge>
+                    {(() => {
+                      const a = aprovacaoPorUser[user.id] || aprovacaoPorUser[user.email];
+                      if (!a) return null;
+                      const dt = a.data_resposta ? new Date(a.data_resposta).toLocaleDateString('pt-AO') : '';
+                      const verbo = a.status === 'rejeitado' ? 'Rejeitado' : 'Aprovado';
+                      return (
+                        <div className="text-xs text-slate-400 dark:text-slate-500 mt-1 whitespace-nowrap">
+                          {verbo} por {a.aprovado_por}{dt ? ` · ${dt}` : ''}
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     <div className="text-sm text-slate-500 dark:text-slate-400">

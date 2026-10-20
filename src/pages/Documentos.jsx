@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, FileText, Upload, FileDown, BookOpen, BarChart2, FolderUp, Home, ChevronRight, FolderPlus, Grid3x3, List, Link2 } from 'lucide-react';
+import { RefreshCw, FileText, Upload, FileDown, BookOpen, BarChart2, FolderUp, Home, ChevronRight, FolderPlus, Grid3x3, List, Link2, Library } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 import { Documento } from '@/entities/Documento';
@@ -16,6 +16,7 @@ import FormDocumento from '../components/documentos/FormDocumento';
 import UploadMassaModal from '../components/documentos/UploadMassaModal';
 import GerirLinksPartilhaModal from '../components/documentos/GerirLinksPartilhaModal';
 import CriarLinkPartilhaModal from '../components/documentos/CriarLinkPartilhaModal';
+import PartilharSelecaoModal from '../components/documentos/PartilharSelecaoModal';
 import BuscaInteligente from '../components/documentos/BuscaInteligente';
 import DragDropUpload from '../components/documentos/DragDropUpload';
 import PastaCard from '../components/documentos/PastaCard';
@@ -59,6 +60,7 @@ export default function Documentos() {
   const [editingDocumento, setEditingDocumento] = useState(null);
   const [isUploadMassaOpen, setIsUploadMassaOpen] = useState(false);
   const [isGerirLinksOpen, setIsGerirLinksOpen] = useState(false);
+  const [isPartilharSelecaoOpen, setIsPartilharSelecaoOpen] = useState(false);
   const [linkPartilhaPasta, setLinkPartilhaPasta] = useState(null);
   const [buscaInteligente, setBuscaInteligente] = useState(null);
   const [pastaAtual, setPastaAtual] = useState(null);
@@ -66,6 +68,8 @@ export default function Documentos() {
   const [isFormPastaOpen, setIsFormPastaOpen] = useState(false);
   const [editingPasta, setEditingPasta] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
+  const [draggedPastaId, setDraggedPastaId] = useState(null);
+  const [dragOverPastaId, setDragOverPastaId] = useState(null); // id da pasta-alvo, ou 'raiz'
   const [isMoverModalOpen, setIsMoverModalOpen] = useState(false);
   const [movingDocumento, setMovingDocumento] = useState(null);
   const [aeroportoFilter, setAeroportoFilter] = useState('todos');
@@ -223,7 +227,7 @@ export default function Documentos() {
       'Data de Publicação': doc.data_publicacao,
       'Status': doc.status,
       'Aeroporto': doc.aeroporto || 'Geral',
-      'URL': doc.arquivo_url
+      'Ficheiro': doc.usar_storage_privado || doc.arquivo_privado_uri ? 'Privado (abrir na biblioteca)' : doc.arquivo_url || ''
     }));
     const ok = downloadAsCSV(dataToExport, `biblioteca_documentos_${new Date().toISOString().split('T')[0]}`);
     if (!ok) {
@@ -383,11 +387,11 @@ export default function Documentos() {
         setCaminhoPasta([...caminhoPasta, senhaModal.pasta]);
         setSenhaModal({ isOpen: false, pasta: null, tipo: 'pasta' });
       } else {
-        alert('Senha incorreta. Tente novamente.');
+        setSuccessModal({ isOpen: true, type: 'error', message: 'Senha incorreta. Tente novamente.' });
       }
     } catch (error) {
       console.error('Erro ao validar senha:', error);
-      alert('Erro ao validar senha. Tente novamente.');
+      setSuccessModal({ isOpen: true, type: 'error', message: 'Erro ao validar a senha. Se o problema persistir, edite a pasta para redefinir a senha.' });
     }
   };
 
@@ -493,6 +497,47 @@ export default function Documentos() {
     return pasta.created_by === currentUser.email;
   };
 
+  // Arrastar-e-soltar de pastas: mover uma pasta para dentro de outra (ou para a raiz).
+  // ehDescendente sobe do alvo ate a raiz; se passar pela pasta arrastada, seria um ciclo.
+  const ehDescendente = (ancestorId, alvoId) => {
+    let cur = alvoId ? pastas.find(p => p.id === alvoId) : null;
+    const seen = new Set();
+    while (cur && !seen.has(cur.id)) {
+      if (cur.id === ancestorId) return true;
+      seen.add(cur.id);
+      cur = cur.pasta_pai_id ? pastas.find(p => p.id === cur.pasta_pai_id) : null;
+    }
+    return false;
+  };
+
+  const handleMoverPasta = async (dragId, destinoId) => {
+    setDragOverPastaId(null);
+    setDraggedPastaId(null);
+    if (!dragId) return;
+    const destino = destinoId || null;
+    const pasta = pastas.find(p => p.id === dragId);
+    if (!pasta) return;
+    if ((pasta.pasta_pai_id || null) === destino) return; // ja esta la
+    if (destino === dragId || ehDescendente(dragId, destino)) {
+      setSuccessModal({ isOpen: true, type: 'error', message: 'Não pode mover uma pasta para dentro de si mesma ou de uma subpasta.' });
+      return;
+    }
+    try {
+      await Pasta.update(dragId, { pasta_pai_id: destino });
+      const pastasData = await Pasta.list();
+      setPastas(pastasData);
+    } catch (e) {
+      setSuccessModal({ isOpen: true, type: 'error', message: 'Falha ao mover a pasta: ' + (e.message || 'erro') });
+    }
+  };
+
+  const dropProps = (destinoId, chave) => ({
+    onDragOver: (e) => { if (draggedPastaId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } },
+    onDragEnter: () => { if (draggedPastaId) setDragOverPastaId(chave); },
+    onDragLeave: () => setDragOverPastaId(prev => (prev === chave ? null : prev)),
+    onDrop: (e) => { e.preventDefault(); const id = e.dataTransfer.getData('text/pasta') || draggedPastaId; handleMoverPasta(id, destinoId); },
+  });
+
   const pastasVisiveis = pastas
     .filter(p => p.pasta_pai_id === (pastaAtual?.id || null))
     .sort((a, b) => (a.ordem || 0) - (b.ordem || 0) || a.nome.localeCompare(b.nome));
@@ -559,6 +604,10 @@ export default function Documentos() {
             <Button variant="outline" onClick={() => setIsUploadMassaOpen(true)} className="border-purple-300 text-purple-700 hover:bg-purple-50">
               <FolderUp className="w-4 h-4 mr-2" />
               {t('documentos.uploadMassa')}
+            </Button>
+            <Button variant="outline" onClick={() => setIsPartilharSelecaoOpen(true)} className="border-indigo-300 text-indigo-700 hover:bg-indigo-50">
+              <Library className="w-4 h-4 mr-2" />
+              Partilhar seleção
             </Button>
             <Button variant="outline" onClick={() => setIsGerirLinksOpen(true)} className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
               <Link2 className="w-4 h-4 mr-2" />
@@ -663,7 +712,8 @@ export default function Documentos() {
           <div className="flex items-center gap-2 text-sm">
             <button
               onClick={() => handleVoltarPasta(-1)}
-              className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+              {...dropProps(null, 'raiz')}
+              className={`flex items-center gap-1 text-blue-600 hover:text-blue-700 rounded px-1 ${dragOverPastaId === 'raiz' ? 'ring-2 ring-indigo-500 bg-indigo-50' : ''}`}
             >
               <Home className="w-4 h-4" />
               {t('documentos.raiz')}
@@ -673,7 +723,8 @@ export default function Documentos() {
                 <ChevronRight className="w-4 h-4 text-slate-400" />
                 <button
                   onClick={() => handleVoltarPasta(index)}
-                  className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                  {...dropProps(pasta.id, `bc-${pasta.id}`)}
+                  className={`text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 rounded px-1 ${dragOverPastaId === `bc-${pasta.id}` ? 'ring-2 ring-indigo-500 bg-indigo-50' : ''}`}
                 >
                   {pasta.nome}
                 </button>
@@ -705,24 +756,33 @@ export default function Documentos() {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               {t('documentos.pastas')}
+              <span className="text-xs font-normal text-slate-400">· arraste uma pasta para dentro de outra, ou para a Raiz, para reorganizar</span>
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className={viewMode === 'list' ? 'grid grid-cols-1 gap-2' : 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4'}>
               {pastasVisiveis.map(pasta => {
                 const numSubpastas = pastas.filter(p => p.pasta_pai_id === pasta.id).length;
                 const numDocumentos = documentos.filter(d => d.pasta_id === pasta.id).length;
                 
                 return (
-                  <PastaCard
+                  <div
                     key={pasta.id}
-                    pasta={pasta}
-                    numSubpastas={numSubpastas}
-                    numDocumentos={numDocumentos}
-                    onOpen={handleAbrirPasta}
-                    onEdit={(p) => { setEditingPasta(p); setIsFormPastaOpen(true); }}
-                    onDelete={handleDeletePasta}
-                    onPartilhar={setLinkPartilhaPasta}
-                    canDelete={canDeleteFolder(pasta)}
-                  />
+                    draggable
+                    onDragStart={(e) => { e.dataTransfer.setData('text/pasta', pasta.id); e.dataTransfer.effectAllowed = 'move'; setDraggedPastaId(pasta.id); }}
+                    onDragEnd={() => { setDraggedPastaId(null); setDragOverPastaId(null); }}
+                    {...dropProps(pasta.id, pasta.id)}
+                    className={`rounded-lg transition ${dragOverPastaId === pasta.id ? 'ring-2 ring-indigo-500 ring-offset-2' : ''} ${draggedPastaId === pasta.id ? 'opacity-40' : ''}`}
+                  >
+                    <PastaCard
+                      pasta={pasta}
+                      numSubpastas={numSubpastas}
+                      numDocumentos={numDocumentos}
+                      onOpen={handleAbrirPasta}
+                      onEdit={(p) => { setEditingPasta(p); setIsFormPastaOpen(true); }}
+                      onDelete={handleDeletePasta}
+                      onPartilhar={setLinkPartilhaPasta}
+                      canDelete={canDeleteFolder(pasta)}
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -817,6 +877,13 @@ export default function Documentos() {
       <GerirLinksPartilhaModal
         isOpen={isGerirLinksOpen}
         onClose={() => setIsGerirLinksOpen(false)}
+      />
+
+      <PartilharSelecaoModal
+        isOpen={isPartilharSelecaoOpen}
+        onClose={() => setIsPartilharSelecaoOpen(false)}
+        aeroportos={aeroportos}
+        pastas={pastas}
       />
 
       {/* Modal para partilhar pasta com auditores/ANAC */}

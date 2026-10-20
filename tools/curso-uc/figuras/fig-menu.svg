@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" width="1000" height="560" font-family="Segoe UI, Arial, sans-serif" role="img" aria-labelledby="t">
+  <title id="t">Onde fica a Universidade Corporativa no DIROPS: menu Formação à esquerda e os quatro separadores da área do aluno</title>
+  <rect width="1000" height="560" fill="#f4f6fa"/>
+  <!-- barra lateral -->
+  <rect x="0" y="0" width="230" height="560" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="24" y="44" font-size="26" font-weight="700" fill="#1e3a5f">SGA</text>
+  <text x="24" y="64" font-size="10" fill="#64748b">SOCIEDADE GESTORA DE AEROPORTOS</text>
+  <g font-size="13" fill="#334155">
+    <text x="24" y="110">Dashboard</text>
+    <text x="24" y="140">OPERAÇÕES</text>
+    <text x="24" y="170">FINANCEIRO</text>
+    <text x="24" y="200">SAFETY &amp; QUALIDADE</text>
+    <text x="24" y="230">RELATÓRIOS</text>
+    <text x="24" y="260">DOCUMENTOS</text>
+  </g>
+  <rect x="10" y="278" width="210" height="32" rx="8" fill="#eef2ff"/>
+  <text x="24" y="299" font-size="13" font-weight="700" fill="#1e3a5f">FORMAÇÃO</text>
+  <text x="200" y="299" font-size="13" fill="#1e3a5f">⌄</text>
+  <rect x="18" y="316" width="196" height="40" rx="8" fill="#dbe4ff"/>
+  <text x="34" y="334" font-size="13" font-weight="700" fill="#1e3a5f">Universidade</text>
+  <text x="34" y="350" font-size="13" font-weight="700" fill="#1e3a5f">Corporativa</text>
+  <text x="34" y="384" font-size="13" fill="#334155">Gestão de Formação</text>
+  <text x="34" y="404" font-size="10" fill="#94a3b8">(só instrutores e administradores)</text>
+  <text x="24" y="444" font-size="13" fill="#334155">ADMINISTRAÇÃO</text>
+  <text x="24" y="474" font-size="13" fill="#334155">Guia do Utilizador</text>
+  <text x="24" y="504" font-size="13" fill="#334155">Suporte</text>
+  <!-- conteúdo -->
+  <text x="270" y="60" font-size="24" font-weight="700" fill="#0f172a">Universidade Corporativa</text>
+  <text x="270" y="84" font-size="13" fill="#64748b">Formação da SGA: cursos, certificados e trilhas</text>
+  <!-- separadores -->
+  <g font-size="13">
+    <rect x="270" y="110" width="118" height="34" rx="8" fill="#1e3a5f"/><text x="286" y="132" fill="#fff" font-weight="700">Catálogo</text>
+    <rect x="396" y="110" width="150" height="34" rx="8" fill="#ffffff" stroke="#cbd5e1"/><text x="412" y="132" fill="#334155">Os meus cursos</text>
+    <rect x="554" y="110" width="96" height="34" rx="8" fill="#ffffff" stroke="#cbd5e1"/><text x="570" y="132" fill="#334155">Trilhas</text>
+    <rect x="658" y="110" width="130" height="34" rx="8" fill="#ffffff" stroke="#cbd5e1"/><text x="674" y="132" fill="#334155">Certificados</text>
+  </g>
+  <!-- legendas dos separadores -->
+  <g font-size="12" fill="#334155">
+    <rect x="270" y="170" width="700" height="1" fill="#e2e8f0"/>
+    <text x="270" y="200" font-weight="700" fill="#1e3a5f">Catálogo</text><text x="400" y="200">todos os cursos publicados; os obrigatórios para si aparecem assinalados</text>
+    <text x="270" y="232" font-weight="700" fill="#1e3a5f">Os meus cursos</text><text x="400" y="232">onde continua o que já começou, vê o progresso e os seus pontos</text>
+    <text x="270" y="264" font-weight="700" fill="#1e3a5f">Trilhas</text><text x="400" y="264">sequências de cursos recomendadas para uma função</text>
+    <text x="270" y="296" font-weight="700" fill="#1e3a5f">Certificados</text><text x="400" y="296">os certificados emitidos, a validade e o download em PDF</text>
+  </g>
+  <!-- cartões -->
+  <g>
+    <rect x="270" y="340" width="220" height="180" rx="14" fill="#ffffff" stroke="#e2e8f0"/><rect x="270" y="340" width="220" height="80" rx="14" fill="#1e3a5f"/><rect x="270" y="400" width="220" height="20" fill="#1e3a5f"/>
+    <text x="286" y="446" font-size="13" font-weight="700" fill="#0f172a">Global Reporting Format</text><text x="286" y="466" font-size="11" fill="#64748b">Operações · 9 h · 8 módulos</text>
+    <rect x="286" y="484" width="90" height="22" rx="6" fill="#f59e0b"/><text x="298" y="499" font-size="11" fill="#fff" font-weight="700">Obrigatório</text>
+    <rect x="510" y="340" width="220" height="180" rx="14" fill="#ffffff" stroke="#e2e8f0"/><rect x="510" y="340" width="220" height="80" rx="14" fill="#0f766e"/><rect x="510" y="400" width="220" height="20" fill="#0f766e"/>
+    <text x="526" y="446" font-size="13" font-weight="700" fill="#0f172a">Condução no Lado Ar</text><text x="526" y="466" font-size="11" fill="#64748b">Operações · 4 h · 8 módulos</text>
+    <rect x="750" y="340" width="220" height="180" rx="14" fill="#ffffff" stroke="#e2e8f0"/><rect x="750" y="340" width="220" height="80" rx="14" fill="#7c3aed"/><rect x="750" y="400" width="220" height="20" fill="#7c3aed"/>
+    <text x="766" y="446" font-size="13" font-weight="700" fill="#0f172a">SGSO — Fundamentos</text><text x="766" y="466" font-size="11" fill="#64748b">Safety · 3 h · 3 módulos</text>
+  </g>
+</svg>

@@ -498,7 +498,7 @@ export default function GestaoEmpresas() {
                 {selectedEmpresa.website && (
                   <div className="col-span-2">
                     <span className="text-slate-500 dark:text-slate-400">Website:</span>
-                    <a href={selectedEmpresa.website} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 dark:text-blue-400 hover:underline">{selectedEmpresa.website}</a>
+                    <a href={/^https?:\/\//i.test(String(selectedEmpresa.website)) ? selectedEmpresa.website : `https://${selectedEmpresa.website}`} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 dark:text-blue-400 hover:underline">{selectedEmpresa.website}</a>
                   </div>
                 )}
               </div>

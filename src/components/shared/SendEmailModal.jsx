@@ -40,9 +40,12 @@ export default function SendEmailModal({
   const validateForm = () => {
     const newErrors = {};
 
-    if (!emailData.to || !emailData.to.trim()) {
+    // Suporta múltiplos destinatários separados por vírgula (valida cada um).
+    const rx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const recips = (emailData.to || '').split(',').map((s) => s.trim()).filter(Boolean);
+    if (!recips.length) {
       newErrors.to = t('shared.email.destinatario_obrigatorio');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailData.to)) {
+    } else if (recips.some((r) => !rx.test(r))) {
       newErrors.to = t('shared.email.email_invalido');
     }
 
@@ -63,11 +66,14 @@ export default function SendEmailModal({
 
     guardedSubmit(async () => {
       // Passar os dados corretos para o callback
-      await onSend({
+      const result = await onSend({
         to: emailData.to.trim(),
         subject: emailData.subject.trim(),
         message: emailData.message.trim()
       });
+      // Fecha o modal quando o envio NÃO falhou (handler devolve false só em erro).
+      // Se o onSend lançar, esta linha não corre e o modal fica aberto (correto).
+      if (result !== false) handleClose();
     });
   };
 
@@ -96,8 +102,9 @@ export default function SendEmailModal({
             <Label htmlFor="to">{t('shared.email.destinatarios')}</Label>
             <Input
               id="to"
-              type="email"
-              placeholder="exemplo@email.com"
+              type="text"
+              inputMode="email"
+              placeholder="exemplo@sga.co.ao, outro@sga.co.ao"
               value={emailData.to}
               onChange={(e) => setEmailData({ ...emailData, to: e.target.value })}
               className={errors.to ? 'border-red-500' : ''}

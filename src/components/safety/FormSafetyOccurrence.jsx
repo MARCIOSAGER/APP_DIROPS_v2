@@ -112,7 +112,7 @@ export default function FormSafetyOccurrence({ isOpen, onClose, onSubmit, aeropo
 
   const aeroportoOptions = aeroportos.map((aeroporto) => ({
     value: aeroporto.codigo_icao,
-    label: `${aeroporto.nome} (${aeroporto.codigo_icao})`
+    label: `${aeroporto.codigo_icao} — ${aeroporto.nome}`
   }));
 
   const gravidadeOptions = [

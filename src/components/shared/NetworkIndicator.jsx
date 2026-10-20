@@ -55,6 +55,7 @@ export default function NetworkIndicator() {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/aeroporto?limit=1`, {
         method: 'HEAD',
         headers: { apikey: SUPABASE_ANON_KEY },
+        signal: AbortSignal.timeout(8000),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const ms = Math.round(performance.now() - start);

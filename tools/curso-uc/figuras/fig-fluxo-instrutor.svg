@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 320" width="1000" height="320" font-family="Segoe UI, Arial, sans-serif" role="img" aria-labelledby="t">
+  <title id="t">O percurso do instrutor em sete passos: criar o curso, montar o conteúdo, construir a avaliação, configurar o certificado, publicar, inscrever alunos e agendar sessões, acompanhar e melhorar</title>
+  <rect width="1000" height="320" fill="#f4f6fa"/>
+  <defs><marker id="s" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a1823a"/></marker></defs>
+  <g font-size="12" text-anchor="middle">
+    <g><rect x="16" y="80" width="124" height="86" rx="14" fill="#1e3a5f"/><text x="78" y="112" fill="#fff" font-size="22">➕</text><text x="78" y="142" fill="#fff" font-weight="700">1. Criar curso</text></g>
+    <g><rect x="158" y="80" width="124" height="86" rx="14" fill="#1e3a5f"/><text x="220" y="112" fill="#fff" font-size="22">▤</text><text x="220" y="142" fill="#fff" font-weight="700">2. Conteúdo</text></g>
+    <g><rect x="300" y="80" width="124" height="86" rx="14" fill="#1e3a5f"/><text x="362" y="112" fill="#fff" font-size="22">📋</text><text x="362" y="142" fill="#fff" font-weight="700">3. Avaliação</text></g>
+    <g><rect x="442" y="80" width="124" height="86" rx="14" fill="#1e3a5f"/><text x="504" y="112" fill="#fff" font-size="22">🏅</text><text x="504" y="142" fill="#fff" font-weight="700">4. Certificado</text></g>
+    <g><rect x="584" y="80" width="124" height="86" rx="14" fill="#a1823a"/><text x="646" y="112" fill="#fff" font-size="22">🚀</text><text x="646" y="142" fill="#fff" font-weight="700">5. Publicar</text></g>
+    <g><rect x="726" y="80" width="124" height="86" rx="14" fill="#0f766e"/><text x="788" y="112" fill="#fff" font-size="22">👥</text><text x="788" y="142" fill="#fff" font-weight="700">6. Alunos e sessões</text></g>
+    <g><rect x="868" y="80" width="124" height="86" rx="14" fill="#0f766e"/><text x="930" y="112" fill="#fff" font-size="22">📊</text><text x="930" y="142" fill="#fff" font-weight="700">7. Acompanhar</text></g>
+  </g>
+  <g stroke="#a1823a" stroke-width="3" fill="none" marker-end="url(#s)">
+    <path d="M140 123 H156"/><path d="M282 123 H298"/><path d="M424 123 H440"/><path d="M566 123 H582"/><path d="M708 123 H724"/><path d="M850 123 H866"/>
+  </g>
+  <g font-size="10.5" fill="#334155" text-anchor="middle">
+    <text x="78" y="192">dados, capa, obrigatório,</text><text x="78" y="206">validade, prazo, instrutores</text>
+    <text x="220" y="192">módulos e aulas de</text><text x="220" y="206">todos os tipos + materiais</text>
+    <text x="362" y="192">banco de perguntas,</text><text x="362" y="206">quiz, tentativas, tempo</text>
+    <text x="504" y="192">textos, arte, signatários,</text><text x="504" y="206">numeração automática</text>
+    <text x="646" y="192">interruptor no cabeçalho;</text><text x="646" y="206">guarde uma versão antes</text>
+    <text x="788" y="192">inscrever, convocar,</text><text x="788" y="206">presenças, lembretes</text>
+    <text x="930" y="192">analítica, matriz,</text><text x="930" y="206">visão geral, exports</text>
+  </g>
+  <path d="M930 166 V262 H220 V168" stroke="#0f766e" stroke-width="2" fill="none" stroke-dasharray="6 4" marker-end="url(#s)"/>
+  <text x="575" y="280" font-size="12" fill="#0f766e" text-anchor="middle">o que a analítica mostra (aulas onde os alunos param, perguntas difíceis) volta a entrar no conteúdo — e cada alteração fica numa versão</text>
+</svg>

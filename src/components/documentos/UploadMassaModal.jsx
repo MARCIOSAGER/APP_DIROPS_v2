@@ -8,6 +8,9 @@ import { Documento } from '@/entities/Documento';
 import { analisarDocumento } from '@/functions/analisarDocumento';
 import { sanitizeFilename } from '@/lib/sanitize';
 import { useI18n } from '@/components/lib/i18n';
+// Impressão digital SHA-256 do ficheiro (migração 152): o carregamento em massa é precisamente onde entram os
+// repetidos. Marca-se e segue — nunca se recusa o ficheiro.
+import { impressaoDigital, documentosComMesmoFicheiro } from '@/documentos/hooks';
 
 export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto, currentUser = null }) {
   const { t } = useI18n();
@@ -47,19 +50,31 @@ export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto
           throw new Error('Tipo de arquivo não suportado');
         }
 
+        // Impressão digital antes do upload, e o par que já exista no portal (avisa, não trava)
+        setProgress(prev => prev.map((p, idx) =>
+          idx === i ? { ...p, status: 'uploading', message: 'A calcular a impressão digital...' } : p
+        ));
+        const digital = await impressaoDigital(file);
+        const pares = digital ? await documentosComMesmoFicheiro(digital) : [];
+        if (pares.length > 0) {
+          setProgress(prev => prev.map((p, idx) =>
+            idx === i ? { ...p, repetido: pares.map(d => d.numero || d.titulo).join('; ') } : p
+          ));
+        }
+
         // Atualizar status: Fazendo upload
-        setProgress(prev => prev.map((p, idx) => 
+        setProgress(prev => prev.map((p, idx) =>
           idx === i ? { ...p, status: 'uploading', message: 'A iniciar upload...' } : p
         ));
 
         // 1. Upload do arquivo
-        const uploadResult = await base44.integrations.Core.UploadFile({ file });
+        const uploadResult = await base44.integrations.Core.UploadPrivateFile({ file }); // storage privado: servido só por URL assinada
         
-        if (!uploadResult || !uploadResult.file_url) {
+        if (!uploadResult || !uploadResult.path) {
           throw new Error('Falha no upload do arquivo');
         }
         
-        const fileUrl = uploadResult.file_url;
+        const fileUri = uploadResult.path;
 
         // Atualizar status: Analisando com IA
         setProgress(prev => prev.map((p, idx) => 
@@ -68,7 +83,7 @@ export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto
 
         // 2. Analisar documento com IA
         const analiseResult = await analisarDocumento({ 
-          file_url: fileUrl, 
+          file_uri: fileUri, 
           titulo: sanitizeFilename(file.name)
         });
 
@@ -85,13 +100,15 @@ export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto
             titulo: sanitizeFilename(file.name).replace(/\.[^/.]+$/, ''),
             categoria: analise.categoria_sugerida || 'outro',
             empresa_id: currentUser?.empresa_id,
-            arquivo_url: fileUrl,
+            arquivo_privado_uri: fileUri,
+            usar_storage_privado: true,
             versao: '1.0',
             data_publicacao: new Date().toISOString().split('T')[0],
             descricao: analise.resumo || '',
             nivel_acesso: analise.nivel_acesso_sugerido || ['visualizador'],
             status: 'ativo',
-            aeroporto: aeroporto || null
+            aeroporto: aeroporto || null,
+            ...(digital ? { sha256: digital } : {})
           });
 
           // Sucesso!
@@ -176,6 +193,11 @@ export default function UploadMassaModal({ isOpen, onClose, onSuccess, aeroporto
                       }`}>
                         {item.message}
                       </p>
+                      {item.repetido && (
+                        <p className="text-xs mt-0.5 text-amber-700">
+                          Ficheiro igual a {item.repetido} — carregado e marcado como repetido, para alguém decidir.
+                        </p>
+                      )}
                     </div>
                     <div className="flex-shrink-0">
                       {item.status === 'pending' && (

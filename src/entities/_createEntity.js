@@ -20,6 +20,18 @@ function withTimeout(promise, action, table) {
   ]);
 }
 
+// Enriquece o erro do supabase/PostgREST — antes só usávamos error.message, que
+// escondia a causa. code/details/hint dizem o real: 42501=RLS, 23505=duplicado,
+// 23503=chave estrangeira, 42703=coluna inexistente, 23502=NOT NULL, etc.
+function describeError(error) {
+  if (!error) return 'erro desconhecido';
+  const parts = [error.message || 'erro'];
+  if (error.details) parts.push(error.details);
+  if (error.hint) parts.push('dica: ' + error.hint);
+  if (error.code) parts.push('[' + error.code + ']');
+  return parts.join(' · ');
+}
+
 async function fetchAll(query) {
   let allData = [];
   let from = 0;
@@ -179,7 +191,7 @@ export function createEntity(tableName) {
         .insert(payload)
         .select()
         .single(), 'criar', tableName);
-      if (error) throw new Error(`Erro ao criar ${tableName}: ${error.message}`);
+      if (error) throw new Error(`Erro ao criar ${tableName}: ${describeError(error)}`);
       invalidateEntityQueries(tableName);
       return data;
     },
@@ -200,7 +212,7 @@ export function createEntity(tableName) {
         .from(tableName)
         .insert(payload)
         .select();
-      if (error) throw new Error(`Erro ao criar ${tableName} em lote: ${error.message}`);
+      if (error) throw new Error(`Erro ao criar ${tableName} em lote: ${describeError(error)}`);
       invalidateEntityQueries(tableName);
       return data || [];
     },
@@ -217,7 +229,7 @@ export function createEntity(tableName) {
         .eq('id', id)
         .select()
         .single(), 'atualizar', tableName);
-      if (error) throw new Error(`Erro ao atualizar ${tableName}: ${error.message}`);
+      if (error) throw new Error(`Erro ao atualizar ${tableName}: ${describeError(error)}`);
       invalidateEntityQueries(tableName);
       return data;
     },
@@ -227,7 +239,7 @@ export function createEntity(tableName) {
         .from(tableName)
         .delete()
         .eq('id', id), 'eliminar', tableName);
-      if (error) throw new Error(`Erro ao eliminar ${tableName}: ${error.message}`);
+      if (error) throw new Error(`Erro ao eliminar ${tableName}: ${describeError(error)}`);
       invalidateEntityQueries(tableName);
     },
 

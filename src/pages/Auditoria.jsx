@@ -281,7 +281,7 @@ export default function Auditoria() {
   // --- Aeroporto options for combobox ---
   const aeroportoOptions = useMemo(() => [
     { value: 'todos', label: t('auditoria.todosAeroportos') },
-    ...aeroportosAcesso.map((a) => ({ value: a.codigo_icao, label: `${a.nome} (${a.codigo_icao})` }))
+    ...aeroportosAcesso.map((a) => ({ value: a.codigo_icao, label: `${a.codigo_icao} — ${a.nome}` }))
   ], [aeroportosAcesso, t]);
 
   // --- Handlers ---

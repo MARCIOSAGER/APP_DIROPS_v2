@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { fmtData } from '@/lib/safeDate';
 
 import { RespostaAuditoria } from '@/entities/RespostaAuditoria';
 import { ItemAuditoria } from '@/entities/ItemAuditoria';
@@ -596,10 +597,10 @@ export default function AuditoriaDetailModal({
                         <div className="flex justify-between items-start">
                           <div>
                               <CardTitle>{pac.numero_pac}</CardTitle>
-                              <p className="text-sm text-slate-500 capitalize">{t('auditoriaDetail.tipo')} {pac.tipo.replace('_', ' ')}</p>
+                              <p className="text-sm text-slate-500 capitalize">{t('auditoriaDetail.tipo')} {(pac.tipo || '').replace(/_/g, ' ')}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                              <Badge variant={pac.status === 'elaboracao' ? 'secondary' : 'default'} className="capitalize">{pac.status.replace('_', ' ')}</Badge>
+                              <Badge variant={pac.status === 'elaboracao' ? 'secondary' : 'default'} className="capitalize">{(pac.status || '').replace(/_/g, ' ')}</Badge>
                               <Button variant="ghost" size="icon" onClick={() => handleEditPac(pac)}>
                                 <Edit className="w-4 h-4" />
                               </Button>
@@ -623,7 +624,7 @@ export default function AuditoriaDetailModal({
                           <div>
                             <span className="text-slate-500">{t('auditoriaDetail.prazo')}</span>
                             <p className="font-medium">
-                              {format(new Date(pac.prazo_conclusao), 'dd/MM/yyyy', { locale: pt })}
+                              {fmtData(pac.prazo_conclusao, 'dd/MM/yyyy')}
                             </p>
                           </div>
                           <div>

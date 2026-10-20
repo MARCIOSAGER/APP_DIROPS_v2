@@ -1,8 +1,10 @@
 import React from "react";
+import { useModoFoco } from "@/lib/modoFoco";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import LoadingWatchdog from "@/components/shared/LoadingWatchdog";
 import {
-  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, ChevronDown, ChevronRight, BarChart3, ArrowLeft, BookMarked, Sparkles, Building2, Layers, Trash2, Key, Moon, Sun, FileSpreadsheet
+  Home, Plane, DollarSign, Shield, ClipboardCheck, FileText, User as UserIcon, Users, Settings, Settings2, Wrench, Menu, X, LogOut, Activity, UserCheck, MessageSquare, FileSearch, Bell, ChevronDown, ChevronRight, BarChart3, ArrowLeft, BookMarked, Sparkles, Building2, Layers, Trash2, Key, Moon, Sun, FileSpreadsheet, GraduationCap, Presentation
 } from "lucide-react";
 import BottomTabs from '@/components/shared/BottomTabs';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
@@ -35,12 +37,12 @@ const TourGuiado = React.lazy(() => import('@/components/shared/TourGuiado'));
 
 // Mapeamento padrão de permissões (fallback se não houver regras na BD)
 const PERFIL_PERMISSIONS_DEFAULT = {
-  administrador: ['Home', 'Operacoes', 'ImportacaoAiaan', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'KPIsOperacionais', 'ProntoPagamento', 'GerirPermissoes', 'GestaoNotificacoes', 'Relatorios', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte', 'Monitoramento'],
+  administrador: ['Home', 'Operacoes', 'ImportacaoAiaan', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'Credenciamento', 'GestaoEmpresas', 'GestaoAcessos', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'Lixeira', 'LogAuditoria', 'KPIsOperacionais', 'ProntoPagamento', 'GerirPermissoes', 'GestaoNotificacoes', 'Relatorios', 'GestaoAPIKeys', 'ConfiguracoesGerais', 'GuiaUtilizador', 'Suporte', 'Monitoramento', 'Formacao', 'GestaoFormacao'],
   gestor_empresa: ['Credenciamento', 'GuiaUtilizador', 'Suporte'],
-  operacoes: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'ProntoPagamento', 'GuiaUtilizador', 'Suporte'],
-  infraestrutura: ['Home', 'Reclamacoes', 'Inspecoes', 'Manutencao', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
-  credenciamento: ['Home', 'Credenciamento', 'Documentos', 'HistoricoAcessoDocumentos', 'GuiaUtilizador', 'Suporte'],
-  safety: ['Home', 'Safety', 'Inspecoes', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'GuiaUtilizador', 'Suporte']
+  operacoes: ['Home', 'Operacoes', 'FundoManeio', 'ConfiguracaoTarifas', 'Proforma', 'ServicosAeroportuarios', 'Safety', 'Inspecoes', 'Manutencao', 'Auditoria', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'Formacao', 'GuiaUtilizador', 'Suporte'],
+  infraestrutura: ['Home', 'Reclamacoes', 'Inspecoes', 'Manutencao', 'Documentos', 'HistoricoAcessoDocumentos', 'Formacao', 'GuiaUtilizador', 'Suporte'],
+  credenciamento: ['Home', 'Credenciamento', 'Documentos', 'HistoricoAcessoDocumentos', 'Formacao', 'GuiaUtilizador', 'Suporte'],
+  safety: ['Home', 'Safety', 'Inspecoes', 'Reclamacoes', 'GRF', 'Documentos', 'HistoricoAcessoDocumentos', 'KPIsOperacionais', 'Formacao', 'GuiaUtilizador', 'Suporte']
 };
 
 // Flat list for permission checks, redirects, and BottomTabs
@@ -108,12 +110,18 @@ function getNavigationGroups(t) {
       icon: FileText,
       color: "text-cyan-600",
       items: [
-        { title: t('nav.documentos'), url: createPageUrl("Documentos"), icon: FileText, color: "text-cyan-600", pageKey: "Documentos" },
+        // A biblioteca de documentos é agora o Portal de Documentos, plataforma própria em /documentos (a entrada
+        // fica no menu por decisão do dono). `externo` força um carregamento completo: as sessões dos portais vivem
+        // em chaves separadas e são escolhidas no arranque da página, por isso a navegação SPA não serve.
+        { title: t('nav.documentos'), url: "/documentos", icon: FileText, color: "text-cyan-600", pageKey: "Documentos", externo: true },
         { title: t('nav.historico_acesso'), url: createPageUrl("HistoricoAcessoDocumentos"), icon: FileSearch, color: "text-slate-600", pageKey: "HistoricoAcessoDocumentos" },
         // Credenciamento hidden — SGA does not use this feature
         // { title: t('nav.credenciamento'), url: import.meta.env.VITE_CREDENCIAMENTO_URL || "https://credenciamentosga.marciosager.com/", icon: UserCheck, color: "text-teal-600", pageKey: "Credenciamento", external: true },
       ],
     },
+
+    // O grupo «Formação» saiu do menu (01/10): a Universidade Corporativa é uma plataforma independente em /universidade;
+    // as rotas antigas /Formacao e /GestaoFormacao continuam a redireccionar para lá (App.jsx).
     {
       category: t('nav.cat_admin') || 'Administração',
       icon: Settings,
@@ -122,7 +130,11 @@ function getNavigationGroups(t) {
         { title: t('nav.gestao_empresas'), url: createPageUrl("GestaoEmpresas"), icon: Building2, color: "text-blue-800", pageKey: "GestaoEmpresas" },
         { title: t('nav.gestao_acessos'), url: createPageUrl("GestaoAcessos"), icon: Users, color: "text-yellow-600", pageKey: "GestaoAcessos" },
         { title: t('nav.gerir_permissoes'), url: createPageUrl("GerirPermissoes"), icon: Shield, color: "text-red-600", pageKey: "GerirPermissoes" },
-        { title: t('nav.gestao_notificacoes'), url: createPageUrl("GestaoNotificacoes"), icon: Bell, color: "text-indigo-600", pageKey: "GestaoNotificacoes" },
+        // "Gestão de Notificações" (Regras) oculta — motor de notificações por evento
+        // era do Base44 (functions/ removidas): as 7 funções são stubs e nada processa
+        // as regras. Os relatórios periódicos saem pelo "Relatórios Automáticos" abaixo.
+        // A página/rota continua a existir caso se decida reconstruir o motor.
+        // { title: t('nav.gestao_notificacoes'), url: createPageUrl("GestaoNotificacoes"), icon: Bell, color: "text-indigo-600", pageKey: "GestaoNotificacoes" },
         { title: 'Relatórios Automáticos', url: createPageUrl("Relatorios"), icon: FileSpreadsheet, color: "text-teal-600", pageKey: "Relatorios" },
         { title: t('nav.config_gerais'), url: createPageUrl("ConfiguracoesGerais"), icon: Settings, color: "text-slate-600", pageKey: "ConfiguracoesGerais" },
         // API Keys hidden — servem só para integrações externas (Power BI), que está a ser aposentado
@@ -240,6 +252,7 @@ function LayoutContent({ children, currentPageName }) {
   const { user: authUser, isLoadingAuth } = useAuth();
   const isRootPage = rootPages.includes(currentPageName);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const modoFoco = useModoFoco();
   const [user, setUser] = React.useState(null);
   const [isLoadingUser, setIsLoadingUser] = React.useState(true);
         const _cachedPerms = getCachedPermissions();
@@ -413,13 +426,12 @@ function LayoutContent({ children, currentPageName }) {
   }, [filteredNavigationGroups, location.pathname]);
 
   if (isLoadingUser || isLoadingPermissions) {
-    return <div className="flex items-center justify-center h-screen bg-slate-50"><p className="text-lg">{t('layout.loading')}</p></div>;
+    return <LoadingWatchdog message={t('layout.loading')} />;
   }
 
   if (unprotectedPages.includes(currentPageName)) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <style>{`:root { --primary: #004A99; --primary-foreground: #ffffff; --secondary: #f1f5f9; --accent: #009FE3; --destructive: #dc2626; --muted: #64748b; }`}</style>
         <main>{children}</main>
       </div>
     );
@@ -428,7 +440,6 @@ function LayoutContent({ children, currentPageName }) {
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <style>{`:root { --primary: #004A99; --primary-foreground: #ffffff; --secondary: #f1f5f9; --accent: #009FE3; --destructive: #dc2626; --muted: #64748b; }`}</style>
         <main>
           <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
             <div className="text-center">
@@ -464,8 +475,7 @@ function LayoutContent({ children, currentPageName }) {
       // Neste caso, exibe o componente de Acesso Negado.
       return (
         <div className="min-h-screen bg-slate-50">
-          <style>{`:root { --primary: #004A99; --primary-foreground: #ffffff; --secondary: #f1f5f9; --accent: #009FE3; --destructive: #dc2626; --muted: #64748b; }`}</style>
-          <main>
+            <main>
             <AccessDenied />
           </main>
         </div>
@@ -474,17 +484,11 @@ function LayoutContent({ children, currentPageName }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100" data-foco={modoFoco ? "1" : undefined}>
       <ConnectionBanner />
       <a href="#main-content" className="skip-link">{t('layout.skipToContent') || 'Ir para conteúdo'}</a>
       <style>{`
         :root {
-          --primary: #004A99;
-          --primary-foreground: #ffffff;
-          --secondary: #f1f5f9;
-          --accent: #009FE3;
-          --destructive: #dc2626;
-          --muted: #64748b;
           --safe-area-top: env(safe-area-inset-top);
           --safe-area-bottom: env(safe-area-inset-bottom);
           --safe-area-left: env(safe-area-inset-left);
@@ -566,7 +570,7 @@ function LayoutContent({ children, currentPageName }) {
                         ) : (
                           <Link
                             key={item.pageKey}
-                            to={item.url}
+                            to={item.url} onClick={item.externo ? (e) => { e.preventDefault(); window.location.assign(item.url); } : undefined}
                             onClick={() => setSidebarOpen(false)}
                             className={`flex items-center gap-3 pl-9 pr-3 py-2.5 rounded-lg transition-all duration-200 ${location.pathname === item.url ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
                           >
@@ -582,7 +586,7 @@ function LayoutContent({ children, currentPageName }) {
               return (
                 <Link
                   key={group.pageKey}
-                  to={group.url}
+                  to={group.url} onClick={group.externo ? (e) => { e.preventDefault(); window.location.assign(group.url); } : undefined}
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${location.pathname === group.url ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
                 >
@@ -646,7 +650,7 @@ function LayoutContent({ children, currentPageName }) {
       </div>
 
       <div className="flex">
-        <div className="hidden lg:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 h-screen sticky top-0">
+        <div className="foco-ocultar hidden lg:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 h-screen sticky top-0">
           <div className="p-4 border-b border-slate-200 dark:border-slate-700">
             <div className="flex justify-center">
               <img src={logoUrl} alt="Logo" width={200} height={120} className="h-[120px] max-w-[200px] object-contain" />
@@ -681,7 +685,7 @@ function LayoutContent({ children, currentPageName }) {
                         ) : (
                           <Link
                             key={item.pageKey}
-                            to={item.url}
+                            to={item.url} onClick={item.externo ? (e) => { e.preventDefault(); window.location.assign(item.url); } : undefined}
                             className={`flex items-center gap-3 pl-9 pr-3 py-2 rounded-lg transition-all duration-200 ${location.pathname === item.url ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
                           >
                             <item.icon className={`w-4 h-4 ${location.pathname !== item.url ? item.color : ''}`} />
@@ -697,7 +701,7 @@ function LayoutContent({ children, currentPageName }) {
               return (
                 <Link
                   key={group.pageKey}
-                  to={group.url}
+                  to={group.url} onClick={group.externo ? (e) => { e.preventDefault(); window.location.assign(group.url); } : undefined}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${location.pathname === group.url ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
                 >
                   <group.icon className={`w-5 h-5 ${location.pathname !== group.url ? group.color : ''}`} />
@@ -714,7 +718,7 @@ function LayoutContent({ children, currentPageName }) {
         </div>
 
         <div className="flex-1">
-          <header className="hidden lg:flex justify-end items-center bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-6 h-16">
+          <header className="foco-ocultar hidden lg:flex justify-end items-center bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-6 h-16">
             <div className="flex items-center gap-4">
               <NetworkIndicator />
 

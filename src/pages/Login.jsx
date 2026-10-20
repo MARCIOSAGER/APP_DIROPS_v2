@@ -9,6 +9,7 @@ import { logAuthEvent } from '@/lib/auditLog';
 import { useI18n } from '@/components/lib/i18n';
 import AlertModal from '@/components/shared/AlertModal';
 import { isExternalEmail, EXTERNAL_EMAIL_NOTICE } from '@/lib/emailDomain';
+import { traduzErroAuth } from '@/lib/authErros';
 
 const LogoDirops = ({ className = "h-14", variant = "dark" }) => (
   <img
@@ -33,22 +34,6 @@ function useRateLimit(maxAttempts = 5, windowMs = 60000) {
       return { blocked: false };
     }
   };
-}
-
-// Traduz mensagens de erro do GoTrue/Supabase (ingles) para PT.
-function traduzErroAuth(msg) {
-  if (!msg) return 'Ocorreu um erro. Tente novamente.';
-  const m = String(msg).toLowerCase();
-  if (m.includes('signups not allowed') || m.includes('signup is disabled') || m.includes('signup disabled')) return 'O auto-cadastro está desativado nesta instância. Contacte o administrador para criar o seu acesso.';
-  if (m.includes('invalid login credentials')) return 'Email ou senha incorretos.';
-  if (m.includes('already registered') || m.includes('already been registered')) return 'Este email já está registado.';
-  if (m.includes('email not confirmed')) return 'Email ainda não confirmado. Verifique a sua caixa de entrada.';
-  if (m.includes('password should be at least') || m.includes('password is too short')) return 'A senha é demasiado curta (mínimo 8 caracteres).';
-  if (m.includes('rate limit') || m.includes('too many requests')) return 'Demasiadas tentativas. Aguarde um momento e tente novamente.';
-  if (m.includes('user not found')) return 'Utilizador não encontrado.';
-  if (m.includes('relay') || m.includes('non-accepted domain') || m.includes('550')) return 'O servidor de email só aceita endereços internos (@sga.co.ao).';
-  if (m.includes('network') || m.includes('failed to fetch') || m.includes('fetch failed')) return 'Falha de ligação ao servidor. Verifique a rede e tente novamente.';
-  return msg; // fallback: mostra a original
 }
 
 export default function Login() {
@@ -87,6 +72,18 @@ export default function Login() {
         return;
       }
       logAuthEvent('login', email, 'Login bem-sucedido');
+      // Quem só tem perfis dos portais (Universidade e/ou Documentos) não entra no DIROPS: vai para o portal respectivo.
+      try {
+        const { data: perfil } = await supabase.from('users').select('perfis').eq('auth_id', data?.user?.id).maybeSingle();
+        const perfis = Array.isArray(perfil?.perfis) ? perfil.perfis : [];
+        const PERFIS_UC = ['formando', 'instrutor', 'admin_universidade'];
+        const { PERFIS_DOCUMENTOS, PORTAL_DOCUMENTOS_BASE } = await import('@/lib/portalDocumentos');
+        if (perfis.length > 0 && perfis.every(p => PERFIS_UC.includes(p) || PERFIS_DOCUMENTOS.includes(p) || /^doc_[a-z0-9_]{2,40}$/.test(p))) {
+          try { await supabase.auth.signOut(); } catch { /* */ }
+          const destino = perfis.some(p => PERFIS_UC.includes(p)) ? '/universidade/login?conta=formando' : `${PORTAL_DOCUMENTOS_BASE}/login?conta=portal`;
+          window.location.replace(destino); return;
+        }
+      } catch { /* segue para o DIROPS */ }
       window.location.replace('/Home');
     } catch (err) {
       setError(t('login.erroGenerico') + ' ' + err.message);

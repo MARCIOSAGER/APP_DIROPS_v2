@@ -18,8 +18,11 @@ import {
   Plus,
   Wrench,
   Search,
+  FileText,
+  Loader2,
   Activity } from
 "lucide-react";
+import { exportDashboardPdf } from '@/lib/dashboardPdf';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from 'date-fns';
@@ -66,6 +69,31 @@ export default function DashboardInterno() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [loadingStatus, setLoadingStatus] = useState('Iniciando...');
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  // Gera o PDF do Dashboard — espelha as secções desta página (KPIs, Top 10,
+  // Tendência Mensal e os 3 gráficos), respeitando período e aeroporto dos filtros.
+  const gerarPdfDashboard = async () => {
+    setPdfLoading(true);
+    try {
+      const N = parseInt(selectedPeriodo, 10) || 30;
+      const aero = selectedAeroporto && selectedAeroporto !== 'todos' ? selectedAeroporto : '';
+      const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      await exportDashboardPdf({
+        dashboardStats, serverStats, trends, safety: safetyStats,
+        dias: N,
+        periodoLabel: `Últimos ${N} dias`,
+        aeroportoLabel: aero,
+        empresaId: currentUser?.empresa_id,
+        fileName: `Dashboard_Operacional_${iso(new Date())}.pdf`,
+      });
+    } catch (e) {
+      console.error('Erro ao gerar PDF do Dashboard:', e);
+      setError(e.message || 'Não foi possível gerar o PDF do Dashboard.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const empresaId = effectiveEmpresaId || currentUser?.empresa_id;
 
@@ -100,7 +128,10 @@ export default function DashboardInterno() {
       let aeroportosData = [];
       try {
         const empresaIdFiltro = effectiveEmpresaId || currentUser.empresa_id;
-        aeroportosData = await (empresaIdFiltro ? Aeroporto.filter({ empresa_id: empresaIdFiltro }) : Aeroporto.list());
+        // Superadmin (sem empresa): só aeroportos geridos pela SGA (isSGA=true),
+        // não os aeroportos de DESTINO de voos (Mogadishu, Istambul...). Com
+        // empresa: filtra pela empresa.
+        aeroportosData = await (empresaIdFiltro ? Aeroporto.filter({ empresa_id: empresaIdFiltro }) : Aeroporto.filter({ isSGA: true }));
       } catch (err) {
         console.error('❌ Erro ao carregar aeroportos:', err);
       }
@@ -119,7 +150,7 @@ export default function DashboardInterno() {
       // Filter by empresa_id when present to avoid pulling other tenants' rows.
       const empresaFilter = empresaId ? { empresa_id: empresaId } : {};
       const [ocorrenciasDataResult, inspecoesDataResult, ordensServicoResult] = await Promise.allSettled([
-        OcorrenciaSafety.filter(empresaFilter, '-data_ocorrencia', 50),
+        OcorrenciaSafety.filter(empresaFilter, '-data_ocorrencia', 500),
         Inspecao.filter(empresaFilter, '-data_inspecao', 50),
         OrdemServico.filter(empresaFilter, '-created_date', 10),
       ]);
@@ -208,6 +239,19 @@ export default function DashboardInterno() {
     ocorrenciasSafety.filter((ocorrencia) => ocorrencia.aeroporto === selectedAeroporto);
   }, [ocorrenciasSafety, selectedAeroporto]);
 
+  // Métricas de Safety — SEGUEM o período do filtro (últimos N dias) + aeroporto
+  const safetyStats = useMemo(() => {
+    const N = parseInt(selectedPeriodo, 10) || 30;
+    const cutoff = new Date(); cutoff.setHours(0, 0, 0, 0); cutoff.setDate(cutoff.getDate() - (N - 1));
+    const o = (filteredOcorrencias || []).filter((x) => { const d = new Date(x.data_ocorrencia); return !isNaN(d.getTime()) && d >= cutoff; });
+    const total = o.length;
+    const abertas = o.filter((x) => x.status === 'aberta').length;
+    const criticas = o.filter((x) => x.gravidade === 'critica').length;
+    const resolvidas = o.filter((x) => x.status === 'fechada').length;
+    const taxaResolucao = total > 0 ? ((resolvidas / total) * 100).toFixed(1) : '0';
+    return { total, abertas, criticas, resolvidas, taxaResolucao, dias: N };
+  }, [filteredOcorrencias, selectedPeriodo]);
+
   const filteredInspecoes = useMemo(() => {
     return selectedAeroporto === 'todos' ?
     inspecoes :
@@ -236,7 +280,7 @@ export default function DashboardInterno() {
 
   const aeroportoOptions = useMemo(() => [
   { value: 'todos', label: t('home.todos_aeroportos') },
-  ...aeroportos.map((aeroporto) => ({ value: aeroporto.codigo_icao, label: aeroporto.nome }))],
+  ...aeroportos.map((aeroporto) => ({ value: aeroporto.codigo_icao, label: `${aeroporto.codigo_icao} — ${aeroporto.nome}` }))],
   [aeroportos, t]);
 
   const periodoOptions = useMemo(() => [
@@ -450,6 +494,18 @@ export default function DashboardInterno() {
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading || isLoadingStats ? 'animate-spin' : ''}`} />
             {t('home.atualizar')}
           </Button>
+
+          <Button
+            onClick={gerarPdfDashboard}
+            variant="outline"
+            disabled={pdfLoading || isLoadingAll || isLoadingStats}
+            className="border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950"
+            title="PDF do Dashboard (KPIs, Top 10, Tendência Mensal e gráficos) do período selecionado"
+          >
+            {pdfLoading
+              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> A gerar...</>
+              : <><FileText className="h-4 w-4 mr-2" /> PDF do Dashboard</>}
+          </Button>
         </div>
 
         {isSuperAdmin(currentUser) && <MonitoramentoSuperAdmin />}
@@ -468,6 +524,33 @@ export default function DashboardInterno() {
               dashboardStats={dashboardStats}
               trends={trends}
             />
+
+            {/* Bloco dedicado de Safety & Segurança */}
+            <Card className="border-slate-200 dark:border-slate-700">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-red-600" /> Safety
+                  <span className="text-xs font-normal text-slate-400">· últimos {safetyStats.dias} dias</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {[
+                    { lbl: 'Total de Ocorrências', val: safetyStats.total, sub: `últimos ${safetyStats.dias} dias`, color: 'text-slate-900 dark:text-slate-100' },
+                    { lbl: 'Ocorrências Abertas', val: safetyStats.abertas, sub: 'requerem atenção', color: 'text-amber-600' },
+                    { lbl: 'Críticas', val: safetyStats.criticas, sub: 'nível crítico', color: safetyStats.criticas > 0 ? 'text-red-600' : 'text-slate-400' },
+                    { lbl: 'Resolvidas', val: safetyStats.resolvidas, sub: 'no período', color: 'text-blue-600' },
+                    { lbl: 'Taxa de Resolução', val: `${safetyStats.taxaResolucao}%`, sub: 'do período', color: 'text-green-600' },
+                  ].map((s, i) => (
+                    <div key={i} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{s.lbl}</p>
+                      <p className={`text-2xl font-bold mt-0.5 ${s.color}`}>{s.val}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{s.sub}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
                 {dashboardStats && (dashboardStats.voosLigados || 0) > 0 &&
             <Card className="border-slate-200 dark:border-slate-700">

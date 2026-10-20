@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
+import { isAdminProfile, isSuperAdmin } from '@/components/lib/userUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -100,6 +101,7 @@ function DateBR({ value, onChange }) {
 
 export default function ProntoPagamento() {
   const { user } = useAuth();
+  const isAdmin = isAdminProfile(user) || isSuperAdmin(user);
   const hoje = new Date().toISOString().slice(0, 10);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
@@ -241,6 +243,19 @@ export default function ProntoPagamento() {
       setEnviando(false);
     }
   };
+
+  // Página exclusiva de ADMIN — bloqueia acesso por URL a não-admins (o menu já
+  // esconde, mas isto é a segurança real).
+  if (!isAdmin) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto">
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 p-6 text-center">
+          <h2 className="text-lg font-semibold text-red-800 dark:text-red-300">Acesso restrito</h2>
+          <p className="text-sm text-red-700 dark:text-red-400 mt-1">A página de Pronto Pagamento é exclusiva para administradores.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">

@@ -3,10 +3,14 @@ module.exports = {
     darkMode: ["class"],
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {
-  	fontFamily: {
-  		sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
-  	},
   	extend: {
+  		// Declarado dentro de `extend`: fora dele, substituía a escala inteira do Tailwind e as classes `font-mono` e
+  		// `font-serif` deixavam de gerar CSS — havia 54 ficheiros a usar `font-mono` em vão, incluindo os números de
+  		// documento e as colunas de dados, que precisam de largura fixa para alinhar.
+  		fontFamily: {
+  			sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+  			mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',

@@ -65,6 +65,7 @@ export function useOperacoesFilters({
     dataFim: '',
     tipoMovimento: 'todos',
     companhia: 'todos',
+    aeroporto: 'todos',
     busca: ''
   });
   const [semLinkLoaded, setSemLinkLoaded] = useState(false);
@@ -340,7 +341,12 @@ export function useOperacoesFilters({
   const loadVoosSemLink = useCallback(async () => {
     setIsLoadingSemLink(true);
     try {
-      const empId = effectiveEmpresaIdRef.current || user?.empresa_id;
+      // empresaId pode ser NULL para um admin em vista "todas as empresas"
+      // (effectiveEmpresaId e user.empresa_id nulos). Nesse caso cai para o
+      // empresa_id dos PROPRIOS dados ja carregados (sistema single-tenant SGA).
+      // Sem isto, loadVoosSemLink saia sempre pelo early-return -> RPC nunca ia.
+      const empId = empresaId || effectiveEmpresaIdRef.current || user?.empresa_id
+        || voos?.[0]?.empresa_id || voosLigados?.[0]?.empresa_id;
       if (!empId) return;
 
       const { data, error } = await supabase.rpc('get_voos_sem_link', {
@@ -354,14 +360,29 @@ export function useOperacoesFilters({
       });
 
       if (error) throw error;
-      setVoosSemLink(data || []);
+      // Aeroporto: filtrado aqui (a RPC não tem esse parâmetro e devolve tudo, sem LIMIT). As estatísticas e as
+      // sugestões de pares passam a contar só o aeroporto escolhido.
+      const aero = filtrosSemLink.aeroporto && filtrosSemLink.aeroporto !== 'todos' ? filtrosSemLink.aeroporto : null;
+      setVoosSemLink(aero ? (data || []).filter(v => v.aeroporto_operacao === aero) : (data || []));
       setSemLinkLoaded(true);
     } catch (error) {
       console.error('Erro ao carregar voos sem link:', error);
     } finally {
       setIsLoadingSemLink(false);
     }
-  }, [filtrosSemLink, user, effectiveEmpresaIdRef]);
+  }, [filtrosSemLink, user, effectiveEmpresaIdRef, empresaId, voos, voosLigados]);
+
+  // Auto-carrega os voos sem link do servidor assim que houver uma empresa_id
+  // RESOLVIVEL (uma vez, guardado por ref). Usa o mesmo fallback do loadVoosSemLink
+  // (empresaId pode ser null p/ admin em vista "todas" -> cai p/ o id dos dados).
+  const semLinkAutoLoadedRef = useRef(false);
+  useEffect(() => {
+    const rid = empresaId || voos?.[0]?.empresa_id || voosLigados?.[0]?.empresa_id;
+    if (rid && !semLinkAutoLoadedRef.current) {
+      semLinkAutoLoadedRef.current = true;
+      loadVoosSemLink();
+    }
+  }, [empresaId, voos, voosLigados, loadVoosSemLink]);
 
   // Índice O(1) por registo de aeronave (ARR/DEP) — evita varrer todo o source
   // em cada linha/sugestão. Antes: semLinkStats era O(arr×dep) com new Date no
@@ -494,7 +515,10 @@ export function useOperacoesFilters({
 
     if (filtros.statusVinculacao !== 'todos') {
       filtered = filtered.filter(voo => {
-        const isLinked = linkedVooIds.has(voo.id);
+        // Mesma regra da tabela (VoosTable.isVooLigado): o próprio voo traz voo_ligado_id OU o par está nas
+        // vinculações carregadas. Só a lista carregada não chega — ela traz apenas as vinculações recentes, e voos
+        // ligados mais antigos passavam no filtro «Apenas sem link».
+        const isLinked = !!voo.voo_ligado_id || linkedVooIds.has(voo.id);
 
         if (filtros.statusVinculacao === 'ligado') return isLinked;
         if (filtros.statusVinculacao === 'sem_link') return !isLinked && voo.status !== 'Cancelado';
@@ -667,7 +691,7 @@ export function useOperacoesFilters({
 
   const aeroportoOptions = useMemo(() => ([
     { value: 'todos', label: t('operacoes.todos_aeroportos') },
-    ...aeroportos.map(a => ({ value: a.codigo_icao, label: `${a.nome} (${a.codigo_icao})` }))
+    ...aeroportos.map(a => ({ value: a.codigo_icao, label: `${a.codigo_icao} — ${a.nome}` }))
   ]), [aeroportos, t]);
 
   const tipoMovimentoOptions = useMemo(() => [

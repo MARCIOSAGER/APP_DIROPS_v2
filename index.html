@@ -1,18 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt" translate="no">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- App já é em português: proibir a tradução automática do navegador. O Google
+         Tradutor troca nós de texto por <font>, e o React rebenta com "insertBefore/
+         removeChild ... não é filho deste nó". notranslate evita esse crash. -->
+    <meta name="google" content="notranslate" />
 
     <!-- Security Headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <!-- X-Frame-Options must be set via HTTP header (see nginx config), not meta -->
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.flightradar24.com https://data-cloud.flightradar24.com https://cloudflareinsights.com https://fonts.googleapis.com https://fonts.gstatic.com; frame-src 'self' https://app.powerbi.com; object-src 'none'; base-uri 'self';" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self' blob:; frame-src 'self' blob: https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com; object-src 'none'; base-uri 'self';" />
+    <link href="/fonts/plus-jakarta.css" rel="stylesheet">
     <title>Sistema DIROPS — Gestão Aeroportuária</title>
     <meta name="description" content="Sistema DIROPS — gestão de operações aeroportuárias. Controle de voos, tarifas, segurança, auditorias e credenciamentos." />
 

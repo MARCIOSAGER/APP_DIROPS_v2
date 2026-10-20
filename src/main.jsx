@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 import { supabase } from '@/lib/supabaseClient'
+import { logClientError } from '@/lib/errorLogger'
 
 // Reporta erros GRAVES do frontend ao alerta central (-> oaeroportos), que
 // deduplica no servidor (1 email por tipo/1h). Dedup também no browser + filtro
@@ -28,11 +29,13 @@ function reportSystemError(titulo, detalhe) {
 }
 
 window.addEventListener('error', (event) => {
+  logClientError('window.error', event.error || { message: event.message }, { source: event.filename, line: event.lineno, col: event.colno });
   reportSystemError('Erro JS (frontend)', event.error?.stack || event.message || String(event));
 });
 
 window.addEventListener('unhandledrejection', (event) => {
   console.error('[Unhandled Promise Rejection]', event.reason);
+  logClientError('unhandledrejection', event.reason || { message: 'unhandledrejection' });
 
   // Auto-reload on chunk load failure (stale cache after deploy)
   const msg = event.reason?.message || '';

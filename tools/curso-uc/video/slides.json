@@ -1,0 +1,14 @@
+{
+  "duracao_s": 9,
+  "transicao_s": 0.7,
+  "slides": [
+    { "titulo": "Universidade Corporativa", "linhas": ["A plataforma de formação da SGA", "Cursos · Certificados · Trilhas", "Aprenda ao seu ritmo, no computador ou no telemóvel"], "narracao": "Bem-vindo à Universidade Corporativa, a plataforma de formação da SGA. Cursos, certificados e trilhas, ao seu ritmo." },
+    { "titulo": "1 · Onde está", "linhas": ["Menu Formação › Universidade Corporativa", "Quatro separadores:", "Catálogo · Os meus cursos · Trilhas · Certificados"], "narracao": "Encontra-a no menu Formação. Tem quatro separadores: Catálogo, Os meus cursos, Trilhas e Certificados." },
+    { "titulo": "2 · Inscreva-se", "linhas": ["Escolha um curso no catálogo", "Os obrigatórios para si estão assinalados", "Um clique em Inscrever-se: acesso imediato"], "narracao": "Escolha um curso no catálogo. Os cursos obrigatórios para a sua função aparecem assinalados. Um clique e tem acesso imediato." },
+    { "titulo": "3 · Aprenda ao seu ritmo", "linhas": ["Vídeos, leituras em modo livro e PDFs", "Actividades interactivas (SCORM e H5P)", "O progresso fica guardado — retome onde parou"], "narracao": "As aulas podem ser vídeos, leituras em modo livro, PDFs ou actividades interactivas. O progresso fica guardado e retoma onde parou." },
+    { "titulo": "4 · Faça a avaliação", "linhas": ["Tentativas, tempo e nota mínima definidos pelo instrutor", "Correcção imediata no servidor", "Revisão pergunta a pergunta"], "narracao": "No fim, a avaliação: o instrutor define tentativas, tempo e nota mínima. A correcção é imediata e pode rever pergunta a pergunta." },
+    { "titulo": "5 · Receba o certificado", "linhas": ["Emitido na hora, com número e validação pública", "Validade e recertificação automáticas", "Descarregue o PDF em Certificados"], "narracao": "Ao aprovar, o certificado é emitido na hora, com número e validação pública. A validade e a recertificação são automáticas." },
+    { "titulo": "Participe", "linhas": ["Pontos, distintivos e ranking da empresa", "Perguntas e comentários em cada aula", "Sessões presenciais e online com convite no calendário"], "narracao": "Ganhe pontos e distintivos, faça perguntas em cada aula e inscreva-se nas sessões presenciais ou online." },
+    { "titulo": "Bons estudos!", "linhas": ["Dúvidas? Comente na aula ou fale com o instrutor", "Guia do Utilizador: menu lateral", "Direcção de Operações · SGA"], "narracao": "Bons estudos. Se tiver dúvidas, comente na aula ou fale com o instrutor." }
+  ]
+}

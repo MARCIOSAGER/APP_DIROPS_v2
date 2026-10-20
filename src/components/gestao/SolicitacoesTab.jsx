@@ -28,6 +28,7 @@ export default function SolicitacoesTab({
   onAprovarUsuario,
   onRejeitar,
   onExcluir,
+  onRecusarUsuario,
 }) {
   const { t } = useI18n();
 
@@ -89,14 +90,25 @@ export default function SolicitacoesTab({
                       {u.created_date ? new Date(u.created_date).toLocaleDateString('pt-AO') : '—'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        onClick={() => onAprovarUsuario(u)}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        {t('acessos.aprovar')}
-                      </Button>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          size="sm"
+                          onClick={() => onAprovarUsuario(u)}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          {t('acessos.aprovar')}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onRecusarUsuario && onRecusarUsuario(u)}
+                          className="border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400"
+                        >
+                          <XCircle className="w-4 h-4 mr-1" />
+                          Recusar
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -168,7 +168,7 @@ export default function FormProcessoAuditoria({
 
   const aeroportoOptions = (aeroportos || []).map(aeroporto => ({
     value: aeroporto.codigo_icao,
-    label: `${aeroporto.nome} (${aeroporto.codigo_icao})`
+    label: `${aeroporto.codigo_icao} — ${aeroporto.nome}`
   }));
 
   return (

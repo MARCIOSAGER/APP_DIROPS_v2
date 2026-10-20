@@ -1,7 +1,7 @@
 import React from 'react';
 import { useI18n } from '@/components/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, subDays, startOfDay } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -113,14 +113,23 @@ export default function ReceitasChart({ voos, calculosTarifa, isLoading }) {
                   return label;
                 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="receita" 
-                stroke="#10b981" 
+              <Line
+                type="monotone"
+                dataKey="receita"
+                stroke="#10b981"
                 strokeWidth={3}
                 dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
                 activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
-              />
+              >
+                <LabelList
+                  dataKey="receita"
+                  position="top"
+                  fontSize={9}
+                  fontWeight={600}
+                  fill="#059669"
+                  formatter={(v) => (!v ? '' : v >= 1e6 ? (v / 1e6).toFixed(1).replace('.', ',') + 'M' : v >= 1e3 ? Math.round(v / 1e3) + 'K' : Math.round(v))}
+                />
+              </Line>
             </LineChart>
           </ResponsiveContainer>
         )}

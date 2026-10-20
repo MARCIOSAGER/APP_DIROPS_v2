@@ -120,10 +120,16 @@ export default function DocumentosList({ documentos, aeroportos, isLoading, onRe
     setIsViewerOpen(true);
   };
 
-  const handleDownloadFile = (documento) => {
-    if (documento.arquivo_url) {
+  // documentos privados: URL assinada de curta duração (o ficheiro público deixou de existir após a migração)
+  const urlDescarga = async (doc) => {
+    if (doc.usar_storage_privado || doc.arquivo_privado_uri) { const { obterUrlAssinadaDocumento } = await import('@/functions/obterUrlAssinadaDocumento'); const r = await obterUrlAssinadaDocumento({ documento_id: doc.id }); return r?.url || null; }
+    return doc.arquivo_url || null;
+  };
+  const handleDownloadFile = async (documento) => {
+    const href = await urlDescarga(documento);
+    if (href) {
       const link = document.createElement('a');
-      link.href = documento.arquivo_url;
+      link.href = href;
       link.download = `${documento.titulo}.pdf`;
       link.target = '_blank';
       document.body.appendChild(link);
@@ -154,19 +160,20 @@ export default function DocumentosList({ documentos, aeroportos, isLoading, onRe
     }
   };
 
-  const handleBulkDownload = () => {
-    selectedDocs.forEach(docId => {
+  const handleBulkDownload = async () => {
+    for (const docId of selectedDocs) {
       const doc = documentos.find(d => d.id === docId);
-      if (doc && doc.arquivo_url) {
+      const href = doc ? await urlDescarga(doc) : null;
+      if (doc && href) {
         const link = document.createElement('a');
-        link.href = doc.arquivo_url;
+        link.href = href;
         link.download = `${doc.titulo}.pdf`;
         link.target = '_blank';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
       }
-    });
+    }
   };
 
   const handleBulkMove = () => {

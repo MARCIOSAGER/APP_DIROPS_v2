@@ -125,7 +125,7 @@ export default function AnalisarSSModal({ isOpen, onClose, solicitacao, aeroport
 
   const aeroportoOptions = (aeroportos || []).map(a => ({
     value: a.id,
-    label: `${a.nome} (${a.codigo_icao})`
+    label: `${a.codigo_icao} — ${a.nome}`
   }));
 
   const generateNumeroOrdem = async () => {

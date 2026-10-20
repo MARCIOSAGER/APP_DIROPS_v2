@@ -160,7 +160,7 @@ export default function MonitoramentoSuperAdmin() {
               <SectionLabel>Aplicação</SectionLabel>
               <div className="grid grid-cols-2 gap-3">
                 <MetricCard icon={Users} label="Utilizadores" value={fmt(app?.totalUsers)} color="green" />
-                <MetricCard icon={Plane} label="Voos hoje" value={fmt(app?.voosHoje)} color="blue" />
+                <MetricCard icon={Plane} label="Voos hoje (todos aeroportos)" value={fmt(app?.voosHoje)} color="blue" />
               </div>
             </div>
 

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Save, RefreshCw, Settings, Mail, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import AlertModal from '@/components/shared/AlertModal';
@@ -40,6 +41,16 @@ export default function ConfiguracoesGerais() {
   const [smtpTestStatus, setSmtpTestStatus] = useState(null);
   const [isTesting, setIsTesting] = useState(false);
 
+  // Emails do sistema (editáveis aqui; consumidos por server.js dos alertas,
+  // scripts de relatório, função de suporte e notificacoes.jsx dos acessos).
+  const [emailsData, setEmailsData] = useState({
+    email_alertas: '',
+    email_notificacao_acessos: '',
+    email_suporte: '',
+    email_notificacao_registros: '',
+    notificacoes_registros: { registo: { criacao: true, edicao: true }, aeroporto: { criacao: true, edicao: true }, companhia: { criacao: true, edicao: true } },
+  });
+
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
   const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
 
@@ -68,6 +79,13 @@ export default function ConfiguracoesGerais() {
         smtp_from_email: configData.smtp_from_email || '',
         smtp_secure: configData.smtp_secure !== false,
         email_notificacoes_padrao: configData.email_notificacoes_padrao || '',
+      });
+      setEmailsData({
+        email_alertas: configData.email_alertas || '',
+        email_notificacao_acessos: configData.email_notificacao_acessos || '',
+        email_suporte: configData.email_suporte || '',
+        email_notificacao_registros: configData.email_notificacao_registros || '',
+        notificacoes_registros: configData.notificacoes_registros || { registo: { criacao: true, edicao: true }, aeroporto: { criacao: true, edicao: true }, companhia: { criacao: true, edicao: true } },
       });
     }
   }, [configData]);
@@ -115,6 +133,52 @@ export default function ConfiguracoesGerais() {
             title: t('configGerais.erroSalvarTitulo'),
             message: error.message || t('configGerais.erroSalvarMsg')
           });
+        },
+      }
+    );
+  };
+
+  const handleEmailChange = (field, value) => {
+    setEmailsData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Atualiza a matriz de notificações de registros (tipo × ação)
+  const handleNotifChange = (entity, acao, value) => {
+    setEmailsData(prev => ({
+      ...prev,
+      notificacoes_registros: {
+        ...prev.notificacoes_registros,
+        [entity]: { ...(prev.notificacoes_registros?.[entity] || {}), [acao]: value },
+      },
+    }));
+  };
+
+  // Todos os emails do sistema saem pelo relay SGA, que só entrega @sga.co.ao.
+  // Avisa (não bloqueia) se algum destino não for @sga.co.ao.
+  const emailsForaSga = Object.values(emailsData)
+    .filter(v => typeof v === 'string')            // ignora toggles/booleanos — só campos de email
+    .flatMap(v => v.split(','))
+    .map(e => e.trim())
+    .filter(Boolean)
+    .filter(e => !/@sga\.co\.ao$/i.test(e));
+
+  const handleSaveEmails = async () => {
+    saveMutation.mutate(
+      {
+        configId,
+        data: {
+          email_alertas: emailsData.email_alertas.trim(),
+          email_notificacao_acessos: emailsData.email_notificacao_acessos.trim(),
+          email_suporte: emailsData.email_suporte.trim(),
+          email_notificacao_registros: emailsData.email_notificacao_registros.trim(),
+          notificacoes_registros: emailsData.notificacoes_registros,
+        },
+      },
+      {
+        onSuccess: () => setSuccessInfo({ isOpen: true, title: 'Emails guardados', message: 'As alterações entram em vigor de imediato (os alertas do servidor podem levar até 5 min pelo cache).' }),
+        onError: (error) => {
+          console.error('Erro ao salvar emails:', error);
+          setAlertInfo({ isOpen: true, type: 'error', title: 'Erro ao guardar', message: error.message || 'Não foi possível guardar os emails.' });
         },
       }
     );
@@ -352,17 +416,113 @@ export default function ConfiguracoesGerais() {
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                {t('configGerais.tabGeral')}
+                <Mail className="w-5 h-5" />
+                Emails do Sistema
               </CardTitle>
               <CardDescription>
-                {t('configGerais.geralDesc')}
+                Para onde o sistema envia alertas, avisos de novos acessos e tickets de suporte.
+                Todos saem pelo relay SGA, que só entrega endereços <strong>@sga.co.ao</strong>.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                <Settings className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p>{t('configGerais.geralVazio')}</p>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email_alertas">Alertas do sistema (falhas / erros)</Label>
+                <Input
+                  id="email_alertas"
+                  type="text"
+                  value={emailsData.email_alertas}
+                  onChange={(e) => handleEmailChange('email_alertas', e.target.value)}
+                  placeholder="oaeroportos@sga.co.ao"
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400">Recebe erros do servidor, do frontend e falhas nos relatórios automáticos (agrupados, no máx. 1 por tipo/hora).</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email_notificacao_acessos">Notificação de novos acessos</Label>
+                <Input
+                  id="email_notificacao_acessos"
+                  type="text"
+                  value={emailsData.email_notificacao_acessos}
+                  onChange={(e) => handleEmailChange('email_notificacao_acessos', e.target.value)}
+                  placeholder="oaeroportos@sga.co.ao"
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400">Avisado quando alguém solicita/cria acesso. Vários emails separados por vírgula.</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email_suporte">Suporte / tickets</Label>
+                <Input
+                  id="email_suporte"
+                  type="text"
+                  value={emailsData.email_suporte}
+                  onChange={(e) => handleEmailChange('email_suporte', e.target.value)}
+                  placeholder="oaeroportos@sga.co.ao"
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400">Recebe cada novo ticket do formulário de Suporte e as reclamações públicas.</p>
+              </div>
+
+              {/* Campo dedicado: para onde vão as notificações de registros */}
+              <div className="space-y-2">
+                <Label htmlFor="email_notificacao_registros">Notificações de registros</Label>
+                <Input
+                  id="email_notificacao_registros"
+                  type="text"
+                  value={emailsData.email_notificacao_registros}
+                  onChange={(e) => handleEmailChange('email_notificacao_registros', e.target.value)}
+                  placeholder="oaeroportos@sga.co.ao"
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400">Recebe os avisos de criação/edição de aeronave, aeroporto e companhia. Vários emails separados por vírgula. Vazio = usa o "Notificação de novos acessos".</p>
+              </div>
+
+              {/* Matriz: o que enviar (por tipo × ação) */}
+              <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+                <div className="pb-1">
+                  <Label className="font-medium">O que enviar (por tipo × ação)</Label>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Liga/desliga cada aviso enviado ao email de "Notificações de registros" acima. (Tickets e comunicados não são afetados.)
+                  </p>
+                </div>
+                {[
+                  { key: 'registo', label: 'Aeronave (registo)' },
+                  { key: 'aeroporto', label: 'Aeroporto' },
+                  { key: 'companhia', label: 'Companhia' },
+                ].map((ent) => (
+                  <div key={ent.key} className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 py-2">
+                    <span className="text-sm font-medium">{ent.label}</span>
+                    <div className="flex items-center gap-5">
+                      <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                        Criação
+                        <Switch
+                          checked={emailsData.notificacoes_registros?.[ent.key]?.criacao !== false}
+                          onCheckedChange={(v) => handleNotifChange(ent.key, 'criacao', v)}
+                        />
+                      </label>
+                      <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                        Edição
+                        <Switch
+                          checked={emailsData.notificacoes_registros?.[ent.key]?.edicao !== false}
+                          onCheckedChange={(v) => handleNotifChange(ent.key, 'edicao', v)}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {emailsForaSga.length > 0 && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-800 dark:text-amber-300">
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>
+                    {emailsForaSga.join(', ')} não {emailsForaSga.length > 1 ? 'são' : 'é'} @sga.co.ao — o relay da SGA <strong>não entrega</strong> a endereços externos. Esses avisos não vão chegar.
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <Button onClick={handleSaveEmails} disabled={saveMutation.isPending} className="gap-2">
+                  <Save className="w-4 h-4" />
+                  {saveMutation.isPending ? 'A guardar...' : 'Guardar emails'}
+                </Button>
               </div>
             </CardContent>
           </Card>

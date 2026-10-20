@@ -73,9 +73,10 @@ async function buscarDestinatarios() {
 
 const kz = (n) => new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 2 }).format(Number(n) || 0) + ' Kz';
 const usd = (n) => 'USD ' + new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 2 }).format(Number(n) || 0);
+const escapeHtml = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 function buildHtml(agg, label) {
-  const linhas = agg.porServico.map(s => `<tr><td style="padding:6px 8px;border-bottom:1px solid #eef2f7">${s.descricao}</td><td align="right" style="padding:6px 8px;border-bottom:1px solid #eef2f7">${s.qtd}</td><td align="right" style="padding:6px 8px;border-bottom:1px solid #eef2f7">${kz(s.akz)}</td></tr>`).join('');
+  const linhas = agg.porServico.map(s => `<tr><td style="padding:6px 8px;border-bottom:1px solid #eef2f7">${escapeHtml(s.descricao)}</td><td align="right" style="padding:6px 8px;border-bottom:1px solid #eef2f7">${s.qtd}</td><td align="right" style="padding:6px 8px;border-bottom:1px solid #eef2f7">${kz(s.akz)}</td></tr>`).join('');
   return `<div style="font-family:Arial,sans-serif;color:#0f172a;max-width:640px">
     <h2 style="color:#1e3a5f;margin:0 0 4px">Relatório Diário — Pronto Pagamento</h2>
     <p style="color:#64748b;margin:0 0 16px">${label}</p>
@@ -132,9 +133,19 @@ async function enviar(recipients, subject, html, anexos) {
 
 // Alerta central de falhas do sistema -> responsável de operações. Best-effort
 // (usa a retentativa do sendOne); se o próprio alerta falhar, só loga (sem loop).
-const ALERT_TO = 'oaeroportos@sga.co.ao';
+const ALERT_TO_DEFAULT = 'oaeroportos@sga.co.ao';
+// Destino dos alertas — editável na UI (configuracao_sistema.email_alertas); fallback = default.
+async function emailAlertas() {
+  try {
+    const r = await fetch(`${PGRST}/configuracao_sistema?order=created_date.asc&limit=1&select=email_alertas`, { headers: HDR });
+    if (!r.ok) return ALERT_TO_DEFAULT;
+    const j = await r.json();
+    return (Array.isArray(j) && j[0] && String(j[0].email_alertas || '').trim()) || ALERT_TO_DEFAULT;
+  } catch { return ALERT_TO_DEFAULT; }
+}
 async function alertar(assunto, detalhe) {
   try {
+    const ALERT_TO = await emailAlertas();
     const esc = String(detalhe || '').replace(/</g, '&lt;');
     const html = `<div style="font-family:Arial,sans-serif;color:#0f172a;max-width:640px">
       <h2 style="color:#b91c1c;margin:0 0 8px">⚠️ Alerta do Sistema DIROPS</h2>
@@ -155,6 +166,32 @@ async function alertar(assunto, detalhe) {
   const ano = per.fim ? per.fim.slice(0, 4) : (per.likeDia ? per.likeDia.split('/')[2] : String(new Date().getFullYear()));
   const consolidadoRows = await fetchConsolidado();
   log(`linhas PP período: ${rows.length} · consolidado(anos): ${consolidadoRows.length}`);
+
+  // Sem registos no período (e não é modo amostra --out): envia um aviso claro
+  // em vez de um relatório/PDF vazio — confirma que o job rodou e que não houve
+  // movimento pago (PP), sem parecer falha.
+  if (!rows.length && !args.out) {
+    const dest = args.to
+      ? String(args.to).split(',').map(s => s.trim()).filter(Boolean)
+      : await buscarDestinatarios();
+    if (!dest.length) { log('sem registos e sem destinatários — nada enviado'); return; }
+    const htmlVazio = `<div style="font-family:Arial,sans-serif;color:#0f172a;max-width:640px">
+      <h2 style="color:#1e3a5f;margin:0 0 4px">Relatório Diário — Pronto Pagamento</h2>
+      <p style="color:#64748b;margin:0 0 16px">${per.label}</p>
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:16px;color:#9a3412;font-size:15px">
+        <strong>Sem Registo de Pronto Pagamento para o Período.</strong>
+      </div>
+      <p style="color:#94a3b8;font-size:12px;margin-top:16px">Nenhum movimento pago (PP) foi encontrado para este período, pela data de pagamento. Mensagem automática do agendador.</p>
+    </div>`;
+    const resVazio = await enviar(dest, `Relatório Pronto Pagamento — ${per.label} (sem registos)`, htmlVazio, []);
+    log(`aviso 'sem registos': enviados=${resVazio.sent.length} bloqueados=${resVazio.blocked.length} falhas=${resVazio.failed.length}`);
+    if (resVazio.failed.length) {
+      await alertar(`Falha no envio do aviso 'sem registos' PP (${per.label})`,
+        resVazio.failed.map(f => `• ${f.to}: ${f.error}`).join('\n'));
+    }
+    return;
+  }
+
   const logo = loadLogo();
   const doc = gerarPdfPP(rows, { periodo: per.label, logo: logo?.dataUrl, logoRatio: logo?.ratio, consolidadoRows, anoConsolidado: ano });
   const pdfB64 = Buffer.from(doc.output('arraybuffer')).toString('base64');

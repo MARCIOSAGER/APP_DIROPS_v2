@@ -6,20 +6,24 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Select from '@/components/ui/select';
 import {
-  Calendar, CalendarDays, CalendarRange, Gauge, Download, Mail, Loader2,
-  FileText, FileSpreadsheet, Filter, Send, X, CheckCircle, AlertCircle, Plane
+  Calendar, CalendarDays, CalendarRange, CalendarClock, Gauge, Download, Mail, Loader2,
+  FileText, FileSpreadsheet, Filter, Send, X, CheckCircle, AlertCircle, Plane, BarChart3, Clock
 } from 'lucide-react';
 import { createEntity } from '@/entities/_createEntity';
 import { gerarRelatorio } from '@/functions/gerarRelatorio';
+import { exportOperacionalOnePagerPDF } from '@/lib/operacionalOnePager';
 
 const Aeroporto = createEntity('aeroporto');
 const RelatorioDestinatario = createEntity('relatorio_destinatario');
 
 const TIPOS = [
-  { id: 'diario',  label: 'Relatório Diário',  desc: 'Voos de um dia',            icon: Calendar },
-  { id: 'semanal', label: 'Relatório Semanal', desc: 'Voos de um período semanal', icon: CalendarDays },
-  { id: 'mensal',  label: 'Relatório Mensal',  desc: 'Voos de um mês',            icon: CalendarRange },
-  { id: 'kpis',    label: 'Mapa de KPIs',      desc: 'Tempos de atendimento vs meta', icon: Gauge },
+  { id: 'diario',     label: 'Relatório Diário',  desc: 'Voos de um dia',            icon: Calendar },
+  { id: 'semanal',    label: 'Relatório Semanal', desc: 'Voos de um período semanal', icon: CalendarDays },
+  { id: 'mensal',     label: 'Relatório Mensal',  desc: 'Voos de um mês',            icon: CalendarRange },
+  { id: 'trimestral', label: 'Relatório Trimestral', desc: 'Voos de um trimestre',   icon: CalendarClock },
+  { id: 'semestral',  label: 'Relatório Semestral',  desc: 'Voos de um semestre',    icon: CalendarClock },
+  { id: 'kpis',       label: 'Mapa de KPIs',      desc: 'Tempos de atendimento vs meta', icon: Gauge },
+  { id: 'chegadas_abertas', label: 'Chegadas sem Partida', desc: 'Backlog por aeroporto (filtra por período)', icon: Clock },
 ];
 
 const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -35,6 +39,23 @@ function defaultsPara(tipo) {
     const f = new Date(hoje); f.setDate(f.getDate() - 1);
     const i = new Date(f); i.setDate(i.getDate() - 6);
     return { inicio: isoLocal(i), fim: isoLocal(f) };
+  }
+  if (tipo === 'trimestral') {
+    // últimos 3 meses completos (ex.: em julho → 01/abr a 30/jun)
+    const first = new Date(hoje.getFullYear(), hoje.getMonth() - 3, 1);
+    const last = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+    return { inicio: isoLocal(first), fim: isoLocal(last) };
+  }
+  if (tipo === 'semestral') {
+    // últimos 6 meses completos (ex.: em julho → 01/jan a 30/jun)
+    const first = new Date(hoje.getFullYear(), hoje.getMonth() - 6, 1);
+    const last = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+    return { inicio: isoLocal(first), fim: isoLocal(last) };
+  }
+  if (tipo === 'chegadas_abertas') {
+    // backlog: default amplo (2 anos atrás → hoje); o utilizador pode estreitar
+    const i = new Date(hoje.getFullYear() - 2, hoje.getMonth(), hoje.getDate());
+    return { inicio: isoLocal(i), fim: isoLocal(hoje) };
   }
   // mensal / kpis → mês anterior
   const first = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
@@ -70,16 +91,20 @@ export default function PowerBi() {
 
   // Email
   const [emailOpen, setEmailOpen] = useState(false);
-  const [destinatarios, setDestinatarios] = useState([]);
+  const [destinatarios, setDestinatarios] = useState([]);           // lista CURADA de envio (começa vazia = ad-hoc, você digita)
+  const [destinatariosConfig, setDestinatariosConfig] = useState([]); // lista configurada (dos automáticos), só p/ o botão "usar"
   const [extraEmails, setExtraEmails] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [envioMsg, setEnvioMsg] = useState(null);
+
+  // Relatório Executivo (one-pager, gerado no browser a partir da RPC)
+  const [execLoading, setExecLoading] = useState(false);
 
   // Pré-seleção via query params (ex.: vindo de "Gerar Relatório" na página de KPIs)
   const [searchParams] = useSearchParams();
   useEffect(() => {
     const qtipo = searchParams.get('tipo');
-    if (qtipo && ['diario', 'semanal', 'mensal', 'kpis'].includes(qtipo)) {
+    if (qtipo && ['diario', 'semanal', 'mensal', 'trimestral', 'semestral', 'kpis'].includes(qtipo)) {
       setTipo(qtipo);
       const d = defaultsPara(qtipo);
       setInicio(searchParams.get('inicio') || d.inicio);
@@ -90,10 +115,10 @@ export default function PowerBi() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Carregar aeroportos operados (códigos FN*)
+  // Carregar apenas os aeroportos geridos pela SGA (isSGA = true)
   useEffect(() => {
     Aeroporto.list('codigo_icao')
-      .then(rows => setAeroportos((rows || []).filter(a => /^FN/i.test(a.codigo_icao || ''))))
+      .then(rows => setAeroportos((rows || []).filter(a => a.isSGA === true)))
       .catch(() => {});
   }, []);
 
@@ -101,10 +126,11 @@ export default function PowerBi() {
   const carregarDestinatarios = useCallback(async (t) => {
     try {
       const rows = await RelatorioDestinatario.filter({ tipo_relatorio: recipientTipo(t), ativo: true });
-      setDestinatarios([...new Set((rows || []).map(r => (r.email || '').trim()).filter(Boolean))]);
-    } catch { setDestinatarios([]); }
+      setDestinatariosConfig([...new Set((rows || []).map(r => (r.email || '').trim()).filter(Boolean))]);
+    } catch { setDestinatariosConfig([]); }
   }, []);
-  useEffect(() => { carregarDestinatarios(tipo); }, [tipo, carregarDestinatarios]);
+  // Ao trocar de tipo: recarrega a lista configurada e ZERA a curada (envio ad-hoc começa em branco).
+  useEffect(() => { carregarDestinatarios(tipo); setDestinatarios([]); }, [tipo, carregarDestinatarios]);
 
   const escolherTipo = (t) => {
     setTipo(t);
@@ -150,6 +176,24 @@ export default function PowerBi() {
       setEnvioMsg({ ok: false, txt: e.message || 'Falha ao enviar.' });
     } finally {
       setEnviando(false);
+    }
+  };
+
+  // Gera o Relatório Executivo (one-pager, PDF nativo) no browser, a partir da RPC.
+  const gerarExecutivo = async () => {
+    if (!inicio || !fim) { setErro('Selecione o período (início e fim).'); return; }
+    if (inicio > fim) { setErro('A data de início não pode ser depois da data de fim.'); return; }
+    setExecLoading(true); setErro(null);
+    try {
+      const aeroLabel = aeroporto ? (aeroportoOptions.find(o => o.value === aeroporto)?.label || aeroporto) : '';
+      await exportOperacionalOnePagerPDF({
+        inicio, fim, aeroporto: aeroporto || undefined, aeroportoLabel: aeroLabel,
+        fileName: `Relatorio_Executivo_Operacao_${fim}.pdf`,
+      });
+    } catch (e) {
+      setErro(e.message || 'Não foi possível gerar o Relatório Executivo.');
+    } finally {
+      setExecLoading(false);
     }
   };
 
@@ -221,6 +265,7 @@ export default function PowerBi() {
                 </Button>
               </div>
             </div>
+
             {erro && (
               <Alert className="mt-4 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950">
                 <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -240,6 +285,14 @@ export default function PowerBi() {
                   <span className="text-slate-400 font-normal"> · {result.periodo?.inicio} a {result.periodo?.fim}{aeroporto ? ` · ${aeroporto}` : ''}</span>
                 </CardTitle>
                 <div className="flex flex-wrap gap-2">
+                  {tipo !== 'kpis' && tipo !== 'chegadas_abertas' && (
+                    <Button variant="outline" size="sm" onClick={gerarExecutivo} disabled={execLoading}
+                      className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900">
+                      {execLoading
+                        ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> A gerar...</>
+                        : <><BarChart3 className="w-4 h-4 mr-1.5" /> PDF Executivo</>}
+                    </Button>
+                  )}
                   {pdfs.map((a, i) => (
                     <Button key={i} variant="outline" size="sm" onClick={() => baixarBase64(a.content, a.filename, a.contentType)}>
                       <Download className="w-4 h-4 mr-1.5 text-red-600" /> {a.filename.includes('Tecnico') ? 'PDF Técnico' : 'PDF'}
@@ -264,15 +317,37 @@ export default function PowerBi() {
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Enviar este relatório por email</p>
                     <button onClick={() => setEmailOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                   </div>
+                  {/* Curados (removíveis) — só aparece quando você já adicionou/puxou alguém */}
+                  {destinatarios.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Vai enviar para ({destinatarios.length}):</p>
+                        <button type="button" onClick={() => setDestinatarios([])} className="text-xs text-red-500 hover:text-red-600 font-medium">Limpar</button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {destinatarios.map(e => (
+                          <span key={e} className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-full pl-2 pr-1 py-0.5">
+                            {e}
+                            <button type="button" onClick={() => setDestinatarios(prev => prev.filter(x => x !== e))} className="hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full" aria-label={`Remover ${e}`}>
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Destinatários configurados ({recipientTipo(tipo)}):</p>
-                    {destinatarios.length
-                      ? <div className="flex flex-wrap gap-1.5">{destinatarios.map(e => <span key={e} className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-full px-2 py-0.5">{e}</span>)}</div>
-                      : <p className="text-xs text-slate-400 italic">Nenhum configurado — adicione abaixo.</p>}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Adicionar outros (@sga.co.ao, separados por ; )</label>
+                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Para quem enviar (@sga.co.ao, separados por ; )</label>
                     <Input value={extraEmails} onChange={e => setExtraEmails(e.target.value)} placeholder="ex.: fulano@sga.co.ao; outro@sga.co.ao" />
+                    {destinatariosConfig.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setDestinatarios(prev => [...new Set([...prev, ...destinatariosConfig])])}
+                        className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        + Usar a lista configurada do {recipientTipo(tipo)} ({destinatariosConfig.length})
+                      </button>
+                    )}
                   </div>
                   {envioMsg && (
                     <p className={`text-sm flex items-center gap-1 ${envioMsg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -280,7 +355,7 @@ export default function PowerBi() {
                     </p>
                   )}
                   <div className="flex justify-end">
-                    <Button onClick={enviar} disabled={enviando} className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Button onClick={enviar} disabled={enviando || (destinatarios.length === 0 && !extraEmails.trim())} className="bg-blue-600 hover:bg-blue-700 text-white">
                       {enviando ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> A enviar...</> : <><Send className="w-4 h-4 mr-2" /> Enviar agora</>}
                     </Button>
                   </div>

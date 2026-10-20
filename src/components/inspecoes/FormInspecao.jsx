@@ -16,12 +16,17 @@ import { ItemChecklist } from '@/entities/ItemChecklist';
 import { RespostaInspecao } from '@/entities/RespostaInspecao';
 import { UploadFile } from '@/integrations/Core';
 import FormGRF from '../grf/FormGRF';
+import SuccessModal from '@/components/shared/SuccessModal';
+import AlertModal from '@/components/shared/AlertModal';
 import useSubmitGuard from '@/hooks/useSubmitGuard';
 import { useI18n } from '@/components/lib/i18n';
 
 export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos, currentUser }) {
   const { t } = useI18n();
   const [step, setStep] = useState(1); // 1: Dados Gerais, 2: Checklist, 3: Concluído
+  const [currentQ, setCurrentQ] = useState(0); // pergunta atual no assistente (passo 2)
+  const [successInfo, setSuccessInfo] = useState({ isOpen: false, title: '', message: '' });
+  const [alertInfo, setAlertInfo] = useState({ isOpen: false, type: 'info', title: '', message: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState({});
@@ -109,8 +114,9 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       });
       setCurrentInspecao(novaInspecao);
 
-      // 2. Carregar os itens do checklist para esta inspeção
-      const items = await ItemChecklist.filter({ tipo_inspecao_id: tipoInspecao.id }, 'ordem');
+      // 2. Carregar os itens do checklist para esta inspeção (SÓ ativos — itens
+      //    desativados/antigos não devem aparecer numa inspeção nova).
+      const items = await ItemChecklist.filter({ tipo_inspecao_id: tipoInspecao.id, status: 'ativo' }, 'ordem');
       setChecklistItems(items);
 
       // 3. Inicializar o estado das respostas
@@ -128,6 +134,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       setRespostas(respostasIniciais);
 
       // 4. Mudar para a próxima etapa
+      setCurrentQ(0);
       setStep(2);
     } catch (err) {
       console.error('Erro ao iniciar inspeção:', err);
@@ -173,14 +180,15 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
       const { RegistoGRF } = await import('@/entities/RegistoGRF');
       await RegistoGRF.create({
         ...grfData,
-        inspecao_id: currentInspecao.id // Vincular ao ID da inspeção
+        inspecao_id: currentInspecao.id, // Vincular ao ID da inspeção
+        created_by: currentUser?.email || currentUser?.full_name || null,
       });
       setGrfRegistado(true);
       setShowGRFForm(false);
-      alert(t('formInspecao.grfSucesso'));
+      setSuccessInfo({ isOpen: true, title: 'Condições GRF registadas', message: t('formInspecao.grfSucesso') });
     } catch (error) {
       console.error('Erro ao registar GRF:', error);
-      alert(t('formInspecao.grfErro'));
+      setAlertInfo({ isOpen: true, type: 'error', title: 'Erro ao registar GRF', message: t('formInspecao.grfErro') });
     }
   };
 
@@ -274,7 +282,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
   const renderStep1 = () => {
     const aeroportoOptions = aeroportos.map(aeroporto => ({
       value: aeroporto.id,
-      label: `${aeroporto.nome} (${aeroporto.codigo_icao})`
+      label: `${aeroporto.codigo_icao} — ${aeroporto.nome}`
     }));
 
     return (
@@ -369,8 +377,24 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
         </Card>
       )}
 
-      {checklistItems.map(item => (
-        <Card key={item.id} className="bg-slate-50/50">
+      {(!isInspecaoPistaDiaria || grfRegistado) && checklistItems.length > 0 && (() => {
+        const total = checklistItems.length;
+        const q = Math.min(currentQ, total - 1);
+        const item = checklistItems[q];
+        const respondidas = checklistItems.filter((it) => respostas[it.id]?.resultado).length;
+        return (
+        <div className="space-y-4">
+          {/* progresso do assistente */}
+          <div>
+            <div className="flex items-center justify-between text-sm mb-1">
+              <span className="font-semibold text-slate-700 dark:text-slate-200">{item.categoria || 'Checklist'}</span>
+              <span className="text-slate-500">Pergunta {q + 1} de {total} · {respondidas}/{total} respondidas</span>
+            </div>
+            <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-2 bg-blue-600 rounded-full transition-all" style={{ width: `${((q + 1) / total) * 100}%` }} />
+            </div>
+          </div>
+        <Card className="bg-slate-50/50">
           <CardHeader>
             <CardTitle className="text-base font-semibold text-slate-800">
               {item.ordem}. {item.item}
@@ -434,8 +458,19 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
             )}
           </CardContent>
         </Card>
-      ))}
+          {/* navegação pergunta-a-pergunta */}
+          <div className="flex items-center justify-between pt-1">
+            <Button type="button" variant="outline" onClick={() => setCurrentQ((c) => Math.max(0, c - 1))} disabled={q === 0}>← Anterior</Button>
+            {q < total - 1
+              ? <Button type="button" onClick={() => setCurrentQ((c) => Math.min(total - 1, c + 1))} className="bg-blue-600 hover:bg-blue-700 text-white">Próxima →</Button>
+              : <span className="text-sm font-medium text-emerald-600 self-center">Última pergunta — conclua abaixo</span>}
+          </div>
+        </div>
+        );
+      })()}
 
+      {/* Resumo geral — só na última pergunta */}
+      {(!isInspecaoPistaDiaria || grfRegistado) && checklistItems.length > 0 && currentQ >= checklistItems.length - 1 && (
       <div className="space-y-2 pt-4">
         <Label className="text-lg font-semibold">{t('formInspecao.resumoGeral')}</Label>
         <Textarea
@@ -445,6 +480,7 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
           rows={5}
         />
       </div>
+      )}
     </div>
   );
 
@@ -520,6 +556,20 @@ export default function FormInspecao({ isOpen, onClose, tipoInspecao, aeroportos
           aeroportoPreSelecionado={dadosGerais.aeroporto_id} // Passando o aeroporto pré-selecionado
         />
       )}
+
+      <SuccessModal
+        isOpen={successInfo.isOpen}
+        onClose={() => setSuccessInfo((p) => ({ ...p, isOpen: false }))}
+        title={successInfo.title}
+        message={successInfo.message}
+      />
+      <AlertModal
+        isOpen={alertInfo.isOpen}
+        onClose={() => setAlertInfo((p) => ({ ...p, isOpen: false }))}
+        type={alertInfo.type}
+        title={alertInfo.title}
+        message={alertInfo.message}
+      />
     </Dialog>
   );
 }

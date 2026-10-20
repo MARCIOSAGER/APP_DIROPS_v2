@@ -45,6 +45,8 @@ const SolicitacaoPerfil = lazy(() => import('./pages/SolicitacaoPerfil'));
 const Suporte = lazy(() => import('./pages/Suporte'));
 const TermosServico = lazy(() => import('./pages/TermosServico'));
 const FlightAware = lazy(() => import('./pages/FlightAware'));
+const Formacao = lazy(() => import('./pages/Formacao'));
+const GestaoFormacao = lazy(() => import('./pages/GestaoFormacao'));
 const ValidacaoAcesso = lazy(() => import('./pages/ValidacaoAcesso'));
 const portalservicos = lazy(() => import('./pages/portalservicos'));
 
@@ -94,6 +96,8 @@ export const PAGES = {
     "Suporte": Suporte,
     "TermosServico": TermosServico,
     "FlightAware": FlightAware,
+    "Formacao": Formacao,
+    "GestaoFormacao": GestaoFormacao,
     "ValidacaoAcesso": ValidacaoAcesso,
     "portalservicos": portalservicos,
 }

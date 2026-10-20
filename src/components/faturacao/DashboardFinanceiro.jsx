@@ -78,14 +78,17 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
         const batch = vooIds.slice(i, i + 50);
         const { data: vooData } = await supabase
           .from('voo')
-          .select('id,data_operacao')
+          .select('id,data_operacao,deleted_at')
           .in('id', batch);
-        if (vooData) vooData.forEach(v => vooDateMap.set(v.id, v.data_operacao));
+        // Só voos NÃO deletados no mapa (a entidade não filtra deleted_at sozinha)
+        if (vooData) vooData.forEach(v => { if (!v.deleted_at) vooDateMap.set(v.id, v.data_operacao); });
       }
+      // Exclui cálculos de voo DELETADO (voo_id preenchido mas ausente do mapa ativo)
+      const activeCalcs = allCalcs.filter(c => !c.voo_id || vooDateMap.has(c.voo_id));
       // Attach data_operacao to each calculo
-      allCalcs.forEach(c => { c._data_operacao = vooDateMap.get(c.voo_id) || ''; });
+      activeCalcs.forEach(c => { c._data_operacao = vooDateMap.get(c.voo_id) || ''; });
 
-      setCalculos(allCalcs);
+      setCalculos(activeCalcs);
     } catch (error) {
       console.error('Erro:', error);
       toast({ title: 'Erro', description: 'Erro ao carregar dados', variant: 'destructive' });
@@ -229,7 +232,7 @@ export default function DashboardFinanceiro({ companhias, aeroportos }) {
 
   const aeroportoOptions = [
     { value: '', label: 'Todos os Aeroportos' },
-    ...aeroportos.map(a => ({ value: a.id, label: `${a.nome} (${a.codigo_icao})` })),
+    ...aeroportos.map(a => ({ value: a.id, label: `${a.codigo_icao} — ${a.nome}` })),
   ];
 
   const CustomTooltip = ({ active, payload, label }) => {

@@ -198,6 +198,7 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
       }
 
       // Enviar email para cada administrador
+      const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const emailPromises = admins.map(admin => 
         sendEmailDirect({
           to: admin.email,
@@ -209,7 +210,7 @@ export default function LixeiraVoosModal({ isOpen, onClose, onSuccess, companhia
               </div>
               
               <div style="padding: 20px; background-color: #f9f9f9;">
-                <p style="font-size: 16px;">Olá <strong>${admin.full_name || admin.email}</strong>,</p>
+                <p style="font-size: 16px;">Olá <strong>${esc(admin.full_name || admin.email)}</strong>,</p>
                 
                 <div style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0;">
                   <p style="margin: 0; font-size: 18px; font-weight: bold; color: #92400E;">

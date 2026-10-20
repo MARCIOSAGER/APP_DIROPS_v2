@@ -1,18 +1,23 @@
 import { supabase } from '@/lib/supabaseClient';
 
+// Escapa valores dinâmicos antes de os interpolar no HTML dos e-mails (anti-XSS armazenado).
+const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 /**
  * Obtém os e-mails de todos os administradores cadastrados na aplicação
  */
 export async function getAdminEmails() {
   try {
-    // First try: read from configuracao_sistema
+    // Prioridade: campo DEDICADO de registros → campo de novos acessos (fallback) → admins
     const { data: config } = await supabase
       .from('configuracao_sistema')
-      .select('email_notificacao_acessos')
+      .select('email_notificacao_registros, email_notificacao_acessos')
+      .order('created_date', { ascending: true }) // mesma linha canônica que a UI grava
       .limit(1)
       .single();
-    if (config?.email_notificacao_acessos) {
-      return config.email_notificacao_acessos.split(',').map(e => e.trim()).filter(Boolean);
+    const rawEmails = config?.email_notificacao_registros || config?.email_notificacao_acessos;
+    if (rawEmails) {
+      return rawEmails.split(',').map(e => e.trim()).filter(Boolean);
     }
     // Fallback: get all users with admin role
     const { data: admins } = await supabase
@@ -26,6 +31,25 @@ export async function getAdminEmails() {
     console.warn('[getAdminEmails] Erro ao buscar admins:', err.message);
   }
   return [];
+}
+
+/**
+ * Matriz de interruptores (Config Gerais) por tipo × ação. Default = LIGADO (só desliga
+ * se o flag estiver explicitamente `false`).
+ * cfg.notificacoes_registros = { registo:{criacao,edicao}, aeroporto:{…}, companhia:{…} }
+ */
+async function notificacaoRegistroAtiva(entityType, acao) {
+  try {
+    const { data: config } = await supabase
+      .from('configuracao_sistema')
+      .select('notificacoes_registros')
+      .order('created_date', { ascending: true })
+      .limit(1)
+      .single();
+    return config?.notificacoes_registros?.[entityType]?.[acao] !== false;
+  } catch {
+    return true; // em erro, mantém o comportamento atual (ligado)
+  }
 }
 
 /**
@@ -61,6 +85,7 @@ async function sendNotificationEmail(to, subject, body) {
  */
 export async function notifyAdminsCreation(entityType, entityData, createdBy, additionalInfo = {}) {
   try {
+    if (!(await notificacaoRegistroAtiva(entityType, 'criacao'))) return; // interruptor em Configurações Gerais
     const adminEmails = await getAdminEmails();
 
     if (adminEmails.length === 0) {
@@ -82,47 +107,49 @@ export async function notifyAdminsCreation(entityType, entityData, createdBy, ad
     switch(entityType) {
       case 'aeroporto':
         mainFieldsDescription = `
-          <strong>Código ICAO:</strong> ${entityData.codigo_icao || 'N/A'}<br>
-          <strong>Código IATA:</strong> ${entityData.codigo_iata || 'N/A'}<br>
-          <strong>Nome:</strong> ${entityData.nome || 'N/A'}<br>
-          <strong>Cidade:</strong> ${entityData.cidade || 'N/A'}<br>
-          <strong>Província:</strong> ${entityData.provincia || 'N/A'}<br>
-          <strong>País:</strong> ${entityData.pais || 'N/A'}<br>
-          <strong>Tipo de Operação:</strong> ${entityData.tipo_operacao || 'N/A'}<br>
-          <strong>Categoria:</strong> ${entityData.categoria || 'N/A'}<br>
-          <strong>Status:</strong> ${entityData.status || 'N/A'}
+          <strong>Código ICAO:</strong> ${esc(entityData.codigo_icao || 'N/A')}<br>
+          <strong>Código IATA:</strong> ${esc(entityData.codigo_iata || 'N/A')}<br>
+          <strong>Nome:</strong> ${esc(entityData.nome || 'N/A')}<br>
+          <strong>Cidade:</strong> ${esc(entityData.cidade || 'N/A')}<br>
+          <strong>Província:</strong> ${esc(entityData.provincia || 'N/A')}<br>
+          <strong>País:</strong> ${esc(entityData.pais || 'N/A')}<br>
+          <strong>Tipo de Operação:</strong> ${esc(entityData.tipo_operacao || 'N/A')}<br>
+          <strong>Categoria:</strong> ${esc(entityData.categoria || 'N/A')}<br>
+          <strong>Status:</strong> ${esc(entityData.status || 'N/A')}
         `;
         break;
       case 'companhia':
         mainFieldsDescription = `
-          <strong>Código ICAO:</strong> ${entityData.codigo_icao || 'N/A'}<br>
-          <strong>Código IATA:</strong> ${entityData.codigo_iata || 'N/A'}<br>
-          <strong>Nome:</strong> ${entityData.nome || 'N/A'}<br>
-          <strong>Nacionalidade:</strong> ${entityData.nacionalidade || 'N/A'}<br>
-          <strong>Tipo:</strong> ${entityData.tipo || 'N/A'}<br>
-          <strong>Status:</strong> ${entityData.status || 'N/A'}
+          <strong>Código ICAO:</strong> ${esc(entityData.codigo_icao || 'N/A')}<br>
+          <strong>Código IATA:</strong> ${esc(entityData.codigo_iata || 'N/A')}<br>
+          <strong>Nome:</strong> ${esc(entityData.nome || 'N/A')}<br>
+          <strong>Nacionalidade:</strong> ${esc(entityData.nacionalidade || 'N/A')}<br>
+          <strong>Tipo:</strong> ${esc(entityData.tipo || 'N/A')}<br>
+          <strong>Status:</strong> ${esc(entityData.status || 'N/A')}
         `;
         break;
       case 'modelo':
         mainFieldsDescription = `
-          <strong>Modelo:</strong> ${entityData.modelo || 'N/A'}<br>
-          <strong>Código ICAO:</strong> ${entityData.codigo_icao || 'N/A'}<br>
-          <strong>Código IATA:</strong> ${entityData.codigo_iata || 'N/A'}<br>
-          <strong>MTOW (kg):</strong> ${entityData.mtow_kg ? `${entityData.mtow_kg} kg` : 'N/A'}<br>
-          <strong>Comprimento (m):</strong> ${entityData.comprimento_m ? `${entityData.comprimento_m} m` : 'N/A'}<br>
-          <strong>Envergadura (m):</strong> ${entityData.envergadura_m ? `${entityData.envergadura_m} m` : 'N/A'}<br>
-          <strong>AC Code:</strong> ${entityData.ac_code || 'N/A'}
+          <strong>Modelo:</strong> ${esc(entityData.modelo || 'N/A')}<br>
+          <strong>Código ICAO:</strong> ${esc(entityData.codigo_icao || 'N/A')}<br>
+          <strong>Código IATA:</strong> ${esc(entityData.codigo_iata || 'N/A')}<br>
+          <strong>MTOW (kg):</strong> ${esc(entityData.mtow_kg ? `${entityData.mtow_kg} kg` : 'N/A')}<br>
+          <strong>Comprimento (m):</strong> ${esc(entityData.comprimento_m ? `${entityData.comprimento_m} m` : 'N/A')}<br>
+          <strong>Envergadura (m):</strong> ${esc(entityData.envergadura_m ? `${entityData.envergadura_m} m` : 'N/A')}<br>
+          <strong>AC Code:</strong> ${esc(entityData.ac_code || 'N/A')}
         `;
         break;
       case 'registo':
         mainFieldsDescription = `
-          <strong>Registo:</strong> ${entityData.registo || 'N/A'}<br>
-          <strong>MTOW (kg):</strong> ${entityData.mtow_kg ? `${entityData.mtow_kg} kg` : 'N/A'}<br>
-          <strong>Total de Assentos:</strong> ${entityData.total_assentos || 'N/A'}<br>
-          <strong>First Class:</strong> ${entityData.num_first || 0}<br>
-          <strong>Business:</strong> ${entityData.num_business || 0}<br>
-          <strong>Premium Economy:</strong> ${entityData.num_premium || 0}<br>
-          <strong>Economy:</strong> ${entityData.num_economy || 0}
+          <strong>Registo (matrícula):</strong> ${esc(entityData.registo || 'N/A')}<br>
+          <strong>Modelo:</strong> ${esc(additionalInfo.modeloNome || 'N/A')}<br>
+          <strong>Companhia:</strong> ${esc(additionalInfo.companhiaNome || 'N/A')}<br>
+          <strong>MTOW:</strong> ${esc(entityData.mtow_kg ? `${entityData.mtow_kg} kg` : 'N/A')}<br>
+          <strong>Total de Assentos:</strong> ${esc(entityData.total_assentos || 'N/A')}<br>
+          <strong>First Class:</strong> ${esc(entityData.num_first || 0)} &nbsp;·&nbsp;
+          <strong>Business:</strong> ${esc(entityData.num_business || 0)} &nbsp;·&nbsp;
+          <strong>Premium:</strong> ${esc(entityData.num_premium || 0)} &nbsp;·&nbsp;
+          <strong>Economy:</strong> ${esc(entityData.num_economy || 0)}
         `;
         break;
     }
@@ -131,8 +158,8 @@ export async function notifyAdminsCreation(entityType, entityData, createdBy, ad
     const cleanedData = cleanEntityData(entityData);
 
     // Informações do utilizador que criou
-    const userName = createdBy?.full_name || 'N/A';
-    const userEmail = createdBy?.email || 'N/A';
+    const userName = esc(createdBy?.full_name || 'N/A');
+    const userEmail = esc(createdBy?.email || 'N/A');
 
     const subject = `✨ Novo ${entityName} Cadastrado no Sistema SGA`;
     const body = `
@@ -150,11 +177,6 @@ export async function notifyAdminsCreation(entityType, entityData, createdBy, ad
       ${mainFieldsDescription}
     </div>
 
-    <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #8b5cf6; margin-bottom: 20px;">
-      <h3 style="margin: 0 0 15px 0; color: #475569; font-size: 16px;">🔍 Detalhes Completos (JSON):</h3>
-      <pre style="background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin: 0; font-family: 'Courier New', monospace;">${JSON.stringify(cleanedData, null, 2)}</pre>
-    </div>
-    
     <div style="background: #eff6ff; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;">
       <p style="margin: 0; color: #1e40af; font-size: 14px;">
         <strong>👤 Criado por:</strong> ${userName}<br>
@@ -185,6 +207,7 @@ export async function notifyAdminsCreation(entityType, entityData, createdBy, ad
  */
 export async function notifyAdminsUpdate(entityType, entityData, updatedBy, additionalInfo = {}) {
   try {
+    if (!(await notificacaoRegistroAtiva(entityType, 'edicao'))) return; // interruptor em Configurações Gerais
     const adminEmails = await getAdminEmails();
     
     if (adminEmails.length === 0) {
@@ -206,49 +229,49 @@ export async function notifyAdminsUpdate(entityType, entityData, updatedBy, addi
     switch(entityType) {
       case 'aeroporto':
         mainFieldsDescription = `
-          <strong>Código ICAO:</strong> ${entityData.codigo_icao || 'N/A'}<br>
-          <strong>Código IATA:</strong> ${entityData.codigo_iata || 'N/A'}<br>
-          <strong>Nome:</strong> ${entityData.nome || 'N/A'}<br>
-          <strong>Cidade:</strong> ${entityData.cidade || 'N/A'}<br>
-          <strong>Província:</strong> ${entityData.provincia || 'N/A'}<br>
-          <strong>País:</strong> ${entityData.pais || 'N/A'}<br>
-          <strong>Tipo de Operação:</strong> ${entityData.tipo_operacao || 'N/A'}<br>
-          <strong>Categoria:</strong> ${entityData.categoria || 'N/A'}<br>
-          <strong>Status:</strong> ${entityData.status || 'N/A'}
+          <strong>Código ICAO:</strong> ${esc(entityData.codigo_icao || 'N/A')}<br>
+          <strong>Código IATA:</strong> ${esc(entityData.codigo_iata || 'N/A')}<br>
+          <strong>Nome:</strong> ${esc(entityData.nome || 'N/A')}<br>
+          <strong>Cidade:</strong> ${esc(entityData.cidade || 'N/A')}<br>
+          <strong>Província:</strong> ${esc(entityData.provincia || 'N/A')}<br>
+          <strong>País:</strong> ${esc(entityData.pais || 'N/A')}<br>
+          <strong>Tipo de Operação:</strong> ${esc(entityData.tipo_operacao || 'N/A')}<br>
+          <strong>Categoria:</strong> ${esc(entityData.categoria || 'N/A')}<br>
+          <strong>Status:</strong> ${esc(entityData.status || 'N/A')}
         `;
         break;
       case 'companhia':
         mainFieldsDescription = `
-          <strong>Código ICAO:</strong> ${entityData.codigo_icao || 'N/A'}<br>
-          <strong>Código IATA:</strong> ${entityData.codigo_iata || 'N/A'}<br>
-          <strong>Nome:</strong> ${entityData.nome || 'N/A'}<br>
-          <strong>Nacionalidade:</strong> ${entityData.nacionalidade || 'N/A'}<br>
-          <strong>Tipo:</strong> ${entityData.tipo || 'N/A'}<br>
-          <strong>Status:</strong> ${entityData.status || 'N/A'}
+          <strong>Código ICAO:</strong> ${esc(entityData.codigo_icao || 'N/A')}<br>
+          <strong>Código IATA:</strong> ${esc(entityData.codigo_iata || 'N/A')}<br>
+          <strong>Nome:</strong> ${esc(entityData.nome || 'N/A')}<br>
+          <strong>Nacionalidade:</strong> ${esc(entityData.nacionalidade || 'N/A')}<br>
+          <strong>Tipo:</strong> ${esc(entityData.tipo || 'N/A')}<br>
+          <strong>Status:</strong> ${esc(entityData.status || 'N/A')}
         `;
         break;
       case 'modelo':
         mainFieldsDescription = `
-          <strong>Modelo:</strong> ${entityData.modelo || 'N/A'}<br>
-          <strong>Código ICAO:</strong> ${entityData.codigo_icao || 'N/A'}<br>
-          <strong>Código IATA:</strong> ${entityData.codigo_iata || 'N/A'}<br>
-          <strong>MTOW (kg):</strong> ${entityData.mtow_kg ? `${entityData.mtow_kg} kg` : 'N/A'}<br>
-          <strong>Comprimento (m):</strong> ${entityData.comprimento_m ? `${entityData.comprimento_m} m` : 'N/A'}<br>
-          <strong>Envergadura (m):</strong> ${entityData.envergadura_m ? `${entityData.envergadura_m} m` : 'N/A'}<br>
-          <strong>AC Code:</strong> ${entityData.ac_code || 'N/A'}
+          <strong>Modelo:</strong> ${esc(entityData.modelo || 'N/A')}<br>
+          <strong>Código ICAO:</strong> ${esc(entityData.codigo_icao || 'N/A')}<br>
+          <strong>Código IATA:</strong> ${esc(entityData.codigo_iata || 'N/A')}<br>
+          <strong>MTOW (kg):</strong> ${esc(entityData.mtow_kg ? `${entityData.mtow_kg} kg` : 'N/A')}<br>
+          <strong>Comprimento (m):</strong> ${esc(entityData.comprimento_m ? `${entityData.comprimento_m} m` : 'N/A')}<br>
+          <strong>Envergadura (m):</strong> ${esc(entityData.envergadura_m ? `${entityData.envergadura_m} m` : 'N/A')}<br>
+          <strong>AC Code:</strong> ${esc(entityData.ac_code || 'N/A')}
         `;
         break;
       case 'registo':
         mainFieldsDescription = `
-          <strong>Matrícula:</strong> ${entityData.registo || 'N/A'}<br>
-          <strong>Modelo:</strong> ${additionalInfo.modeloNome || 'N/A'}<br>
-          <strong>Companhia:</strong> ${additionalInfo.companhiaNome || 'N/A'}<br>
-          <strong>MTOW (kg):</strong> ${entityData.mtow_kg ? new Intl.NumberFormat('pt-AO').format(entityData.mtow_kg) : 'N/A'}<br>
-          <strong>Total de Assentos:</strong> ${entityData.total_assentos || 'N/A'}<br>
-          <strong>Primeira Classe:</strong> ${entityData.num_first || 0}<br>
-          <strong>Executiva:</strong> ${entityData.num_business || 0}<br>
-          <strong>Premium Economy:</strong> ${entityData.num_premium || 0}<br>
-          <strong>Económica:</strong> ${entityData.num_economy || 0}
+          <strong>Matrícula:</strong> ${esc(entityData.registo || 'N/A')}<br>
+          <strong>Modelo:</strong> ${esc(additionalInfo.modeloNome || 'N/A')}<br>
+          <strong>Companhia:</strong> ${esc(additionalInfo.companhiaNome || 'N/A')}<br>
+          <strong>MTOW (kg):</strong> ${esc(entityData.mtow_kg ? new Intl.NumberFormat('pt-AO').format(entityData.mtow_kg) : 'N/A')}<br>
+          <strong>Total de Assentos:</strong> ${esc(entityData.total_assentos || 'N/A')}<br>
+          <strong>Primeira Classe:</strong> ${esc(entityData.num_first || 0)}<br>
+          <strong>Executiva:</strong> ${esc(entityData.num_business || 0)}<br>
+          <strong>Premium Economy:</strong> ${esc(entityData.num_premium || 0)}<br>
+          <strong>Económica:</strong> ${esc(entityData.num_economy || 0)}
         `;
         break;
     }
@@ -257,8 +280,8 @@ export async function notifyAdminsUpdate(entityType, entityData, updatedBy, addi
     const cleanedData = cleanEntityData(entityData);
 
     // Informações do utilizador que atualizou
-    const userName = updatedBy?.full_name || 'N/A';
-    const userEmail = updatedBy?.email || 'N/A';
+    const userName = esc(updatedBy?.full_name || 'N/A');
+    const userEmail = esc(updatedBy?.email || 'N/A');
 
     const subject = `🔄 ${entityName} Atualizado no Sistema SGA`;
     const body = `
@@ -276,11 +299,6 @@ export async function notifyAdminsUpdate(entityType, entityData, updatedBy, addi
       ${mainFieldsDescription}
     </div>
 
-    <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #fb923c; margin-bottom: 20px;">
-      <h3 style="margin: 0 0 15px 0; color: #475569; font-size: 16px;">🔍 Detalhes Completos (JSON):</h3>
-      <pre style="background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin: 0; font-family: 'Courier New', monospace;">${JSON.stringify(cleanedData, null, 2)}</pre>
-    </div>
-    
     <div style="background: #fffbeb; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
       <p style="margin: 0; color: #92400e; font-size: 14px;">
         <strong>👤 Atualizado por:</strong> ${userName}<br>

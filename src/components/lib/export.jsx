@@ -57,6 +57,34 @@ export const downloadAsCSV = (data, filename = 'export') => {
   }
 };
 
+// Gera o XLSX em base64 (para anexar a emails) — mesma folha do downloadAsExcel,
+// mas devolve a string em vez de fazer download. Retorna null em erro/vazio.
+export const excelBase64 = async (data) => {
+  if (!data || !Array.isArray(data) || data.length === 0) return null;
+  try {
+    const XLSX = await import('xlsx');
+    const normalizedData = data.map(row => {
+      const r = {};
+      for (const key of Object.keys(row)) {
+        const value = row[key];
+        r[key] = (typeof value === 'object' && value !== null && !(value instanceof Date)) ? JSON.stringify(value) : value;
+      }
+      return r;
+    });
+    const worksheet = XLSX.utils.json_to_sheet(normalizedData);
+    const headers = Object.keys(data[0]);
+    worksheet['!cols'] = headers.map(header => ({
+      wch: Math.min(Math.max(header.length, ...data.map(row => String(row[header] || '').length)) + 2, 50),
+    }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Dados');
+    return XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
+  } catch (error) {
+    console.error('Erro ao gerar XLSX base64:', error);
+    return null;
+  }
+};
+
 export const downloadAsExcel = async (data, filename = 'export') => {
   // Validação robusta dos dados de entrada
   if (!data || !Array.isArray(data) || data.length === 0) {
