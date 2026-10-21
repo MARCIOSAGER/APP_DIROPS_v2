@@ -17,6 +17,7 @@ import { PDF } from '@/lib/pdfTemplate';
 import {
   nomeClasse, dataPt, revisaoPad, textosRodape, textoSimples, carregarLogo, resolverImagens,
   larguraPedida, numerarTitulos, caixaDoNo, alinhamentoPedido,
+  seccaoEmNovaPagina,
 } from './comum';
 import { numerarLegendas, textoLegenda } from './contrato';
 import { larguraHelvetica } from './larguraHelvetica';
@@ -1179,7 +1180,9 @@ function renderizar(JsPDF, doc, recursos, paginasToc) {
 
   // corpo primeiro (para conhecer as entradas do índice), desenho depois
   const corpo = [];
-  for (const s of seccoes) {
+  const novaPaginaPorSeccao = seccaoEmNovaPagina(doc);
+  for (const [iSec, s] of seccoes.entries()) {
+    if (novaPaginaPorSeccao && iSec > 0) corpo.push({ quebra: true, h: 0, draw() {} });
     const marca = toc.registar(s.numero, s.titulo, 1);
     corpo.push(...itensTitulo(ctx, s.titulo, s.numero, 1, marca));
     const conteudo = s.seccao?.conteudo;

@@ -13,6 +13,7 @@
 import {
   nomeClasse, dataPt, revisaoPad, textosRodape, textoSimples, carregarLogo, resolverImagens,
   dataUrlParaBytes, dimensoesImagem, larguraPedida, numerarTitulos, limparXml, caixaDoNo, alinhamentoPedido,
+  seccaoEmNovaPagina,
 } from './comum';
 import { conteudoVazio, numerarLegendas } from './contrato';
 
@@ -570,7 +571,7 @@ export async function gerarDocx(doc, opcoes = {}) {
     corpo.push(new Paragraph({
       heading: HeadingLevel.HEADING_1,
       numbering: { reference: 'titulos', level: 0 },
-      pageBreakBefore: i === 0 ? true : undefined,
+      pageBreakBefore: (i === 0 || seccaoEmNovaPagina(doc)) ? true : undefined,
       children: [run(s.titulo)],
     }));
     const filhos = s.seccao?.conteudo && !conteudoVazio(s.seccao.conteudo) ? blocos([s.seccao.conteudo], ctxCorpo) : [];

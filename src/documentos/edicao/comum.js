@@ -17,6 +17,16 @@ export const NOME_CLASSE = {
 
 export const nomeClasse = (m) => NOME_CLASSE[m] || 'Documento';
 
+// Classes em que cada secção principal começa em página nova (manuais, planos, programas — como nos manuais da SGA).
+// Nas restantes (POP, formulários, listas, regulamentos…) as secções seguem-se para poupar páginas.
+// O próprio documento pode forçar: doc.opcoes.seccaoNovaPagina = true | false.
+export const CLASSES_SECCAO_NOVA_PAGINA = new Set(['MA', 'PL', 'PR']);
+export function seccaoEmNovaPagina(doc) {
+  const forcado = doc?.opcoes?.seccaoNovaPagina;
+  if (typeof forcado === 'boolean') return forcado;
+  return CLASSES_SECCAO_NOVA_PAGINA.has(String(doc?.modelo || '').toUpperCase());
+}
+
 /** 'AAAA-MM-DD…' → 'dd/mm/aaaa' (sem passar por Date, para não haver saltos de fuso). */
 export function dataPt(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
