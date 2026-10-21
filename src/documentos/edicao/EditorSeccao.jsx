@@ -464,9 +464,21 @@ export default function EditorSeccao({
             )}
             <BotaoBarra titulo="Inserir imagem" onClick={() => ficheiroRef.current?.click()}><ImagePlus className="h-4 w-4" /></BotaoBarra>
             {emImagem && (
-              <BotaoBarra titulo="Legenda da imagem…" activo onClick={() => abrirLegenda('image')}>
-                <Captions className="h-4 w-4" /><span className="text-xs font-medium">Legenda…</span>
-              </BotaoBarra>
+              <>
+                <BotaoBarra titulo="Legenda da imagem…" activo onClick={() => abrirLegenda('image')}>
+                  <Captions className="h-4 w-4" /><span className="text-xs font-medium">Legenda…</span>
+                </BotaoBarra>
+                <span className="ml-1 text-xs text-slate-500" aria-hidden="true">Tamanho</span>
+                {['25%', '50%', '75%', '100%'].map((w) => {
+                  const actual = editor.getAttributes('image').width || '100%';
+                  return (
+                    <BotaoBarra key={w} titulo={`Largura da imagem: ${w} do texto`} activo={actual === w}
+                      onClick={() => c().updateAttributes('image', { width: w === '100%' ? null : w }).run()}>
+                      <span className="text-xs font-medium">{w}</span>
+                    </BotaoBarra>
+                  );
+                })}
+              </>
             )}
             <Sep />
             <BotaoBarra titulo="Anular (Ctrl+Z)" disabled={!pode.undo()} onClick={() => c().undo().run()}><Undo2 className="h-4 w-4" /></BotaoBarra>

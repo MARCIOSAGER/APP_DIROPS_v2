@@ -74,7 +74,12 @@ export const ImagemContrato = Image.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
-      width: { default: null, parseHTML: el => el.getAttribute('width') || null, renderHTML: a => (a.width ? { width: a.width } : {}) },
+      // largura em % da largura do texto (25%, 50%, 75%, 100%) ou px; no ecrã aplica-se por estilo, centrada
+      width: {
+        default: null,
+        parseHTML: el => el.getAttribute('width') || (el.style?.width || null),
+        renderHTML: a => (a.width ? { width: a.width, style: `width:${/^\d+(\.\d+)?$/.test(String(a.width)) ? `${a.width}px` : a.width};max-width:100%;height:auto;display:block;margin-left:auto;margin-right:auto` } : {}),
+      },
       legenda: { default: null, parseHTML: el => textoOuNulo(el.getAttribute('data-legenda')), renderHTML: () => ({}) },
     };
   },
