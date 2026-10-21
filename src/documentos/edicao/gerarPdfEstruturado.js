@@ -733,7 +733,7 @@ export function desenharQuadroAssinaturas(pdf, medir, { x: x0 = ML, y: ya, largu
   const hRubDe = (a) => (a.rubrica ? (a.substituicao ? 9 : 11) : 0);
   const sigDe = (a) => partirLinhas(medir, [{ t: limparTexto(a.significado || ''), i: true }], col - 6, 6.6).slice(0, a.rubrica ? 2 : 3);
   const precisa = (a) => 2.5 + hRubDe(a) + 2.6 + 3.4 + sigDe(a).length * alturaLinha(6.6) + (a.substituicao ? alturaLinha(6.4) : 0) + 4.8;
-  const hAss = algumaAssinada ? Math.max(30, ...ORDEM_ASSINATURAS.filter(k => assin[k]).map(k => precisa(assin[k]))) : 22;
+  const hAss = algumaAssinada ? Math.max(ORDEM_ASSINATURAS.some(k => assin[k]?.rubrica) ? 30 : 20, ...ORDEM_ASSINATURAS.filter(k => assin[k]).map(k => precisa(assin[k]))) : 22;
   const hData = 8;
   rotulos.forEach((rot, k) => {
     const x = x0 + k * col;
