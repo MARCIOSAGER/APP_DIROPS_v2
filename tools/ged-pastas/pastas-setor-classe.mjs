@@ -19,6 +19,8 @@ const AER = [
   { icao: 'FNCT', pastaRaiz: '270269b5-340b-4cfa-bb2f-a4eb186a4969', aeroporto_id: '2f1c676c-7ed8-529b-9c11-af691197511e' },
   { icao: 'FNUB', pastaRaiz: '0dfb82d8-4b0f-4919-a7b1-22feb66547a9', aeroporto_id: '39646957-c5bc-5c55-b5b6-6d52f63a4981' },
   { icao: 'FNMO', pastaRaiz: 'da5f2c22-8fba-496c-9fed-10ba2ac1e0c1', aeroporto_id: 'f60f0524-241e-5d70-a845-04775b4067f3' },
+  { icao: 'FNHU', pastaRaiz: 'ebbcd90b-d1fd-473f-ada1-4c9a5ae83344', aeroporto_id: '8f02727e-3eef-5bd5-a0d8-247dd2c6c70e' },
+  { icao: 'FNCA', pastaRaiz: '514eae85-5cd6-4442-b8f1-35dc3b82c6dd', aeroporto_id: 'c10c0ab9-e40b-5961-8af7-480b2ab6bea1' },
 ];
 const ORDEM_CLASSE = ['MA', 'PL', 'PR', 'POP', 'NRM', 'RE', 'RINT', 'FR', 'FTO', 'FX', 'DO', 'LT', 'MT', 'CR', 'CRO', 'MP', 'MQ', 'PT', 'TR'];
 const NOME_AVSEC = 'AVSEC — Acesso restrito';
