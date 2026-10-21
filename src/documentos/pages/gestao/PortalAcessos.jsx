@@ -32,7 +32,7 @@ import {
   perfisDocTexto, contaGlobal, perfisPortal, ehAdminPortal, NIVEIS_PERFIL_DOCS, slugPerfilDoc, nivelDoPerfil,
 } from '@/lib/portalDocumentos';
 import {
-  useAcessosDocs, guardarPerfisDocumentos, revogarAcessoDocs, excluirContaDocs, convidarParaDocs,
+  useAcessosDocs, guardarPerfisDocumentos, guardarNomeUtilizador, revogarAcessoDocs, excluirContaDocs, convidarParaDocs,
   usePermissoesPortalDocs, guardarPermissoesPortalDocs, useRecarregarDocs, auditarDocs,
   guardarPerfilPersonalizadoDocs, apagarPerfilPersonalizadoDocs,
   useAeroportosDocsTodos, useResponsaveisAeroportoDetalhe, useAcessoAeroportoDocs, useDocumentosDocs, usePastasDocs,
@@ -208,10 +208,14 @@ function DialogPerfis({ u, actor, onFechar, onFeito }) {
   const global = contaGlobal(u);
   const [perfis, setPerfis] = useState(() => new Set(perfisDoPortal(u)));
   const [busy, setBusy] = useState(false);
+  // nome completo: só administradores (a base confirma); se a conta só tem o email como nome, sugere-se corrigir
+  const podeNome = ehAdminPortal(actor);
+  const [nome, setNome] = useState(u?.full_name && u.full_name !== String(u?.email || '').split('@')[0] ? u.full_name : '');
   const alternar = (p) => setPerfis(s => { const n = new Set(s); if (n.has(p)) n.delete(p); else n.add(p); return n; });
   const guardar = async () => {
     setBusy(true);
     try {
+      if (podeNome && nome.trim() && nome.trim() !== (u?.full_name || '')) await guardarNomeUtilizador(u, nome, actor);
       const lista = PERFIS_DOCUMENTOS.filter(p => perfis.has(p));
       await guardarPerfisDocumentos(u, lista, actor);
       await auditarDocs(actor, { acao: 'acesso_perfis', entidade: 'utilizador', id: u?.id, detalhes: `Perfis de ${u?.email}: ${perfisDocTexto(lista) || 'sem perfis do portal'}` });
@@ -229,6 +233,13 @@ function DialogPerfis({ u, actor, onFechar, onFeito }) {
           <DialogDescription className="break-words">{u?.email}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          {podeNome && (
+            <div className="space-y-1.5">
+              <Label htmlFor="perfil-nome">Nome completo</Label>
+              <Input id="perfil-nome" value={nome} onChange={e => setNome(e.target.value)} placeholder={`Ex.: ${String(u?.email || '').split('@')[0]}`} autoComplete="off" />
+              <p className={cn('text-sm', GD.meta)}>É o nome que aparece nas plataformas, nas assinaturas e nos documentos. Vale para o DIROPS, a Universidade e o GED.</p>
+            </div>
+          )}
           {global && (
             <p className={cn('flex items-start gap-2 rounded-lg border p-3 text-sm', GD.avisoSuave)}>
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />Conta global: tem acesso total a todas as plataformas por via da base de dados. Os perfis do portal não se alteram aqui nem lhe tiram acesso.

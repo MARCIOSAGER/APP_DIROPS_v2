@@ -244,6 +244,17 @@ export function useAcessosDocs(enabled = true) {
 export async function guardarPerfisDocumentos(u, perfis, actor) {
   return docsAcesso('perfis', { email: u?.email, perfis, actor: actor?.email });
 }
+// Nome completo da pessoa (ficha comum `users`: o mesmo nome no DIROPS, na Universidade e no GED). Só administradores:
+// a política users_update da base decide; se não deixar, a actualização não toca em nenhuma linha e dizemo-lo.
+export async function guardarNomeUtilizador(u, nome, actor) {
+  const limpo = String(nome || '').replace(/\s+/g, ' ').trim();
+  if (limpo.length < 3) throw new Error('Escreva o nome completo (pelo menos 3 letras).');
+  const { data, error } = await supabase.from('users').update({ full_name: limpo }).eq('id', u?.id).select('id,full_name');
+  if (error) throw error;
+  if (!data?.length) throw new Error('Sem permissão para alterar o nome desta conta (só administradores).');
+  await auditarDocs(actor, { acao: 'acesso_nome', entidade: 'utilizador', id: u?.id, detalhes: `Nome de ${u?.email}: «${u?.full_name || ''}» → «${limpo}»` });
+  return data[0];
+}
 export async function revogarAcessoDocs(u, actor) {
   return docsAcesso('revogar', { email: u?.email, actor: actor?.email });
 }
