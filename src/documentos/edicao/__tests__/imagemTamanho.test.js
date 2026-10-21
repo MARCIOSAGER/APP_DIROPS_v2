@@ -9,7 +9,7 @@ const doc = (attrs) => ({ type: 'doc', content: [{ type: 'image', attrs: { src: 
 describe('tamanho da imagem', () => {
   it('a largura em % sai no HTML como estilo e volta igual', () => {
     const html = generateHTML(doc({ width: '50%' }), extensoesContrato());
-    expect(html).toMatch(/width:s*50%/);
+    expect(html).toMatch(/width:\s*50%/);
     const ida = generateJSON(html, extensoesContrato());
     expect(ida.content[0].attrs.width).toBe('50%');
   });
