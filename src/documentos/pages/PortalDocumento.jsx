@@ -56,6 +56,7 @@ import { nomeFicheiroDoc } from '../nomeDocumento';
 // O leitor próprio (pdf.js) substitui o <iframe> do visualizador nativo. É ele que torna a página um estado desta
 // aplicação — sem isso não há «abrir na página 47», nem realçar o termo, nem ler uma cópia guardada sem rede.
 import LeitorPdf from '../components/leitor/LeitorPdf';
+import { urlDoFicheiroVersao } from '../ficheiroVersao';
 import { BotaoCompararVersoes } from '../components/edicao/CompararVersoes';
 // Reserva para edição (check-out) e «Carregar nova versão (rascunho)» — Fase F0 do plano de edição.
 import ReservaDocumento from '../components/edicao/ReservaDocumento';
@@ -571,9 +572,24 @@ export default function PortalDocumento() {
   const [senhaModal, setSenhaModal] = useState(null); // { senha } do PDF AVSEC protegido acabado de gerar
   const [aProteger, setAProteger] = useState(false);
   const [copiada, setCopiada] = useState(false);
+  // Documento novo, ainda sem nenhuma versão em vigor: o ficheiro do documento está vazio (um rascunho nunca o
+  // substitui). Para quem o pode editar, o leitor mostra o PDF do rascunho mais recente, com aviso de que não está aprovado.
+  const rascunhoPreview = useMemo(() => {
+    if (!doc || doc.arquivo_privado_uri || doc.arquivo_url || !editor) return null;
+    const pdfs = versoes.filter(v => String(v.mime || '').includes('pdf') || /\.pdf$/i.test(String(v.arquivo_nome || v.arquivo_uri || '')));
+    return pdfs.sort((a, b) => Number(b.versao) - Number(a.versao))[0] || null;
+  }, [doc, versoes, editor]);
   useEffect(() => {
     let vivo = true;
     if (!id || !doc || trancado) { setUrl(''); return undefined; }
+    if (rascunhoPreview) {
+      setACarregarUrl(true); setErroUrl('');
+      urlDoFicheiroVersao(rascunhoPreview, doc)
+        .then(u => { if (vivo) setUrl(u || ''); })
+        .catch(err => { if (vivo) setErroUrl(err?.message || 'Não foi possível abrir o rascunho.'); })
+        .finally(() => { if (vivo) setACarregarUrl(false); });
+      return () => { vivo = false; };
+    }
     if (!doc.arquivo_privado_uri && !doc.arquivo_url) { setUrl(''); return undefined; }
     setACarregarUrl(true); setErroUrl('');
     obterUrlAssinadaDocumento({ documento_id: id })
@@ -581,10 +597,10 @@ export default function PortalDocumento() {
       .catch(err => { if (vivo) setErroUrl(err?.message || 'Não foi possível abrir o ficheiro.'); })
       .finally(() => { if (vivo) setACarregarUrl(false); });
     return () => { vivo = false; };
-  }, [id, doc, trancado, tentativa]);
+  }, [id, doc, trancado, tentativa, rascunhoPreview]);
 
   const vActual = String(versaoDoc(doc));
-  const versaoActual = versoes.find(v => String(v.versao) === vActual) || versoes[0] || null;
+  const versaoActual = rascunhoPreview || versoes.find(v => String(v.versao) === vActual) || versoes[0] || null;
   const nomeFicheiro = versaoActual?.arquivo_nome || doc?.arquivo_privado_uri || doc?.arquivo_url || '';
   const ext = extensaoDe(nomeFicheiro);
   const ehPdf = ext === 'pdf' || String(versaoActual?.mime || '').includes('pdf');
@@ -898,6 +914,13 @@ export default function PortalDocumento() {
             // O leitor trata dos seus próprios estados (a preparar, falhou, sem ficheiro) porque também sabe uma
             // coisa que a ficha não sabe: se existe uma cópia guardada neste dispositivo para usar quando a rede
             // não responde.
+            <>
+            {rascunhoPreview && (
+              <p className={cn('flex items-start gap-2 border-b p-3 text-sm', tk.avisoBorda, tk.avisoFundo, tk.tintaMedia)}>
+                <AlertTriangle className={cn('mt-0.5 h-4 w-4 shrink-0', tk.aviso)} aria-hidden="true" />
+                Pré-visualização do rascunho (v{rascunhoPreview.versao}{rascunhoPreview.rotulo ? ` · ${rascunhoPreview.rotulo}` : ''}). Ainda não foi aprovado: só quem pode editar o documento o vê. Depois de «Pedir aprovação» e da última assinatura, passa a ser o documento em vigor.
+              </p>
+            )}
             <LeitorPdf
               documentoId={id}
               doc={doc}
@@ -905,14 +928,15 @@ export default function PortalDocumento() {
               erroUrl={erroUrl}
               aCarregarUrl={aCarregarUrl}
               onRetentar={() => setTentativa(n => n + 1)}
-              descarregar={semDescarga ? null : (avsecRestrito && ehPdf ? descarregarProtegido : descarregar)}
+              descarregar={semDescarga || rascunhoPreview ? null : (avsecRestrito && ehPdf ? descarregarProtegido : descarregar)}
               paginaPedida={paginaPedida}
               termoPedido={termoPedido}
               onPagina={(n) => actualizar({ pagina: n > 1 ? String(n) : '' }, { replace: true })}
               semDescarga={semDescarga}
-              permiteOffline={podeOffline}
+              permiteOffline={podeOffline && !rascunhoPreview}
               razaoSemOffline={razaoSemOffline}
             />
+            </>
           ) : erroUrl ? (
             <Falha titulo="Não foi possível abrir o ficheiro" texto={erroUrl} onTentar={() => setTentativa(n => n + 1)} />
           ) : aCarregarUrl ? (
