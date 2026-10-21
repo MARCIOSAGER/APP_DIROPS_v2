@@ -66,7 +66,7 @@
 export const SCHEMA_VERSAO = 1;
 
 /** Modelos (= códigos de documento_classe) com editor estruturado. */
-export const MODELOS = ['POP', 'PR', 'PL', 'MA', 'FR', 'LT', 'RE', 'DO'];
+export const MODELOS = ['POP', 'PR', 'PL', 'MA', 'FR', 'LT', 'RE', 'NRM', 'DO'];
 
 /** Nós ProseMirror permitidos. Os geradores só garantem estes. */
 export const NOS_PERMITIDOS = [

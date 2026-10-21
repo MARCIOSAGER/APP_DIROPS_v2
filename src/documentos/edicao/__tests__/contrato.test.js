@@ -17,8 +17,8 @@ function docPreenchido() {
 }
 
 describe('modelos padrão', () => {
-  it('cobre as oito classes com secções e o POP tem as secções típicas', () => {
-    expect(MODELOS_PADRAO.map(m => m.classe_codigo).sort()).toEqual(['DO', 'FR', 'LT', 'MA', 'PL', 'POP', 'PR', 'RE']);
+  it('cobre as nove classes com secções (NRM com a estrutura do RE) e o POP tem as secções típicas', () => {
+    expect(MODELOS_PADRAO.map(m => m.classe_codigo).sort()).toEqual(['DO', 'FR', 'LT', 'MA', 'NRM', 'PL', 'POP', 'PR', 'RE']);
     const chaves = modeloPadraoDe('POP').schema.seccoes.map(s => s.chave);
     expect(chaves).toEqual(['objectivo', 'ambito', 'referencias', 'definicoes', 'responsabilidades', 'procedimento', 'registos', 'anexos', 'historico']);
     for (const m of MODELOS_PADRAO) for (const s of m.schema.seccoes) {

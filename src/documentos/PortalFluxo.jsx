@@ -51,9 +51,13 @@ import SeloAssinatura from './components/fluxo/SeloAssinatura';
 import PainelAssinar from './components/fluxo/PainelAssinar';
 import CaixaDevolucao from './components/fluxo/CaixaDevolucao';
 import FormSubmissao from './components/fluxo/FormSubmissao';
+import SubmeterEmLote from './components/fluxo/SubmeterEmLote';
+import { fluxosParaRever, fluxosParaSubmeter } from './submeterLote';
 
 const ABAS = [
   { chave: 'comigo', label: 'Comigo' },
+  { chave: 'rever', label: 'À espera da minha revisão' },
+  { chave: 'submeter', label: 'Por submeter' },
   { chave: 'meus', label: 'Submetidos por mim' },
   { chave: 'todos', label: 'Todos', soGestor: true },
 ];
@@ -83,8 +87,10 @@ export function ListaAprovacoes() {
     setSp(p, { replace: true });
   };
 
-  const linhas = aba === 'comigo' ? q.comigo : aba === 'meus' ? q.meus : q.todos;
-  const contagem = { comigo: q.comigo?.length || 0, meus: q.meus?.length || 0, todos: q.todos?.length || 0 };
+  const paraRever = useMemo(() => fluxosParaRever(q.todos, user?.email), [q.todos, user?.email]);
+  const porSubmeter = useMemo(() => fluxosParaSubmeter(q.todos, user?.email), [q.todos, user?.email]);
+  const linhas = aba === 'comigo' ? q.comigo : aba === 'rever' ? paraRever : aba === 'submeter' ? porSubmeter : aba === 'meus' ? q.meus : q.todos;
+  const contagem = { comigo: q.comigo?.length || 0, rever: paraRever.length, submeter: porSubmeter.length, meus: q.meus?.length || 0, todos: q.todos?.length || 0 };
 
   return (
     <div className="space-y-5">
@@ -133,6 +139,8 @@ export function ListaAprovacoes() {
             texto={q.error?.message || 'Pode ser uma falha momentânea da rede ou das permissões. Tente de novo; se continuar, avise a gestão do portal.'}
             onTentar={() => q.refetch?.()}
           />
+        ) : aba === 'submeter' ? (
+          <SubmeterEmLote linhas={q.todos} eu={user?.email} />
         ) : linhas.length === 0 ? (
           <VazioDaAba aba={aba} />
         ) : (
@@ -163,6 +171,9 @@ function VazioDaAba({ aba }) {
         <Button asChild variant="outline" className="min-h-[2.75rem]"><Link to={`${PORTAL_BASE}/gestao/documentos`}>Ir aos documentos</Link></Button>
       </EstadoVazio>
     );
+  }
+  if (aba === 'rever') {
+    return <EstadoVazio icone={Inbox} titulo="Nada à espera da sua revisão" texto="Quando um elaborador submeter um documento em que é o revisor, aparece aqui — e recebe um email." />;
   }
   if (aba === 'todos') {
     return <EstadoVazio icone={Inbox} titulo="Nenhum fluxo a decorrer" texto="Não há documentos a caminho da aprovação neste momento." />;

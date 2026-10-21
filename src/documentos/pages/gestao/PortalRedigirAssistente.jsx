@@ -33,6 +33,9 @@ import {
   guardarRascunhoEstruturado, gerarRascunhoDocumento, preverPdf, rascunhoDoDocumento,
 } from '../../edicao/hooksEstruturado';
 import { DialogoRever, rotaRedigir } from './PortalRedigir';
+import { ehMestre as ehConteudoMestre, alvosDoMestre, diferencasDoMestre } from '../../edicao/mestres';
+import { BarraCampos, AvisoMestre } from './MestreAssistente';
+import DialogoGerarMestre from './DialogoGerarMestre';
 
 const ATRASO_GRAVAR = 1500;
 const CLASSIFICACOES = ['Uso interno', 'Restrito', 'Confidencial', 'Público'];
@@ -171,7 +174,7 @@ export default function PortalRedigirAssistente() {
     setDoc(r.conteudo);
     setAeroportoId(r.aeroporto_id || '');
     setSeccaoId(r.conteudo?.seccoes?.[0]?.id || null);
-    setPasso(problemasDoPasso('cabecalho', { doc: r.conteudo, aeroportoId: r.aeroporto_id }).length ? 'cabecalho' : r.estado === 'gerado' ? 'previsualizar' : 'seccoes');
+    setPasso(problemasDoPasso('cabecalho', { doc: r.conteudo, aeroportoId: ehConteudoMestre(r.conteudo) ? 'mestre' : r.aeroporto_id }).length ? 'cabecalho' : r.estado === 'gerado' ? 'previsualizar' : 'seccoes');
   }, [id, rascQ.data, rascunho?.id]);
 
   const modeloActual = useMemo(() => {
@@ -270,16 +273,20 @@ export default function PortalRedigirAssistente() {
     setPasso('cabecalho');
   };
 
+  // modelo-mestre: sem aeroporto próprio (cada alvo tem o seu); o cabeçalho leva campos {{…}}
+  const mestre = ehConteudoMestre(doc);
+  const aeroValidar = mestre ? 'mestre' : aeroportoId;
+  const [gerarMestre, setGerarMestre] = useState(false);
   const podeIr = (p) => {
     if (!doc) return p === 'modelo';
     if (p === 'modelo') return !rascunho; // o modelo só se escolhe antes de o rascunho existir
     if (p === 'cabecalho') return true;
-    return !!rascunho && problemasDoPasso('cabecalho', { doc, aeroportoId }).length === 0;
+    return !!rascunho && problemasDoPasso('cabecalho', { doc, aeroportoId: aeroValidar }).length === 0;
   };
 
   const avancarDoCabecalho = async () => {
-    const p = problemasDoPasso('cabecalho', { doc, aeroportoId });
-    if (!existente && !extrasDe(doc).processo) p.push('Escolha o manual ou programa (processo).');
+    const p = problemasDoPasso('cabecalho', { doc, aeroportoId: aeroValidar });
+    if (!mestre && !existente && !extrasDe(doc).processo) p.push('Escolha o manual ou programa (processo).');
     if (p.length) { toast({ title: 'Falta completar o cabeçalho', description: p.join(' '), variant: 'destructive' }); return; }
     if (!rascunho) {
       try {
@@ -313,7 +320,9 @@ export default function PortalRedigirAssistente() {
     .map(p => ({ value: p.id, label: p.nome }))];
 
   // ── gerar ────────────────────────────────────────────────────────────────
-  const problemas = doc ? problemasParaGerar(doc) : [];
+  const problemas = !doc ? [] : mestre
+    ? [...problemasParaGerar(doc).filter(p => !/processo/i.test(p)), ...(alvosDoMestre(doc).length ? [] : ['O mestre não tem aeroportos-alvo (extras.alvos).'])]
+    : problemasParaGerar(doc);
   const resumo = doc ? resumoPreenchimento(doc) : null;
 
   const correrGerar = async () => {
@@ -368,12 +377,14 @@ export default function PortalRedigirAssistente() {
   return (
     <PaginaGestao
       titulo={cab.titulo || (doc ? `Novo ${modeloActual?.nome || doc.modelo}` : 'Novo documento a partir de modelo')}
-      descricao={doc ? <span className="inline-flex flex-wrap items-center gap-2">{cab.numero && <Ref className="font-semibold">{cab.numero}</Ref>}<span>Revisão {cab.revisao || '00'}</span>{existente && <span>· revisão de documento existente</span>}</span> : 'Escolha o tipo de documento. Cada modelo traz as secções que a SGA exige, com ajuda e exemplos.'}
+      descricao={doc && mestre ? <span className="inline-flex flex-wrap items-center gap-2"><strong>Modelo-mestre — gera para {alvosDoMestre(doc).length} {alvosDoMestre(doc).length === 1 ? 'aeroporto' : 'aeroportos'}</strong><span>· o texto é comum; os campos {'{{…}}'} preenchem-se por aeroporto</span></span> : doc ? <span className="inline-flex flex-wrap items-center gap-2">{cab.numero && <Ref className="font-semibold">{cab.numero}</Ref>}<span>Revisão {cab.revisao || '00'}</span>{existente && <span>· revisão de documento existente</span>}</span> : 'Escolha o tipo de documento. Cada modelo traz as secções que a SGA exige, com ajuda e exemplos.'}
       accoes={accoes}
     >
       <Passos passo={passo} onIr={(p) => (p === 'seccoes' || p === 'previsualizar') && !rascunho ? avancarDoCabecalho() : setPasso(p)} podeIr={podeIr} />
 
-      {gerado && passo !== 'previsualizar' && (
+      {mestre && <AvisoMestre diferencas={diferencasDoMestre(doc)} />}
+
+      {gerado && !mestre && passo !== 'previsualizar' && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-sky-300 bg-sky-50 px-4 py-3 text-sm text-sky-900 dark:border-sky-800 dark:bg-sky-950/50 dark:text-sky-100">
           <FileCheck2 className="h-5 w-5 shrink-0" aria-hidden="true" />
           <span className="flex-1">A revisão {cab.revisao} já foi gerada e está a seguir o fluxo de aprovação. Para mudar o texto, abra uma nova revisão.</span>
@@ -403,14 +414,16 @@ export default function PortalRedigirAssistente() {
         <div className={cn(T.caixa, 'space-y-5 p-5')}>
           <div className="grid gap-4 md:grid-cols-2">
             <Campo id="rd-aero" label="Aeroporto *" ajuda="O documento fica no aeroporto escolhido; o código entra no número.">
-              <Select id="rd-aero" options={opcoesAero} value={aeroportoId} onValueChange={escolherAeroporto} placeholder="Escolha o aeroporto" disabled={gerado || existente} />
+              {mestre
+                ? <Input id="rd-aero" value="Cada aeroporto-alvo ({{aeroporto.icao}})" readOnly disabled />
+                : <Select id="rd-aero" options={opcoesAero} value={aeroportoId} onValueChange={escolherAeroporto} placeholder="Escolha o aeroporto" disabled={gerado || existente} />}
             </Campo>
             <Campo id="rd-proc" label={existente ? 'Manual ou programa' : 'Manual ou programa (processo) *'} ajuda="A que manual ou programa o documento pertence (ex. MOA, PSA, SMGCS). Entra no número.">
-              <Select id="rd-proc" options={opcoesProcesso} value={extras.processo || ''} onValueChange={(v) => setExtras({ processo: v || null })} placeholder="Escolha o processo" disabled={gerado || existente} />
+              <Select id="rd-proc" options={opcoesProcesso} value={extras.processo || ''} onValueChange={(v) => setExtras({ processo: v || null })} placeholder={mestre ? 'O de cada documento' : 'Escolha o processo'} disabled={gerado || existente || mestre} />
             </Campo>
             <Campo id="rd-num" label="Número *" ajuda={existente ? 'O número do documento não muda nas revisões.' : 'Formato classe-aeroporto-processo-sequência (ex. POP-FNLU-MOA-012). Use a sugestão para o número seguinte livre.'}>
               <div className="flex gap-2">
-                <Input id="rd-num" value={cab.numero || ''} onChange={e => setCab({ numero: e.target.value.toUpperCase() })} disabled={gerado || existente} autoComplete="off" style={{ fontFamily: 'ui-monospace, Consolas, monospace' }} />
+                <Input id="rd-num" value={cab.numero || ''} onChange={e => setCab({ numero: e.target.value.toUpperCase() })} disabled={gerado || existente || mestre} autoComplete="off" style={{ fontFamily: 'ui-monospace, Consolas, monospace' }} />
                 {!existente && sugestao.data && sugestao.data !== cab.numero && (
                   <Button type="button" variant="outline" onClick={() => setCab({ numero: sugestao.data })} disabled={gerado} title="Número seguinte livre, calculado no servidor">
                     <Wand2 className="h-4 w-4" aria-hidden="true" />{sugestao.data}
@@ -424,7 +437,7 @@ export default function PortalRedigirAssistente() {
             </Campo>
             <div className="grid grid-cols-2 gap-4">
               <Campo id="rd-rev" label="Revisão *" ajuda={existente ? 'Aumenta sozinha ao rever.' : 'A primeira emissão é a 00.'}>
-                <Input id="rd-rev" value={cab.revisao || ''} onChange={e => setCab({ revisao: e.target.value })} disabled={gerado || existente} maxLength={6} />
+                <Input id="rd-rev" value={cab.revisao || ''} onChange={e => setCab({ revisao: e.target.value })} disabled={gerado || existente || mestre} maxLength={6} />
               </Campo>
               <Campo id="rd-data" label="Data *">
                 <Input id="rd-data" type="date" value={cab.data || ''} onChange={e => setCab({ data: e.target.value })} disabled={gerado} />
@@ -442,15 +455,16 @@ export default function PortalRedigirAssistente() {
             </Campo>
             <Campo id="rd-aprov" label="Aprovado por" ajuda="Director (ou suplente) do aeroporto escolhido; em branco, fica o responsável do aeroporto."
               erro={extras.verificadoEmail && extras.aprovadoEmail && extras.verificadoEmail.toLowerCase() === extras.aprovadoEmail.toLowerCase() ? 'Quem revê e quem aprova têm de ser pessoas diferentes.' : null}>
-              <Select id="rd-aprov" options={opcoesAprovador} value={extras.aprovadoEmail || ''} disabled={gerado}
-                onValueChange={(v) => { setExtras({ aprovadoEmail: v || null }); setCab({ aprovadoPor: nomeDe(v) }); }} placeholder="Escolher quem aprova" />
+              {mestre ? <Input id="rd-aprov" value={`Director de cada aeroporto (${cab.aprovadoPor || '{{aeroporto.director}}'})`} readOnly disabled /> : <Select id="rd-aprov" options={opcoesAprovador} value={extras.aprovadoEmail || ''} disabled={gerado}
+                onValueChange={(v) => { setExtras({ aprovadoEmail: v || null }); setCab({ aprovadoPor: nomeDe(v) }); }} placeholder="Escolher quem aprova" />}
             </Campo>
-            {!existente && (
+            {!existente && !mestre && (
               <Campo id="rd-pasta" label="Pasta na biblioteca" ajuda="Pode arrumá-lo mais tarde em Gestão › Documentos.">
                 <Select id="rd-pasta" options={opcoesPasta} value={extras.pastaId || ''} onValueChange={(v) => setExtras({ pastaId: v || null })} disabled={gerado} />
               </Campo>
             )}
           </div>
+          {mestre && !gerado && <BarraCampos doc={doc} />}
           <div className="flex justify-end gap-2">
             {!rascunho && <Button variant="outline" onClick={() => { setDoc(null); setPasso('modelo'); }}><ArrowLeft className="h-4 w-4" aria-hidden="true" />Mudar de modelo</Button>}
             <Button onClick={avancarDoCabecalho}>{rascunho ? 'Seguinte' : 'Criar rascunho e continuar'}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Button>
@@ -528,6 +542,7 @@ export default function PortalRedigirAssistente() {
                     {doc.seccoes.indexOf(seccao) + 1}. {seccao.titulo}
                     {seccao.obrigatoria ? <span className="text-sm font-normal text-amber-700 dark:text-amber-300">obrigatória</span> : <span className={cn('text-sm font-normal', T.tintaFraca)}>opcional</span>}
                   </h2>
+                  {mestre && <BarraCampos doc={doc} />}
                   <EditorSeccao
                     key={seccao.id}
                     conteudo={seccao.conteudo}
@@ -589,7 +604,9 @@ export default function PortalRedigirAssistente() {
                   </div>
                 ) : <span className={cn('flex flex-1 items-center gap-2 text-sm', T.verde)}><CheckCircle2 className="h-4 w-4" aria-hidden="true" />Pronto para gerar a revisão {cab.revisao}.</span>}
                 <Button variant="outline" onClick={verPdf} disabled={aPrever}>{aPrever ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}Ver o PDF</Button>
-                <Button onClick={() => setGerar({ aberto: true, busy: false, fase: '', resultado: null })} disabled={!!problemas.length}><FileCheck2 className="h-4 w-4" aria-hidden="true" />Gerar rascunho</Button>
+                {mestre
+                  ? <Button onClick={async () => { await gravar(); setGerarMestre(true); }} disabled={!!problemas.length}><FileCheck2 className="h-4 w-4" aria-hidden="true" />Gerar para os aeroportos</Button>
+                  : <Button onClick={() => setGerar({ aberto: true, busy: false, fase: '', resultado: null })} disabled={!!problemas.length}><FileCheck2 className="h-4 w-4" aria-hidden="true" />Gerar rascunho</Button>}
               </>
             )}
           </div>
@@ -642,6 +659,10 @@ export default function PortalRedigirAssistente() {
           {pdfUrl && <iframe title="Pré-visualização do PDF" src={pdfUrl} className="h-full min-h-[70vh] w-full rounded border" />}
         </DialogContent>
       </Dialog>
+
+      {gerarMestre && rascunho && mestre && (
+        <DialogoGerarMestre mestre={{ ...rascunho, conteudo: doc }} onFechar={() => { setGerarMestre(false); recarregarLista(); }} />
+      )}
 
       {rever && rascunho && (
         <DialogoRever

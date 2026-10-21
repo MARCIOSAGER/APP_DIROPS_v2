@@ -6,9 +6,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabaseClient';
 import { auditarDocs } from '../hooks';
 import { criarVersaoRascunho } from '../hooksEdicao';
+import * as fluxo from '../apiFluxo';
 import { MODELOS_PADRAO } from './modelosPadrao';
 import { validarDocumentoEstruturado } from './contrato';
 import { prepararParaGerar, nomeBaseFicheiro, rotuloVersao, notaVersao, extrasDe, iniciarRevisao } from './assistente';
+import { prepararParaAeroporto, alvosDoMestre, diferencasDoMestre, problemasPrepararSubmissao, resumoDoFluxo } from './mestres';
 
 const T_RASC = 'documento_rascunho_estruturado';
 const COLS_LISTA = 'id,documento_id,modelo,titulo,numero,revisao,aeroporto_id,criado_por,criado_em,actualizado_em,actualizado_por,estado,versao_gerada_id,gerado_em';
@@ -218,5 +220,162 @@ export async function gerarRascunhoDocumento({ rascunho, conteudo: conteudoIn, a
   }).eq('id', rascunho.id);
   if (eG) throw erroEstruturado(eG, 'marcar o rascunho como gerado');
   await auditarDocs(actor, { acao: 'documento_redigido', id: documentoId, detalhes: `${rotuloVersao(conteudo)} gerada no editor (versão ${versao?.versao ?? '?'} em rascunho)` });
-  return { documentoId, versao, conteudo: final };
+  // os ficheiros gerados seguem no resultado (os mestres usam-nos para abrir o fluxo sem os gerar outra vez)
+  return { documentoId, versao, conteudo: final, ficheiros: { pdf, docx, base } };
+}
+
+// ── modelos-mestre ──────────────────────────────────────────────────────────
+// Um mestre é um rascunho sem documento com conteudo.extras.mestre = true (ver mestres.js). Gera rascunhos
+// estruturados ligados a cada documento-alvo; nunca toca no documento nem nas versões — excepto com
+// «Preparar para submissão», que faz o mesmo que o «Gerar rascunho» do assistente e abre o fluxo em rascunho.
+export function useMestres() {
+  return useQuery({
+    queryKey: ['gd', 'edicao', 'mestres'],
+    staleTime: 30 * 1000,
+    retry: (n, e) => !tabelaEmFalta(e) && n < 2,
+    queryFn: async () => {
+      const { data, error } = await supabase.from(T_RASC)
+        .select('id,modelo,titulo,numero,revisao,criado_por,actualizado_em,estado,extras:conteudo->extras')
+        .is('documento_id', null).eq('conteudo->extras->>mestre', 'true')
+        .order('titulo');
+      if (error) throw erroEstruturado(error, 'carregar os modelos-mestre');
+      return naLista(data).map(m => ({
+        ...m,
+        nAlvos: alvosDoMestre({ extras: m.extras }).length,
+        diferencas: diferencasDoMestre({ extras: m.extras }),
+      }));
+    },
+  });
+}
+
+const minus = (v) => String(v ?? '').trim().toLowerCase();
+
+/**
+ * Lê tudo o que é preciso para preparar os alvos (em lote): documentos, última versão, aeroportos, responsáveis,
+ * nomes das contas e rascunhos do editor já ligados. Devolve uma linha por alvo com o conteúdo preparado.
+ */
+export async function prepararAlvosDoMestre(mestre, alvos, actor) {
+  const lista = naLista(alvos);
+  const docIds = [...new Set(lista.map(a => a.documento_id).filter(Boolean))];
+  const [docsR, versR, aerosR, respR, rascR] = await Promise.all([
+    docIds.length ? supabase.from('documento').select('id,numero,titulo,aeroporto_id,processo_codigo,versao,versao_atual,estado,deleted_at').in('id', docIds) : { data: [] },
+    docIds.length ? supabase.from('documento_versao').select('documento_id,versao,rotulo,estado').in('documento_id', docIds).order('versao', { ascending: false }) : { data: [] },
+    supabase.from('documentos_aeroporto').select('id,codigo_icao,codigo_iata,nome,cidade,gestor_nome,gestor_cargo'),
+    supabase.from('documentos_aeroporto_responsavel').select('aeroporto_id,email,nome,cargo,principal'),
+    docIds.length ? supabase.from(T_RASC).select('*').in('documento_id', docIds) : { data: [] },
+  ]);
+  for (const r of [docsR, aerosR, rascR]) if (r.error) throw erroEstruturado(r.error, 'preparar os aeroportos do mestre');
+  const responsaveis = naLista(respR.data);
+  const emails = [...new Set(responsaveis.map(r => minus(r.email)).filter(Boolean))];
+  let utilizadores = [];
+  if (emails.length) {
+    const { data } = await supabase.from('users').select('email,full_name').in('email', emails);
+    utilizadores = naLista(data);
+  }
+  const docs = new Map(naLista(docsR.data).map(d => [d.id, d]));
+  const ultima = new Map();
+  for (const v of naLista(versR.data)) if (!ultima.has(v.documento_id) && !/fonte/i.test(v.rotulo || '')) ultima.set(v.documento_id, v);
+  const aeros = naLista(aerosR.data);
+  const rascs = new Map(naLista(rascR.data).map(r => [r.documento_id, r]));
+  const autor = actor?.full_name || actor?.email || '';
+
+  return lista.map((alvo) => {
+    const documento = docs.get(alvo.documento_id) || null;
+    const aeroporto = aeros.find(a => a.id === alvo.aeroporto_id)
+      || aeros.find(a => a.codigo_icao === String(alvo.icao || '').toUpperCase())
+      || aeros.find(a => a.id === documento?.aeroporto_id) || null;
+    const rascunhoExistente = rascs.get(alvo.documento_id) || null;
+    const base = { alvo, documento, aeroporto, rascunhoExistente, conflito: !!rascunhoExistente };
+    if (!documento || documento.deleted_at) return { ...base, erro: `O documento ${alvo.numero || alvo.documento_id || '?'} não existe ou foi apagado.` };
+    if (!aeroporto) return { ...base, erro: `Aeroporto ${alvo.icao || '?'} desconhecido.` };
+    const resp = responsaveis.filter(r => r.aeroporto_id === aeroporto.id);
+    const prep = prepararParaAeroporto(mestre, alvo, aeroporto, resp, { ...documento, ultimaVersao: ultima.get(documento.id) || null }, rascunhoExistente, { autor, utilizadores });
+    return { ...base, ...prep };
+  });
+}
+
+/**
+ * Gera os rascunhos estruturados de um mestre para os alvos escolhidos.
+ * `decisoes` = { [documento_id]: 'substituir' | 'saltar' } para os documentos que já têm rascunho no editor;
+ * sem decisão, o alvo volta como conflito e não se toca em nada. Nunca se apaga um rascunho: «substituir»
+ * reescreve o conteúdo da mesma linha.
+ * `preparar` = true → para cada alvo gera também a revisão em rascunho (PDF + Word, gerarRascunhoDocumento) e
+ * abre o fluxo de aprovação em rascunho (sem assinar nem avisar ninguém). O elaborador do fluxo é quem o abre.
+ * Devolve { criados, actualizados, conflitos, saltados, erros, preparados }.
+ */
+export async function gerarRascunhosDoMestre(mestre, alvosEscolhidos, actor, onProgresso, { decisoes = {}, preparar = false, linhas = null } = {}) {
+  const passo = (t) => { try { onProgresso?.(t); } catch { /* */ } };
+  const res = { criados: [], actualizados: [], conflitos: [], saltados: [], erros: [], preparados: [] };
+  const conteudoMestre = mestre?.conteudo || {};
+  passo('A ler os documentos e os aeroportos…');
+  const prepLinhas = linhas || await prepararAlvosDoMestre(mestre, alvosEscolhidos, actor);
+  const total = prepLinhas.length;
+  let i = 0;
+  for (const l of prepLinhas) {
+    i += 1;
+    const rotulo = `${l.alvo.icao || l.aeroporto?.codigo_icao || '?'} · ${l.alvo.numero || l.documento?.numero || ''}`;
+    passo(`${i}/${total} · ${rotulo}`);
+    if (l.erro) { res.erros.push({ alvo: l.alvo, erro: l.erro }); continue; }
+    const decisao = decisoes[l.alvo.documento_id];
+    if (l.rascunhoExistente && decisao !== 'substituir') {
+      if (decisao === 'saltar') res.saltados.push({ alvo: l.alvo, rascunhoId: l.rascunhoExistente.id });
+      else res.conflitos.push({ alvo: l.alvo, rascunho: l.rascunhoExistente });
+      continue;
+    }
+    try {
+      let rascunho;
+      if (l.rascunhoExistente) {
+        const { data, error } = await supabase.from(T_RASC).update({
+          conteudo: l.conteudo, estado: 'em_edicao', aeroporto_id: l.aeroporto.id, modelo: l.conteudo.modelo,
+        }).eq('id', l.rascunhoExistente.id).select('*').maybeSingle();
+        if (error) throw erroEstruturado(error, 'actualizar o rascunho');
+        if (!data) throw new Error('Sem permissão para alterar o rascunho deste documento.');
+        rascunho = data;
+        res.actualizados.push({ alvo: l.alvo, rascunhoId: data.id, revisao: l.revisao, avisos: l.avisos });
+      } else {
+        rascunho = await criarRascunhoEstruturado({ conteudo: l.conteudo, aeroportoId: l.aeroporto.id, documentoId: l.documento.id, modeloId: conteudoMestre.extras?.modeloId || null }, actor);
+        res.criados.push({ alvo: l.alvo, rascunhoId: rascunho.id, revisao: l.revisao, avisos: l.avisos });
+      }
+      await auditarDocs(actor, {
+        acao: 'documento_padronizado_mestre', id: l.documento.id,
+        detalhes: `Rascunho Rev. ${l.revisao} preparado a partir do modelo-mestre «${conteudoMestre.cabecalho?.titulo || mestre?.titulo || ''}» (${l.aeroporto.codigo_icao})${l.emFalta.length ? ` — campos em falta: ${l.emFalta.join(', ')}` : ''}`,
+      });
+      if (preparar) {
+        const p = await prepararSubmissaoAlvo({ rascunho, linha: l, conteudoMestre }, actor, (f) => passo(`${i}/${total} · ${rotulo} · ${f}`));
+        res.preparados.push({ alvo: l.alvo, rascunhoId: rascunho.id, ...p });
+      }
+    } catch (e) {
+      res.erros.push({ alvo: l.alvo, erro: e?.message || String(e) });
+    }
+  }
+  return res;
+}
+
+/**
+ * «Preparar para submissão» de um alvo: gera a revisão em rascunho (PDF + Word) e abre o fluxo de aprovação
+ * com revisor = extras.verificadoEmail e director = director do aeroporto, carregando o PDF e o Word.
+ * Abrir o fluxo não assina nem avisa ninguém. Se o documento já tiver um fluxo vivo, não se abre outro.
+ */
+async function prepararSubmissaoAlvo({ rascunho, linha, conteudoMestre }, actor, passo) {
+  const p = problemasPrepararSubmissao({ eu: actor?.email, conteudoMestre, director: linha.director });
+  if (p.length) throw new Error(p.join(' '));
+  const vivos = (await fluxo.lerFluxosDocumento(linha.documento.id)).filter(f => fluxo.ehFluxoVivo(f.estado));
+  if (vivos.length) throw new Error(`O documento já tem um fluxo de aprovação a decorrer (${vivos[0].estado}); o rascunho do editor ficou preparado mas não se abriu outro fluxo.`);
+
+  passo('a gerar o PDF e o Word');
+  const g = await gerarRascunhoDocumento({ rascunho, conteudo: linha.conteudo, aeroportoId: linha.aeroporto.id }, actor, passo);
+  if (!g.versao?.id) throw new Error('A revisão foi gerada mas não se encontrou a versão gravada; abra o fluxo à mão no documento.');
+  passo('a abrir o fluxo');
+  const fluxoId = await fluxo.abrirFluxo({
+    documentoId: g.documentoId, versaoId: g.versao.id,
+    revisorEmail: conteudoMestre.extras?.verificadoEmail, directorEmail: linha.director?.email || null,
+    resumo: resumoDoFluxo(g.conteudo),
+  });
+  const comoFicheiro = (blob, nome, mime) => (typeof File === 'function' ? new File([blob], nome, { type: mime }) : Object.assign(blob, { name: nome }));
+  passo('a carregar o PDF no fluxo');
+  await fluxo.carregarFicheiroFluxo({ documentoId: g.documentoId, versaoId: g.versao.id, papel: 'pdf', ficheiro: comoFicheiro(g.ficheiros.pdf, `${g.ficheiros.base}.pdf`, 'application/pdf') });
+  passo('a carregar o Word no fluxo');
+  await fluxo.carregarFicheiroFluxo({ documentoId: g.documentoId, versaoId: g.versao.id, papel: 'editavel', ficheiro: comoFicheiro(g.ficheiros.docx, `${g.ficheiros.base}.docx`, MIME_DOCX) });
+  await auditarDocs(actor, { acao: 'documento_fluxo_preparado_mestre', id: g.documentoId, detalhes: `Fluxo aberto em rascunho (revisor ${conteudoMestre.extras?.verificadoEmail}, director ${linha.director?.email || 'do aeroporto'})` });
+  return { documentoId: g.documentoId, versaoId: g.versao.id, fluxoId };
 }

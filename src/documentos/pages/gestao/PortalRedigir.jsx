@@ -4,7 +4,7 @@
 // aprovação normal.
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FilePlus2, FilePen, History, ExternalLink, Trash2, Loader2, PenLine } from 'lucide-react';
+import { FilePlus2, FilePen, History, ExternalLink, Trash2, Loader2, PenLine, Layers, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,7 +18,7 @@ import { PORTAL_BASE } from '@/lib/portalDocumentos';
 import { PaginaGestao, T, Ref, EstadoVazio, EstadoErro, EsqueletoLinhas } from '../../PortalLayout';
 import { useAeroportosDocs } from '../../hooks';
 import {
-  useRascunhosEstruturados, useRecarregarRascunhos, apagarRascunhoEstruturado, reverRascunhoEstruturado, tabelaEmFalta,
+  useRascunhosEstruturados, useRecarregarRascunhos, useMestres, apagarRascunhoEstruturado, reverRascunhoEstruturado, tabelaEmFalta,
 } from '../../edicao/hooksEstruturado';
 import { rotuloEstadoRascunho, proximaRevisao } from '../../edicao/assistente';
 
@@ -72,7 +72,10 @@ export function DialogoRever({ rascunho, onFechar, onFeito }) {
 export default function PortalRedigir() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { data: rascunhos = [], isLoading, isError, error, refetch } = useRascunhosEstruturados();
+  const { data: todosRascunhos = [], isLoading, isError, error, refetch } = useRascunhosEstruturados();
+  const { data: mestres = [] } = useMestres();
+  const idsMestres = useMemo(() => new Set(mestres.map(m => m.id)), [mestres]);
+  const rascunhos = useMemo(() => todosRascunhos.filter(r => !idsMestres.has(r.id)), [todosRascunhos, idsMestres]);
   const { data: aeroportos = [] } = useAeroportosDocs();
   const recarregar = useRecarregarRascunhos();
   const [rever, setRever] = useState(null);
@@ -93,6 +96,8 @@ export default function PortalRedigir() {
       descricao="Escreva procedimentos, programas e planos secção a secção, a partir dos modelos da SGA. Gerar cria uma revisão em rascunho (PDF + Word) que segue para aprovação."
       accoes={<Button onClick={novo}><FilePlus2 className="h-4 w-4" aria-hidden="true" />Novo a partir de modelo</Button>}
     >
+      {mestres.length > 0 && <SeccaoMestres mestres={mestres} />}
+
       <div className={T.caixa}>
         {isLoading ? <EsqueletoLinhas linhas={4} /> : isError ? (
           <EstadoErro
@@ -160,5 +165,29 @@ export default function PortalRedigir() {
         confirmText="Apagar"
       />
     </PaginaGestao>
+  );
+}
+
+// Modelos-mestre: um texto com campos {{…}} que gera a revisão padronizada do mesmo documento em vários aeroportos.
+function SeccaoMestres({ mestres }) {
+  return (
+    <section className={cn(T.caixa, 'p-4')} aria-labelledby="sec-mestres">
+      <h2 id="sec-mestres" className="flex items-center gap-2 text-base font-semibold"><Layers className="h-5 w-5 text-teal-600" aria-hidden="true" />Modelos-mestre</h2>
+      <p className={cn('mt-1 max-w-prose text-sm', T.tintaFraca)}>Um texto comum, com campos que se preenchem por aeroporto. Abra o mestre, reveja as diferenças assinaladas e use «Gerar para os aeroportos».</p>
+      <ul className={cn('mt-3 divide-y', T.divisoria)}>
+        {mestres.map(m => (
+          <li key={m.id} className="flex flex-wrap items-center gap-3 py-2.5">
+            <Ref className="rounded bg-teal-50 px-1.5 py-0.5 text-xs font-bold dark:bg-teal-950/60">{m.modelo}</Ref>
+            <Link to={rotaRedigir(m.id)} className={cn('min-w-0 flex-1 font-medium hover:underline', T.tinta, T.foco)}>{m.titulo || 'Mestre sem título'}</Link>
+            <span className={cn('text-sm tabular-nums', T.tintaFraca)}>{m.nAlvos} {m.nAlvos === 1 ? 'aeroporto' : 'aeroportos'}</span>
+            {m.diferencas.length > 0
+              ? <span className={cn('inline-flex items-center gap-1 text-sm', T.ambar)}><AlertTriangle className="h-4 w-4" aria-hidden="true" />{m.diferencas.length} {m.diferencas.length === 1 ? 'diferença por rever' : 'diferenças por rever'}</span>
+              : <span className={cn('text-sm', T.tintaFraca)}>sem diferenças assinaladas</span>}
+            <span className={cn('text-sm', T.tintaFraca)}>{fmtDataHora(m.actualizado_em)}</span>
+            <Button size="sm" variant="outline" asChild><Link to={rotaRedigir(m.id)}><FilePen className="h-4 w-4" aria-hidden="true" />Abrir</Link></Button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

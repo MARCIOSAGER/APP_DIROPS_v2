@@ -12,6 +12,7 @@ export const NOME_CLASSE = {
   FR: 'Formulário',
   LT: 'Lista',
   RE: 'Regulamento',
+  NRM: 'Norma',
   DO: 'Documento',
 };
 

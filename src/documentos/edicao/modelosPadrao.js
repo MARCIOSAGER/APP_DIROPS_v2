@@ -150,3 +150,6 @@ export const MODELOS_PADRAO = [
 ];
 
 export const modeloPadraoDe = (classe) => MODELOS_PADRAO.find(m => m.classe_codigo === classe) || null;
+
+// Normas (NRM): mesma estrutura do Regulamento, com o nome da classe próprio na capa.
+{ const re = MODELOS_PADRAO.find(x => x.classe_codigo === 'RE'); if (re) MODELOS_PADRAO.push({ ...re, classe_codigo: 'NRM', nome: 'Norma', ordem: 75 }); }
