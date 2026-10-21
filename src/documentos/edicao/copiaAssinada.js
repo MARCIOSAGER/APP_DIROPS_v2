@@ -141,7 +141,7 @@ export async function gerarCopiaEstruturada({ conteudo, linhasAssinatura, rubric
   return gerarPdf(conteudo, {
     logo: logo ?? undefined,
     assinaturas: assinaturasParaCapa(linhasAssinatura, rubricas),
-    verificarUrl: `${o}/documentos/assinatura`,
+    verificarUrl: `${o}/vd`,
     verificacao: { url: urlVerificacao(o, codigo), codigo: rotulo },
   });
 }
@@ -435,7 +435,7 @@ export async function gerarCopiaDeFicheiroDetalhada({
   const rotuloVerificacao = [numero, rotuloRev(versao.versao ?? versao.rotulo), codigo].filter(Boolean).join(' · ');
   const folhaBytes = await folhaAssinaturas({
     documento, versao, assinaturas, qr, codigo, rotuloVerificacao,
-    verificarUrl: `${o}/documentos/assinatura`, logo, paginasOriginais: nOrig,
+    verificarUrl: `${o}/vd`, logo, paginasOriginais: nOrig,
   });
   const folha = await PDFDocument.load(folhaBytes);
   const copiadas = await doc.copyPages(folha, folha.getPageIndices());

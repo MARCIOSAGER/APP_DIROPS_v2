@@ -13,6 +13,7 @@ import { supabase, URL_BASE } from '@/lib/supabaseClient';
 import { toast } from '@/components/ui/use-toast';
 import { enderecoAssinado } from '@/functions/obterUrlAssinadaDocumento';
 import { impressaoDigital, auditarDocs } from './hooks';
+import { getPublicBaseUrl } from '@/lib/certificadoEmissao';
 import { lerFicheiros, lerAssinaturas, urlFicheiroFluxo } from './apiFluxo';
 import {
   falta186, erro186, MENSAGEM_SEM_186, nomeCopiaAssinada, caminhoCopiaAssinada, pdfOriginalDaVersao,
@@ -196,7 +197,8 @@ export async function gerarERegistarCopiaAssinada(versaoId, { onProgresso, actor
     carregarLogoSga(),
     lerRascunhoDaVersao(versaoId, documento.id),
   ]);
-  const origem = typeof window !== 'undefined' ? window.location.origin : '';
+  // endereço PÚBLICO (túnel docs.marciosager.com), como nos certificados: o QR lê-se no telemóvel, muitas vezes fora da rede
+  const origem = await getPublicBaseUrl();
   const escolha = escolherModoCopia({ rascunho, versaoId, versaoSha: versao.sha256, shaOriginal });
 
   let blob;

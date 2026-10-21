@@ -206,7 +206,7 @@ describe('gerarCopiaEstruturada', () => {
     const texto = (await (await doc.getPage(1)).getTextContent()).items.map(i => i.str).join(' ');
     expect(texto).toContain('7F3A-91C2-0B4D');
     expect(texto).toMatch(/Assinado electronicamente/);
-    expect(texto).toContain('https://portal.sga/documentos/assinatura');
+    expect(texto).toContain('https://portal.sga/vd');
     await doc.destroy();
   }, 60000);
 });
