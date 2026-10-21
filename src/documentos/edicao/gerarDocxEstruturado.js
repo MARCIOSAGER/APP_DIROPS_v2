@@ -15,7 +15,7 @@ import {
   dataUrlParaBytes, dimensoesImagem, larguraPedida, numerarTitulos, limparXml, caixaDoNo, alinhamentoPedido,
   seccaoEmNovaPagina,
 } from './comum';
-import { conteudoVazio, numerarLegendas } from './contrato';
+import { conteudoVazio, numerarLegendas, ehTabelaFotos } from './contrato';
 
 const MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -142,7 +142,9 @@ export async function gerarDocx(doc, opcoes = {}) {
 
   function paragrafo(no, ctx, extra = {}) {
     const filhos = corridas(no.content, { bold: ctx.bold, color: ctx.cor, size: ctx.size });
-    return new Paragraph({ children: filhos, spacing: { after: ctx.emTabela ? 0 : 100 }, ...alinhar(no), ...extra });
+    // na galeria de fotos o texto curto sai centrado por baixo da foto (salvo alinhamento pedido)
+    const centrar = ctx.emGaleria ? { alignment: AlignmentType.CENTER } : {};
+    return new Paragraph({ children: filhos, spacing: { after: ctx.emTabela ? 0 : 100 }, ...centrar, ...alinhar(no), ...extra });
   }
 
   function titulo(no, ctx) {
@@ -203,16 +205,18 @@ export async function gerarDocx(doc, opcoes = {}) {
       return [new Paragraph({ keepNext: !!cap || undefined, children: [run(`[Imagem indisponível${alt ? `: ${alt}` : ''}]`, { italics: true, color: COR.suave })] }), ...(cap ? [cap] : [])];
     }
     const maxPx = Math.floor(ctx.largura / TW_PX);
-    const ped = larguraPedida(no.attrs);
+    // galeria «Fotos lado a lado»: largura em % da célula; omissa = a célula toda
+    const ped = larguraPedida(no.attrs) || (ctx.emGaleria ? { frac: 1 } : null);
     let w = ped?.frac ? maxPx * ped.frac : ped?.px ? ped.px : dim.w;
     w = Math.min(w, maxPx);
     let h = (w * dim.h) / dim.w;
-    const maxH = 860; // ~ 23 cm
+    const maxH = ctx.emGaleria ? 600 : 860; // ~ 16 cm / 23 cm
     if (h > maxH) { h = maxH; w = (h * dim.w) / dim.h; }
     const out = [new Paragraph({
       alignment: AlignmentType.CENTER,
       keepNext: !!alt || !!cap,
-      spacing: { before: 80, after: alt || cap ? 40 : 120 },
+      keepLines: ctx.emGaleria || undefined,
+      spacing: ctx.emGaleria ? { before: 0, after: cap ? 40 : 60 } : { before: 80, after: alt || cap ? 40 : 120 },
       children: [new ImageRun({
         type: dados.tipo,
         data: dados.bytes,
@@ -221,8 +225,62 @@ export async function gerarDocx(doc, opcoes = {}) {
       })],
     })];
     if (cap) out.push(cap);
-    else if (alt) out.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 }, children: [run(alt, { italics: true, size: 18, color: COR.suave })] }));
+    else if (alt && !ctx.emGaleria) out.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 }, children: [run(alt, { italics: true, size: 18, color: COR.suave })] }));
     return out;
+  }
+
+  /**
+   * Galeria «Fotos lado a lado»: tabela sem bordas, fotos da mesma largura (4 mm entre fotos: 2 mm de margem
+   * interior de cada lado; as fotos das pontas encostam às margens do texto), legenda com SEQ Figure por baixo; nenhuma linha se parte entre páginas
+   * (cantSplit) e a foto fica presa à legenda (keepNext). Sem linha de cabeçalho repetida.
+   */
+  function galeria(no, ctx) {
+    const linhas = (no.content || []).filter((r) => r && r.type === 'tableRow');
+    const ncols = Math.max(1, ...linhas.map((r) => (r.content || []).reduce((a, c) => a + Math.max(1, Number(c?.attrs?.colspan) || 1), 0)));
+    if (!linhas.length) return [];
+    const MARGEM = 113; // 2 mm
+    const esq = (k) => (k === 0 ? 0 : MARGEM);
+    const dir = (k) => (k === ncols - 1 ? 0 : MARGEM);
+    const util = Math.floor((ctx.largura - 2 * MARGEM * (ncols - 1)) / ncols); // largura de cada foto
+    const ws = Array.from({ length: ncols }, (_, k) => util + esq(k) + dir(k));
+    ws[ncols - 1] += ctx.largura - ws.reduce((a, b) => a + b, 0);
+    const semBordas = { top: semBorda, bottom: semBorda, left: semBorda, right: semBorda };
+    const rows = linhas.map((r) => {
+      let col = 0;
+      const cels = (r.content || []).filter((c) => c && typeof c === 'object').map((c) => {
+        const cs = Math.max(1, Math.min(ncols - col, Number(c.attrs?.colspan) || 1));
+        const w = ws.slice(col, col + cs).reduce((a, b) => a + b, 0);
+        col += cs;
+        const conteudo = (c.content || []).filter((f) => !(f?.type === 'paragraph' && !textoSimples(f).trim()));
+        const m = { left: esq(col - cs), right: dir(col - 1) };
+        let filhos = blocos(conteudo, { ...ctx, largura: w - m.left - m.right, nivelLista: 0, emTabela: true, emGaleria: true, size: 18 });
+        if (!filhos.length) filhos = [new Paragraph({ children: [] })];
+        return new TableCell({
+          children: filhos,
+          columnSpan: cs > 1 ? cs : undefined,
+          width: { size: w, type: WidthType.DXA },
+          margins: { top: 0, bottom: 60, ...m },
+          verticalAlign: VerticalAlign.TOP,
+          borders: semBordas,
+        });
+      });
+      // linha mais curta: completar com células vazias
+      while (col < ncols) {
+        cels.push(new TableCell({ children: [new Paragraph({ children: [] })], width: { size: ws[col], type: WidthType.DXA }, borders: semBordas }));
+        col++;
+      }
+      return new TableRow({ cantSplit: true, children: cels });
+    });
+    return [
+      new Table({
+        rows,
+        width: { size: ctx.largura, type: WidthType.DXA },
+        columnWidths: ws,
+        layout: TableLayoutType.FIXED,
+        borders: { top: semBorda, bottom: semBorda, left: semBorda, right: semBorda, insideHorizontal: semBorda, insideVertical: semBorda },
+      }),
+      new Paragraph({ children: [], spacing: { after: 120 } }),
+    ];
   }
 
   /**
@@ -384,7 +442,7 @@ export async function gerarDocx(doc, opcoes = {}) {
         case 'bulletList': out.push(...lista(no, ctx, false)); break;
         case 'orderedList': out.push(...lista(no, ctx, true)); break;
         case 'listItem': out.push(...lista({ content: [no] }, ctx, false)); break;
-        case 'table': out.push(...tabela(no, ctx)); break;
+        case 'table': out.push(...(ehTabelaFotos(no) ? galeria(no, ctx) : tabela(no, ctx))); break;
         case 'image': out.push(...imagem(no, ctx)); break;
         case 'blockquote': out.push(...caixa(no, ctx)); break;
         case 'horizontalRule':

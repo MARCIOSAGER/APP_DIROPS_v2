@@ -19,7 +19,7 @@ import {
   larguraPedida, numerarTitulos, caixaDoNo, alinhamentoPedido,
   seccaoEmNovaPagina,
 } from './comum';
-import { numerarLegendas, textoLegenda } from './contrato';
+import { numerarLegendas, textoLegenda, ehTabelaFotos } from './contrato';
 import { larguraHelvetica } from './larguraHelvetica';
 
 // ─── Medidas (mm) ──────────────────────────────────────────────────
@@ -376,11 +376,12 @@ function itensImagem(ctx, no) {
     if (legenda) return [{ ...blocoLinhas(linhas, { ...ctx, cor: C.muted }), keep: true }, espaco(1), legendaFigura(ctx, legenda), espaco(2.5)];
     return [...itensDeLinhas(linhas, { ...ctx, cor: C.muted }), espaco(2)];
   }
-  const ped = larguraPedida(no.attrs);
+  // numa galeria «Fotos lado a lado» a largura conta em % da célula e, omissa, a foto ocupa a célula toda
+  const ped = larguraPedida(no.attrs) || (ctx.emGaleria ? { frac: 1 } : null);
   let w = ped?.frac ? ctx.w * ped.frac : ped?.px ? ped.px * PX : props.width * PX;
   w = Math.min(w, ctx.w);
   let h = w * (props.height / props.width);
-  const maxH = (FUNDO - TOPO) * 0.85;
+  const maxH = (FUNDO - TOPO) * (ctx.emGaleria ? 0.6 : 0.85);
   if (h > maxH) { h = maxH; w = h * (props.width / props.height); }
   const x = ctx.x + (ctx.w - w) / 2;
   const fmt = String(props.fileType || 'PNG').toUpperCase();
@@ -659,6 +660,50 @@ function itensTabela(ctx, no, { semZebra = false } = {}) {
   return itens;
 }
 
+// ─── Galeria «Fotos lado a lado» ───────────────────────────────────
+
+const GALERIA_ESPACO = 4; // mm entre fotos da mesma linha
+
+/** Parágrafo sem texto (as células vazias da galeria não ocupam espaço). */
+const paragrafoVazio = (f) => f?.type === 'paragraph' && !textoSimples(f).trim();
+
+/**
+ * Tabela-fotos: sem bordas, sem fundo de cabeçalho, colunas iguais com ~4 mm entre fotos; cada foto escalada à
+ * largura da célula e centrada, legenda «Figura N — …» por baixo. Cada LINHA é um único item sem `split`: se não
+ * couber no resto da página, passa toda para a página seguinte.
+ */
+function itensGaleria(ctx, no) {
+  const { grelha, ncols } = construirGrelha(no);
+  if (!grelha.length) return [];
+  const gap = ncols > 1 ? GALERIA_ESPACO : 0;
+  const wCol = (ctx.w - gap * (ncols - 1)) / ncols;
+  const linhas = grelha.map((linha) => {
+    const cels = linha.map((cel) => {
+      const x = ctx.x + cel.col * (wCol + gap);
+      const w = cel.cs * wCol + (cel.cs - 1) * gap;
+      const sub = { ...ctx, x, w, tam: TAM.tabela, cor: COR_TEXTO, b: false, nivelLista: 0, emTabela: true, emGaleria: true, alinhar: 'center' };
+      let its = [];
+      for (const f of cel.no.content || []) if (!paragrafoVazio(f)) its.push(...itensBloco(sub, f));
+      while (its.length && its[its.length - 1].spacer) its.pop();
+      while (its.length && its[0].spacer) its.shift();
+      return { its, h: its.reduce((a, b) => a + b.h, 0) };
+    });
+    return { cels, h: Math.max(0, ...cels.map((c) => c.h)) };
+  }).filter((l) => l.h > 0);
+  if (!linhas.length) return [];
+  const itens = [espaco(2)];
+  linhas.forEach((l, k) => {
+    if (k) itens.push(espaco(3));
+    itens.push({
+      h: l.h,
+      galeria: true,
+      draw(pdf, y) { for (const c of l.cels) { let yy = y; for (const it of c.its) { it.draw(pdf, yy); yy += it.h; } } },
+    });
+  });
+  itens.push(espaco(3));
+  return itens;
+}
+
 // ─── Blocos ────────────────────────────────────────────────────────
 
 function itensBloco(ctx, no) {
@@ -675,7 +720,7 @@ function itensBloco(ctx, no) {
     case 'bulletList': return itensLista(ctx, no, false);
     case 'orderedList': return itensLista(ctx, no, true);
     case 'listItem': return itensLista(ctx, { content: [no] }, false);
-    case 'table': return itensTabela(ctx, no);
+    case 'table': return ehTabelaFotos(no) ? itensGaleria(ctx, no) : itensTabela(ctx, no);
     case 'image': return itensImagem(ctx, no);
     case 'horizontalRule': return itensLinhaHorizontal(ctx);
     case 'blockquote': return itensCaixa(ctx, no);
@@ -1240,7 +1285,7 @@ export async function gerarPdf(doc, opcoes = {}) {
 export default gerarPdf;
 
 // para testes
-export const __interno = { partirLinhas, corridas, criarMedidor };
+export const __interno = { partirLinhas, corridas, criarMedidor, itensBloco, MEDIDAS: { ML, CW, TOPO, FUNDO } };
 
 // primitivas partilhadas com a folha de assinaturas das cópias de ficheiro (copiaAssinada.js)
 export const __partilhado = {

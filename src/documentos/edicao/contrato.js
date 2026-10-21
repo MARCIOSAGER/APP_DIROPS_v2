@@ -54,7 +54,13 @@
  *  - table           attrs.legenda?: string → «Tabela N — legenda» POR CIMA da tabela (numeração automática).
  *                    tableRow → tableHeader | tableCell (attrs.colspan, attrs.rowspan, attrs.colwidth).
  *                    tableHeader na 1.ª linha = linha de cabeçalho.
- *  - image           attrs.src (data:image/... base64 ou URL), attrs.alt?, attrs.title?, attrs.width? ('100%' ou px),
+ *                    attrs.estilo?: 'fotos' → «Fotos lado a lado» (galeria); omisso/null = tabela normal.
+ *                    Numa tabela-fotos: sem linha de cabeçalho, sem bordas, colunas de largura igual (2 ou 3 por
+ *                    linha); cada célula leva normalmente UMA imagem (com legenda própria opcional, «Figura N — …»
+ *                    por baixo) e, opcionalmente, um parágrafo curto. A largura da imagem (attrs.width) conta como
+ *                    % da célula (omissa = 100% da célula). Cada linha da galeria nunca se parte entre páginas.
+ *                    A tabela-fotos não tem legenda própria (attrs.legenda é ignorada e não numera «Tabela N»).
+ *  - image          attrs.src (data:image/... base64 ou URL), attrs.alt?, attrs.title?, attrs.width? ('100%' ou px),
  *                    attrs.legenda?: string → «Figura N — legenda» POR BAIXO da imagem (numeração automática).
  *  - pageBreak       { type: 'pageBreak' } (bloco, sem conteúdo) → quebra de página.
  *  - horizontalRule, hardBreak, text.
@@ -78,6 +84,31 @@ export const ALINHAMENTOS = ['left', 'center', 'right', 'justify'];
 /** Tipos de caixa de destaque (blockquote.attrs.tipo). Omisso = 'nota'. */
 export const TIPOS_CAIXA = ['nota', 'atencao', 'aviso'];
 export const ROTULO_CAIXA = { nota: 'Nota', atencao: 'Atenção', aviso: 'Aviso' };
+/** Estilos de tabela (table.attrs.estilo). Omisso/null = tabela normal. */
+export const ESTILOS_TABELA = ['fotos'];
+/** Fotos por linha que o editor oferece numa galeria. */
+export const FOTOS_POR_LINHA = [2, 3];
+
+/** A tabela é uma galeria «Fotos lado a lado»? */
+export const ehTabelaFotos = (no) => no?.type === 'table' && no?.attrs?.estilo === 'fotos';
+
+/**
+ * Tabela-fotos nova (colunas × linhas) com células vazias (um parágrafo vazio em cada).
+ * @returns {Object} nó ProseMirror
+ */
+export function novaGaleria(colunas = 2, linhas = 1) {
+  const c = Math.max(1, Math.min(6, Number(colunas) || 2));
+  const l = Math.max(1, Math.min(20, Number(linhas) || 1));
+  return {
+    type: 'table',
+    attrs: { estilo: 'fotos' },
+    content: Array.from({ length: l }, () => ({
+      type: 'tableRow',
+      content: Array.from({ length: c }, () => ({ type: 'tableCell', content: [{ type: 'paragraph' }] })),
+    })),
+  };
+}
+
 /** Profundidade máxima de listas aninhadas. */
 export const NIVEIS_LISTA_MAX = 3;
 /** Marcas permitidas. */
@@ -199,7 +230,8 @@ export function alinhamentoDe(no) {
 /**
  * Numeração automática das legendas: percorre o documento por ordem (todas as secções de um DocumentoEstruturado,
  * ou um único doc ProseMirror) e devolve um Map nó → 'Figura N' (image) / 'Tabela N' (table). Só entram os nós com
- * attrs.legenda não vazia; figuras e tabelas têm contadores separados. A chave é o próprio objecto do nó (o mesmo
+ * attrs.legenda não vazia; figuras e tabelas têm contadores separados. Numa galeria «Fotos lado a lado» as fotos
+ * numeram-se linha a linha, da esquerda para a direita (a própria galeria não numera «Tabela N»). A chave é o próprio objecto do nó (o mesmo
  * que os geradores percorrem). O texto final é `${map.get(no)} — ${legenda}`.
  * @param {DocumentoEstruturado|Object} doc
  * @returns {Map<Object, string>}
@@ -212,7 +244,7 @@ export function numerarLegendas(doc) {
     if (!n || typeof n !== 'object') return;
     const legenda = String(n.attrs?.legenda ?? '').trim();
     if (legenda && n.type === 'image') mapa.set(n, `Figura ${++fig}`);
-    else if (legenda && n.type === 'table') mapa.set(n, `Tabela ${++tab}`);
+    else if (legenda && n.type === 'table' && !ehTabelaFotos(n)) mapa.set(n, `Tabela ${++tab}`);
     if (Array.isArray(n.content)) n.content.forEach(visitar);
   };
   if (Array.isArray(doc?.seccoes)) doc.seccoes.forEach(s => visitar(s?.conteudo));
@@ -238,6 +270,23 @@ export function legendasAntesDe(doc, indice) {
 
 const TIPOS_LISTA = ['bulletList', 'orderedList'];
 
+/**
+ * Regras da galeria «Fotos lado a lado» (só avisos: os geradores desenham na mesma o que lá estiver).
+ * Sem cabeçalho; cada célula com uma imagem no máximo e só imagens/parágrafos; sem células juntas.
+ */
+function validarGaleria(no, caminho, avisos) {
+  const linhas = (no.content || []).filter(r => r?.type === 'tableRow');
+  if (String(no.attrs?.legenda ?? '').trim()) avisos.push(`${caminho}: a galeria de fotos não leva legenda própria (cada foto tem a sua)`);
+  linhas.forEach((r, ri) => (r.content || []).forEach((cel, ci) => {
+    const onde = `${caminho}: galeria, linha ${ri + 1}, foto ${ci + 1}`;
+    if (cel?.type === 'tableHeader') avisos.push(`${onde}: a galeria não tem linha de cabeçalho (sai como célula normal)`);
+    if ((Number(cel?.attrs?.colspan) || 1) > 1 || (Number(cel?.attrs?.rowspan) || 1) > 1) avisos.push(`${onde}: células juntas numa galeria saem com larguras iguais`);
+    const filhos = Array.isArray(cel?.content) ? cel.content : [];
+    if (filhos.filter(f => f?.type === 'image').length > 1) avisos.push(`${onde}: mais do que uma imagem na mesma célula`);
+    if (filhos.some(f => f && !['image', 'paragraph'].includes(f.type))) avisos.push(`${onde}: a célula da galeria deve ter só a foto e um texto curto`);
+  }));
+}
+
 function validarNo(no, caminho, erros, avisos = [], nivelLista = 0) {
   if (!no || typeof no !== 'object' || typeof no.type !== 'string') { erros.push(`${caminho}: nó inválido`); return; }
   if (!NOS_PERMITIDOS.includes(no.type)) { erros.push(`${caminho}: nó «${no.type}» não é permitido`); return; }
@@ -251,6 +300,11 @@ function validarNo(no, caminho, erros, avisos = [], nivelLista = 0) {
   }
   if ((no.type === 'image' || no.type === 'table') && no.attrs?.legenda !== undefined && no.attrs?.legenda !== null && typeof no.attrs.legenda !== 'string') {
     erros.push(`${caminho}: legenda tem de ser texto`);
+  }
+  if (no.type === 'table') {
+    const e = no.attrs?.estilo;
+    if (e !== undefined && e !== null && !ESTILOS_TABELA.includes(e)) erros.push(`${caminho}: tabela com estilo «${e}» não é permitida (só «fotos»)`);
+    if (e === 'fotos') validarGaleria(no, caminho, avisos);
   }
   if (no.type === 'pageBreak' && Array.isArray(no.content) && no.content.length) erros.push(`${caminho}: a quebra de página não tem conteúdo`);
   if (TIPOS_LISTA.includes(no.type)) {

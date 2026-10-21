@@ -1,6 +1,7 @@
 // Extensões TipTap do editor estruturado do GED, limitadas ao contrato (contrato.js): alinhamento de parágrafos e
 // títulos, caixas Nota/Atenção/Aviso (blockquote.attrs.tipo), imagem e tabela com legenda, quebra de página,
-// listas até 3 níveis (Tab / Shift+Tab). Servem o editor e a pré-visualização (generateHTML).
+// listas até 3 níveis (Tab / Shift+Tab), galeria «Fotos lado a lado» (table.attrs.estilo = 'fotos').
+// Servem o editor e a pré-visualização (generateHTML).
 import { Extension, Node, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -9,7 +10,8 @@ import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
-import { ALINHAMENTOS, TIPOS_CAIXA, NIVEIS_LISTA_MAX } from './contrato';
+import { NodeSelection } from '@tiptap/pm/state';
+import { ALINHAMENTOS, TIPOS_CAIXA, NIVEIS_LISTA_MAX, ESTILOS_TABELA, novaGaleria } from './contrato';
 
 const textoOuNulo = (v) => { const t = String(v ?? '').trim(); return t || null; };
 
@@ -110,11 +112,47 @@ export const ImagemContrato = Image.extend({
   },
 }).configure({ inline: false, allowBase64: true });
 
-/** Tabela com legenda opcional («Tabela N — legenda» por cima, em <caption>). */
+/**
+ * Célula da galeria «Fotos lado a lado» onde está a selecção: { pos (antes da célula), node, tabela } ou null
+ * (fora de tabela, ou numa tabela normal).
+ */
+export function celulaDaGaleria(state) {
+  const { $from } = state.selection;
+  for (let d = $from.depth; d > 0; d--) {
+    const n = $from.node(d);
+    if (n.type.name === 'tableCell' || n.type.name === 'tableHeader') {
+      const tabela = d >= 2 ? $from.node(d - 2) : null;
+      return tabela?.type.name === 'table' && tabela.attrs.estilo === 'fotos' ? { pos: $from.before(d), node: n, tabela } : null;
+    }
+  }
+  return null;
+}
+
+/** A selecção está numa galeria «Fotos lado a lado»? */
+export function emGaleria(state) {
+  const { $from } = state.selection;
+  for (let d = $from.depth; d > 0; d--) {
+    const n = $from.node(d);
+    if (n.type.name === 'table') return n.attrs.estilo === 'fotos';
+  }
+  // imagem/tabela seleccionada como nó
+  const sel = state.selection;
+  return sel instanceof NodeSelection && sel.node.type.name === 'table' && sel.node.attrs.estilo === 'fotos';
+}
+
+/**
+ * Tabela com legenda opcional («Tabela N — legenda» por cima, em <caption>) e estilo opcional:
+ * attrs.estilo = 'fotos' → galeria «Fotos lado a lado» (class gd-fotos, sem bordas, colunas iguais).
+ */
 export const TabelaContrato = Table.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      estilo: {
+        default: null,
+        parseHTML: (el) => { const e = el.getAttribute('data-estilo'); return ESTILOS_TABELA.includes(e) ? e : null; },
+        renderHTML: (a) => (ESTILOS_TABELA.includes(a.estilo) ? { 'data-estilo': a.estilo, class: `gd-${a.estilo}` } : {}),
+      },
       legenda: {
         default: null,
         parseHTML: el => textoOuNulo(el.getAttribute('data-legenda') || el.querySelector(':scope > caption')?.textContent),
@@ -133,6 +171,43 @@ export const TabelaContrato = Table.extend({
     const t = [...r];
     t.splice(2, 0, ['caption', { contenteditable: 'false', 'data-legenda': '' }, legenda]);
     return t;
+  },
+  addCommands() {
+    return {
+      ...this.parent?.(),
+      /** Galeria «Fotos lado a lado» com células vazias (colunas = fotos por linha). */
+      inserirGaleria: ({ colunas = 2, linhas = 1 } = {}) => ({ state, chain }) => {
+        const { $to } = state.selection;
+        const noFim = $to.depth === 0 || $to.after(1) >= state.doc.content.size;
+        const g = novaGaleria(colunas, linhas);
+        return chain().insertContent(noFim ? [g, { type: 'paragraph' }] : g).run();
+      },
+      /**
+       * Põe a foto na célula da galeria onde está o cursor: célula sem imagem → a foto entra no topo (fica um
+       * parágrafo por baixo para o texto curto); célula com imagem → troca-se a foto (fica a legenda). A foto
+       * ocupa 100% da célula. Fora de galeria devolve false.
+       */
+      colocarFotoNaGaleria: (attrs) => ({ state, tr, dispatch }) => {
+        const cel = celulaDaGaleria(state);
+        const tipo = state.schema.nodes.image;
+        if (!cel || !tipo || !attrs?.src) return false;
+        if (!dispatch) return true;
+        const inicio = cel.pos + 1;
+        let posImg = null;
+        cel.node.forEach((f, off) => { if (posImg === null && f.type.name === 'image') posImg = inicio + off; });
+        if (posImg !== null) {
+          const antes = state.doc.nodeAt(posImg);
+          // troca de foto: fica a legenda e o tamanho escolhido
+          tr.setNodeMarkup(posImg, undefined, { ...antes.attrs, src: attrs.src, alt: attrs.alt ?? antes.attrs.alt });
+        } else {
+          // a foto entra no topo da célula; o parágrafo (vazio ou com texto) fica por baixo
+          tr.insert(inicio, tipo.create({ ...attrs, width: attrs.width ?? '100%' }));
+          posImg = inicio;
+        }
+        tr.setSelection(NodeSelection.create(tr.doc, posImg)).scrollIntoView();
+        return true;
+      },
+    };
   },
 }).configure({ resizable: false });
 

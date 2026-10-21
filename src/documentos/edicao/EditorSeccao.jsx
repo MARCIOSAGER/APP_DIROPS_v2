@@ -1,7 +1,7 @@
 // Editor TipTap de uma secção do documento estruturado, limitado aos nós e marcas do contrato
 // (src/documentos/edicao/contrato.js; extensões em extensoes.js): parágrafo, títulos 2-4 (numerados enquanto se
 // escreve), alinhamento, listas até 3 níveis, caixas Nota/Atenção/Aviso, tabela (com legenda, juntar/separar
-// células), imagem (com legenda), quebra de página, linha horizontal; negrito, itálico, sublinhado. Sem fontes,
+// células), galeria «Fotos lado a lado» (fotos em grelha sem bordas), imagem (com legenda), quebra de página, linha horizontal; negrito, itálico, sublinhado. Sem fontes,
 // tamanhos nem cores livres (padrão SGA). Procurar e substituir (Ctrl+F / Ctrl+H), contagem de palavras e ecrã
 // inteiro. Colar do Word passa por limparHtmlColado; imagens entram como data: URL JPEG reduzida (≤ 1600 px).
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -11,7 +11,7 @@ import {
   Table as TableIcon, ImagePlus, Minus, Undo2, Redo2, Trash2, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   IndentIncrease, IndentDecrease, Info, TriangleAlert, OctagonAlert, ChevronDown, ChevronUp, SeparatorHorizontal,
   Search, Maximize2, Minimize2, BetweenHorizontalStart, BetweenHorizontalEnd, BetweenVerticalStart,
-  BetweenVerticalEnd, TableCellsMerge, TableCellsSplit, PanelTop, Captions, X, Replace, ReplaceAll, SquareDashed,
+  BetweenVerticalEnd, TableCellsMerge, TableCellsSplit, PanelTop, Captions, X, Replace, ReplaceAll, SquareDashed, Images,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
@@ -24,8 +24,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { limparHtmlColado } from './limparColagem';
 import { imagemDeFicheiro, reduzirImagemSrc, LIMITE_DATA_URL } from './imagens';
-import { docVazio, NIVEIS_LISTA_MAX } from './contrato';
-import { extensoesContrato, nivelListaNaSeleccao } from './extensoes';
+import { docVazio, NIVEIS_LISTA_MAX, FOTOS_POR_LINHA } from './contrato';
+import { extensoesContrato, nivelListaNaSeleccao, emGaleria as selEmGaleria } from './extensoes';
 import {
   Procurar, definirTermo, irParaOcorrencia, substituirActual, substituirTodas, estadoProcurar, contarPalavras,
 } from './procurar';
@@ -76,12 +76,22 @@ export const ESTILO_PROSA = `
 .prose-gd th, .prose-gd td { border: 1px solid #cbd5e1; padding: .35em .5em; vertical-align: top; }
 .prose-gd th { background: rgba(15,118,110,.08); font-weight: 600; text-align: left; }
 .prose-gd table > caption { caption-side: top; counter-increment: gd-tab; text-align: left; font-size: .85rem; padding: 0 0 .3em; color: #334155; }
-.prose-gd table > caption::before { content: "Tabela " counter(gd-tab) " \\2014 "; font-weight: 700; }
+.prose-gd table > caption::before { content: "Tabela " counter(gd-tab) " \\2014  "; font-weight: 700; }
 .prose-gd img { max-width: 100%; height: auto; display: block; margin: .5em 0; }
 .prose-gd figure.gd-figura { counter-increment: gd-fig; margin: .5em 0; }
 .prose-gd figure.gd-figura img { margin: 0; }
 .prose-gd figure.gd-figura figcaption { font-size: .85rem; color: #334155; text-align: center; padding-top: .3em; }
-.prose-gd figure.gd-figura figcaption::before { content: "Figura " counter(gd-fig) " \\2014 "; font-weight: 700; }
+.prose-gd figure.gd-figura figcaption::before { content: "Figura " counter(gd-fig) " \\2014  "; font-weight: 700; }
+.prose-gd table.gd-fotos { border-collapse: separate; border-spacing: .9rem .4rem; margin-left: -.9rem; width: calc(100% + 1.8rem); }
+.prose-gd table.gd-fotos td, .prose-gd table.gd-fotos th { border: 0; padding: 0; background: none; font-weight: normal; vertical-align: top; text-align: center; }
+.prose-gd table.gd-fotos img { margin: 0 auto; }
+.prose-gd table.gd-fotos img:not([width]) { width: 100%; }
+.prose-gd table.gd-fotos td > p { font-size: .85rem; text-align: center; }
+.prose-gd table.gd-fotos figure.gd-figura { margin: 0; }
+.ProseMirror[contenteditable="true"] table.gd-fotos { outline: 1px dashed #cbd5e1; outline-offset: .25rem; }
+.ProseMirror[contenteditable="true"] table.gd-fotos td { outline: 1px dashed #e2e8f0; min-height: 4rem; height: 4rem; }
+.ProseMirror[contenteditable="true"] table.gd-fotos td:not(:has(img)) > p:only-child:has(> br:only-child)::before { content: "Clique aqui e use «Inserir imagem»"; color: #94a3b8; font-size: .75rem; pointer-events: none; }
+.ProseMirror[contenteditable="true"] table.gd-fotos td:not(:has(img)) > p:only-child:has(> br:only-child) { display: flex; align-items: center; justify-content: center; min-height: 4rem; margin: 0; }
 .prose-gd img.ProseMirror-selectednode, .prose-gd figure.ProseMirror-selectednode img { outline: 3px solid #0f766e; }
 .prose-gd .selectedCell { background: rgba(15,118,110,.12); }
 .prose-gd .gd-quebra-pagina { display: flex; align-items: center; gap: .75em; margin: 1.1em 0; color: #64748b; font-size: .7rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; user-select: none; }
@@ -167,6 +177,52 @@ function EscolherTabela({ onEscolher }) {
   );
 }
 
+/** «Fotos lado a lado»: quantas fotos por linha (2 ou 3) e quantas linhas (1 a 3). */
+function EscolherGaleria({ onEscolher }) {
+  const [aberto, setAberto] = useState(false);
+  const [colunas, setColunas] = useState(2);
+  const [linhas, setLinhas] = useState(1);
+  const opcao = (activo) => cn(
+    'h-8 min-w-9 rounded-md border px-2 text-sm tabular-nums transition-colors',
+    activo ? 'border-teal-600 bg-teal-50 font-semibold text-teal-900 dark:bg-teal-950/60 dark:text-teal-100' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200',
+  );
+  return (
+    <Popover open={aberto} onOpenChange={setAberto}>
+      <PopoverTrigger asChild>
+        <button
+          type="button" title="Fotos lado a lado" aria-label="Fotos lado a lado"
+          className="inline-flex h-8 items-center justify-center gap-0.5 rounded-md px-1.5 text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+        ><Images className="h-4 w-4" /><ChevronDown className="h-3 w-3 opacity-60" /></button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" align="start" onCloseAutoFocus={(e) => e.preventDefault()}>
+        <p className="mb-2 text-xs font-medium text-slate-600 dark:text-slate-300">Fotos lado a lado</p>
+        <div className="space-y-2.5">
+          <div role="group" aria-label="Fotos por linha" className="flex items-center gap-1.5">
+            <span className="w-24 text-xs text-slate-600 dark:text-slate-300">Fotos por linha</span>
+            {FOTOS_POR_LINHA.map((n) => (
+              <button key={n} type="button" aria-pressed={colunas === n} className={opcao(colunas === n)} onClick={() => setColunas(n)}>{n}</button>
+            ))}
+          </div>
+          <div role="group" aria-label="Linhas" className="flex items-center gap-1.5">
+            <span className="w-24 text-xs text-slate-600 dark:text-slate-300">Linhas</span>
+            {[1, 2, 3].map((n) => (
+              <button key={n} type="button" aria-pressed={linhas === n} className={opcao(linhas === n)} onClick={() => setLinhas(n)}>{n}</button>
+            ))}
+          </div>
+          {/* miniatura da grelha escolhida */}
+          <div className="grid gap-1 rounded-md border border-dashed border-slate-300 p-1.5 dark:border-slate-600" style={{ gridTemplateColumns: `repeat(${colunas}, 1fr)` }} aria-hidden="true">
+            {Array.from({ length: colunas * linhas }, (_, k) => <span key={k} className="h-5 rounded-sm bg-slate-200 dark:bg-slate-700" />)}
+          </div>
+          <Button type="button" size="sm" className="h-8 w-full" onClick={() => { setAberto(false); onEscolher(colunas, linhas); }}>
+            Inserir {colunas * linhas} {colunas * linhas === 1 ? 'foto' : 'fotos'}
+          </Button>
+        </div>
+        <p className="mt-2 text-[11px] leading-snug text-slate-500">Depois clique numa célula e use «Inserir imagem». Cada foto pode ter a sua legenda.</p>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 /** Barra de procurar e substituir. */
 function BarraProcurar({ editor, modo, setModo, onFechar, termoInicial }) {
   const [termo, setTermo] = useState(termoInicial || '');
@@ -246,10 +302,18 @@ export default function EditorSeccao({
   abrirRef.current = abrirProcurar;
 
   const inserirFicheiros = async (ed, ficheiros, pos) => {
+    let k = 0;
     for (const f of ficheiros) {
       try {
         const { src, largura } = await imagemDeFicheiro(f);
-        const no = { type: 'image', attrs: { src, alt: (f.name || '').replace(/\.[^.]+$/, ''), width: largura > 800 ? '100%' : null } };
+        const alt = (f.name || '').replace(/\.[^.]+$/, '');
+        const no = { type: 'image', attrs: { src, alt, width: largura > 800 ? '100%' : null } };
+        // galeria «Fotos lado a lado»: a foto vai para a célula do cursor (100% da célula); as seguintes, para as
+        // células seguintes (acrescenta-se uma linha se a galeria acabar)
+        if (typeof pos !== 'number' && selEmGaleria(ed.state)) {
+          if (k > 0 && !ed.commands.goToNextCell()) ed.chain().addRowAfter().goToNextCell().run();
+          if (ed.chain().focus().colocarFotoNaGaleria({ src, alt }).run()) { k++; continue; }
+        }
         if (typeof pos === 'number') ed.chain().focus().insertContentAt(pos, no).run();
         else ed.chain().focus().insertContent(no).run();
       } catch (e) {
@@ -352,6 +416,7 @@ export default function EditorSeccao({
 
   const c = () => editor.chain().focus();
   const emTabela = editor.isActive('table');
+  const galeria = emTabela && selEmGaleria(editor.state);
   const emImagem = editor.isActive('image');
   const emLista = editor.isActive('listItem');
   const nivelLista = emLista ? nivelListaNaSeleccao(editor.state) : 0;
@@ -437,7 +502,26 @@ export default function EditorSeccao({
             <BotaoBarra titulo="Quebra de página (Ctrl+Enter)" onClick={() => c().inserirQuebraPagina().run()}><SeparatorHorizontal className="h-4 w-4" /></BotaoBarra>
             <Sep />
             <EscolherTabela onEscolher={(rows, cols) => c().insertTable({ rows, cols, withHeaderRow: true }).run()} />
-            {emTabela && (
+            <EscolherGaleria onEscolher={(colunas, linhas) => c().inserirGaleria({ colunas, linhas }).run()} />
+            {galeria && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button type="button" title="Acções da galeria de fotos" className="inline-flex h-8 items-center gap-1 rounded-md bg-teal-50 px-2 text-xs font-medium text-teal-900 hover:bg-teal-100 dark:bg-teal-950/60 dark:text-teal-100">
+                    Galeria<ChevronDown className="h-3 w-3 opacity-70" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-60" onCloseAutoFocus={(e) => e.preventDefault()}>
+                  <DropdownMenuItem className="gap-2" onSelect={() => c().addColumnAfter().run()}><BetweenVerticalEnd className="h-4 w-4" />Acrescentar foto (coluna)</DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2" disabled={!pode.deleteColumn()} onSelect={() => c().deleteColumn().run()}><Trash2 className="h-4 w-4 text-red-600" />Remover foto (coluna)</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="gap-2" onSelect={() => c().addRowAfter().run()}><BetweenHorizontalEnd className="h-4 w-4" />Acrescentar linha</DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2" disabled={!pode.deleteRow()} onSelect={() => c().deleteRow().run()}><Trash2 className="h-4 w-4 text-red-600" />Remover linha</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="gap-2 text-red-700 focus:text-red-700" onSelect={() => c().deleteTable().run()}><Trash2 className="h-4 w-4" />Apagar galeria</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {emTabela && !galeria && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button type="button" title="Acções da tabela" className="inline-flex h-8 items-center gap-1 rounded-md bg-teal-50 px-2 text-xs font-medium text-teal-900 hover:bg-teal-100 dark:bg-teal-950/60 dark:text-teal-100">
@@ -472,7 +556,7 @@ export default function EditorSeccao({
                 {['25%', '50%', '75%', '100%'].map((w) => {
                   const actual = editor.getAttributes('image').width || '100%';
                   return (
-                    <BotaoBarra key={w} titulo={`Largura da imagem: ${w} do texto`} activo={actual === w}
+                    <BotaoBarra key={w} titulo={`Largura da imagem: ${w} ${galeria ? 'da célula' : 'do texto'}`} activo={actual === w}
                       onClick={() => c().updateAttributes('image', { width: w === '100%' ? null : w }).run()}>
                       <span className="text-xs font-medium">{w}</span>
                     </BotaoBarra>
