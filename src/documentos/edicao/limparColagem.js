@@ -6,7 +6,7 @@
 // marcas do contrato.
 import { NIVEIS_LISTA_MAX } from './contrato';
 
-const ATRIBUTOS_MANTER = new Set(['src', 'alt', 'colspan', 'rowspan', 'href', 'data-tipo', 'data-quebra-pagina', 'data-legenda']);
+const ATRIBUTOS_MANTER = new Set(['src', 'alt', 'colspan', 'rowspan', 'href', 'data-tipo', 'data-quebra-pagina', 'data-legenda', 'start']);
 const ALINHAMENTOS_COLAR = ['center', 'right', 'justify'];
 const BLOCOS_ALINHAVEIS = 'p,h1,h2,h3,h4,h5,h6';
 

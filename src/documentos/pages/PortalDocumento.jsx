@@ -61,6 +61,7 @@ import { BotaoCompararVersoes } from '../components/edicao/CompararVersoes';
 // Reserva para edição (check-out) e «Carregar nova versão (rascunho)» — Fase F0 do plano de edição.
 import ReservaDocumento from '../components/edicao/ReservaDocumento';
 import BotaoEditarNavegador from '../components/edicao/BotaoEditarNavegador';
+import ConverterParaEditor from '../components/edicao/ConverterParaEditor';
 import { useReservaDocumento, reservaActiva, reservadaPorMim } from '../hooksEdicao';
 import { rascunhoDoDocumento } from '../edicao/hooksEstruturado';
 // Cópia assinada da revisão aprovada (migração 186): ver, verificar, descarregar e (gestão/edição) gerar.
@@ -885,6 +886,8 @@ export default function PortalDocumento() {
           {estruturadoQ.data && (
             <Button asChild size="sm" variant="outline"><Link to={`${PORTAL_BASE}/gestao/redigir/documento/${doc.id}`}>Rever com o editor</Link></Button>
           )}
+          {/* «Converter para o editor»: Word → editor de secções (só sem rascunho do editor já ligado; se houver, é o «Rever» acima) */}
+          {estruturadoQ.isSuccess && <ConverterParaEditor doc={doc} versoes={versoes} user={user} temRascunho={!!estruturadoQ.data} />}
         </div>
       )}
 
