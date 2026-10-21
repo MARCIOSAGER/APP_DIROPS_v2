@@ -28,6 +28,7 @@ import { assinar } from '../../hooksFluxo';
 import { papelRotulo, shaCurto } from '../../apiFluxo';
 import { BotaoAccao, Caixa, Campo } from './comum';
 import { horaAngolaComFuso } from './SeloAssinatura';
+import { gerarCopiaEmSegundoPlano } from '../../hooksCopiaAssinada';
 
 const MOTIVO_EDITAVEL_MINIMO = 10;
 
@@ -83,6 +84,11 @@ export default function PainelAssinar({
       setAberto(false);
       setFeito(r);
       onAssinado?.(r);
+      // A última assinatura (aprovação final): prepara a cópia assinada em segundo plano, neste navegador. Se
+      // falhar, a aprovação não é afectada — só se avisa, e a cópia pode gerar-se na página do documento.
+      if ((r?.estado === 'aprovado' || acto === 'aprovacao') && fluxo?.versao_id) {
+        gerarCopiaEmSegundoPlano(fluxo.versao_id);
+      }
     } catch (err) {
       setSenha('');
       setErro({ mensagem: err?.message || 'Não foi possível assinar.', status: err?.status, estado: err?.estado });

@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { generateHTML } from '@tiptap/core';
 import {
-  AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle2, Circle, CloudOff, Eye, FileCheck2, FileText,
+  AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle2, Circle, CloudOff, Download, Eye, FileCheck2, FileText,
   History, Lightbulb, Loader2, Save, Sparkles, Wand2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ import EditorSeccao, { extensoesContrato, ESTILO_PROSA } from '../../edicao/Edit
 import { ROTULO_CAMPO, novoDocumentoEstruturado, textoDoNo } from '../../edicao/contrato';
 import {
   PASSOS, indicePasso, problemasDoPasso, problemasParaGerar, resumoPreenchimento, estadoSeccao, actualizarSeccao,
-  actualizarCabecalho, extrasDe, prepararParaGerar,
+  actualizarCabecalho, extrasDe, prepararParaGerar, nomeBaseFicheiro,
 } from '../../edicao/assistente';
 import {
   useModelosDocumento, useRascunhoEstruturado, useRecarregarRascunhos, criarRascunhoEstruturado,
@@ -604,7 +604,10 @@ export default function PortalRedigirAssistente() {
       {/* diálogo: PDF */}
       <Dialog open={!!pdfUrl} onOpenChange={(o) => { if (!o) { URL.revokeObjectURL(pdfUrl); setPdfUrl(null); } }}>
         <DialogContent className="h-[90vh] max-w-5xl">
-          <DialogHeader><DialogTitle>Pré-visualização do PDF</DialogTitle><DialogDescription>Ainda não foi gravado nada.</DialogDescription></DialogHeader>
+          <DialogHeader className="flex-row items-start justify-between gap-4 space-y-0 pr-8">
+            <div><DialogTitle>Pré-visualização do PDF</DialogTitle><DialogDescription>Ainda não foi gravado nada.</DialogDescription></div>
+            {pdfUrl && <Button asChild variant="outline" size="sm"><a href={pdfUrl} download={`${nomeBaseFicheiro(prepararParaGerar(doc))}.pdf`}><Download className="h-4 w-4" aria-hidden="true" />Descarregar PDF</a></Button>}
+          </DialogHeader>
           {pdfUrl && <iframe title="Pré-visualização do PDF" src={pdfUrl} className="h-full min-h-[70vh] w-full rounded border" />}
         </DialogContent>
       </Dialog>

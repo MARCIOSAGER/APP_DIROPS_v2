@@ -18,6 +18,7 @@ import { useAeroportosDocs, useAcessoAeroportoDocs, useDocumentosDocs, useConfig
 import { sairDoPortal, T, Ref, TituloSeccao, EstadoVazio, EstadoErro, EsqueletoLinhas } from '../PortalLayout';
 // O tamanho do texto é uma preferência guardada neste navegador e aplicada ao <html>: tem de vir do módulo que a
 // aplica, senão ficavam duas verdades.
+import MinhaRubrica from '../components/assinatura/MinhaRubrica';
 import { TAMANHOS_TEXTO_DOCS, preferenciaTextoDocs, guardarPreferenciaTextoDocs } from './PortalBiblioteca';
 
 // Regras de senha do portal (as mesmas que o servidor exige).
@@ -168,6 +169,11 @@ export default function PortalConta() {
           </form>
         </Bloco>
       </div>
+
+      {/* Rubrica: usada só nas cópias dos documentos que a pessoa assinou no fluxo de aprovação. */}
+      <Bloco titulo="A minha rubrica">
+        <MinhaRubrica />
+      </Bloco>
 
       {/* Aeroportos: linhas compactas, como no ecrã de entrada. */}
       <section>

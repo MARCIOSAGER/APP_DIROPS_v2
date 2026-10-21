@@ -687,8 +687,188 @@ function textoCentrado(pdf, medir, texto, y, { tam, b = false, i = false, cor = 
   return linhas.length * lh;
 }
 
-function desenharCapa(pdf, medir, doc, logo) {
+// ── assinaturas electrónicas do fluxo de aprovação ─────────────────────────────
+// opcoes.assinaturas: { elaborado, verificado, aprovado }, cada uma
+//   { nome, papel?, significado?, em (ISO), codigo, substituicao?, rubrica? (data URL PNG/JPEG da própria pessoa) }.
+// A prova é o registo electrónico (documento_assinatura); a rubrica é só a aparência e nunca substitui os dados.
+const ORDEM_ASSINATURAS = ['elaborado', 'verificado', 'aprovado'];
+const COR_ASSINADO = { fundo: [240, 253, 244], borda: [134, 239, 172], texto: [21, 128, 61] };
+
+/** Data e hora em hora de Angola, com o fuso escrito (a mesma regra do selo no portal). */
+export function horaAngola(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = new Intl.DateTimeFormat('pt-PT', { timeZone: 'Africa/Luanda', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(d);
+  const v = (t) => p.find(x => x.type === t)?.value || '';
+  return `${v('day')}/${v('month')}/${v('year')} ${v('hour')}:${v('minute')} (UTC+1)`;
+}
+
+function rubricaNaCaixa(pdf, src, x, y, w, h) {
+  try {
+    const fmt = /^data:image\/jpe?g/i.test(src) ? 'JPEG' : 'PNG';
+    const prop = pdf.getImageProperties(src);
+    const esc = Math.min(w / prop.width, h / prop.height);
+    const wi = prop.width * esc;
+    const hi = prop.height * esc;
+    pdf.addImage(src, fmt, x + (w - wi) / 2, y + (h - hi) / 2, wi, hi);
+  } catch { /* imagem inválida: fica só o registo electrónico */ }
+}
+
+/**
+ * Quadro Elaborado / Verificado / Aprovado, com o selo electrónico de cada acto assinado.
+ * Partilhado pela capa dos documentos estruturados e pela «Folha de assinaturas» das cópias de ficheiro.
+ * @param {{ x?: number, y: number, largura?: number, nomes?: string[], assinaturas?: object }} op
+ *   nomes: os nomes do cabeçalho (usados quando o acto ainda não foi assinado); assinaturas: { elaborado, verificado, aprovado }.
+ * @returns {number} altura desenhada (mm)
+ */
+export function desenharQuadroAssinaturas(pdf, medir, { x: x0 = ML, y: ya, largura = CW, nomes = [], assinaturas = {} } = {}) {
+  const assin = assinaturas || {};
+  const algumaAssinada = ORDEM_ASSINATURAS.some(k => assin[k]);
+  const col = largura / 3;
+  const rotulos = ['Elaborado por', 'Verificado por', 'Aprovado por'];
+  const hCab = 7;
+  const hNome = 11;
+  // selo: rubrica + «Assinado electronicamente» + significado (+ substituição) + código. Com substituição a rubrica
+  // encolhe; a caixa cresce se ainda assim o texto não couber (as três colunas ficam com a mesma altura).
+  const hRubDe = (a) => (a.rubrica ? (a.substituicao ? 9 : 11) : 0);
+  const sigDe = (a) => partirLinhas(medir, [{ t: limparTexto(a.significado || ''), i: true }], col - 6, 6.6).slice(0, a.rubrica ? 2 : 3);
+  const precisa = (a) => 2.5 + hRubDe(a) + 2.6 + 3.4 + sigDe(a).length * alturaLinha(6.6) + (a.substituicao ? alturaLinha(6.4) : 0) + 4.8;
+  const hAss = algumaAssinada ? Math.max(30, ...ORDEM_ASSINATURAS.filter(k => assin[k]).map(k => precisa(assin[k]))) : 22;
+  const hData = 8;
+  rotulos.forEach((rot, k) => {
+    const x = x0 + k * col;
+    const a = assin[ORDEM_ASSINATURAS[k]] || null;
+    const nome = a?.nome || nomes[k];
+    pdf.setFillColor(...C.tableHeader);
+    pdf.rect(x, ya, col, hCab, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9);
+    pdf.setTextColor(...C.white);
+    pdf.text(limparTexto(rot), x + col / 2, ya + 4.8, { align: 'center' });
+    // nome (e, se assinado, o papel com que assinou)
+    const corridasNome = [{ t: limparTexto(nome || ''), b: true }];
+    const linhas = partirLinhas(medir, corridasNome, col - 4, 9.5).slice(0, a?.papel ? 1 : 2);
+    const lh = alturaLinha(9.5);
+    const nLinhas = linhas.length + (a?.papel ? 0.8 : 0);
+    const y0 = ya + hCab + (hNome - nLinhas * lh) / 2 + lh * 0.78;
+    linhas.forEach((ln, j) => desenharLinha(pdf, ln, x + 2, y0 + j * lh, 9.5, COR_TEXTO, 'center', col - 4));
+    if (a?.papel) {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.setTextColor(...C.muted);
+      const papel = partirLinhas(medir, [{ t: limparTexto(a.papel) }], col - 4, 7)[0];
+      desenharLinha(pdf, papel, x + 2, y0 + linhas.length * lh + 0.6, 7, C.muted, 'center', col - 4);
+    }
+    const yA = ya + hCab + hNome;
+    if (a) {
+      // selo electrónico: rubrica (se a pessoa a tiver) + «Assinado electronicamente», significado e código
+      pdf.setFillColor(...COR_ASSINADO.fundo);
+      pdf.rect(x, yA, col, hAss, 'F');
+      const hRub = hRubDe(a);
+      if (a.rubrica) rubricaNaCaixa(pdf, a.rubrica, x + 6, yA + 1.5, col - 12, hRub);
+      let yt = yA + 2.5 + hRub + 2.6;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(...COR_ASSINADO.texto);
+      pdf.text(limparTexto('Assinado electronicamente'), x + col / 2, yt, { align: 'center' });
+      yt += 3.4;
+      const sig = sigDe(a);
+      sig.forEach((ln) => { desenharLinha(pdf, ln, x + 3, yt, 6.6, C.muted, 'center', col - 6); yt += alturaLinha(6.6); });
+      if (a.substituicao) {
+        const sub = partirLinhas(medir, [{ t: limparTexto(`Em substituição de ${a.substituicao}`) }], col - 6, 6.4)[0];
+        desenharLinha(pdf, sub, x + 3, yt, 6.4, C.muted, 'center', col - 6); yt += alturaLinha(6.4);
+      }
+      pdf.setFont('courier', 'bold');
+      pdf.setFontSize(7.2);
+      pdf.setTextColor(...COR_TEXTO);
+      pdf.text(limparTexto(`Código ${a.codigo || ''}`), x + col / 2, yA + hAss - 2.2, { align: 'center' });
+      // data e hora do acto
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.setTextColor(...C.light);
+      pdf.text('Data:', x + 2, yA + hAss + 5.3);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8);
+      pdf.setTextColor(...COR_TEXTO);
+      pdf.text(limparTexto(horaAngola(a.em)), x + col / 2 + 4, yA + hAss + 5.3, { align: 'center' });
+    } else {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.setTextColor(...C.light);
+      pdf.text(algumaAssinada ? 'Por assinar' : 'Assinatura', x + 2, yA + 3.6);
+      pdf.setDrawColor(...C.light);
+      pdf.setLineWidth(0.2);
+      pdf.line(x + 8, yA + hAss - 4, x + col - 8, yA + hAss - 4);
+      pdf.text('Data:', x + 2, yA + hAss + 5.3);
+      pdf.setTextColor(...C.muted);
+      pdf.setFontSize(8.5);
+      pdf.text('____ / ____ / ________', x + col / 2 + 3, yA + hAss + 5.3, { align: 'center' });
+    }
+    // bordas
+    pdf.setDrawColor(...COR_BORDA);
+    pdf.setLineWidth(0.25);
+    pdf.rect(x, ya, col, hCab + hNome + hAss + hData);
+    pdf.line(x, ya + hCab + hNome, x + col, ya + hCab + hNome);
+    pdf.line(x, ya + hCab + hNome + hAss, x + col, ya + hCab + hNome + hAss);
+  });
+  return hCab + hNome + hAss + hData;
+}
+
+/**
+ * Bloco de verificação: QR à direita (lado lQr mm) com o código por baixo, e as notas à esquerda.
+ * @returns {number} y final (mm) do bloco
+ */
+export function desenharVerificacao(pdf, medir, {
+  x = ML, y: yv, largura = CW, qr = null, lQr: lado = 21, codigo = '', verificarUrl = '', algumaAssinada = false,
+  notaQr = 'Leia o código QR (nesta capa ou no rodapé de qualquer página) para confirmar se esta é a revisão em vigor e se o conteúdo não foi alterado.',
+  notasExtra = [],
+} = {}) {
+  const lQr = qr ? lado : 0;
+  let yFimQr = yv;
+  if (qr) {
+    const xq = x + largura - lQr;
+    try { pdf.addImage(qr, 'PNG', xq, yv - 2, lQr, lQr, undefined, 'FAST'); } catch { /* sem QR */ }
+    const tamR = lado > 30 ? 8 : 6.8;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(tamR);
+    pdf.setTextColor(...C.primary);
+    pdf.text('Verificar este documento', xq + lQr / 2, yv + lQr + 1.4, { align: 'center' });
+    yFimQr = yv + lQr + 1.4;
+    if (codigo) {
+      pdf.setFont('courier', 'bold');
+      pdf.setFontSize(tamR);
+      pdf.setTextColor(...COR_TEXTO);
+      // o código pode ser mais largo do que o QR pequeno: centra-se no QR sem passar a margem direita
+      const cod = limparTexto(codigo);
+      const wc = pdf.getTextWidth(cod);
+      const xc = Math.min(xq + lQr / 2, x + largura - wc / 2);
+      yFimQr += tamR * PT * 1.3;
+      pdf.text(cod, xc, yFimQr, { align: 'center' });
+    }
+  }
+  const larguraNota = largura - (lQr ? lQr + 6 : 0);
+  const notas = [];
+  if (algumaAssinada) {
+    notas.push('Assinaturas electrónicas registadas no fluxo de aprovação do Portal de Documentos da SGA (autenticação com a senha de cada signatário). '
+      + (verificarUrl
+        ? `Para confirmar uma assinatura, abra ${verificarUrl}/ seguido do código indicado.`
+        : 'Cada assinatura confirma-se no Portal de Documentos pelo código indicado.'));
+  }
+  if (qr && notaQr) notas.push(notaQr);
+  notas.push(...notasExtra);
+  let yn = yv + 2;
+  for (const txt of notas) {
+    const linhasV = partirLinhas(medir, [{ t: limparTexto(txt) }], larguraNota, 7.2);
+    linhasV.forEach((ln) => { desenharLinha(pdf, ln, x, yn, 7.2, C.muted, lQr ? 'left' : 'center', larguraNota); yn += alturaLinha(7.2); });
+    yn += 1.5;
+  }
+  return Math.max(yn, yFimQr);
+}
+
+function desenharCapa(pdf, medir, doc, logo, recursos = {}) {
   const cab = doc.cabecalho || {};
+  const assin = recursos.assinaturas || {};
+  const algumaAssinada = ORDEM_ASSINATURAS.some(k => assin[k]);
   // faixa superior
   pdf.setFillColor(...C.primary);
   pdf.rect(0, 0, PW, 4, 'F');
@@ -733,46 +913,17 @@ function desenharCapa(pdf, medir, doc, logo) {
     xq += w;
   });
 
-  // quadro de aprovação
-  const ya = 200;
-  const col = CW / 3;
-  const pessoas = [['Elaborado por', cab.elaboradoPor], ['Verificado por', cab.verificadoPor], ['Aprovado por', cab.aprovadoPor]];
-  const hCab = 7;
-  const hNome = 11;
-  const hAss = 22;
-  const hData = 8;
-  pessoas.forEach(([rot, nome], k) => {
-    const x = ML + k * col;
-    pdf.setFillColor(...C.tableHeader);
-    pdf.rect(x, ya, col, hCab, 'F');
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
-    pdf.setTextColor(...C.white);
-    pdf.text(limparTexto(rot), x + col / 2, ya + 4.8, { align: 'center' });
-    // nome
-    const linhas = partirLinhas(medir, [{ t: limparTexto(nome || ''), b: true }], col - 4, 9.5).slice(0, 2);
-    const lh = alturaLinha(9.5);
-    const y0 = ya + hCab + (hNome - linhas.length * lh) / 2 + lh * 0.78;
-    linhas.forEach((ln, j) => desenharLinha(pdf, ln, x + 2, y0 + j * lh, 9.5, COR_TEXTO, 'center', col - 4));
-    // assinatura
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(7);
-    pdf.setTextColor(...C.light);
-    pdf.text('Assinatura', x + 2, ya + hCab + hNome + 3.6);
-    pdf.setDrawColor(...C.light);
-    pdf.setLineWidth(0.2);
-    pdf.line(x + 8, ya + hCab + hNome + hAss - 4, x + col - 8, ya + hCab + hNome + hAss - 4);
-    // data
-    pdf.text('Data:', x + 2, ya + hCab + hNome + hAss + 5.3);
-    pdf.setTextColor(...C.muted);
-    pdf.setFontSize(8.5);
-    pdf.text('____ / ____ / ________', x + col / 2 + 3, ya + hCab + hNome + hAss + 5.3, { align: 'center' });
-    // bordas
-    pdf.setDrawColor(...COR_BORDA);
-    pdf.setLineWidth(0.25);
-    pdf.rect(x, ya, col, hCab + hNome + hAss + hData);
-    pdf.line(x, ya + hCab + hNome, x + col, ya + hCab + hNome);
-    pdf.line(x, ya + hCab + hNome + hAss, x + col, ya + hCab + hNome + hAss);
+  // quadro de aprovação (o mesmo desenho da folha de assinaturas das cópias de ficheiro — ver copiaAssinada.js)
+  const ya = (algumaAssinada || recursos.qr) ? 190 : 200;
+  const hQuadro = desenharQuadroAssinaturas(pdf, medir, {
+    x: ML, y: ya, largura: CW,
+    nomes: [cab.elaboradoPor, cab.verificadoPor, cab.aprovadoPor],
+    assinaturas: assin,
+  });
+  desenharVerificacao(pdf, medir, {
+    x: ML, y: ya + hQuadro + 6, largura: CW,
+    qr: recursos.qr, lQr: 21, codigo: recursos.verificacao?.codigo,
+    verificarUrl: recursos.verificarUrl, algumaAssinada,
   });
 
   // nota de controlo
@@ -808,12 +959,17 @@ function desenharCabecalho(pdf, medir, cab, logo) {
   pdf.line(ML, 24, PW - MR, 24);
 }
 
-function desenharRodape(pdf, cab, pagina, total) {
+function desenharRodape(pdf, cab, pagina, total, qr = null) {
   const { revisao, data } = textosRodape(cab);
   const textos = [revisao, data, `Página ${pagina} de ${total}`];
   const y = PH - 18;
   const h = 7;
-  const w = CW / 3;
+  // com QR de verificação: a tabela encolhe e o QR pequeno fica à direita, alinhado com ela
+  const lQr = qr ? 11 : 0;
+  const w = (CW - (qr ? lQr + 2 : 0)) / 3;
+  if (qr) {
+    try { pdf.addImage(qr, 'PNG', ML + CW - lQr, y + h / 2 - lQr / 2, lQr, lQr, undefined, 'FAST'); } catch { /* sem QR */ }
+  }
   pdf.setDrawColor(...C.muted);
   pdf.setLineWidth(0.25);
   pdf.setFont('helvetica', 'normal');
@@ -942,7 +1098,7 @@ function renderizar(JsPDF, doc, recursos, paginasToc) {
   }
 
   // capa
-  desenharCapa(pdf, medir, doc, recursos.logo);
+  desenharCapa(pdf, medir, doc, recursos.logo, recursos);
   // controlo + índice
   pdf.addPage('a4', 'portrait');
   const controlo = itensControlo(ctx, doc, entradas, paginasToc);
@@ -953,7 +1109,7 @@ function renderizar(JsPDF, doc, recursos, paginasToc) {
   for (let p = 2; p <= total; p++) {
     pdf.setPage(p);
     desenharCabecalho(pdf, medir, cab, recursos.logo);
-    desenharRodape(pdf, cab, p, total);
+    desenharRodape(pdf, cab, p, total, recursos.qr);
   }
   return { pdf, paginas };
 }
@@ -961,14 +1117,24 @@ function renderizar(JsPDF, doc, recursos, paginasToc) {
 /**
  * Gera o PDF do documento estruturado.
  * @param {import('./contrato').DocumentoEstruturado} doc
- * @param {{ logo?: string|null, logoUrl?: string }} [opcoes]
+ * @param {{ logo?: string|null, logoUrl?: string, assinaturas?: object, verificarUrl?: string }} [opcoes]
+ *   assinaturas: { elaborado, verificado, aprovado } do fluxo de aprovação — preenchem o quadro da capa.
  * @returns {Promise<Blob>}
  */
 export async function gerarPdf(doc, opcoes = {}) {
   if (!doc || typeof doc !== 'object') throw new Error('Documento estruturado em falta');
   const { default: JsPDF } = await import('jspdf');
   const [logo, imagens] = await Promise.all([carregarLogo(opcoes), resolverImagens(doc)]);
-  const recursos = { logo, imagens };
+  // QR de verificação (como nos certificados da Universidade): leva à página do Portal que diz se esta revisão é a
+  // que está em vigor, com que conteúdo (SHA-256) e quem a assinou. opcoes.verificacao = { url, codigo }
+  let qr = null;
+  if (opcoes.verificacao?.url) {
+    try {
+      const { default: QRCode } = await import('qrcode');
+      qr = await QRCode.toDataURL(opcoes.verificacao.url, { margin: 0, width: 320, errorCorrectionLevel: 'M' });
+    } catch { qr = null; }
+  }
+  const recursos = { logo, imagens, assinaturas: opcoes.assinaturas || null, verificarUrl: opcoes.verificarUrl || '', qr, verificacao: opcoes.verificacao || null };
   // 1.ª passagem: descobrir em que página começa cada secção; 2.ª: desenhar o índice com esses números
   const { paginas } = renderizar(JsPDF, doc, recursos, {});
   const { pdf } = renderizar(JsPDF, doc, recursos, paginas);
@@ -979,3 +1145,9 @@ export default gerarPdf;
 
 // para testes
 export const __interno = { partirLinhas, corridas, criarMedidor };
+
+// primitivas partilhadas com a folha de assinaturas das cópias de ficheiro (copiaAssinada.js)
+export const __partilhado = {
+  criarMedidor, partirLinhas, desenharLinha, imagemLogo, textoCentrado, alturaLinha,
+  COR_TEXTO, COR_BORDA, CORES: C, PT, MEDIDAS: { PW, PH, ML, MR, CW },
+};

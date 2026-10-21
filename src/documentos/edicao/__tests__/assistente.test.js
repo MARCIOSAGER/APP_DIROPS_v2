@@ -81,8 +81,8 @@ describe('passos do assistente', () => {
 describe('gerar e rever', () => {
   it('nome dos ficheiros, rótulo e nota', () => {
     const d = novoPop({ revisao: '03' });
-    expect(nomeBaseFicheiro(d)).toBe('POP-FNLU-MOA-001_Rev03');
-    expect(nomeBaseFicheiro(novoPop({ numero: '', titulo: 'Inspecção diária / pista' }))).toMatch(/^[^\s/]+_Rev00$/);
+    expect(nomeBaseFicheiro(d)).toBe('POP-FNLU-MOA-001 — Inspecção (Rev.03)');
+    expect(nomeBaseFicheiro(novoPop({ numero: '', titulo: 'Inspecção diária / pista' }))).toBe('Inspecção diária - pista (Rev.00)');
     expect(rotuloVersao(d)).toBe('Rev. 03');
     expect(notaVersao({ historico: [{ descricao: 'Novo passo' }] })).toMatch(/Novo passo/);
   });

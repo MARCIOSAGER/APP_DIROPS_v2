@@ -4,6 +4,7 @@ import {
   seccoesObrigatoriasEmFalta, camposCabecalhoEmFalta, conteudoVazio, validarDocumentoEstruturado,
   ROTULO_CAMPO, proximaRevisao, prepararNovaRevisao, garantirHistoricoInicial, novoDocumentoEstruturado,
 } from './contrato';
+import { nomeFicheiroDoc } from '../nomeDocumento';
 
 export const PASSOS = [
   { chave: 'modelo', titulo: 'Modelo' },
@@ -79,11 +80,11 @@ export function actualizarCabecalho(doc, patch) {
   return { ...doc, cabecalho: { ...(doc?.cabecalho || {}), ...patch } };
 }
 
-/** Nome base dos ficheiros gerados: «POP-FNLU-OPS-001_Rev01». */
+/** Nome base dos ficheiros gerados, no padrão do GED (nomeFicheiroDoc): «POP-FNLU-OPS-001 — Título (Rev.01)». */
 export function nomeBaseFicheiro(doc) {
   const c = doc?.cabecalho || {};
-  const base = String(c.numero || c.titulo || 'documento').trim().replace(/[^\w.-]+/g, '_').replace(/_+/g, '_').slice(0, 80);
-  return `${base}_Rev${String(c.revisao || '00').replace(/[^\w]/g, '')}`;
+  const base = nomeFicheiroDoc({ numero: c.numero, titulo: c.titulo }, { comExtensao: false });
+  return `${base} (Rev.${String(c.revisao || '00').replace(/[^\w]/g, '')})`;
 }
 
 /** Rótulo da documento_versao gerada («Rev. 01»). */

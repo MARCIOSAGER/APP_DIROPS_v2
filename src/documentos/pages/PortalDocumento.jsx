@@ -62,6 +62,8 @@ import ReservaDocumento from '../components/edicao/ReservaDocumento';
 import BotaoEditarNavegador from '../components/edicao/BotaoEditarNavegador';
 import { useReservaDocumento, reservaActiva, reservadaPorMim } from '../hooksEdicao';
 import { rascunhoDoDocumento } from '../edicao/hooksEstruturado';
+// Cópia assinada da revisão aprovada (migração 186): ver, verificar, descarregar e (gestão/edição) gerar.
+import CopiaAssinadaDocumento from '../components/assinatura/CopiaAssinadaDocumento';
 
 const PROVAS_GESTAO = ['leituras', 'acessos'];
 // O registo de emendas não é prova de gestão: é a peça que a lei manda ter à mão de quem usa o manual, e é
@@ -947,6 +949,7 @@ export default function PortalDocumento() {
             <TabsContent value="versoes" className="mt-3">
               <Painel titulo="Histórico de versões" icone={History}>
                 <BotaoCompararVersoes doc={doc} versoes={versoes} vActual={vActual} desactivado={trancado} />
+                <CopiaAssinadaDocumento doc={doc} versoes={versoes} podeGerar={gestor || editor} user={user} />
                 {versoesQ.isLoading ? (
                   <div className="space-y-2 p-4">{[0, 1].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div>
                 ) : versoesQ.isError ? (
