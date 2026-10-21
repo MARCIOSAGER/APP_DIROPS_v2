@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { PORTAL_BASE } from '@/lib/portalDocumentos';
 import { PaginaGestao, T, Ref, EstadoErro, EsqueletoLinhas } from '../../PortalLayout';
 import { useAeroportosDocs, usePastasDocs } from '../../hooks';
+import { usePessoasFluxo, useDirectoresAeroporto } from '../../hooksFluxo';
 import { useCodificacaoActiva, useNumeroSeguinte } from '../../hooksCodificacao';
 import EditorSeccao, { extensoesContrato, ESTILO_PROSA } from '../../edicao/EditorSeccao';
 import { ROTULO_CAMPO, novoDocumentoEstruturado, textoDoNo } from '../../edicao/contrato';
@@ -36,12 +37,12 @@ import { DialogoRever, rotaRedigir } from './PortalRedigir';
 const ATRASO_GRAVAR = 1500;
 const CLASSIFICACOES = ['Uso interno', 'Restrito', 'Confidencial', 'Público'];
 
-function Campo({ id, label, ajuda, children, className }) {
+function Campo({ id, label, ajuda, erro, children, className }) {
   return (
     <div className={cn('space-y-1.5', className)}>
       <Label htmlFor={id}>{label}</Label>
       {children}
-      {ajuda && <p className={cn('text-sm', T.tintaFraca)}>{ajuda}</p>}
+      {erro ? <p role="alert" className="text-sm text-red-700 dark:text-red-400">{erro}</p> : ajuda && <p className={cn('text-sm', T.tintaFraca)}>{ajuda}</p>}
     </div>
   );
 }
@@ -191,6 +192,30 @@ export default function PortalRedigirAssistente() {
   }, []);
   const setCab = (patch) => mudar(d => actualizarCabecalho(d, patch));
   const setExtras = (patch) => mudar(d => ({ ...d, extras: { ...extrasDe(d), ...patch } }));
+
+  // Revisor e aprovador: as mesmas listas do «Pedir aprovação» (IniciarFluxo), que lê estes emails para os pré-preencher.
+  const pessoasQ = usePessoasFluxo();
+  const directoresQ = useDirectoresAeroporto(aeroportoId || null);
+  const nomeDe = useCallback((email) => {
+    if (!email) return '';
+    const e = String(email).toLowerCase();
+    const d = (directoresQ.data || []).find(x => String(x.email).toLowerCase() === e);
+    const u = (pessoasQ.data || []).find(x => String(x.email).toLowerCase() === e);
+    return d?.nome || u?.full_name || email;
+  }, [directoresQ.data, pessoasQ.data]);
+  const opcoesRevisor = useMemo(() => [
+    { value: '', label: '— por indicar —' },
+    ...(pessoasQ.data || []).map(u => ({ value: u.email, label: u.full_name ? `${u.full_name} · ${u.email}` : u.email })),
+  ], [pessoasQ.data]);
+  const opcoesAprovador = useMemo(() => {
+    const dir = directoresQ.data || [];
+    return [
+      { value: '', label: '— o responsável do aeroporto —' },
+      ...dir.map(d => ({ value: d.email, label: `${d.nome || d.email}${d.suplencia_id ? ` · suplente de ${d.titular_email}` : ' · responsável do aeroporto'}` })),
+      ...(pessoasQ.data || []).filter(u => !dir.some(d => String(d.email).toLowerCase() === String(u.email).toLowerCase()))
+        .map(u => ({ value: u.email, label: u.full_name ? `${u.full_name} · ${u.email}` : u.email })),
+    ];
+  }, [directoresQ.data, pessoasQ.data]);
 
   // ── gravação ──────────────────────────────────────────────────────────────
   const gravar = useCallback(async () => {
@@ -408,14 +433,17 @@ export default function PortalRedigirAssistente() {
             <Campo id="rd-class" label="Classificação">
               <Select id="rd-class" options={[{ value: '', label: '— sem classificação —' }, ...CLASSIFICACOES.map(c => ({ value: c, label: c }))]} value={cab.classificacao || ''} onValueChange={(v) => setCab({ classificacao: v || '' })} searchable={false} disabled={gerado} />
             </Campo>
-            <Campo id="rd-elab" label="Elaborado por *">
-              <Input id="rd-elab" value={cab.elaboradoPor || ''} onChange={e => setCab({ elaboradoPor: e.target.value })} disabled={gerado} placeholder="Nome e função" />
+            <Campo id="rd-elab" label="Elaborado por *" ajuda="Quem redige é quem submete e assina como elaborador no fluxo de aprovação.">
+              <Input id="rd-elab" value={cab.elaboradoPor || ''} readOnly disabled />
             </Campo>
-            <Campo id="rd-verif" label="Verificado por" ajuda="Quem revê (a assinatura faz-se no fluxo de aprovação).">
-              <Input id="rd-verif" value={cab.verificadoPor || ''} onChange={e => setCab({ verificadoPor: e.target.value })} disabled={gerado} placeholder="Nome e função" />
+            <Campo id="rd-verif" label="Verificado por" ajuda="As mesmas pessoas que o «Pedir aprovação» oferece; fica já escolhido lá. A assinatura faz-se no fluxo.">
+              <Select id="rd-verif" options={opcoesRevisor} value={extras.verificadoEmail || ''} disabled={gerado}
+                onValueChange={(v) => { setExtras({ verificadoEmail: v || null }); setCab({ verificadoPor: nomeDe(v) }); }} placeholder="Escolher o revisor" />
             </Campo>
-            <Campo id="rd-aprov" label="Aprovado por">
-              <Input id="rd-aprov" value={cab.aprovadoPor || ''} onChange={e => setCab({ aprovadoPor: e.target.value })} disabled={gerado} placeholder="Nome e função" />
+            <Campo id="rd-aprov" label="Aprovado por" ajuda="Director (ou suplente) do aeroporto escolhido; em branco, fica o responsável do aeroporto."
+              erro={extras.verificadoEmail && extras.aprovadoEmail && extras.verificadoEmail.toLowerCase() === extras.aprovadoEmail.toLowerCase() ? 'Quem revê e quem aprova têm de ser pessoas diferentes.' : null}>
+              <Select id="rd-aprov" options={opcoesAprovador} value={extras.aprovadoEmail || ''} disabled={gerado}
+                onValueChange={(v) => { setExtras({ aprovadoEmail: v || null }); setCab({ aprovadoPor: nomeDe(v) }); }} placeholder="Escolher quem aprova" />
             </Campo>
             {!existente && (
               <Campo id="rd-pasta" label="Pasta na biblioteca" ajuda="Pode arrumá-lo mais tarde em Gestão › Documentos.">

@@ -32,6 +32,7 @@ import {
 } from '../../hooksFluxo';
 import { enderecoFluxo, ESTADO_FLUXO_LABEL } from '../../apiFluxo';
 import { BotaoAccao, Caixa, Campo, CampoFicheiro } from './comum';
+import { signatariosDoRascunho } from '../../edicao/hooksEstruturado';
 
 const etiquetaPessoa = (u) => (u.full_name ? `${u.full_name} · ${u.email}` : u.email);
 
@@ -63,6 +64,18 @@ export default function IniciarFluxo({ documento, versaoId: versaoInicial, emend
     const candidata = versoes.find(v => ['rascunho', 'em_revisao'].includes(v.estado)) || versoes[0];
     setVersao(candidata?.id || '');
   }, [versoes, versao]);
+
+  // Documento redigido no editor: o revisor e quem aprova já foram escolhidos no cabeçalho — vêm pré-preenchidos.
+  useEffect(() => {
+    if (!documentoId) return undefined;
+    let vivo = true;
+    signatariosDoRascunho(documentoId).then((ex) => {
+      if (!vivo || !ex) return;
+      if (ex.verificadoEmail) setRevisor(v => v || ex.verificadoEmail);
+      if (ex.aprovadoEmail) setDirector(v => v || ex.aprovadoEmail);
+    }).catch(() => { /* sem rascunho do editor (ou migração 182 por correr): escolhe-se à mão */ });
+    return () => { vivo = false; };
+  }, [documentoId]);
 
   const opcoesVersao = useMemo(() => versoes.map(v => ({
     value: v.id,

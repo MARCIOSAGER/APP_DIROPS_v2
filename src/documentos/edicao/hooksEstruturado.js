@@ -83,6 +83,14 @@ export async function rascunhoDoDocumento(documentoId) {
   return data || null;
 }
 
+/** Revisor e aprovador escolhidos no cabeçalho do editor (para pré-preencher o «Pedir aprovação»). */
+export async function signatariosDoRascunho(documentoId) {
+  const { data, error } = await supabase.from(T_RASC).select('conteudo').eq('documento_id', documentoId).maybeSingle();
+  if (error || !data) return null;
+  const ex = extrasDe(data.conteudo);
+  return { verificadoEmail: ex.verificadoEmail || null, aprovadoEmail: ex.aprovadoEmail || null };
+}
+
 export function useRecarregarRascunhos() {
   const qc = useQueryClient();
   return () => qc.invalidateQueries({ queryKey: ['gd', 'edicao'] });
