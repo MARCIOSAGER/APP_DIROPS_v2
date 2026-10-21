@@ -40,6 +40,29 @@
  * @property {Object} [extras]  só do editor (processo, pastaId, modeloId, documentoId); os geradores ignoram-no
  */
 
+/*
+ * Nós e atributos do conteúdo das secções (documento ProseMirror, { type: 'doc', content: [...] }):
+ *
+ *  - paragraph       attrs.textAlign?: 'left'|'center'|'right'|'justify'  (omisso/null = 'left')
+ *  - heading         attrs.level: 2|3|4 (o título da secção é o nível 1); attrs.textAlign? como o paragraph.
+ *                    Numeração automática «4.1», «4.1.1» (secção 4) — ver numerarTitulos em comum.js.
+ *  - bulletList / orderedList → listItem (paragraph + listas aninhadas). Até 3 níveis de lista:
+ *                    numerada 1. → a) → i.  ;  marcas • → – → ▪   (o nível conta listas de qualquer tipo).
+ *                    orderedList.attrs.start? (número inicial, omisso = 1).
+ *  - blockquote      caixa de destaque; attrs.tipo?: 'nota'|'atencao'|'aviso' (omisso/null = 'nota').
+ *                    Rótulos: «Nota» (azul), «Atenção» (âmbar), «Aviso» (vermelho).
+ *  - table           attrs.legenda?: string → «Tabela N — legenda» POR CIMA da tabela (numeração automática).
+ *                    tableRow → tableHeader | tableCell (attrs.colspan, attrs.rowspan, attrs.colwidth).
+ *                    tableHeader na 1.ª linha = linha de cabeçalho.
+ *  - image           attrs.src (data:image/... base64 ou URL), attrs.alt?, attrs.title?, attrs.width? ('100%' ou px),
+ *                    attrs.legenda?: string → «Figura N — legenda» POR BAIXO da imagem (numeração automática).
+ *  - pageBreak       { type: 'pageBreak' } (bloco, sem conteúdo) → quebra de página.
+ *  - horizontalRule, hardBreak, text.
+ *  Marcas: bold, italic, underline.
+ *  Só as tabelas/imagens com legenda não vazia são numeradas; a numeração corre o documento todo (todas as secções,
+ *  por ordem) — ver numerarLegendas().
+ */
+
 export const SCHEMA_VERSAO = 1;
 
 /** Modelos (= códigos de documento_classe) com editor estruturado. */
@@ -48,8 +71,15 @@ export const MODELOS = ['POP', 'PR', 'PL', 'MA', 'FR', 'LT', 'RE', 'DO'];
 /** Nós ProseMirror permitidos. Os geradores só garantem estes. */
 export const NOS_PERMITIDOS = [
   'doc', 'paragraph', 'text', 'heading', 'bulletList', 'orderedList', 'listItem',
-  'table', 'tableRow', 'tableHeader', 'tableCell', 'image', 'hardBreak', 'horizontalRule', 'blockquote',
+  'table', 'tableRow', 'tableHeader', 'tableCell', 'image', 'hardBreak', 'horizontalRule', 'blockquote', 'pageBreak',
 ];
+/** Alinhamentos de parágrafo/título (attrs.textAlign). Omisso = 'left'. */
+export const ALINHAMENTOS = ['left', 'center', 'right', 'justify'];
+/** Tipos de caixa de destaque (blockquote.attrs.tipo). Omisso = 'nota'. */
+export const TIPOS_CAIXA = ['nota', 'atencao', 'aviso'];
+export const ROTULO_CAIXA = { nota: 'Nota', atencao: 'Atenção', aviso: 'Aviso' };
+/** Profundidade máxima de listas aninhadas. */
+export const NIVEIS_LISTA_MAX = 3;
 /** Marcas permitidas. */
 export const MARCAS_PERMITIDAS = ['bold', 'italic', 'underline'];
 /** Níveis de título permitidos dentro de uma secção (o título da secção é o nível principal). */
@@ -154,9 +184,79 @@ export function proximaRevisao(rev) {
   return '00';
 }
 
-function validarNo(no, caminho, erros) {
+/** Tipo de caixa efectivo de um blockquote (omisso ou desconhecido → 'nota'). */
+export function tipoCaixa(no) {
+  const t = no?.attrs?.tipo;
+  return TIPOS_CAIXA.includes(t) ? t : 'nota';
+}
+
+/** Alinhamento efectivo de um parágrafo/título (omisso ou desconhecido → 'left'). */
+export function alinhamentoDe(no) {
+  const a = no?.attrs?.textAlign;
+  return ALINHAMENTOS.includes(a) ? a : 'left';
+}
+
+/**
+ * Numeração automática das legendas: percorre o documento por ordem (todas as secções de um DocumentoEstruturado,
+ * ou um único doc ProseMirror) e devolve um Map nó → 'Figura N' (image) / 'Tabela N' (table). Só entram os nós com
+ * attrs.legenda não vazia; figuras e tabelas têm contadores separados. A chave é o próprio objecto do nó (o mesmo
+ * que os geradores percorrem). O texto final é `${map.get(no)} — ${legenda}`.
+ * @param {DocumentoEstruturado|Object} doc
+ * @returns {Map<Object, string>}
+ */
+export function numerarLegendas(doc) {
+  const mapa = new Map();
+  let fig = 0;
+  let tab = 0;
+  const visitar = (n) => {
+    if (!n || typeof n !== 'object') return;
+    const legenda = String(n.attrs?.legenda ?? '').trim();
+    if (legenda && n.type === 'image') mapa.set(n, `Figura ${++fig}`);
+    else if (legenda && n.type === 'table') mapa.set(n, `Tabela ${++tab}`);
+    if (Array.isArray(n.content)) n.content.forEach(visitar);
+  };
+  if (Array.isArray(doc?.seccoes)) doc.seccoes.forEach(s => visitar(s?.conteudo));
+  else visitar(doc);
+  return mapa;
+}
+
+/** Texto completo da legenda («Figura 2 — Planta da placa») ou '' se o nó não tiver legenda. */
+export function textoLegenda(mapa, no) {
+  const r = mapa?.get?.(no);
+  return r ? `${r} — ${String(no.attrs.legenda).trim()}` : '';
+}
+
+/** Quantas figuras e tabelas legendadas há nas secções anteriores à secção `indice` (para continuar a numeração). */
+export function legendasAntesDe(doc, indice) {
+  let figuras = 0;
+  let tabelas = 0;
+  (doc?.seccoes || []).slice(0, Math.max(0, indice)).forEach(s => {
+    for (const r of numerarLegendas(s?.conteudo).values()) { if (r.startsWith('Figura')) figuras++; else tabelas++; }
+  });
+  return { figuras, tabelas };
+}
+
+const TIPOS_LISTA = ['bulletList', 'orderedList'];
+
+function validarNo(no, caminho, erros, avisos = [], nivelLista = 0) {
   if (!no || typeof no !== 'object' || typeof no.type !== 'string') { erros.push(`${caminho}: nó inválido`); return; }
   if (!NOS_PERMITIDOS.includes(no.type)) { erros.push(`${caminho}: nó «${no.type}» não é permitido`); return; }
+  if (no.type === 'paragraph' || no.type === 'heading') {
+    const a = no.attrs?.textAlign;
+    if (a !== undefined && a !== null && !ALINHAMENTOS.includes(a)) erros.push(`${caminho}: alinhamento «${a}» não é permitido`);
+  }
+  if (no.type === 'blockquote') {
+    const t = no.attrs?.tipo;
+    if (t !== undefined && t !== null && !TIPOS_CAIXA.includes(t)) erros.push(`${caminho}: caixa do tipo «${t}» não é permitida (nota, atencao, aviso)`);
+  }
+  if ((no.type === 'image' || no.type === 'table') && no.attrs?.legenda !== undefined && no.attrs?.legenda !== null && typeof no.attrs.legenda !== 'string') {
+    erros.push(`${caminho}: legenda tem de ser texto`);
+  }
+  if (no.type === 'pageBreak' && Array.isArray(no.content) && no.content.length) erros.push(`${caminho}: a quebra de página não tem conteúdo`);
+  if (TIPOS_LISTA.includes(no.type)) {
+    nivelLista += 1;
+    if (nivelLista === NIVEIS_LISTA_MAX + 1) avisos.push(`${caminho}: lista com mais de ${NIVEIS_LISTA_MAX} níveis (os níveis a mais saem como o 3.º)`);
+  }
   if (no.type === 'heading') {
     const lv = Number(no.attrs?.level);
     if (!NIVEIS_TITULO.includes(lv)) erros.push(`${caminho}: título de nível ${no.attrs?.level ?? '?'} (só 2 a 4)`);
@@ -173,7 +273,7 @@ function validarNo(no, caminho, erros) {
   }
   if (no.content !== undefined) {
     if (!Array.isArray(no.content)) { erros.push(`${caminho}: content tem de ser uma lista`); return; }
-    no.content.forEach((f, i) => validarNo(f, `${caminho}/${f?.type || i}[${i}]`, erros));
+    no.content.forEach((f, i) => validarNo(f, `${caminho}/${f?.type || i}[${i}]`, erros, avisos, nivelLista));
   }
 }
 
@@ -213,7 +313,7 @@ export function validarDocumentoEstruturado(doc, { estrito = false } = {}) {
       if (!s.chave) erros.push(`${onde}: sem chave`);
       if (!String(s.titulo || '').trim()) erros.push(`${onde}: sem título`);
       if (!s.conteudo || s.conteudo.type !== 'doc') erros.push(`${onde}: conteúdo tem de ser um documento ProseMirror (type 'doc')`);
-      else validarNo(s.conteudo, `${onde}(${s.chave || i})`, erros);
+      else validarNo(s.conteudo, `${onde}(${s.chave || i})`, erros, avisos);
     });
     if (estrito) for (const s of seccoesObrigatoriasEmFalta(doc)) erros.push(`Secção obrigatória por preencher: ${s.titulo}`);
   }

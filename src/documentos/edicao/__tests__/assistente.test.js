@@ -127,7 +127,7 @@ describe('colar do Word e imagens', () => {
     const html = '<p class="MsoListParagraphCxSpFirst" style="mso-list:l0 level1 lfo1"><span style="mso-list:Ignore">1.<span> </span></span>Primeiro</p>'
       + '<p class="MsoListParagraphCxSpLast" style="mso-list:l0 level1 lfo1"><span style="mso-list:Ignore">2.<span> </span></span>Segundo</p><p>Fim</p>';
     const r = limparHtmlColado(html);
-    expect(r).toMatch(/^<ol><li>\s*Primeiro<\/li><li>\s*Segundo<\/li><\/ol><p>Fim<\/p>$/);
+    expect(r).toMatch(/^<ol><li><p>\s*Primeiro<\/p><\/li><li><p>\s*Segundo<\/p><\/li><\/ol><p>Fim<\/p>$/);
   });
 
   it('marcadores do Word dão lista com marcas', () => {

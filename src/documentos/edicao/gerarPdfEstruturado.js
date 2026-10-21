@@ -16,8 +16,9 @@
 import { PDF } from '@/lib/pdfTemplate';
 import {
   nomeClasse, dataPt, revisaoPad, textosRodape, textoSimples, carregarLogo, resolverImagens,
-  larguraPedida, numerarTitulos,
+  larguraPedida, numerarTitulos, caixaDoNo, alinhamentoPedido,
 } from './comum';
+import { numerarLegendas, textoLegenda } from './contrato';
 import { larguraHelvetica } from './larguraHelvetica';
 
 // ─── Medidas (mm) ──────────────────────────────────────────────────
@@ -36,6 +37,9 @@ const COR_TEXTO = C.dark;
 const COR_BORDA = [203, 213, 225];
 const COR_NOTA = { fundo: [239, 246, 255], barra: [37, 99, 235] };
 const COR_AVISO = { fundo: [255, 247, 237], barra: [217, 119, 6] };
+const COR_PERIGO = { fundo: [254, 242, 242], barra: [220, 38, 38] };
+/** Caixas: nota azul, atenção âmbar (a antiga «aviso» adivinhada pelo texto), aviso vermelho. */
+const COR_CAIXA = { nota: COR_NOTA, atencao: COR_AVISO, aviso: COR_PERIGO };
 
 const TAM = { corpo: 10, tabela: 9, h1: 13, h2: 11.5, h3: 10.5, h4: 10 };
 const ENTRELINHA = 1.38;
@@ -134,13 +138,15 @@ function partirLinhas(medir, runs, largura, tam) {
     w = 0;
     espacoPendente = null;
   };
-  const juntar = (t, r, tw) => {
+  // cada segmento guarda as suas peças (palavras e espaços) para a justificação
+  const juntar = (t, r, tw, ehEspaco = false) => {
     const ult = segs[segs.length - 1];
-    if (ult && ult.b === r.b && ult.i === r.i && ult.u === r.u) { ult.t += t; ult.w += tw; } else segs.push({ t, b: r.b, i: r.i, u: r.u, w: tw });
+    const peca = { t, w: tw, e: ehEspaco };
+    if (ult && ult.b === r.b && ult.i === r.i && ult.u === r.u) { ult.t += t; ult.w += tw; ult.pecas.push(peca); } else segs.push({ t, b: r.b, i: r.i, u: r.u, w: tw, pecas: [peca] });
     w += tw;
   };
   for (const r of runs) {
-    if (r.br) { fechar(); continue; }
+    if (r.br) { fechar(); linhas[linhas.length - 1].br = true; continue; }
     const pecas = r.t.split(/( +)/);
     for (const p of pecas) {
       if (!p) continue;
@@ -151,7 +157,7 @@ function partirLinhas(medir, runs, largura, tam) {
       const pw = medir(p, tam, r.b, r.i);
       const ew = espacoPendente ? espacoPendente.w : 0;
       if (w + ew + pw <= largura + 0.01) {
-        if (espacoPendente) juntar(' ', espacoPendente.r, ew);
+        if (espacoPendente) juntar(' ', espacoPendente.r, ew, true);
         juntar(p, r, pw);
         espacoPendente = null;
         continue;
@@ -179,12 +185,39 @@ function partirLinhas(medir, runs, largura, tam) {
   return linhas;
 }
 
+/**
+ * Desenha uma linha (segmentos normal/negrito/itálico). alinhar 'justify': o espaço que sobra é distribuído pelos
+ * espaços entre palavras (de todos os segmentos), palavra a palavra; quem chama decide que a última linha do
+ * parágrafo (e a que acaba numa quebra de linha) não se justifica.
+ */
 function desenharLinha(pdf, linha, x, yBase, tam, cor, alinhar = 'left', largura = 0) {
   let cx = x;
   if (alinhar === 'center') cx = x + (largura - linha.w) / 2;
   else if (alinhar === 'right') cx = x + largura - linha.w;
   pdf.setFontSize(tam);
   pdf.setTextColor(...cor);
+  if (alinhar === 'justify') {
+    const nEsp = linha.segs.reduce((a, s) => a + (s.pecas || []).filter((p) => p.e).length, 0);
+    const extra = largura - linha.w;
+    if (nEsp > 0 && extra > 0.01 && linha.segs.every((s) => s.pecas)) {
+      const porEspaco = extra / nEsp;
+      for (const s of linha.segs) {
+        pdf.setFont('helvetica', estiloFonte(s.b, s.i));
+        const x0 = cx;
+        for (const p of s.pecas) {
+          if (p.e) { cx += p.w + porEspaco; continue; }
+          pdf.text(p.t, cx, yBase);
+          cx += p.w;
+        }
+        if (s.u) {
+          pdf.setDrawColor(...cor);
+          pdf.setLineWidth(0.2);
+          pdf.line(x0, yBase + 0.7, cx, yBase + 0.7);
+        }
+      }
+      return;
+    }
+  }
   for (const s of linha.segs) {
     pdf.setFont('helvetica', estiloFonte(s.b, s.i));
     pdf.text(s.t, cx, yBase);
@@ -203,13 +236,16 @@ function desenharLinha(pdf, linha, x, yBase, tam, cor, alinhar = 'left', largura
 
 const espaco = (h) => ({ h, spacer: true, draw() {} });
 
+/** Alinhamento efectivo de uma linha: justificado não se aplica à última linha nem à que acaba em quebra de linha. */
+const alinharLinha = (alinhar, linhas, k) => (alinhar === 'justify' && (k === linhas.length - 1 || linhas[k].br) ? 'left' : alinhar);
+
 function itensDeLinhas(linhas, { x, w, tam, cor, alinhar, prefixo }) {
   const lh = alturaLinha(tam);
   return linhas.map((ln, k) => ({
     h: lh,
     base: lh * 0.78,
     draw(pdf, y) {
-      desenharLinha(pdf, ln, x, y + lh * 0.78, tam, cor, alinhar, w);
+      desenharLinha(pdf, ln, x, y + lh * 0.78, tam, cor, alinharLinha(alinhar, linhas, k), w);
       if (k === 0 && prefixo) prefixo(pdf, y + lh * 0.78);
     },
   }));
@@ -221,17 +257,23 @@ function itensParagrafo(ctx, no) {
   const vazio = !runs.some((r) => r.br || (r.t && r.t.trim()));
   if (vazio) return [espaco(alturaLinha(tam) * 0.6)];
   const linhas = partirLinhas(ctx.medir, runs, ctx.w, tam);
-  return [...itensDeLinhas(linhas, ctx), espaco(tam * 0.22)];
+  const alinhar = alinhamentoPedido(no) || ctx.alinhar;
+  return [...itensDeLinhas(linhas, { ...ctx, alinhar }), espaco(tam * 0.22)];
 }
 
-function itensTitulo(ctx, texto, numero, nivel, marca) {
+function itensTitulo(ctx, texto, numero, nivel, marca, alinhar = null) {
   const tam = nivel === 1 ? TAM.h1 : nivel === 2 ? TAM.h2 : nivel === 3 ? TAM.h3 : TAM.h4;
   const italico = nivel === 4;
   const cor = nivel <= 2 ? C.primary : C.dark;
   const medir = ctx.medir;
   const num = numero ? `${numero}${nivel === 1 ? '.' : ''}` : '';
-  const recuo = num ? Math.max(medir(num, tam, true, italico) + 3, nivel === 1 ? 8 : 10) : 0;
-  const linhas = partirLinhas(medir, [{ t: limparTexto(texto), b: true, i: italico }], ctx.w - recuo, tam);
+  // centrado/à direita: o número segue com o texto (não fica pendurado na margem esquerda)
+  const numCorrido = num && (alinhar === 'center' || alinhar === 'right');
+  const recuo = num && !numCorrido ? Math.max(medir(num, tam, true, italico) + 3, nivel === 1 ? 8 : 10) : 0;
+  const runsT = numCorrido
+    ? [{ t: `${num} `, b: true, i: italico }, { t: limparTexto(texto), b: true, i: italico }]
+    : [{ t: limparTexto(texto), b: true, i: italico }];
+  const linhas = partirLinhas(medir, runsT, ctx.w - recuo, tam);
   const lh = alturaLinha(tam);
   const h = linhas.length * lh + (nivel === 1 ? 1.6 : 0.6);
   const x = ctx.x;
@@ -244,13 +286,14 @@ function itensTitulo(ctx, texto, numero, nivel, marca) {
       draw(pdf, y) {
         linhas.forEach((ln, k) => {
           const yb = y + lh * k + lh * 0.78;
-          if (k === 0 && num) {
+          if (k === 0 && num && !numCorrido) {
             pdf.setFont('helvetica', italico ? 'bolditalic' : 'bold');
             pdf.setFontSize(tam);
             pdf.setTextColor(...cor);
             pdf.text(num, x, yb);
           }
-          desenharLinha(pdf, ln, x + recuo, yb, tam, cor);
+          if (alinhar && alinhar !== 'left') desenharLinha(pdf, ln, x + recuo, yb, tam, cor, alinharLinha(alinhar, linhas, k), ctx.w - recuo);
+          else desenharLinha(pdf, ln, x + recuo, yb, tam, cor);
         });
         if (nivel === 1) {
           pdf.setDrawColor(...C.primaryBorder);
@@ -283,7 +326,8 @@ function itensLista(ctx, no, ordenada) {
   const filhos = (no.content || []).filter((f) => f && typeof f === 'object');
   const recuo = ordenada ? 7 : 5;
   filhos.forEach((li, k) => {
-    const marcador = ordenada ? marcadorOrdenado(inicio + k, nivel) : (nivel % 2 === 0 ? '•' : '–');
+    // marcas por nível: • → – → ▪ (o ▪ não existe na Helvetica: desenha-se um quadrado)
+    const marcador = ordenada ? marcadorOrdenado(inicio + k, nivel) : (nivel % 3 === 0 ? '•' : nivel % 3 === 1 ? '–' : '▪');
     const sub = { ...ctx, x: ctx.x + recuo, w: ctx.w - recuo, nivelLista: nivel + 1 };
     const conteudo = li.type === 'listItem' ? (li.content || []) : [li];
     let blocos = [];
@@ -304,7 +348,11 @@ function itensLista(ctx, no, ordenada) {
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(tam);
         pdf.setTextColor(...cor);
-        pdf.text(marcador, xm + (ordenada ? 0 : 1), y + base);
+        if (marcador === '▪') {
+          const lado = tam * PT * 0.3;
+          pdf.setFillColor(...cor);
+          pdf.rect(xm + 1.1, y + base - tam * PT * 0.42, lado, lado, 'F');
+        } else pdf.text(marcador, xm + (ordenada ? 0 : 1), y + base);
       },
     };
     itens.push(...blocos, espaco(tam * 0.12));
@@ -317,12 +365,14 @@ function itensImagem(ctx, no) {
   const src = String(no.attrs?.src || '');
   const dataUrl = ctx.imagens.get(src);
   const alt = limparTexto(no.attrs?.alt || no.attrs?.title || '');
+  const legenda = limparTexto(textoLegenda(ctx.legendas, no));
   let props = null;
   if (dataUrl) {
     try { props = ctx.pdf.getImageProperties(dataUrl); } catch { props = null; }
   }
   if (!props || !props.width || !props.height) {
     const linhas = partirLinhas(ctx.medir, [{ t: `[Imagem indisponível${alt ? `: ${alt}` : ''}]`, i: true }], ctx.w, ctx.tam);
+    if (legenda) return [{ ...blocoLinhas(linhas, { ...ctx, cor: C.muted }), keep: true }, espaco(1), legendaFigura(ctx, legenda), espaco(2.5)];
     return [...itensDeLinhas(linhas, { ...ctx, cor: C.muted }), espaco(2)];
   }
   const ped = larguraPedida(no.attrs);
@@ -333,19 +383,41 @@ function itensImagem(ctx, no) {
   if (h > maxH) { h = maxH; w = h * (props.width / props.height); }
   const x = ctx.x + (ctx.w - w) / 2;
   const fmt = String(props.fileType || 'PNG').toUpperCase();
+  // a legenda (Figura N — …) vai num só item e a imagem fica presa a ela: nunca se separam numa quebra de página
+  const cap = legenda ? legendaFigura(ctx, legenda) : null;
   const itens = [espaco(1.5), {
     h,
-    keep: !!alt,
+    keep: !!alt || !!cap,
+    ...(cap ? { junto: 1 + cap.h } : {}),
     draw(pdf, y) {
       try { pdf.addImage(dataUrl, fmt, x, y, w, h, undefined, 'FAST'); } catch { /* imagem corrompida: fica o espaço */ }
     },
   }];
-  if (alt) {
+  if (cap) itens.push(espaco(1), cap);
+  else if (alt) {
     const linhas = partirLinhas(ctx.medir, [{ t: alt, i: true }], ctx.w, TAM.tabela);
     itens.push(espaco(1), ...itensDeLinhas(linhas, { ...ctx, tam: TAM.tabela, cor: C.muted, alinhar: 'center' }));
   }
   itens.push(espaco(2.5));
   return itens;
+}
+
+/** Várias linhas num único item (não se partem entre páginas). */
+function blocoLinhas(linhas, ctx) {
+  const its = itensDeLinhas(linhas, ctx);
+  return { h: its.reduce((a, b) => a + b.h, 0), base: its[0]?.base, draw(pdf, y) { let yy = y; for (const it of its) { it.draw(pdf, yy); yy += it.h; } } };
+}
+
+const TAM_LEGENDA = 8.5;
+/** «Figura N — legenda»: por baixo da imagem, centrada, itálico pequeno. */
+function legendaFigura(ctx, texto) {
+  const linhas = partirLinhas(ctx.medir, [{ t: texto, i: true }], ctx.w, TAM_LEGENDA);
+  return blocoLinhas(linhas, { ...ctx, tam: TAM_LEGENDA, cor: C.body, alinhar: 'center' });
+}
+/** «Tabela N — legenda»: por cima da tabela, à esquerda, negrito pequeno. */
+function legendaTabela(ctx, texto) {
+  const linhas = partirLinhas(ctx.medir, [{ t: texto, b: true }], ctx.w, TAM_LEGENDA);
+  return blocoLinhas(linhas, { ...ctx, tam: TAM_LEGENDA, cor: COR_TEXTO, alinhar: 'left' });
 }
 
 function itensLinhaHorizontal(ctx) {
@@ -361,17 +433,21 @@ function itensLinhaHorizontal(ctx) {
 
 /** Envolve itens num fundo + barra lateral (caixa de nota/aviso). */
 function itensCaixa(ctx, no) {
-  const txt = textoSimples(no).trim().toLowerCase();
-  const aviso = /^(aviso|atenção|atencao|perigo|cuidado|importante|proibido)/.test(txt);
-  const cores = aviso ? COR_AVISO : COR_NOTA;
+  const { tipo, rotulo } = caixaDoNo(no);
+  const cores = COR_CAIXA[tipo];
   const pad = 3;
   const xCaixa = ctx.x;
   const wCaixa = ctx.w;
-  const interior = { ...ctx, x: ctx.x + pad + 2, w: ctx.w - 2 * pad - 2 };
+  const interior = { ...ctx, x: ctx.x + pad + 2, w: ctx.w - 2 * pad - 2, emCaixa: true };
   let blocos = [];
   for (const f of no.content || []) blocos.push(...itensBloco(interior, f));
   while (blocos.length && blocos[blocos.length - 1].spacer) blocos.pop();
   while (blocos.length && blocos[0].spacer) blocos.shift();
+  if (rotulo) {
+    // rótulo em negrito, na cor da barra, preso à primeira linha do conteúdo
+    const ln = partirLinhas(ctx.medir, [{ t: limparTexto(rotulo), b: true }], interior.w, ctx.tam);
+    blocos.unshift({ ...blocoLinhas(ln, { ...interior, cor: cores.barra }), keep: true }, espaco(0.8));
+  }
   const fundo = (pdf, y, h) => {
     pdf.setFillColor(...cores.fundo);
     pdf.rect(xCaixa, y, wCaixa, h, 'F');
@@ -566,6 +642,19 @@ function itensTabela(ctx, no, { semZebra = false } = {}) {
     itens.push(item);
   }
   itens.push(espaco(3));
+  // «Tabela N — legenda» por cima; fica presa ao cabeçalho e à primeira linha (nunca sozinha no fim da página)
+  const legenda = limparTexto(textoLegenda(ctx.legendas, no));
+  if (legenda && !ctx.emTabela) {
+    const cap = legendaTabela(ctx, legenda);
+    const linhasT = itens.filter((it) => !it.spacer);
+    const primeiras = linhasT[0] && linhasT[0] === cabecalhoItem ? linhasT.slice(0, 2) : linhasT.slice(0, 1);
+    cap.junto = 1.5 + Math.min(primeiras.reduce((a, b) => a + b.h, 0), (FUNDO - TOPO) * 0.4);
+    return [espaco(2), cap, ...itens];
+  }
+  if (legenda) {
+    // tabela dentro de célula: a legenda vai por cima sem regras de paginação
+    return [legendaTabela(ctx, legenda), ...itens];
+  }
   return itens;
 }
 
@@ -580,7 +669,7 @@ function itensBloco(ctx, no) {
       const nivel = Math.min(4, Math.max(2, Number(no.attrs?.level) || 2));
       const numero = ctx.titulos?.get(no) || '';
       const marca = nivel === 2 && ctx.toc ? ctx.toc.registar(numero, textoSimples(no), 2) : undefined;
-      return itensTitulo(ctx, textoSimples(no), numero, nivel, marca);
+      return itensTitulo(ctx, textoSimples(no), numero, nivel, marca, alinhamentoPedido(no));
     }
     case 'bulletList': return itensLista(ctx, no, false);
     case 'orderedList': return itensLista(ctx, no, true);
@@ -590,6 +679,8 @@ function itensBloco(ctx, no) {
     case 'horizontalRule': return itensLinhaHorizontal(ctx);
     case 'blockquote': return itensCaixa(ctx, no);
     case 'hardBreak': return [espaco(alturaLinha(ctx.tam))];
+    // quebra de página: o resto da secção começa em página nova (dentro de tabelas/caixas/listas não se aplica)
+    case 'pageBreak': return ctx.emTabela || ctx.emCaixa || ctx.nivelLista ? [] : [{ quebra: true, h: 0, draw() {} }];
     case 'text': return itensParagrafo(ctx, { content: [no] });
     case 'doc': {
       const out = [];
@@ -625,7 +716,8 @@ function paginar(pdf, itens, { aoNovaPagina }) {
     }
     // manter com o seguinte (títulos, cabeçalho de tabela)
     let precisa = it.h;
-    if (it.keep) {
+    if (it.junto) precisa += it.junto;
+    else if (it.keep) {
       let j = i + 1;
       while (j < lista.length && lista[j].spacer) j++;
       if (j < lista.length && !lista[j].quebra) precisa += Math.min(lista[j].h, altUtil * 0.25);
@@ -1082,7 +1174,8 @@ function renderizar(JsPDF, doc, recursos, paginasToc) {
     },
   };
 
-  const ctx = { pdf, medir, x: ML, w: CW, tam: TAM.corpo, cor: COR_TEXTO, b: false, imagens: recursos.imagens, titulos, toc, nivelLista: 0 };
+  const legendas = numerarLegendas(doc);
+  const ctx = { pdf, medir, x: ML, w: CW, tam: TAM.corpo, cor: COR_TEXTO, b: false, imagens: recursos.imagens, titulos, legendas, toc, nivelLista: 0 };
 
   // corpo primeiro (para conhecer as entradas do índice), desenho depois
   const corpo = [];

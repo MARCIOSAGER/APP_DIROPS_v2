@@ -12,9 +12,9 @@
 
 import {
   nomeClasse, dataPt, revisaoPad, textosRodape, textoSimples, carregarLogo, resolverImagens,
-  dataUrlParaBytes, dimensoesImagem, larguraPedida, numerarTitulos, limparXml,
+  dataUrlParaBytes, dimensoesImagem, larguraPedida, numerarTitulos, limparXml, caixaDoNo, alinhamentoPedido,
 } from './comum';
-import { conteudoVazio } from './contrato';
+import { conteudoVazio, numerarLegendas } from './contrato';
 
 const MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -36,8 +36,12 @@ const COR = {
   claro: '94A3B8',
   borda: 'CBD5E1',
   zebra: 'F8FAFC',
-  nota: { fundo: 'EFF6FF', barra: '2563EB' },
-  aviso: { fundo: 'FFF7ED', barra: 'D97706' },
+  // caixas: nota azul, atenção âmbar (a antiga «aviso» adivinhada pelo texto), aviso vermelho
+  caixa: {
+    nota: { fundo: 'EFF6FF', barra: '2563EB' },
+    atencao: { fundo: 'FFF7ED', barra: 'D97706' },
+    aviso: { fundo: 'FEF2F2', barra: 'DC2626' },
+  },
 };
 
 const TIPOS_IMAGEM = new Set(['png', 'jpg', 'gif', 'bmp']);
@@ -54,12 +58,16 @@ export async function gerarDocx(doc, opcoes = {}) {
   const {
     Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, Header, Footer,
     TableOfContents, AlignmentType, HeadingLevel, LevelFormat, BorderStyle, WidthType, ShadingType,
-    VerticalAlign, PageNumber, TableLayoutType, HeightRule,
+    VerticalAlign, PageNumber, TableLayoutType, HeightRule, PageBreak, SimpleField,
   } = D;
 
   const [logoUrl, imagens] = await Promise.all([carregarLogo(opcoes), resolverImagens(doc)]);
   const cab = doc.cabecalho || {};
   const { seccoes, titulos } = numerarTitulos(doc);
+  const legendas = numerarLegendas(doc);
+  const ALINHAR = { left: AlignmentType.LEFT, center: AlignmentType.CENTER, right: AlignmentType.RIGHT, justify: AlignmentType.JUSTIFIED };
+  /** { alignment } quando o nó pede alinhamento (attrs.textAlign); vazio nos documentos antigos. */
+  const alinhar = (no) => { const a = alinhamentoPedido(no); return a ? { alignment: ALINHAR[a] } : {}; };
 
   // ─── Texto ───────────────────────────────────────────────────────
   const run = (texto, o = {}) => new TextRun({ text: limparXml(texto), ...o });
@@ -133,7 +141,7 @@ export async function gerarDocx(doc, opcoes = {}) {
 
   function paragrafo(no, ctx, extra = {}) {
     const filhos = corridas(no.content, { bold: ctx.bold, color: ctx.cor, size: ctx.size });
-    return new Paragraph({ children: filhos, spacing: { after: ctx.emTabela ? 0 : 100 }, ...extra });
+    return new Paragraph({ children: filhos, spacing: { after: ctx.emTabela ? 0 : 100 }, ...alinhar(no), ...extra });
   }
 
   function titulo(no, ctx) {
@@ -144,6 +152,7 @@ export async function gerarDocx(doc, opcoes = {}) {
     return [new Paragraph({
       heading: hl,
       children: corridas(no.content),
+      ...alinhar(no),
       ...(numerado ? { numbering: { reference: 'titulos', level: nivel - 1 } } : {}),
     })];
   }
@@ -162,6 +171,7 @@ export async function gerarDocx(doc, opcoes = {}) {
           out.push(new Paragraph({
             children: corridas(f.content, { bold: ctx.bold || f.type === 'heading', color: ctx.cor, size: ctx.size }),
             spacing: { after: 60 },
+            ...alinhar(f),
             ...(primeiro
               ? { numbering: { reference: ref, level: Math.min(8, nivel), instance: inst } }
               : { indent: { left: recuoLista(Math.min(8, nivel)).left } }),
@@ -185,10 +195,11 @@ export async function gerarDocx(doc, opcoes = {}) {
   function imagem(no, ctx) {
     const src = String(no.attrs?.src || '');
     const alt = String(no.attrs?.alt || no.attrs?.title || '');
+    const cap = legenda(no, 'Figure');
     const dados = dataUrlParaBytes(imagens.get(src));
     const dim = dados && TIPOS_IMAGEM.has(dados.tipo) ? dimensoesImagem(dados.bytes) : null;
     if (!dim || !dim.w || !dim.h) {
-      return [new Paragraph({ children: [run(`[Imagem indisponível${alt ? `: ${alt}` : ''}]`, { italics: true, color: COR.suave })] })];
+      return [new Paragraph({ keepNext: !!cap || undefined, children: [run(`[Imagem indisponível${alt ? `: ${alt}` : ''}]`, { italics: true, color: COR.suave })] }), ...(cap ? [cap] : [])];
     }
     const maxPx = Math.floor(ctx.largura / TW_PX);
     const ped = larguraPedida(no.attrs);
@@ -199,8 +210,8 @@ export async function gerarDocx(doc, opcoes = {}) {
     if (h > maxH) { h = maxH; w = (h * dim.w) / dim.h; }
     const out = [new Paragraph({
       alignment: AlignmentType.CENTER,
-      keepNext: !!alt,
-      spacing: { before: 80, after: alt ? 40 : 120 },
+      keepNext: !!alt || !!cap,
+      spacing: { before: 80, after: alt || cap ? 40 : 120 },
       children: [new ImageRun({
         type: dados.tipo,
         data: dados.bytes,
@@ -208,8 +219,31 @@ export async function gerarDocx(doc, opcoes = {}) {
         altText: { name: alt || 'Imagem', description: alt || 'Imagem', title: alt || 'Imagem' },
       })],
     })];
-    if (alt) out.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 }, children: [run(alt, { italics: true, size: 18, color: COR.suave })] }));
+    if (cap) out.push(cap);
+    else if (alt) out.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 }, children: [run(alt, { italics: true, size: 18, color: COR.suave })] }));
     return out;
+  }
+
+  /**
+   * Parágrafo de legenda com campo SEQ (Figure/Table) já com o número, para o Word poder gerar o índice de figuras
+   * e de tabelas. Figura: estilo «Caption», centrada, por baixo. Tabela: estilo «CaptionTabela», à esquerda, por
+   * cima e presa à tabela (keepNext). null se o nó não tiver legenda.
+   */
+  function legenda(no, seq) {
+    const rotulo = legendas.get(no);
+    if (!rotulo) return null;
+    const n = rotulo.replace(/^\D+/, '');
+    const texto = String(no.attrs.legenda).trim();
+    const figura = seq === 'Figure';
+    return new Paragraph({
+      style: figura ? 'Caption' : 'CaptionTabela',
+      keepNext: figura ? undefined : true,
+      children: [
+        run(figura ? 'Figura ' : 'Tabela '),
+        new SimpleField(`SEQ ${seq} \\* ARABIC`, n),
+        run(` — ${texto}`),
+      ],
+    });
   }
 
   const borda = (cor = COR.borda, size = 4) => ({ style: BorderStyle.SINGLE, size, color: cor });
@@ -299,7 +333,9 @@ export async function gerarDocx(doc, opcoes = {}) {
         }),
       });
     });
+    const cap = legenda(no, 'Table');
     return [
+      ...(cap ? [cap] : []),
       new Table({
         rows,
         width: { size: ctx.largura, type: WidthType.DXA },
@@ -312,10 +348,10 @@ export async function gerarDocx(doc, opcoes = {}) {
   }
 
   function caixa(no, ctx) {
-    const txt = textoSimples(no).trim().toLowerCase();
-    const aviso = /^(aviso|atenção|atencao|perigo|cuidado|importante|proibido)/.test(txt);
-    const cores = aviso ? COR.aviso : COR.nota;
+    const { tipo, rotulo } = caixaDoNo(no);
+    const cores = COR.caixa[tipo];
     let filhos = blocos(no.content || [], { ...ctx, largura: ctx.largura - 400, emTabela: true });
+    if (rotulo) filhos.unshift(new Paragraph({ keepNext: true, spacing: { after: 40 }, children: [run(rotulo, { bold: true, color: cores.barra })] }));
     if (!filhos.length) filhos = [new Paragraph({ children: [] })];
     return [
       new Table({
@@ -354,6 +390,8 @@ export async function gerarDocx(doc, opcoes = {}) {
           out.push(new Paragraph({ children: [], spacing: { before: 60, after: 160 }, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: COR.borda, space: 1 } } }));
           break;
         case 'hardBreak': out.push(new Paragraph({ children: [] })); break;
+        // quebra de página (só ao nível do corpo; dentro de tabelas, caixas e listas não se aplica)
+        case 'pageBreak': if (!ctx.emTabela && !ctx.nivelLista) out.push(new Paragraph({ children: [new PageBreak()] })); break;
         case 'text': out.push(paragrafo({ content: [no] }, ctx)); break;
         case 'doc': out.push(...blocos(no.content, ctx)); break;
         default: {
@@ -568,6 +606,8 @@ export async function gerarDocx(doc, opcoes = {}) {
     subject: nomeClasse(doc.modelo),
     description: 'Gerado pelo Portal de Documentos da SGA',
     features: { updateFields: true },
+    // justificado: a linha que acaba numa quebra de linha (Shift+Enter) não se estica, como no PDF
+    compatibility: { doNotExpandShiftReturn: true },
     styles: {
       default: {
         document: { run: { font: 'Arial', size: 20, color: COR.texto }, paragraph: { spacing: { line: 276 } } },
@@ -576,6 +616,10 @@ export async function gerarDocx(doc, opcoes = {}) {
         heading3: tituloEstilo(21, COR.texto, 200, 80),
         heading4: tituloEstilo(20, COR.texto, 160, 60, { run: { italics: true } }),
       },
+      paragraphStyles: [
+        { id: 'Caption', name: 'caption', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { italics: true, size: 17, color: COR.corpo }, paragraph: { alignment: AlignmentType.CENTER, spacing: { before: 0, after: 200 } } },
+        { id: 'CaptionTabela', name: 'Legenda de tabela', basedOn: 'Caption', next: 'Normal', quickFormat: true, run: { italics: false, bold: true, color: COR.texto }, paragraph: { alignment: AlignmentType.LEFT, spacing: { before: 120, after: 60 }, keepNext: true } },
+      ],
     },
     numbering: { config: configNumeracao },
     sections: [

@@ -1,6 +1,8 @@
 // Peças partilhadas pelos geradores de PDF e DOCX dos documentos estruturados do GED.
 // (nomes das classes, datas, rótulo da revisão, logo SGA, imagens, numeração dos títulos)
 
+import { tipoCaixa, alinhamentoDe, ROTULO_CAIXA } from './contrato';
+
 /** Nome por extenso de cada classe (alinhado com documento_classe, sql 157). */
 export const NOME_CLASSE = {
   POP: 'Procedimento Operacional Padrão',
@@ -188,4 +190,25 @@ export function numerarTitulos(doc) {
     return { numero: `${i + 1}`, titulo: String(s.titulo || '').trim() || `Secção ${i + 1}`, seccao: s };
   });
   return { seccoes, titulos };
+}
+
+// ─── Caixas e alinhamento (sobre o contrato v2) ────────────────────
+
+/**
+ * Caixa de um blockquote para os geradores: { tipo: 'nota'|'atencao'|'aviso', rotulo: string|null }.
+ * Com attrs.tipo (documentos v2) → tipoCaixa do contrato e rótulo em negrito («Nota», «Atenção», «Aviso»).
+ * Sem attrs.tipo (documentos antigos) → sai como antes: cor adivinhada pelo texto («Atenção…/Aviso…» → âmbar), sem rótulo.
+ */
+export function caixaDoNo(no) {
+  const t = no?.attrs?.tipo;
+  if (t !== undefined && t !== null && t !== '') { const tipo = tipoCaixa(no); return { tipo, rotulo: ROTULO_CAIXA[tipo] }; }
+  const txt = textoSimples(no).trim().toLowerCase();
+  const aviso = /^(aviso|atenção|atencao|perigo|cuidado|importante|proibido)/.test(txt);
+  return { tipo: aviso ? 'atencao' : 'nota', rotulo: null };
+}
+
+/** Alinhamento pedido (attrs.textAlign) ou null quando o nó não o traz (os documentos antigos ficam como estavam). */
+export function alinhamentoPedido(no) {
+  const a = no?.attrs?.textAlign;
+  return a ? alinhamentoDe(no) : null;
 }

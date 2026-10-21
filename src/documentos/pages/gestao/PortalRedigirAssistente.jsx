@@ -23,7 +23,7 @@ import { useAeroportosDocs, usePastasDocs } from '../../hooks';
 import { usePessoasFluxo, useDirectoresAeroporto } from '../../hooksFluxo';
 import { useCodificacaoActiva, useNumeroSeguinte } from '../../hooksCodificacao';
 import EditorSeccao, { extensoesContrato, ESTILO_PROSA } from '../../edicao/EditorSeccao';
-import { ROTULO_CAMPO, novoDocumentoEstruturado, textoDoNo } from '../../edicao/contrato';
+import { ROTULO_CAMPO, novoDocumentoEstruturado, textoDoNo, legendasAntesDe } from '../../edicao/contrato';
 import {
   PASSOS, indicePasso, problemasDoPasso, problemasParaGerar, resumoPreenchimento, estadoSeccao, actualizarSeccao,
   actualizarCabecalho, extrasDe, prepararParaGerar, nomeBaseFicheiro,
@@ -92,7 +92,7 @@ function PreVisualizacao({ doc }) {
   const c = doc?.cabecalho || {};
   const historico = prepararParaGerar(doc).historico || [];
   return (
-    <article className="mx-auto max-w-4xl rounded-lg border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-slate-700">
+    <article className="mx-auto max-w-4xl rounded-lg border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-slate-700" style={{ counterReset: 'gd-fig 0 gd-tab 0' }}>
       <style>{ESTILO_PROSA}</style>
       <table className="mb-6 w-full border-collapse text-sm">
         <tbody>
@@ -111,8 +111,8 @@ function PreVisualizacao({ doc }) {
         return (
           <section key={s.id} className="mb-5">
             <h2 className="mb-2 border-b border-slate-200 pb-1 text-lg font-bold text-teal-900">{i + 1}. {s.titulo}</h2>
-            {html && textoDoNo(s.conteudo).trim() || /<img|<table|<hr/.test(html)
-              ? <div className="prose-gd" dangerouslySetInnerHTML={{ __html: html }} />
+            {html && textoDoNo(s.conteudo).trim() || /<img|<table|<hr|data-quebra-pagina/.test(html)
+              ? <div className="gd-numerar" style={{ '--gd-sec': `"${i + 1}"` }}><div className="prose-gd" dangerouslySetInnerHTML={{ __html: html }} /></div>
               : <p className="text-sm italic text-slate-400">(secção por preencher)</p>}
           </section>
         );
@@ -531,6 +531,9 @@ export default function PortalRedigirAssistente() {
                   <EditorSeccao
                     key={seccao.id}
                     conteudo={seccao.conteudo}
+                    numeroSeccao={doc.seccoes.indexOf(seccao) + 1}
+                    figurasAntes={legendasAntesDe(doc, doc.seccoes.indexOf(seccao)).figuras}
+                    tabelasAntes={legendasAntesDe(doc, doc.seccoes.indexOf(seccao)).tabelas}
                     editavel={!gerado}
                     placeholder={`Texto da secção «${seccao.titulo}»`}
                     onChange={(json) => mudar(d => actualizarSeccao(d, seccao.id, json))}
