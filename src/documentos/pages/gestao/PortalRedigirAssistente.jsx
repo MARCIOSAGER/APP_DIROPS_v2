@@ -308,6 +308,14 @@ export default function PortalRedigirAssistente() {
   const aeroSel = aeroportos.find(a => a.id === aeroportoId) || null;
   const extras = extrasDe(doc);
   const sugestao = useNumeroSeguinte(existente ? null : doc?.modelo, aeroSel?.codigo_icao, extras.processo);
+  // Número automático: o seguinte livre, recalculado quando muda classe/aeroporto/processo — salvo se a pessoa
+  // escolheu escrever outro («Escolher outro número»).
+  const [numeroManual, setNumeroManual] = useState(false);
+  useEffect(() => {
+    if (existente || mestre || gerado || numeroManual) return;
+    if (sugestao.data && sugestao.data !== doc?.cabecalho?.numero) setCab({ numero: sugestao.data });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sugestao.data, numeroManual, existente, mestre, gerado]);
   const escolherAeroporto = (v) => {
     const a = aeroportos.find(x => x.id === v);
     setAeroportoId(v || '');
@@ -421,14 +429,23 @@ export default function PortalRedigirAssistente() {
             <Campo id="rd-proc" label={existente ? 'Manual ou programa' : 'Manual ou programa (processo) *'} ajuda="A que manual ou programa o documento pertence (ex. MOA, PSA, SMGCS). Entra no número.">
               <Select id="rd-proc" options={opcoesProcesso} value={extras.processo || ''} onValueChange={(v) => setExtras({ processo: v || null })} placeholder={mestre ? 'O de cada documento' : 'Escolha o processo'} disabled={gerado || existente || mestre} />
             </Campo>
-            <Campo id="rd-num" label="Número *" ajuda={existente ? 'O número do documento não muda nas revisões.' : 'Formato classe-aeroporto-processo-sequência (ex. POP-FNLU-MOA-012). Use a sugestão para o número seguinte livre.'}>
+            <Campo id="rd-num" label="Número *" ajuda={existente ? 'O número do documento não muda nas revisões.'
+              : numeroManual ? 'Número escolhido à mão. Formato classe-aeroporto-processo-sequência (ex. POP-FNLU-MOA-012).'
+                : 'Automático: o número seguinte livre para esta classe, aeroporto e processo. Actualiza-se se mudar o aeroporto ou o processo.'}>
               <div className="flex gap-2">
-                <Input id="rd-num" value={cab.numero || ''} onChange={e => setCab({ numero: e.target.value.toUpperCase() })} disabled={gerado || existente || mestre} autoComplete="off" style={{ fontFamily: 'ui-monospace, Consolas, monospace' }} />
-                {!existente && sugestao.data && sugestao.data !== cab.numero && (
-                  <Button type="button" variant="outline" onClick={() => setCab({ numero: sugestao.data })} disabled={gerado} title="Número seguinte livre, calculado no servidor">
-                    <Wand2 className="h-4 w-4" aria-hidden="true" />{sugestao.data}
-                  </Button>
-                )}
+                <Input id="rd-num" value={cab.numero || ''} onChange={e => setCab({ numero: e.target.value.toUpperCase() })}
+                  readOnly={!existente && !numeroManual} disabled={gerado || existente || mestre} autoComplete="off"
+                  className={cn(!existente && !numeroManual && 'bg-slate-50 dark:bg-slate-800/60')} style={{ fontFamily: 'ui-monospace, Consolas, monospace' }} />
+                {!existente && !mestre && !gerado && (numeroManual
+                  ? (
+                    <Button type="button" variant="outline" onClick={() => { setNumeroManual(false); if (sugestao.data) setCab({ numero: sugestao.data }); }} title="Voltar ao número seguinte livre">
+                      <Wand2 className="h-4 w-4" aria-hidden="true" />Automático
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="ghost" onClick={() => setNumeroManual(true)} title="Escrever outro número (por exemplo, para reutilizar um número antigo)">
+                      Escolher outro número
+                    </Button>
+                  ))}
                 {!existente && sugestao.isFetching && <Loader2 className="h-4 w-4 animate-spin self-center" aria-label="A calcular o número" />}
               </div>
             </Campo>
