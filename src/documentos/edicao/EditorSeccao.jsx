@@ -26,6 +26,7 @@ import { limparHtmlColado } from './limparColagem';
 import { imagemDeFicheiro, reduzirImagemSrc, LIMITE_DATA_URL } from './imagens';
 import { docVazio, NIVEIS_LISTA_MAX, FOTOS_POR_LINHA } from './contrato';
 import { extensoesContrato, nivelListaNaSeleccao, emGaleria as selEmGaleria } from './extensoes';
+import { normalizarNiveisTitulos } from './comum';
 import {
   Procurar, definirTermo, irParaOcorrencia, substituirActual, substituirTodas, estadoProcurar, contarPalavras,
 } from './procurar';
@@ -278,6 +279,20 @@ export default function EditorSeccao({
   conteudo, onChange, placeholder, className, editavel = true, numeroSeccao, figurasAntes = 0, tabelasAntes = 0,
 }) {
   const { toast } = useToast();
+  // H2/H3/H4 sem saltar níveis: o título da secção é o nível 1; um H4 sem H3 antes fica H3 (ou H2) — nunca «2.0.0.1».
+  const aplicarTitulo = (pedido) => {
+    if (!editor) return;
+    if (editor.isActive('heading', { level: pedido })) { editor.chain().focus().setParagraph().run(); return; }
+    let ultimo = 1; const ate = editor.state.selection.from;
+    editor.state.doc.descendants((n, pos) => {
+      if (pos >= ate) return false;
+      if (n.type.name === 'heading') ultimo = n.attrs.level;
+      return n.type.name === 'doc' || n.type.name === 'blockquote';
+    });
+    const nivel = Math.min(pedido, ultimo + 1);
+    editor.chain().focus().setHeading({ level: nivel }).run();
+    if (nivel !== pedido) toast({ title: `Ficou como H${nivel}`, description: `Os níveis não se saltam: para usar H${pedido}, ponha antes um H${pedido - 1}.` });
+  };
   const ficheiroRef = useRef(null);
   const reduzindo = useRef(new Set());
   const onChangeRef = useRef(onChange);
@@ -349,7 +364,7 @@ export default function EditorSeccao({
 
   const editor = useEditor({
     extensions: extensoes,
-    content: conteudo || docVazio(),
+    content: conteudo ? normalizarNiveisTitulos(conteudo) : docVazio(),
     editable: editavel,
     editorProps: {
       attributes: {
@@ -457,9 +472,9 @@ export default function EditorSeccao({
         <div className={cn('z-10 rounded-t-lg border-b border-slate-200 bg-slate-50/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95', cheio ? 'rounded-none' : 'sticky top-[var(--topo-fixo,0px)]')}>
           <div role="toolbar" aria-label="Formatação" className="flex flex-wrap items-center gap-0.5 px-2 py-1">
             <BotaoBarra titulo="Parágrafo" activo={editor.isActive('paragraph')} onClick={() => c().setParagraph().run()}><Pilcrow className="h-4 w-4" /></BotaoBarra>
-            <BotaoBarra titulo="Título" activo={editor.isActive('heading', { level: 2 })} onClick={() => c().toggleHeading({ level: 2 }).run()}><Heading2 className="h-4 w-4" /></BotaoBarra>
-            <BotaoBarra titulo="Subtítulo" activo={editor.isActive('heading', { level: 3 })} onClick={() => c().toggleHeading({ level: 3 }).run()}><Heading3 className="h-4 w-4" /></BotaoBarra>
-            <BotaoBarra titulo="Subtítulo menor" activo={editor.isActive('heading', { level: 4 })} onClick={() => c().toggleHeading({ level: 4 }).run()}><Heading4 className="h-4 w-4" /></BotaoBarra>
+            <BotaoBarra titulo="Título" activo={editor.isActive('heading', { level: 2 })} onClick={() => aplicarTitulo(2)}><Heading2 className="h-4 w-4" /></BotaoBarra>
+            <BotaoBarra titulo="Subtítulo" activo={editor.isActive('heading', { level: 3 })} onClick={() => aplicarTitulo(3)}><Heading3 className="h-4 w-4" /></BotaoBarra>
+            <BotaoBarra titulo="Subtítulo menor" activo={editor.isActive('heading', { level: 4 })} onClick={() => aplicarTitulo(4)}><Heading4 className="h-4 w-4" /></BotaoBarra>
             <Sep />
             <BotaoBarra titulo="Negrito (Ctrl+B)" activo={editor.isActive('bold')} onClick={() => c().toggleBold().run()}><Bold className="h-4 w-4" /></BotaoBarra>
             <BotaoBarra titulo="Itálico (Ctrl+I)" activo={editor.isActive('italic')} onClick={() => c().toggleItalic().run()}><Italic className="h-4 w-4" /></BotaoBarra>

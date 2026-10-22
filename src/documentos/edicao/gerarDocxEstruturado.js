@@ -13,7 +13,7 @@
 import {
   nomeClasse, dataPt, revisaoPad, textosRodape, textoSimples, carregarLogo, resolverImagens,
   dataUrlParaBytes, dimensoesImagem, larguraPedida, numerarTitulos, limparXml, caixaDoNo, alinhamentoPedido,
-  seccaoEmNovaPagina,
+  seccaoEmNovaPagina, normalizarTitulosDocumento,
 } from './comum';
 import { conteudoVazio, numerarLegendas, ehTabelaFotos } from './contrato';
 
@@ -55,6 +55,7 @@ const TIPOS_IMAGEM = new Set(['png', 'jpg', 'gif', 'bmp']);
  */
 export async function gerarDocx(doc, opcoes = {}) {
   if (!doc || typeof doc !== 'object') throw new Error('Documento estruturado em falta');
+  doc = normalizarTitulosDocumento(doc); // títulos sem saltos de nível (nunca «2.0.0.1»)
   const D = await import('docx');
   const {
     Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, Header, Footer,

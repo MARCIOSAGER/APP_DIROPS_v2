@@ -180,6 +180,34 @@ export function larguraPedida(attrs = {}) {
  * Numera as secções (1., 2., …) e os títulos dentro delas (h2 → 1.1, h3 → 1.1.1, h4 → 1.1.1.1).
  * Devolve { seccoes: [{ numero, titulo, seccao }], titulos: WeakMap(nó heading → numero) }.
  */
+/**
+ * Títulos sem saltos de nível: o título da secção é o nível 1; um H3 sem H2 antes passa a H2, um H4 sem H3 passa a
+ * H3 (ou H2), e assim por diante — nunca «2.0.0.1». Devolve um ProseMirror novo (não altera o original).
+ * Aplica-se dentro de cada secção (conteúdo da secção), ao nível do bloco e dentro de caixas (blockquote).
+ */
+export function normalizarNiveisTitulos(pm) {
+  if (!pm || typeof pm !== 'object') return pm;
+  let ultimo = 1;
+  const visitar = (n) => {
+    if (!n || typeof n !== 'object') return n;
+    if (n.type === 'heading') {
+      const pedido = Math.min(4, Math.max(2, Number(n.attrs?.level) || 2));
+      const nivel = Math.min(pedido, ultimo + 1);
+      ultimo = nivel;
+      return nivel === n.attrs?.level ? n : { ...n, attrs: { ...(n.attrs || {}), level: nivel } };
+    }
+    if ((n.type === 'doc' || n.type === 'blockquote') && Array.isArray(n.content)) return { ...n, content: n.content.map(visitar) };
+    return n;
+  };
+  return visitar(pm);
+}
+
+/** O mesmo para o documento estruturado inteiro (cada secção recomeça no nível 1). */
+export function normalizarTitulosDocumento(doc) {
+  if (!doc || !Array.isArray(doc.seccoes)) return doc;
+  return { ...doc, seccoes: doc.seccoes.map(s => (s && s.conteudo ? { ...s, conteudo: normalizarNiveisTitulos(s.conteudo) } : s)) };
+}
+
 export function numerarTitulos(doc) {
   const titulos = new WeakMap();
   const seccoes = (doc?.seccoes || []).filter(Boolean).map((s, i) => {

@@ -17,7 +17,7 @@ import { PDF } from '@/lib/pdfTemplate';
 import {
   nomeClasse, dataPt, revisaoPad, textosRodape, textoSimples, carregarLogo, resolverImagens,
   larguraPedida, numerarTitulos, caixaDoNo, alinhamentoPedido,
-  seccaoEmNovaPagina,
+  seccaoEmNovaPagina, normalizarTitulosDocumento,
 } from './comum';
 import { numerarLegendas, textoLegenda, ehTabelaFotos } from './contrato';
 import { larguraHelvetica } from './larguraHelvetica';
@@ -1264,6 +1264,7 @@ function renderizar(JsPDF, doc, recursos, paginasToc) {
  */
 export async function gerarPdf(doc, opcoes = {}) {
   if (!doc || typeof doc !== 'object') throw new Error('Documento estruturado em falta');
+  doc = normalizarTitulosDocumento(doc); // títulos sem saltos de nível (nunca «2.0.0.1»)
   const { default: JsPDF } = await import('jspdf');
   const [logo, imagens] = await Promise.all([carregarLogo(opcoes), resolverImagens(doc)]);
   // QR de verificação (como nos certificados da Universidade): leva à página do Portal que diz se esta revisão é a
