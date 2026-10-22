@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useCursosPublicados, useAulasResumo, useMinhasMatriculas, useMeuProgresso, useMeusCertificados, useTrilhasAluno } from '@/hooks/useFormacao';
 import { cursoObrigatorioPara, estadoFormacao, ESTADOS, refrescamentosDe } from '@/lib/formacaoEstado';
 import { univAcesso } from './api';
+import { registarPerfisPersonalizadosUc, ehNomePerfilUc, ehCorPerfilUc, NIVEIS_PERFIL_UC, PERFIS_BASE_UNIVERSIDADE } from '@/lib/universidade';
 
 const COMUM = { staleTime: 60 * 1000, refetchOnWindowFocus: false, retry: 1 };
 
@@ -110,8 +111,10 @@ export function usePermissoesPortal() {
   return useQuery({
     queryKey: ['universidade_permissao'],
     queryFn: async () => {
+      // '*' funciona antes e depois da migração 188 (perfis próprios: label, cor, descricao, nivel, personalizado)
       const { data, error } = await supabase.from('universidade_permissao').select('*');
       if (error) throw error;
+      registarPerfisPersonalizadosUc(data || []);
       const mapa = {};
       for (const r of data || []) mapa[r.perfil] = Array.isArray(r.paginas) ? r.paginas : [];
       return mapa;
@@ -122,6 +125,34 @@ export function usePermissoesPortal() {
 export async function guardarPermissoesPortal(perfil, paginas, actor) {
   const { error } = await supabase.from('universidade_permissao').upsert({ perfil, paginas, updated_by: actor?.email || null }, { onConflict: 'perfil' });
   if (error) throw new Error(error.message || 'Não foi possível guardar.');
+}
+// Criar ou alterar um perfil próprio (migração 188). O nome técnico (uc_…) não muda depois de criado; ao alterar,
+// `paginas` fica undefined e as páginas mantêm-se (mudam-se na matriz).
+export async function guardarPerfilPersonalizadoUc({ perfil, label, cor, descricao, nivel, paginas }, actor) {
+  if (!ehNomePerfilUc(perfil)) throw new Error('Nome técnico inválido (tem de começar por «uc_» e ter só letras minúsculas, números e _).');
+  if (!String(label || '').trim()) throw new Error('Indique o nome do perfil.');
+  if (!NIVEIS_PERFIL_UC.some(n => n.chave === nivel)) throw new Error('Escolha o nível base (formando ou instrutor).');
+  const linha = {
+    perfil, label: String(label).trim().slice(0, 60), cor: ehCorPerfilUc(cor) ? cor : null, descricao: String(descricao || '').trim().slice(0, 200) || null, nivel,
+    personalizado: true, updated_by: actor?.email || null, updated_date: new Date().toISOString(),
+  };
+  if (Array.isArray(paginas)) linha.paginas = paginas;
+  const { data, error } = Array.isArray(paginas)
+    ? await supabase.from('universidade_permissao').insert(linha).select('perfil')
+    : await supabase.from('universidade_permissao').update(linha).eq('perfil', perfil).eq('personalizado', true).select('perfil');
+  if (error) {
+    if (/column|schema cache|PGRST204/i.test(error.message || '')) throw new Error('A base de dados ainda não tem os perfis próprios (migração 188 por aplicar).');
+    if (error.code === '23505') throw new Error('Já existe um perfil com este nome técnico.');
+    throw new Error(error.message || 'Não foi possível guardar o perfil.');
+  }
+  if (!Array.isArray(data) || !data.length) throw new Error('O perfil não foi gravado (só administradores da Universidade gerem perfis).');
+}
+// Apagar um perfil próprio. A base de dados retira-o a quem o tinha (quem fica sem perfil da Universidade fica formando).
+export async function apagarPerfilPersonalizadoUc(perfil) {
+  if (!ehNomePerfilUc(perfil)) throw new Error('Só se apagam perfis próprios.');
+  const { data, error } = await supabase.from('universidade_permissao').delete().eq('perfil', perfil).eq('personalizado', true).select('perfil');
+  if (error) throw new Error(error.message || 'Não foi possível apagar o perfil.');
+  if (!Array.isArray(data) || !data.length) throw new Error('O perfil não foi apagado (só administradores da Universidade gerem perfis).');
 }
 // Catálogo público (títulos dos cursos publicados) — página de entrada, sem sessão.
 export function useCursosPublicos() {
@@ -247,21 +278,26 @@ export function useAcessos(enabled = true) {
   });
 }
 // Perfis da Universidade de um utilizador (só administradores; RLS da tabela users): mantém os outros perfis e regista na auditoria.
-export async function guardarPerfisUniversidade(u, { formando, instrutor, admin = false }, actor) {
-  // O backend (acção «perfis», patch 18) altera só os perfis da Universidade, valida e regista na auditoria.
+export async function guardarPerfisUniversidade(u, { formando, instrutor, admin = false, personalizados = [] }, actor) {
+  // O backend (acção «perfis», patch 18; perfis próprios no patch 34) altera só os perfis da Universidade, valida e regista na auditoria.
+  const proprios = [...new Set((Array.isArray(personalizados) ? personalizados : []).filter(ehNomePerfilUc))];
   try {
-    const r = await univAcesso('perfis', { user_id: u.id, formando: !!formando, instrutor: !!instrutor, admin: !!admin });
-    return r.perfis;
+    const r = await univAcesso('perfis', { user_id: u.id, formando: !!formando, instrutor: !!instrutor, admin: !!admin, personalizados: proprios });
+    const gravados = Array.isArray(r?.perfis) ? r.perfis : [];
+    const emFalta = proprios.filter(p => !gravados.includes(p));
+    if (emFalta.length) throw new Error('O servidor ainda não conhece os perfis próprios (patch 34 por aplicar ou perfil apagado entretanto): ' + emFalta.join(', ') + '. Os restantes perfis foram gravados.');
+    return gravados;
   } catch (e) {
     const semAccao = e?.status === 404 || (e?.status === 400 && /desconhecida/i.test(e.message || ''));
     if (!semAccao) throw e;
   }
   // backend anterior ao patch 18: gravar directamente (a RLS de users só o permite a administradores do DIROPS)
   const { User } = await import('@/entities/User');
-  const outros = (Array.isArray(u.perfis) ? u.perfis : []).filter(p => p !== 'formando' && p !== 'instrutor' && p !== 'admin_universidade');
-  const perfis = [...outros, ...(formando ? ['formando'] : []), ...(instrutor ? ['instrutor'] : []), ...(admin ? ['admin_universidade'] : [])];
+  const daUc = (p) => PERFIS_BASE_UNIVERSIDADE.includes(p) || ehNomePerfilUc(p);
+  const outros = (Array.isArray(u.perfis) ? u.perfis : []).filter(p => !daUc(p));
+  const perfis = [...outros, ...(formando ? ['formando'] : []), ...(instrutor ? ['instrutor'] : []), ...(admin ? ['admin_universidade'] : []), ...proprios];
   await User.update(u.id, { perfis });
-  await auditarPortal(actor, { acao: 'perfis_alterados', entidade: 'users', id: u.id, detalhes: `Perfis da Universidade de ${u.email}: ${perfis.filter(p => ['formando', 'instrutor', 'admin_universidade'].includes(p)).join(', ') || 'nenhum'}`, dados: { email: u.email, antes: u.perfis || [], depois: perfis } });
+  await auditarPortal(actor, { acao: 'perfis_alterados', entidade: 'users', id: u.id, detalhes: `Perfis da Universidade de ${u.email}: ${perfis.filter(daUc).join(', ') || 'nenhum'}`, dados: { email: u.email, antes: u.perfis || [], depois: perfis } });
   return perfis;
 }
 export function useEstadoAcessos(enabled = true) {

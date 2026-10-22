@@ -17,7 +17,7 @@ import { traduzErroAuth } from '@/lib/authErros';
 import { validarSenha, PORTAL_BASE, iniciais, TAMANHOS_TEXTO, preferenciaTexto, guardarPreferenciaTexto } from '@/lib/universidade';
 import Select from '@/components/ui/select';
 import { Type } from 'lucide-react';
-import { ehAdminPortal, PERFIS_UNIVERSIDADE } from '@/lib/universidade';
+import { ehAdminPortal, PERFIS_UNIVERSIDADE, PERFIL_UC_LABEL } from '@/lib/universidade';
 import { sairDoPortal } from '../PortalLayout';
 
 const PERFIL_LABEL = { admin_universidade: 'Administrador da Universidade', administrador: 'Administrador', instrutor: 'Instrutor', formando: 'Formando', operacoes: 'Operações', safety: 'Safety', infraestrutura: 'Infraestrutura', credenciamento: 'Credenciamento', gestor_empresa: 'Gestor de empresa', visualizador: 'Visualizador', documentos_ged: 'Documentos (GED)' };
@@ -65,7 +65,7 @@ export default function PortalConta() {
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-bold text-slate-900 dark:text-slate-100">{user?.full_name || user?.email}</h1>
           <p className="truncate text-sm text-slate-500 dark:text-slate-400">{user?.email}</p>
-          <p className="mt-1 flex flex-wrap gap-1.5">{(user?.perfis || []).filter(p => PERFIS_UNIVERSIDADE.includes(p)).map(p => <span key={p} className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">{PERFIL_LABEL[p] || p}</span>)}{ehAdminPortal(user) && <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-800 dark:bg-violet-950/60 dark:text-violet-200"><ShieldCheck className="h-3 w-3" aria-hidden="true" />Gestão</span>}</p>
+          <p className="mt-1 flex flex-wrap gap-1.5">{(user?.perfis || []).filter(p => PERFIS_UNIVERSIDADE.includes(p)).map(p => <span key={p} className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">{PERFIL_UC_LABEL[p] || PERFIL_LABEL[p] || p}</span>)}{ehAdminPortal(user) && <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-800 dark:bg-violet-950/60 dark:text-violet-200"><ShieldCheck className="h-3 w-3" aria-hidden="true" />Gestão</span>}</p>
         </div>
       </div>
 

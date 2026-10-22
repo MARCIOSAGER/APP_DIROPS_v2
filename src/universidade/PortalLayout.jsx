@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/lib/AuthContext';
 import { useModoFoco } from '@/lib/modoFoco';
-import { hasUserProfile } from '@/components/lib/userUtils';
-import { ehAdminPortal } from '@/lib/universidade';
+import { ehAdminPortal, ehInstrutorUc } from '@/lib/universidade';
 import { logAuthEvent } from '@/lib/auditLog';
 import { cn } from '@/lib/utils';
 import { useConfigPortal } from './hooks';
@@ -37,7 +36,8 @@ export const NAV_GESTAO = [
   { to: `${PORTAL_BASE}/gestao/configuracoes`, label: 'Configurações', icon: Settings, pagina: 'gestao_configuracoes' },
 ];
 export const gestaoActiva = (item, loc) => (item.end ? loc.pathname === item.to || loc.pathname === `${item.to}/` : loc.pathname.startsWith(item.to));
-export const ehGestor = (user) => !!user && (ehAdminPortal(user) || hasUserProfile(user, 'instrutor'));
+// instrutor = perfil «instrutor» ou perfil próprio de nível instrutor (migração 188)
+export const ehGestor = (user) => !!user && (ehAdminPortal(user) || ehInstrutorUc(user));
 // Conjunto de páginas do portal que o utilizador pode abrir (predefinições enquanto a tabela carrega).
 export function usePodeVer() {
   const { user } = useAuth();

@@ -1,6 +1,7 @@
 // Indicadores agregados da formação (visão geral + relatório semanal). ESM puro, sem React,
 // partilhado pelo frontend e pelos scripts node. Parte da matriz (matrizFormacao) já calculada.
 import { diasAte } from './formacaoEstado.js';
+import { PERFIL_UC_LABEL } from './universidade.js';
 
 export const ESTADOS_VALIDOS = new Set(['valido', 'concluido', 'a_expirar']);
 const MESES_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -45,7 +46,7 @@ export function indicadoresFormacao({ matriz, cursos = [], matriculas = [], tent
   for (const l of linhas) for (const c of l.celulas) if (c.obrigatorio) { devidos++; if (ESTADOS_VALIDOS.has(c.estado)) validos++; }
   const conformidade = { devidos, validos, pct: pct(validos, devidos) };
   // Agrupa pelos perfis da Universidade (não pelos perfis de função do DIROPS); sem perfil da Universidade = Formando.
-  const PERFIL_UC = { formando: 'Formando', instrutor: 'Instrutor', admin_universidade: 'Administrador da Universidade' };
+  const PERFIL_UC = PERFIL_UC_LABEL; // inclui os perfis próprios (migração 188) quando carregados
   const porPerfil = conformidadePorGrupo(linhas, u => { const uc = (u.perfis || []).filter(p => PERFIL_UC[p]).map(p => PERFIL_UC[p]); return uc.length ? uc : ['Formando']; });
   const porAeroporto = conformidadePorGrupo(linhas, gruposAeroporto);
 

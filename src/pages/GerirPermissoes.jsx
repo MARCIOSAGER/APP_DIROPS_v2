@@ -357,7 +357,7 @@ export default function GerirPermissoes() {
     });
     // Perfis personalizados (existem na BD mas nao no codigo)
     // Os perfis dos portais (Documentos e Universidade) vivem em regra_permissao mas gerem-se nos portais: ficam fora daqui
-    const doutroPortal = (p) => /_documentos$|^doc_/.test(p) || ['formando', 'instrutor', 'admin_universidade'].includes(p);
+    const doutroPortal = (p) => /_documentos$|^doc_|^uc_/.test(p) || ['formando', 'instrutor', 'admin_universidade'].includes(p);
     regras.filter((r) => !PERFIS_SISTEMA.includes(r.perfil) && !doutroPortal(r.perfil)).forEach((r) => {
       inicial[r.perfil] = {
         paginas_permitidas: r.paginas_permitidas || [],

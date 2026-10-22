@@ -1,6 +1,6 @@
 // Hooks de dados da Gestão de Formação (instrutor/admin).
 // Chaves começam pelo nome da tabela (invalidação por prefixo no createEntity).
-import { PERFIS_UNIVERSIDADE } from '@/lib/universidade';
+import { ehPerfilUniversidade, nivelDoPerfilUc } from '@/lib/universidade';
 import { supabase } from '@/lib/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { Curso } from '@/entities/Curso';
@@ -20,7 +20,7 @@ import { NotificacaoFormacao } from '@/entities/NotificacaoFormacao';
 import { LicencaConducao } from '@/entities/LicencaConducao';
 
 // A população da formação é quem tem perfil da Universidade (formando, instrutor, administrador), não todos os utilizadores do DIROPS.
-const soUniversidade = (us) => (Array.isArray(us) ? us : []).filter(u => (u.perfis || []).some(p => PERFIS_UNIVERSIDADE.includes(p)));
+const soUniversidade = (us) => (Array.isArray(us) ? us : []).filter(u => (u.perfis || []).some(ehPerfilUniversidade));
 // Aeroportos da Universidade (lista própria, gerida no portal) e perfil do formando (aeroporto/departamento/função).
 export async function listarAeroportosUc() { const { data, error } = await supabase.from('universidade_aeroporto').select('codigo,nome,ordem').eq('ativo', true).order('ordem'); if (error) throw error; return data || []; }
 export function useAeroportosUc() { return useQuery({ queryKey: ['universidade_aeroporto'], queryFn: () => listarAeroportosUc().catch(() => []), staleTime: 10 * 60 * 1000 }); }
@@ -158,7 +158,8 @@ export function useUtilizadoresComPerfis() {
     staleTime: 60 * 1000, refetchOnWindowFocus: false,
   });
 }
-export const ehInstrutor = (u) => Array.isArray(u?.perfis) && u.perfis.includes('instrutor');
+// instrutor = perfil «instrutor» ou perfil próprio de nível instrutor (migração 188: tem os mesmos poderes nos dados)
+export const ehInstrutor = (u) => Array.isArray(u?.perfis) && (u.perfis.includes('instrutor') || u.perfis.some(p => nivelDoPerfilUc(p) === 'instrutor'));
 
 // Sessões presenciais de um curso + inscrições (gestor).
 export function useSessoesCurso(cursoId) {

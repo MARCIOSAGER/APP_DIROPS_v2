@@ -78,9 +78,10 @@ export default function Login() {
         const perfis = Array.isArray(perfil?.perfis) ? perfil.perfis : [];
         const PERFIS_UC = ['formando', 'instrutor', 'admin_universidade'];
         const { PERFIS_DOCUMENTOS, PORTAL_DOCUMENTOS_BASE } = await import('@/lib/portalDocumentos');
-        if (perfis.length > 0 && perfis.every(p => PERFIS_UC.includes(p) || PERFIS_DOCUMENTOS.includes(p) || /^doc_[a-z0-9_]{2,40}$/.test(p))) {
+        const ehUc = (p) => PERFIS_UC.includes(p) || /^uc_[a-z0-9_]{2,40}$/.test(p); // + perfis próprios da Universidade (migração 188)
+        if (perfis.length > 0 && perfis.every(p => ehUc(p) || PERFIS_DOCUMENTOS.includes(p) || /^doc_[a-z0-9_]{2,40}$/.test(p))) {
           try { await supabase.auth.signOut(); } catch { /* */ }
-          const destino = perfis.some(p => PERFIS_UC.includes(p)) ? '/universidade/login?conta=formando' : `${PORTAL_DOCUMENTOS_BASE}/login?conta=portal`;
+          const destino = perfis.some(ehUc) ? '/universidade/login?conta=formando' : `${PORTAL_DOCUMENTOS_BASE}/login?conta=portal`;
           window.location.replace(destino); return;
         }
       } catch { /* segue para o DIROPS */ }

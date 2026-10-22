@@ -14,6 +14,7 @@ import { useUtilizadoresComPerfis, ehInstrutor, useTodosCursos } from '@/hooks/u
 
 const lower = (s) => String(s || '').toLowerCase();
 import { NIVEL_LABEL } from '../formacaoUtils';
+import { PERFIS_UNIVERSIDADE, PERFIL_UC_LABEL } from '@/lib/universidade';
 import ImagemUpload from './ImagemUpload';
 
 const VAZIO = { titulo: '', descricao: '', categoria: '', nivel: 'iniciante', instrutor_nome: '', instrutor_email: '', carga_horaria: '', capa_url: null, publicado: false, ordem: '', validade_meses: '', prazo_dias: '', obrigatorio_todos: false, obrigatorio_perfis: [], sincroniza_licenca_conducao: false, instrutores: [], tipo_formacao: 'inicial', curso_base_id: '', creditos: '' };
@@ -22,7 +23,8 @@ const VAZIO = { titulo: '', descricao: '', categoria: '', nivel: 'iniciante', in
 export default function CursoForm({ isOpen, onClose, curso, categorias = [], user, onSaved }) {
   const { toast } = useToast();
   // Obrigatoriedade por perfil da Universidade (não pelos perfis de função do DIROPS): Formando, Instrutor, Administrador da Universidade.
-  const perfisOpcoes = [{ value: 'formando', label: 'Formando' }, { value: 'instrutor', label: 'Instrutor' }, { value: 'admin_universidade', label: 'Administrador da Universidade' }];
+  // + perfis próprios da Universidade (migração 188), quando carregados
+  const perfisOpcoes = PERFIS_UNIVERSIDADE.map(p => ({ value: p, label: PERFIL_UC_LABEL[p] || p }));
   const { data: utilizadores = [] } = useUtilizadoresComPerfis();
   const instrutores = utilizadores.filter(ehInstrutor);
   const { data: cursosTodos = [] } = useTodosCursos();

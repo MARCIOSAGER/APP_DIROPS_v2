@@ -13,7 +13,9 @@ import { Presentation, Plus, Search, BookOpen, Pencil, Trash2, Award, PenLine, L
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 import { PageLoading } from '@/components/ui/loading-spinner';
-import { hasUserProfile, isAdminProfile } from '@/components/lib/userUtils';
+import { isAdminProfile } from '@/components/lib/userUtils';
+import { podeGerirFormacaoUc } from '@/lib/universidade';
+import { usePermissoesPortal } from '@/universidade/hooks';
 import ConfirmModal from '@/components/shared/ConfirmModal';
 import { Curso } from '@/entities/Curso';
 import { createPageUrl } from '@/utils';
@@ -55,7 +57,8 @@ export default function GestaoFormacao({ portal = false }) {
   const [busca, setBusca] = useState('');
   const [ocupado, setOcupado] = useState(null);
 
-  const podeGerir = !!user && (isAdminProfile(user) || hasUserProfile(user, 'instrutor'));
+  usePermissoesPortal(); // regista os perfis próprios da Universidade (nível instrutor, rótulos, obrigatoriedade por perfil)
+  const podeGerir = podeGerirFormacaoUc(user); // = pode_gerir_formacao() na BD (inclui admin_universidade e perfis próprios de nível instrutor)
   const categorias = useMemo(() => [...new Set(cursos.map(c => c.categoria).filter(Boolean))].sort(), [cursos]);
 
   const irTab = useCallback((t) => setParams(t === 'geral' ? {} : { tab: t }, { replace: true }), [setParams]);

@@ -83,6 +83,9 @@ export const ACOES_AUDITORIA = {
   acesso_reativado: { label: 'Acesso reactivado', cor: 'emerald', icone: 'UserCheck' },
   perfis_alterados: { label: 'Perfis alterados', cor: 'violet', icone: 'UserCog' },
   permissoes_alteradas: { label: 'Permissões de páginas alteradas', cor: 'violet', icone: 'ShieldCheck' },
+  perfil_criado: { label: 'Perfil próprio criado', cor: 'violet', icone: 'ShieldCheck' },
+  perfil_alterado: { label: 'Perfil próprio alterado', cor: 'violet', icone: 'ShieldCheck' },
+  perfil_apagado: { label: 'Perfil próprio apagado', cor: 'red', icone: 'ShieldCheck' },
   utilizador_editado: { label: 'Utilizador editado', cor: 'violet', icone: 'Pencil' },
   utilizador_excluido: { label: 'Utilizador excluído', cor: 'red', icone: 'Trash2' },
   config_alterada: { label: 'Configuração alterada', cor: 'violet', icone: 'Settings' },
@@ -236,29 +239,109 @@ export const PERMISSOES_PADRAO = {
   administrador: PAGINAS_PORTAL.map(p => p.chave),
 };
 // Perfis que só existem na Universidade (geridos em Acessos › Perfis); os restantes são perfis de função do DIROPS.
+// Estas listas são actualizadas NO LUGAR quando os perfis próprios carregam (registarPerfisPersonalizadosUc): tudo o
+// que já as percorre (filtros, matriz de formação, trilhas, obrigatoriedade, exportações) passa a ver os perfis próprios.
 export const PERFIS_UNIVERSIDADE = ['formando', 'instrutor', 'admin_universidade'];
 export const PERFIL_UC_LABEL = { formando: 'Formando', instrutor: 'Instrutor', admin_universidade: 'Administrador da Universidade' };
 // Só os perfis da Universidade, com rótulo (para listas, exportações e emails); os perfis de função do DIROPS nunca aparecem no portal.
 export const perfisUcTexto = (perfis) => (Array.isArray(perfis) ? perfis : []).filter(p => PERFIL_UC_LABEL[p]).map(p => PERFIL_UC_LABEL[p]).join(', ');
 export const PERFIS_PORTAL = [{ chave: 'formando', label: 'Formando', descricao: 'Base de todos os utilizadores activos' }, { chave: 'instrutor', label: 'Instrutor', descricao: 'Formando + gestão' }, { chave: 'administrador', label: 'Administrador da Universidade', descricao: 'Tudo (não configurável)' }];
+
+// ── perfis próprios (migração 188) ──
+// O administrador cria perfis (nome, cor, descrição, páginas) sobre um NÍVEL BASE — formando ou instrutor — que é o
+// que a base de dados e o servidor conhecem: quem tem o perfil tem exactamente os poderes do nível base nos dados.
+// O nome técnico começa sempre por «uc_». Administração não é nível base (para isso dá-se admin_universidade).
+export const PERFIS_BASE_UNIVERSIDADE = PERFIS_UNIVERSIDADE.slice();
+const PERFIL_UC_LABEL_BASE = { ...PERFIL_UC_LABEL };
+const PERFIS_PORTAL_BASE = PERFIS_PORTAL.slice();
+export const NIVEIS_PERFIL_UC = [
+  { chave: 'formando', perfil: 'formando', label: 'Formando', descricao: 'Aluno: cursos, sessões, ranking e certificados. Sem gestão.' },
+  { chave: 'instrutor', perfil: 'instrutor', label: 'Instrutor', descricao: 'Também gere a formação: cria cursos e edita os seus, alunos, sessões, convites, avisos e relatórios.' },
+];
+export const CORES_PERFIL_UC = ['#7c3aed', '#1d4ed8', '#0f766e', '#b45309', '#be123c', '#15803d', '#0369a1', '#475569'];
+const PERSONALIZADOS_UC = new Map();      // perfil → { perfil, label, cor, descricao, nivel }
+export const ehNomePerfilUc = (p) => /^uc_[a-z0-9_]{2,40}$/.test(String(p || ''));
+export const ehCorPerfilUc = (c) => /^#[0-9a-f]{6}$/i.test(String(c || ''));
+export function registarPerfisPersonalizadosUc(linhas) {
+  PERSONALIZADOS_UC.clear();
+  for (const r of Array.isArray(linhas) ? linhas : []) {
+    if (r && r.personalizado && ehNomePerfilUc(r.perfil) && ['formando', 'instrutor'].includes(r.nivel) && String(r.label || '').trim()) {
+      PERSONALIZADOS_UC.set(r.perfil, { perfil: r.perfil, label: String(r.label).trim(), cor: ehCorPerfilUc(r.cor) ? r.cor : null, descricao: r.descricao || null, nivel: r.nivel });
+    }
+  }
+  PERFIS_UNIVERSIDADE.length = 0;
+  PERFIS_UNIVERSIDADE.push(...PERFIS_BASE_UNIVERSIDADE, ...PERSONALIZADOS_UC.keys());
+  for (const k of Object.keys(PERFIL_UC_LABEL)) if (!(k in PERFIL_UC_LABEL_BASE)) delete PERFIL_UC_LABEL[k];
+  const proprios = [];
+  for (const p of PERSONALIZADOS_UC.values()) {
+    PERFIL_UC_LABEL[p.perfil] = p.label;
+    const nv = NIVEIS_PERFIL_UC.find(n => n.chave === p.nivel);
+    proprios.push({ chave: p.perfil, label: p.label, descricao: p.descricao || ('Perfil próprio · nível ' + (nv ? nv.label.toLowerCase() : p.nivel)), cor: p.cor, nivel: p.nivel, personalizado: true });
+  }
+  // colunas da matriz: formando, instrutor, perfis próprios, administrador (sempre o último)
+  PERFIS_PORTAL.length = 0;
+  PERFIS_PORTAL.push(...PERFIS_PORTAL_BASE.filter(p => p.chave !== 'administrador'), ...proprios, ...PERFIS_PORTAL_BASE.filter(p => p.chave === 'administrador'));
+}
+export const perfisPersonalizadosUc = () => Array.from(PERSONALIZADOS_UC.values());
+// Nível de um perfil da Universidade: 'formando' | 'instrutor' | 'admin' | null (desconhecido ou de outro portal).
+export const nivelDoPerfilUc = (p) => (p === 'admin_universidade' || p === 'administrador' ? 'admin' : p === 'formando' || p === 'instrutor' ? p : PERSONALIZADOS_UC.get(p)?.nivel || null);
+// Nome técnico a partir do nome visível: «Coordenação FNLU» → «uc_coordenacao_fnlu».
+export const slugPerfilUc = (nome) => 'uc_' + String(nome || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40).replace(/_+$/, '');
+// Perfil da Universidade (base ou próprio). Um nome «uc_…» ainda por carregar conta já como da Universidade.
+export const ehPerfilUniversidade = (p) => PERFIS_UNIVERSIDADE.includes(p) || ehNomePerfilUc(p);
+// Páginas por omissão de uma coluna da matriz: as suas, ou as do nível base (perfis próprios).
+export const paginasPadraoUc = (chave) => PERMISSOES_PADRAO[chave] || PERMISSOES_PADRAO[nivelDoPerfilUc(chave)] || [];
+// Perfis a gravar num convite/aprovação: sem perfil próprio, «formando» vai sempre (como antes); com um perfil próprio,
+// «formando» só se for pedido (assim o perfil próprio pode limitar as páginas). Nunca devolve uma lista vazia.
+export function perfisEscolhidosUc({ formando = true, instrutor = false, proprio = '' } = {}) {
+  const p = ehNomePerfilUc(proprio) ? proprio : '';
+  const out = [...(!p || formando ? ['formando'] : []), ...(instrutor ? ['instrutor'] : []), ...(p ? [p] : [])];
+  return out.length ? out : ['formando'];
+}
+// Quantas pessoas têm um perfil (para avisar antes de o apagar).
+export const contarComPerfil = (utilizadores, perfil) => (Array.isArray(utilizadores) ? utilizadores : []).filter(u => Array.isArray(u?.perfis) && u.perfis.includes(perfil)).length;
+
 // Conta global: role 'admin'/'superadmin' guardado na base de dados (não o role derivado dos perfis). Acesso total ao
 // DIROPS e à Universidade; os seus perfis e o seu acesso não se alteram no portal.
 export const contaGlobal = (user) => user?.role === 'admin' || user?.role === 'superadmin';
 export const ehAdminPortal = (user) => perfisPortal(user).admin;
 export function perfisPortal(user) {
   const p = Array.isArray(user?.perfis) ? user.perfis : [];
+  const proprios = p.filter(x => PERSONALIZADOS_UC.has(x));
   // Administrador do portal = perfil próprio «admin_universidade» ou conta global (role admin/superadmin na base de dados,
   // hoje só o dono); o «administrador» do DIROPS, por si, não administra a Universidade.
-  return { admin: p.includes('admin_universidade') || contaGlobal(user), instrutor: p.includes('instrutor'), formando: true };
+  // Instrutor = perfil «instrutor» ou um perfil próprio de nível instrutor (igual a pode_gerir_formacao() na base de dados).
+  return {
+    admin: p.includes('admin_universidade') || contaGlobal(user),
+    instrutor: p.includes('instrutor') || proprios.some(x => PERSONALIZADOS_UC.get(x).nivel === 'instrutor'),
+    formando: true,
+    proprios,
+  };
 }
+export const ehInstrutorUc = (user) => perfisPortal(user).instrutor;
+// Pode gerir a formação (Gestão de Formação): igual a pode_gerir_formacao() na base de dados — administrador do DIROPS
+// (role admin/superadmin ou perfil «administrador»), administrador da Universidade, instrutor ou perfil próprio de nível instrutor.
+export const podeGerirFormacaoUc = (user) => {
+  if (!user) return false;
+  const p = Array.isArray(user.perfis) ? user.perfis : [];
+  return contaGlobal(user) || p.includes('administrador') || p.includes('admin_universidade') || ehInstrutorUc(user);
+};
 // Conjunto de chaves de página que o utilizador pode abrir, dado o mapa perfil → páginas (predefinições se faltar).
+// A coluna «Formando» vale para todos, EXCEPTO para quem só tem perfis próprios da Universidade (sem formando nem
+// instrutor): esses vêem só as páginas dos seus perfis — é assim que um perfil próprio pode ter menos páginas.
 export function paginasPermitidas(user, permissoes) {
   const r = perfisPortal(user);
   const set = new Set(PAGINAS_SEMPRE);
   if (r.admin) { PAGINAS_PORTAL.forEach(p => set.add(p.chave)); return set; }
-  for (const perfil of ['formando', ...(r.instrutor ? ['instrutor'] : [])]) {
-    const lista = Array.isArray(permissoes?.[perfil]) ? permissoes[perfil] : PERMISSOES_PADRAO[perfil];
-    for (const k of lista) set.add(k);
+  const meus = Array.isArray(user?.perfis) ? user.perfis : [];
+  const soProprios = r.proprios.length > 0 && !meus.includes('formando') && !meus.includes('instrutor');
+  const colunas = [...(soProprios ? [] : ['formando']), ...(meus.includes('instrutor') ? ['instrutor'] : []), ...r.proprios];
+  for (const perfil of colunas) {
+    const lista = Array.isArray(permissoes?.[perfil]) ? permissoes[perfil] : paginasPadraoUc(perfil);
+    // as páginas de gestão nunca valem num perfil de nível formando (a base de dados também não lhe daria os dados)
+    const gestaoOk = perfil === 'instrutor' || nivelDoPerfilUc(perfil) === 'instrutor';
+    for (const k of lista) if (gestaoOk || !String(k).startsWith('gestao')) set.add(k);
   }
   return set;
 }

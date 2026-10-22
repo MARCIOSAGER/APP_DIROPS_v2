@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { UserPlus, UserCheck, UserX, Mail, Copy, RefreshCw, Ban, Search, Loader2, CheckCircle2, AlertTriangle, Clock, ShieldCheck, Link2, RotateCcw, Filter, UserCog, Info, Pencil, Trash2 } from 'lucide-react';
+import { UserPlus, UserCheck, UserX, Mail, Copy, RefreshCw, Ban, Search, Loader2, CheckCircle2, AlertTriangle, Clock, ShieldCheck, Link2, RotateCcw, Filter, UserCog, Info, Pencil, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,8 +20,9 @@ import ConfirmModal from '@/components/shared/ConfirmModal';
 import { useAuth } from '@/lib/AuthContext';
 import { perfisPortal, contaGlobal, PERFIS_UNIVERSIDADE } from '@/lib/universidade';
 import { cn } from '@/lib/utils';
-import { emailValido, emailInterno, estadoConvite, ESTADO_PEDIDO, CORES_BADGE, resumoAcessos, PAGINAS_PORTAL, PERFIS_PORTAL, PERMISSOES_PADRAO } from '@/lib/universidade';
-import { useAcessos, guardarPerfisUniversidade, usePermissoesPortal, guardarPermissoesPortal, editarUtilizadorPortal, excluirUtilizadorPortal, useAeroportosUc, useFormandoUc } from '../../hooks';
+import { emailValido, emailInterno, estadoConvite, ESTADO_PEDIDO, CORES_BADGE, resumoAcessos, PAGINAS_PORTAL, PERFIS_PORTAL } from '@/lib/universidade';
+import { PERFIL_UC_LABEL, NIVEIS_PERFIL_UC, CORES_PERFIL_UC, slugPerfilUc, perfisPersonalizadosUc, nivelDoPerfilUc, paginasPadraoUc, ehPerfilUniversidade, contarComPerfil, perfisEscolhidosUc } from '@/lib/universidade';
+import { useAcessos, guardarPerfisUniversidade, usePermissoesPortal, guardarPermissoesPortal, editarUtilizadorPortal, excluirUtilizadorPortal, useAeroportosUc, useFormandoUc, guardarPerfilPersonalizadoUc, apagarPerfilPersonalizadoUc, auditarPortal } from '../../hooks';
 import { useTodosCursos } from '@/hooks/useGestaoFormacao';
 import { univAcesso } from '../../api';
 import { PaginaGestao } from '../../PortalLayout';
@@ -29,7 +30,26 @@ import { PaginaGestao } from '../../PortalLayout';
 const PERFIL_LABEL = { admin_universidade: 'Administrador da Universidade', administrador: 'Administrador', instrutor: 'Instrutor', formando: 'Formando', operacoes: 'Operações', safety: 'Safety', infraestrutura: 'Infraestrutura', credenciamento: 'Credenciamento', gestor_empresa: 'Gestor de empresa', visualizador: 'Visualizador', documentos_ged: 'GED' };
 const PERFIS_FILTRO = [{ value: 'universidade', label: 'Com perfis da Universidade' }, { value: 'formando', label: 'Só formandos' }, { value: 'instrutor', label: 'Só instrutores' }, { value: 'admin_universidade', label: 'Administradores da Universidade' }, { value: 'todos', label: 'Todos os utilizadores' }];
 const temPerfil = (u, p) => Array.isArray(u.perfis) && u.perfis.includes(p);
-const passaPerfil = (u, f) => f === 'todos' ? true : f === 'universidade' ? (temPerfil(u, 'formando') || temPerfil(u, 'instrutor') || temPerfil(u, 'admin_universidade')) : temPerfil(u, f);
+const passaPerfil = (u, f) => f === 'todos' ? true : f === 'universidade' ? (Array.isArray(u.perfis) && u.perfis.some(ehPerfilUniversidade)) : temPerfil(u, f);
+// rótulo de um perfil (os próprios da Universidade primeiro: PERFIL_UC_LABEL inclui-os depois de carregados)
+const rotuloPerfil = (p) => PERFIL_UC_LABEL[p] || PERFIL_LABEL[p] || p;
+const corPerfil = (p) => perfisPersonalizadosUc().find(x => x.perfil === p)?.cor || null;
+function ChipPerfil({ perfil }) {
+  const cor = corPerfil(perfil);
+  return <span className="mr-1 inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">{cor && <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: cor }} aria-hidden="true" />}{rotuloPerfil(perfil)}</span>;
+}
+// Escolha de um perfil próprio num convite/aprovação. Os de nível instrutor, como o instrutor, só um administrador os dá.
+function EscolhaPerfilProprio({ admin, proprio, setProprio, formando, setFormando, id }) {
+  const opcoes = perfisPersonalizadosUc().filter(p => admin || p.nivel !== 'instrutor');
+  if (!opcoes.length) return null;
+  return (
+    <div className="space-y-1.5 rounded-lg border p-3 dark:border-slate-800">
+      <Label htmlFor={id}>Perfil próprio (opcional)</Label>
+      <Select id={id} value={proprio} onValueChange={setProprio} searchable={false} options={[{ value: '', label: '— nenhum —' }, ...opcoes.map(p => ({ value: p.perfil, label: `${p.label} · nível ${p.nivel}` }))]} />
+      {proprio && <label className="flex items-center gap-2 text-sm"><Checkbox checked={formando} onCheckedChange={v => setFormando(!!v)} />Também Formando (soma as páginas do formando às do perfil)</label>}
+    </div>
+  );
+}
 const fmt = (iso) => (iso ? new Date(iso).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
 const fmtD = (iso) => (iso ? new Date(iso).toLocaleDateString('pt-PT') : '—');
 const Badge = ({ cor, children }) => <span className={cn('inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold', CORES_BADGE[cor] || CORES_BADGE.slate)}>{children}</span>;
@@ -60,11 +80,12 @@ function ResultadoConvite({ r, onFechar }) {
 function DialogAprovar({ pedido, admin, cursosById = {}, onFechar, onFeito }) {
   const { toast } = useToast();
   const [instrutor, setInstrutor] = useState(false); const [mensagem, setMensagem] = useState(''); const [busy, setBusy] = useState(false);
+  const [proprio, setProprio] = useState(''); const [formando, setFormando] = useState(true);
   const interesse = (pedido.cursos_interesse || []).map(id => cursosById[id]).filter(Boolean);
   const [inscrever, setInscrever] = useState(true);
   const submeter = async () => {
     setBusy(true);
-    try { const r = await univAcesso('aprovar', { pedido_id: pedido.id, perfis: instrutor ? ['formando', 'instrutor'] : ['formando'], mensagem, inscrever: inscrever && interesse.length > 0 }); onFeito(r); }
+    try { const r = await univAcesso('aprovar', { pedido_id: pedido.id, perfis: perfisEscolhidosUc({ formando, instrutor, proprio }), mensagem, inscrever: inscrever && interesse.length > 0 }); onFeito(r); }
     catch (e) { toast({ title: 'Não foi possível aprovar', description: e.message, variant: 'destructive' }); } finally { setBusy(false); }
   };
   return (
@@ -74,7 +95,7 @@ function DialogAprovar({ pedido, admin, cursosById = {}, onFechar, onFeito }) {
         <div className="space-y-3">
           <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-950"><p><strong>Empresa:</strong> {pedido.empresa || '—'} · <strong>Departamento:</strong> {pedido.departamento || '—'} · <strong>Função:</strong> {pedido.funcao || '—'}</p><p><strong>Aeroporto:</strong> {pedido.aeroporto || '—'} · <strong>Telefone:</strong> {pedido.telefone || '—'} · <strong>Responsável:</strong> {pedido.chefia || '—'}</p>{pedido.motivo && <p className="mt-1 text-slate-600 dark:text-slate-300">«{pedido.motivo}»</p>}</div>
           {interesse.length > 0 && <label className="flex items-start gap-2 rounded-lg border p-3 text-sm dark:border-slate-800"><Checkbox checked={inscrever} onCheckedChange={v => setInscrever(!!v)} className="mt-0.5" /><span><span className="block font-medium">Inscrever já nos cursos de interesse ({interesse.length})</span><span className="text-xs text-slate-500">{interesse.map(c => c.titulo).join(' · ')}</span></span></label>}
-          <div className="space-y-2"><p className="text-sm font-medium">Perfil</p><label className="flex items-center gap-2 text-sm"><Checkbox checked disabled />Formando — acesso à Universidade</label>{admin && <label className="flex items-center gap-2 text-sm"><Checkbox checked={instrutor} onCheckedChange={v => setInstrutor(!!v)} />Instrutor — também gere cursos e alunos</label>}</div>
+          <div className="space-y-2"><p className="text-sm font-medium">Perfil</p>{!proprio && <label className="flex items-center gap-2 text-sm"><Checkbox checked disabled />Formando — acesso à Universidade</label>}{admin && <label className="flex items-center gap-2 text-sm"><Checkbox checked={instrutor} onCheckedChange={v => setInstrutor(!!v)} />Instrutor — também gere cursos e alunos</label>}<EscolhaPerfilProprio id="ap-proprio" admin={admin} proprio={proprio} setProprio={setProprio} formando={formando} setFormando={setFormando} /></div>
           <div className="space-y-1.5"><Label htmlFor="ap-msg">Mensagem no email (opcional)</Label><Textarea id="ap-msg" value={mensagem} onChange={e => setMensagem(e.target.value)} rows={2} maxLength={500} placeholder="ex.: Comece pelo curso de Condução no Lado Ar." /></div>
           {!emailInterno(pedido.email) && <p className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300"><AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />Email externo: o relay da SGA não entrega. Vai receber o link para copiar e enviar por outro meio.</p>}
         </div>
@@ -106,12 +127,12 @@ function DialogRejeitar({ pedido, onFechar, onFeito }) {
 }
 function DialogConvidar({ admin, onFechar, onFeito }) {
   const { toast } = useToast();
-  const [f, setF] = useState({ nome: '', email: '', telefone: '', mensagem: '', instrutor: false, enviar: true }); const [busy, setBusy] = useState(false);
+  const [f, setF] = useState({ nome: '', email: '', telefone: '', mensagem: '', instrutor: false, enviar: true, proprio: '', formando: true }); const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setF(v => ({ ...v, [k]: e.target.value }));
   const submeter = async () => {
     if (!emailValido(f.email)) { toast({ title: 'Email inválido', variant: 'destructive' }); return; }
     setBusy(true);
-    try { const r = await univAcesso('convidar', { nome: f.nome, email: f.email, telefone: f.telefone, mensagem: f.mensagem, perfis: f.instrutor ? ['formando', 'instrutor'] : ['formando'], enviar: f.enviar }); onFeito(r); }
+    try { const r = await univAcesso('convidar', { nome: f.nome, email: f.email, telefone: f.telefone, mensagem: f.mensagem, perfis: perfisEscolhidosUc({ formando: f.formando, instrutor: f.instrutor, proprio: f.proprio }), enviar: f.enviar }); onFeito(r); }
     catch (e) { toast({ title: 'Não foi possível convidar', description: e.message, variant: 'destructive' }); } finally { setBusy(false); }
   };
   return (
@@ -123,7 +144,7 @@ function DialogConvidar({ admin, onFechar, onFeito }) {
           <div className="space-y-1.5"><Label htmlFor="cv-email">Email *</Label><Input id="cv-email" type="email" value={f.email} onChange={set('email')} autoComplete="off" placeholder="nome@sga.co.ao" /></div>
           <div className="space-y-1.5"><Label htmlFor="cv-tel">Telefone</Label><Input id="cv-tel" value={f.telefone} onChange={set('telefone')} autoComplete="off" /></div>
           <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="cv-msg">Mensagem no email (opcional)</Label><Textarea id="cv-msg" value={f.mensagem} onChange={set('mensagem')} rows={2} maxLength={500} /></div>
-          <div className="space-y-2 sm:col-span-2"><label className="flex items-center gap-2 text-sm"><Checkbox checked disabled />Formando — acesso à Universidade</label>{admin && <label className="flex items-center gap-2 text-sm"><Checkbox checked={f.instrutor} onCheckedChange={v => setF(x => ({ ...x, instrutor: !!v }))} />Instrutor — também gere cursos e alunos</label>}<label className="flex items-center gap-2 text-sm"><Switch checked={f.enviar} onCheckedChange={v => setF(x => ({ ...x, enviar: v }))} />Enviar o convite por email agora</label></div>
+          <div className="space-y-2 sm:col-span-2">{!f.proprio && <label className="flex items-center gap-2 text-sm"><Checkbox checked disabled />Formando — acesso à Universidade</label>}{admin && <label className="flex items-center gap-2 text-sm"><Checkbox checked={f.instrutor} onCheckedChange={v => setF(x => ({ ...x, instrutor: !!v }))} />Instrutor — também gere cursos e alunos</label>}<EscolhaPerfilProprio id="cv-proprio" admin={admin} proprio={f.proprio} setProprio={v => setF(x => ({ ...x, proprio: v }))} formando={f.formando} setFormando={v => setF(x => ({ ...x, formando: v }))} /><label className="flex items-center gap-2 text-sm"><Switch checked={f.enviar} onCheckedChange={v => setF(x => ({ ...x, enviar: v }))} />Enviar o convite por email agora</label></div>
           {f.email && !emailInterno(f.email) && <p className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300 sm:col-span-2"><AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />Email externo: o relay da SGA não entrega. Vai receber o link para copiar e enviar por outro meio.</p>}
         </div>
         <DialogFooter><Button variant="outline" onClick={onFechar}>Cancelar</Button><Button onClick={submeter} disabled={busy || !f.email}>{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <UserPlus className="h-4 w-4" aria-hidden="true" />}Convidar</Button></DialogFooter>
@@ -139,11 +160,14 @@ function DialogPerfis({ u, actor, onFechar, onFeito }) {
   const [formando, setFormando] = useState(perfis.includes('formando'));
   const [instrutor, setInstrutor] = useState(perfis.includes('instrutor'));
   const [adminUc, setAdminUc] = useState(perfis.includes('admin_universidade'));
+  const disponiveis = perfisPersonalizadosUc();
+  const [proprios, setProprios] = useState(() => perfis.filter(p => disponiveis.some(d => d.perfil === p)));
+  const alternarProprio = (p, v) => setProprios(l => (v ? [...new Set([...l, p])] : l.filter(x => x !== p)));
   const [busy, setBusy] = useState(false);
   const global = contaGlobal(u); // conta global (acesso total): perfis não editáveis no portal
   const submeter = async () => {
     setBusy(true);
-    try { await guardarPerfisUniversidade(u, { formando, instrutor, admin: adminUc }, actor); toast({ title: 'Perfis actualizados', description: `${u.full_name || u.email}: ${[formando && 'formando', instrutor && 'instrutor', adminUc && 'administrador da Universidade'].filter(Boolean).join(' + ') || 'sem perfis da Universidade'}.` }); onFeito(); }
+    try { await guardarPerfisUniversidade(u, { formando, instrutor, admin: adminUc, personalizados: proprios }, actor); toast({ title: 'Perfis actualizados', description: `${u.full_name || u.email}: ${[formando && 'formando', instrutor && 'instrutor', adminUc && 'administrador da Universidade', ...proprios.map(rotuloPerfil)].filter(Boolean).join(' + ') || 'sem perfis da Universidade'}.` }); onFeito(); }
     catch (e) { toast({ title: 'Não foi possível guardar', description: e?.message, variant: 'destructive' }); } finally { setBusy(false); }
   };
   return (
@@ -155,6 +179,18 @@ function DialogPerfis({ u, actor, onFechar, onFeito }) {
           <label className="flex items-start gap-3 rounded-lg border p-3 text-sm dark:border-slate-800"><Checkbox disabled={global} checked={formando} onCheckedChange={v => setFormando(!!v)} className="mt-0.5" /><span><span className="block font-medium">Formando</span><span className="text-xs text-slate-500">Acesso à Universidade como aluno (cursos, sessões, certificados). Todas as contas activas entram como alunos.</span></span></label>
           <label className="flex items-start gap-3 rounded-lg border p-3 text-sm dark:border-slate-800"><Checkbox disabled={global} checked={instrutor} onCheckedChange={v => setInstrutor(!!v)} className="mt-0.5" /><span><span className="block font-medium">Instrutor</span><span className="text-xs text-slate-500">Gere cursos, alunos, sessões, acessos e relatórios; os cursos ficam ligados ao instrutor responsável.</span></span></label>
           <label className="flex items-start gap-3 rounded-lg border border-violet-200 bg-violet-50/40 p-3 text-sm dark:border-violet-900 dark:bg-violet-950/20"><Checkbox disabled={global} checked={adminUc} onCheckedChange={v => setAdminUc(!!v)} className="mt-0.5" /><span><span className="block font-medium">Administrador da Universidade</span><span className="text-xs text-slate-500 dark:text-slate-400">Gere tudo no portal: acessos, perfis, páginas por perfil, configurações, avisos, auditoria e relatórios.</span></span></label>
+          {disponiveis.length > 0 && (
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">Perfis próprios</legend>
+              {disponiveis.map(p => (
+                <label key={p.perfil} className="flex items-start gap-3 rounded-lg border p-3 text-sm dark:border-slate-800">
+                  <Checkbox disabled={global} checked={proprios.includes(p.perfil)} onCheckedChange={v => alternarProprio(p.perfil, !!v)} className="mt-0.5" />
+                  <span><span className="flex items-center gap-1.5 font-medium">{p.cor && <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.cor }} aria-hidden="true" />}{p.label}<span className="rounded border px-1 text-[11px] font-normal text-slate-500 dark:border-slate-700">nível {p.nivel}</span></span>{p.descricao && <span className="text-xs text-slate-500">{p.descricao}</span>}</span>
+                </label>
+              ))}
+              <p className="text-xs text-slate-500">Quem só tem perfis próprios (sem Formando nem Instrutor) vê apenas as páginas desses perfis.</p>
+            </fieldset>
+          )}
         </div>
         <DialogFooter><Button variant="outline" onClick={onFechar}>Cancelar</Button><Button onClick={submeter} disabled={busy || global}>{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <UserCog className="h-4 w-4" aria-hidden="true" />}Guardar perfis</Button></DialogFooter>
       </DialogContent>
@@ -195,47 +231,163 @@ function DialogEditarUtilizador({ u, actor, onFechar, onFeito }) {
   );
 }
 
-// Matriz perfis × páginas do portal (administradores editam; instrutores vêem).
-function PerfisPaginas({ admin, actor }) {
+// Criar ou editar um perfil próprio (migração 188). O nome técnico (uc_…) nasce do nome e não muda depois.
+function DialogPerfilProprio({ existente, actor, onFechar, onFeito }) {
+  const { toast } = useToast();
+  const [label, setLabel] = useState(existente?.label || '');
+  const [descricao, setDescricao] = useState(existente?.descricao || '');
+  const [cor, setCor] = useState(existente?.cor || CORES_PERFIL_UC[0]);
+  const [nivel, setNivel] = useState(existente?.nivel || 'formando');
+  const [busy, setBusy] = useState(false);
+  const chave = existente?.chave || slugPerfilUc(label);
+  const repetido = !existente && (PERFIS_PORTAL.some(p => p.chave === chave) || PERFIS_UNIVERSIDADE.includes(chave));
+  const guardar = async () => {
+    setBusy(true);
+    try {
+      await guardarPerfilPersonalizadoUc({ perfil: chave, label, cor, descricao, nivel, paginas: existente ? undefined : [...paginasPadraoUc(nivel)] }, actor);
+      await auditarPortal(actor, { acao: existente ? 'perfil_alterado' : 'perfil_criado', entidade: 'universidade_permissao', id: chave, detalhes: `Perfil próprio «${label.trim()}» (${chave}), nível ${nivel}`, dados: { perfil: chave, label: label.trim(), nivel, cor, descricao: descricao.trim() || null, antes: existente || null } });
+      toast({ title: existente ? 'Perfil actualizado' : 'Perfil criado', description: existente ? undefined : 'Começa com as páginas do nível base; ajuste-as na matriz e guarde. Atribua-o às pessoas em «Utilizadores › Perfis» ou num convite.' });
+      onFeito();
+    } catch (e) {
+      toast({ title: 'Não foi possível guardar o perfil', description: e?.message || String(e), variant: 'destructive' });
+    } finally { setBusy(false); }
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && onFechar()}>
+      <DialogContent className="max-h-[92vh] w-full max-w-lg overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-violet-600" aria-hidden="true" />{existente ? `Editar «${existente.label}»` : 'Novo perfil'}</DialogTitle>
+          <DialogDescription>Um perfil próprio tem, nos dados, os poderes de um nível base e escolhe as páginas que a pessoa vê no portal.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="ucp-nome">Nome *</Label>
+            <Input id="ucp-nome" value={label} onChange={e => setLabel(e.target.value)} maxLength={60} placeholder="ex.: Coordenador de formação do aeroporto" autoComplete="off" />
+            {!existente && label.trim() && <p className={cn('text-xs', repetido ? 'text-red-600 dark:text-red-400' : 'text-slate-500')}>{repetido ? 'Já existe um perfil com este nome.' : <>Nome técnico: <span className="font-mono">{chave}</span></>}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ucp-desc">Descrição</Label>
+            <Textarea id="ucp-desc" value={descricao} onChange={e => setDescricao(e.target.value)} rows={2} maxLength={200} placeholder="ex.: Acompanha os formandos do seu aeroporto e as sessões presenciais" />
+          </div>
+          <fieldset className="space-y-1.5">
+            <legend className="text-sm font-medium">Nível base (o que pode fazer nos dados) *</legend>
+            {NIVEIS_PERFIL_UC.map(n => (
+              <label key={n.chave} className={cn('flex cursor-pointer items-start gap-3 rounded-lg border p-2.5 text-sm dark:border-slate-800', nivel === n.chave && 'border-violet-600 ring-1 ring-violet-600 dark:border-violet-500')}>
+                <input type="radio" name="ucp-nivel" className="mt-1" checked={nivel === n.chave} onChange={() => setNivel(n.chave)} />
+                <span><span className="block font-medium">{n.label}</span><span className="text-xs text-slate-500">{n.descricao}</span></span>
+              </label>
+            ))}
+            {existente && existente.nivel !== nivel && <p className="text-xs text-amber-700 dark:text-amber-300">Mudar o nível muda já o que as pessoas com este perfil podem fazer nos dados.</p>}
+            <p className="text-xs text-slate-500">Administração não é nível de perfis próprios: para administrar a Universidade dê o perfil Administrador da Universidade.</p>
+          </fieldset>
+          <fieldset className="space-y-1.5">
+            <legend className="text-sm font-medium">Cor</legend>
+            <div className="flex flex-wrap gap-2">
+              {CORES_PERFIL_UC.map(c => (
+                <button key={c} type="button" onClick={() => setCor(c)} aria-pressed={cor === c} aria-label={`Cor ${c}`}
+                  className={cn('h-8 w-8 rounded-full border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600', cor === c ? 'border-slate-900 dark:border-white' : 'border-transparent')}
+                  style={{ backgroundColor: c }} />
+              ))}
+            </div>
+          </fieldset>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onFechar} disabled={busy}>Cancelar</Button>
+          <Button onClick={guardar} disabled={busy || !label.trim() || repetido || chave.length < 5}>{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}{existente ? 'Guardar' : 'Criar perfil'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Matriz perfis × páginas do portal (administradores editam; instrutores vêem) + perfis próprios (criar, editar, apagar).
+function PerfisPaginas({ admin, actor, utilizadores = [] }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: permissoes, isLoading } = usePermissoesPortal();
   const [edicao, setEdicao] = useState(null);
   const [busy, setBusy] = useState(false);
-  const base = useMemo(() => ({ formando: permissoes?.formando || PERMISSOES_PADRAO.formando, instrutor: permissoes?.instrutor || PERMISSOES_PADRAO.instrutor }), [permissoes]);
+  const [dialogo, setDialogo] = useState(null);      // { existente? }
+  const [apagar, setApagar] = useState(null);
+  // colunas editáveis: formando, instrutor e os perfis próprios (o administrador vê tudo e não se configura)
+  const editaveis = PERFIS_PORTAL.filter(p => p.chave !== 'administrador');
+  const base = useMemo(() => Object.fromEntries(editaveis.map(p => [p.chave, permissoes?.[p.chave] || paginasPadraoUc(p.chave)])), [permissoes, editaveis.map(p => p.chave).join(',')]);
   const atual = edicao || base;
   const alterado = JSON.stringify(atual) !== JSON.stringify(base);
   const tem = (perfil, chave) => perfil === 'administrador' ? true : (atual[perfil] || []).includes(chave);
   const alternar = (perfil, chave) => setEdicao(e => { const x = { ...(e || base) }; const lista = new Set(x[perfil] || []); if (lista.has(chave)) lista.delete(chave); else lista.add(chave); x[perfil] = PAGINAS_PORTAL.map(p => p.chave).filter(k => lista.has(k)); return x; });
+  const recarregar = () => qc.invalidateQueries({ queryKey: ['universidade_permissao'] });
   const guardar = async () => {
     setBusy(true);
-    try { for (const perfil of ['formando', 'instrutor']) await guardarPermissoesPortal(perfil, atual[perfil], actor); await qc.invalidateQueries({ queryKey: ['universidade_permissao'] }); setEdicao(null); toast({ title: 'Permissões guardadas', description: 'Aplicam-se de imediato ao menu e às páginas de cada perfil.' }); }
-    catch (e) { toast({ title: 'Não foi possível guardar', description: e?.message, variant: 'destructive' }); } finally { setBusy(false); }
+    try {
+      for (const p of editaveis) await guardarPermissoesPortal(p.chave, atual[p.chave] || [], actor);
+      await auditarPortal(actor, { acao: 'permissoes_alteradas', entidade: 'universidade_permissao', detalhes: 'Páginas por perfil do portal alteradas', dados: { depois: atual } });
+      await recarregar(); setEdicao(null);
+      toast({ title: 'Permissões guardadas', description: 'Aplicam-se de imediato ao menu e às páginas de cada perfil.' });
+    } catch (e) { toast({ title: 'Não foi possível guardar', description: e?.message, variant: 'destructive' }); } finally { setBusy(false); }
   };
-  const repor = () => setEdicao({ formando: [...PERMISSOES_PADRAO.formando], instrutor: [...PERMISSOES_PADRAO.instrutor] });
+  const repor = () => setEdicao(Object.fromEntries(editaveis.map(p => [p.chave, [...paginasPadraoUc(p.chave)]])));
+  const removerPerfil = async (p) => {
+    const n = contarComPerfil(utilizadores, p.chave);
+    try {
+      await apagarPerfilPersonalizadoUc(p.chave);
+      await auditarPortal(actor, { acao: 'perfil_apagado', entidade: 'universidade_permissao', id: p.chave, detalhes: `Perfil próprio «${p.label}» (${p.chave}) apagado${n ? ` — retirado a ${n} pessoa(s)` : ''}`, dados: { perfil: p.chave, label: p.label, nivel: p.nivel, pessoas: n } });
+      setEdicao(null); await recarregar(); qc.invalidateQueries({ queryKey: ['universidade_acessos'] });
+      toast({ title: 'Perfil apagado', description: n ? `Retirado a ${n} pessoa(s); quem não tinha outro perfil da Universidade ficou Formando.` : undefined });
+    } catch (e) {
+      toast({ title: 'Não foi possível apagar', description: e?.message || String(e), variant: 'destructive' });
+    } finally { setApagar(null); }
+  };
   if (isLoading) return <Skeleton className="h-64 w-full" />;
   const grupos = ['Formando', 'Gestão'];
+  const nApagar = apagar ? contarComPerfil(utilizadores, apagar.chave) : 0;
   return (
     <div className="space-y-3">
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
-        <p><strong>Como funciona.</strong> Todos os utilizadores activos contam como <strong>Formando</strong> no portal. <strong>Instrutor</strong> soma as suas páginas às do formando. <strong>Administrador da Universidade</strong> vê tudo e não se configura. As páginas Início e A minha conta estão sempre disponíveis.</p>
-        <p className="mt-1 text-xs text-blue-800/80 dark:text-blue-200/80">Os dados continuam protegidos pelas regras da base de dados: um instrutor sem a página «Configurações» não a abre; um formando nunca vê dados de gestão, mesmo que a página lhe seja dada.</p>
+        <p><strong>Como funciona.</strong> Todos os utilizadores activos contam como <strong>Formando</strong> no portal. <strong>Instrutor</strong> soma as suas páginas às do formando. Os <strong>perfis próprios</strong> têm o nível base que escolher (formando ou instrutor) e as páginas da sua coluna; quem só tem perfis próprios vê apenas as páginas desses perfis. <strong>Administrador da Universidade</strong> vê tudo e não se configura. As páginas Início e A minha conta estão sempre disponíveis.</p>
+        <p className="mt-1 text-xs text-blue-800/80 dark:text-blue-200/80">Os dados continuam protegidos pelas regras da base de dados: um instrutor sem a página «Configurações» não a abre; um formando (ou perfil de nível formando) nunca vê dados de gestão, mesmo que a página lhe seja dada.</p>
       </div>
       <Card className="dark:border-slate-800 dark:bg-slate-900"><CardContent className="p-0"><div className="overflow-x-auto"><Table>
-        <TableHeader><TableRow><TableHead>Página</TableHead>{PERFIS_PORTAL.map(p => <TableHead key={p.chave} className="w-36 text-center"><span className="block">{p.label}</span><span className="block text-[11px] font-normal text-slate-400">{p.descricao}</span></TableHead>)}</TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>Página</TableHead>{PERFIS_PORTAL.map(p => (
+          <TableHead key={p.chave} className="w-36 text-center align-top">
+            <span className="flex items-center justify-center gap-1.5">{p.personalizado && <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: p.cor || '#475569' }} aria-hidden="true" />}{p.label}</span>
+            <span className="block text-[11px] font-normal text-slate-400">{p.descricao}</span>
+            {p.personalizado && (
+              <span className="mt-1 flex items-center justify-center gap-1">
+                <span className="rounded border px-1 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:text-slate-300">nível {p.nivel}</span>
+                {admin && <>
+                  <button type="button" onClick={() => setDialogo({ existente: p })} disabled={alterado} className="rounded p-1 text-slate-500 hover:text-slate-900 disabled:opacity-40 dark:hover:text-white" aria-label={`Editar o perfil ${p.label}`} title={alterado ? 'Guarde primeiro as alterações à matriz' : 'Editar'}><Pencil className="h-3.5 w-3.5" aria-hidden="true" /></button>
+                  <button type="button" onClick={() => setApagar(p)} disabled={alterado} className="rounded p-1 text-red-600 hover:text-red-800 disabled:opacity-40 dark:text-red-400" aria-label={`Apagar o perfil ${p.label}`} title={alterado ? 'Guarde primeiro as alterações à matriz' : 'Apagar'}><Trash2 className="h-3.5 w-3.5" aria-hidden="true" /></button>
+                </>}
+              </span>
+            )}
+          </TableHead>
+        ))}</TableRow></TableHeader>
         <TableBody>{grupos.map(g => (<React.Fragment key={g}>
           <TableRow className="bg-slate-50 dark:bg-slate-800/60"><TableCell colSpan={1 + PERFIS_PORTAL.length} className="py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">{g === 'Formando' ? 'Páginas do formando' : 'Páginas de gestão'}</TableCell></TableRow>
           {PAGINAS_PORTAL.filter(p => p.grupo === g).map(p => (
             <TableRow key={p.chave}>
               <TableCell><p className="font-medium text-slate-900 dark:text-slate-100">{p.label}</p><p className="text-xs text-slate-500">{p.descricao}</p></TableCell>
-              {PERFIS_PORTAL.map(pf => <TableCell key={pf.chave} className="text-center"><Checkbox checked={tem(pf.chave, p.chave)} disabled={!admin || pf.chave === 'administrador' || (pf.chave === 'formando' && p.grupo === 'Gestão')} onCheckedChange={() => alternar(pf.chave, p.chave)} aria-label={`${p.label} — ${pf.label}`} /></TableCell>)}
+              {PERFIS_PORTAL.map(pf => <TableCell key={pf.chave} className="text-center"><Checkbox checked={tem(pf.chave, p.chave)} disabled={!admin || pf.chave === 'administrador' || (nivelDoPerfilUc(pf.chave) === 'formando' && p.grupo === 'Gestão')} onCheckedChange={() => alternar(pf.chave, p.chave)} aria-label={`${p.label} — ${pf.label}`} /></TableCell>)}
             </TableRow>
           ))}
         </React.Fragment>))}</TableBody>
       </Table></div></CardContent></Card>
       {admin ? (
-        <div className="flex flex-wrap items-center gap-2"><Button onClick={guardar} disabled={busy || !alterado}>{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}Guardar permissões</Button><Button variant="outline" onClick={repor} disabled={busy}>Repor predefinições</Button>{alterado && <span className="text-xs text-amber-700 dark:text-amber-300">Alterações por guardar.</span>}</div>
-      ) : <p className="text-xs text-slate-500">Só administradores alteram as permissões.</p>}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={guardar} disabled={busy || !alterado}>{busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}Guardar permissões</Button>
+          <Button variant="outline" onClick={repor} disabled={busy}>Repor predefinições</Button>
+          <Button variant="outline" onClick={() => setDialogo({})} disabled={busy || alterado} title={alterado ? 'Guarde primeiro as alterações à matriz' : undefined}><Plus className="h-4 w-4" aria-hidden="true" />Novo perfil</Button>
+          {alterado && <span className="text-xs text-amber-700 dark:text-amber-300">Alterações por guardar.</span>}
+        </div>
+      ) : <p className="text-xs text-slate-500">Só administradores alteram as permissões e os perfis próprios.</p>}
+      {dialogo && <DialogPerfilProprio existente={dialogo.existente} actor={actor} onFechar={() => setDialogo(null)} onFeito={() => { setDialogo(null); setEdicao(null); recarregar(); }} />}
+      {apagar && (
+        <ConfirmModal isOpen onClose={() => setApagar(null)} onConfirm={() => removerPerfil(apagar)} title={`Apagar o perfil «${apagar.label}»?`} confirmText="Apagar perfil" variant="destructive"
+          message={nApagar > 0
+            ? `${nApagar} pessoa(s) têm este perfil. Ao apagar, o perfil é-lhes retirado (e aos convites por aceitar); quem não tiver outro perfil da Universidade passa a Formando. Não se pode desfazer.`
+            : 'Ninguém tem este perfil. Convites por aceitar com este perfil passam a Formando. Não se pode desfazer.'} />
+      )}
     </div>
   );
 }
@@ -247,6 +399,8 @@ export default function PortalAcessos() {
   const [params, setParams] = useSearchParams();
   const tab = ['pedidos', 'convites', 'utilizadores', 'perfis'].includes(params.get('tab')) ? params.get('tab') : 'pedidos';
   const { data, isLoading, isError, error } = useAcessos();
+  usePermissoesPortal(); // os perfis próprios só se conhecem quando universidade_permissao carrega (rótulos, filtros, diálogos)
+  const filtrosPerfil = [...PERFIS_FILTRO.slice(0, -1), ...perfisPersonalizadosUc().map(p => ({ value: p.perfil, label: `Perfil: ${p.label}` })), PERFIS_FILTRO[PERFIS_FILTRO.length - 1]];
   const { data: cursosLista = [] } = useTodosCursos();
   const cursosById = useMemo(() => Object.fromEntries(cursosLista.map(c => [c.id, c])), [cursosLista]);
   const [busca, setBusca] = useState('');
@@ -331,7 +485,7 @@ export default function PortalAcessos() {
                 <TableBody>{convites.map(c => { const e = estadoConvite(c); const aberto = ['pendente', 'nao_enviado', 'expirado'].includes(e.chave); return (
                   <TableRow key={c.id}>
                     <TableCell><p className="font-medium text-slate-900 dark:text-slate-100">{c.nome || c.email}</p><p className="text-xs text-slate-500">{c.email}</p></TableCell>
-                    <TableCell className="text-xs">{(c.perfis || []).map(p => PERFIL_LABEL[p] || p).join(', ')}</TableCell>
+                    <TableCell className="text-xs">{(c.perfis || []).map(rotuloPerfil).join(', ')}</TableCell>
                     <TableCell className="text-xs text-slate-500">{c.enviado ? fmt(c.enviado_em) : <span className="text-amber-700 dark:text-amber-300" title={c.motivo_nao_enviado || ''}>não enviado</span>}<br />por {c.criado_por || '—'}{c.reenvios ? ` · ${c.reenvios} reenvio(s)` : ''}</TableCell>
                     <TableCell className="text-xs text-slate-500">{fmtD(c.expira_em)}</TableCell>
                     <TableCell><Badge cor={e.cor}>{e.label}</Badge>{c.aceite_em && <p className="text-[11px] text-slate-500">{fmt(c.aceite_em)}</p>}</TableCell>
@@ -345,7 +499,7 @@ export default function PortalAcessos() {
         </TabsContent>
 
         <TabsContent value="utilizadores" className="mt-4 space-y-3">
-          <div className="flex flex-wrap items-center gap-4 text-sm"><div className="w-56"><Select options={PERFIS_FILTRO} value={perfilFiltro} onValueChange={setPerfilFiltro} /></div><label className="flex items-center gap-2"><Switch checked={soActivos} onCheckedChange={setSoActivos} />Só activos</label><span className="text-xs text-slate-500"><Filter className="mr-1 inline h-3 w-3" aria-hidden="true" />{utilizadores.length} utilizador(es)</span></div>
+          <div className="flex flex-wrap items-center gap-4 text-sm"><div className="w-56"><Select options={filtrosPerfil} value={perfilFiltro} onValueChange={setPerfilFiltro} /></div><label className="flex items-center gap-2"><Switch checked={soActivos} onCheckedChange={setSoActivos} />Só activos</label><span className="text-xs text-slate-500"><Filter className="mr-1 inline h-3 w-3" aria-hidden="true" />{utilizadores.length} utilizador(es)</span></div>
           <Card className="dark:border-slate-800 dark:bg-slate-900"><CardContent className="p-0">
             {isLoading ? <div className="space-y-2 p-4"><Skeleton className="h-8 w-full" /></div> : utilizadores.length === 0 ? <p className="p-5 text-sm text-slate-500">Sem utilizadores.</p> : (
               <div className="overflow-x-auto"><Table>
@@ -353,11 +507,11 @@ export default function PortalAcessos() {
                 <TableBody>{utilizadores.map(u => { const perfis = u.perfis || []; const eu = String(u.email).toLowerCase() === String(user?.email).toLowerCase(); return (
                   <TableRow key={u.id}>
                     <TableCell><p className="font-medium text-slate-900 dark:text-slate-100">{u.full_name || u.email}</p><p className="text-xs text-slate-500">{u.email}</p></TableCell>
-                    <TableCell className="text-xs">{perfis.filter(p => PERFIS_UNIVERSIDADE.includes(p)).length ? perfis.filter(p => PERFIS_UNIVERSIDADE.includes(p)).map(p => <span key={p} className="mr-1 inline-block rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">{PERFIL_LABEL[p] || p}</span>) : <span className="text-slate-400">aluno</span>}</TableCell>
+                    <TableCell className="text-xs">{perfis.filter(p => PERFIS_UNIVERSIDADE.includes(p)).length ? perfis.filter(p => PERFIS_UNIVERSIDADE.includes(p)).map(p => <ChipPerfil key={p} perfil={p} />) : <span className="text-slate-400">aluno</span>}</TableCell>
                     <TableCell><Badge cor={u.status === 'ativo' ? 'emerald' : u.status === 'pendente' ? 'amber' : 'slate'}>{u.status === 'ativo' ? 'Activo' : u.status === 'pendente' ? 'Pendente' : 'Inactivo'}</Badge>{u.acesso_uc === 'sem_conta' ? <p className="text-[11px] text-slate-500">sem conta na Universidade</p> : u.banido && <p className="text-[11px] text-red-600">{u.acesso_uc ? 'acesso à Universidade revogado' : 'login bloqueado'}</p>}</TableCell>
                     <TableCell className="text-xs text-slate-500">{u.ultimo_login ? fmt(u.ultimo_login) : <span className="text-amber-700 dark:text-amber-300">nunca entrou</span>}</TableCell>
                     <TableCell className="text-xs text-slate-500">{fmtD(u.created_date)}</TableCell>
-                    {admin && <TableCell className="text-right"><div className="flex justify-end gap-1.5"><Button size="sm" variant="outline" onClick={() => setEditarDe(u)} title="Editar nome e telefone"><Pencil className="h-4 w-4" aria-hidden="true" />Editar</Button>{!eu && <Button size="sm" variant="outline" onClick={() => setPerfisDe(u)} title="Perfis da Universidade (formando, instrutor)"><UserCog className="h-4 w-4" aria-hidden="true" />Perfis</Button>}{eu || contaGlobal(u) ? <span className="self-center text-xs text-slate-400" title="Conta global (acesso total)"><ShieldCheck className="inline h-4 w-4" aria-hidden="true" /></span> : u.acesso_uc === 'sem_conta' ? <span className="self-center text-xs text-slate-400" title="Sem conta na Universidade: use «Convidar»">—</span> : (u.acesso_uc ? u.acesso_uc === 'activo' : u.status === 'ativo') ? <Button size="sm" variant="outline" className="text-red-600" disabled={busy === u.id} onClick={() => setConfirmar({ t: 'Revogar acesso', m: `Revogar o acesso de ${u.email}? Deixa de conseguir entrar na Universidade até ser reactivado.`, f: () => accao('revogar', { user_id: u.id }, 'Acesso revogado'), destrutivo: true })}>{busy === u.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Ban className="h-4 w-4" aria-hidden="true" />}Revogar</Button> : <Button size="sm" variant="outline" disabled={busy === u.id} onClick={() => accao('reativar', { user_id: u.id }, 'Acesso reactivado')}>{busy === u.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <RotateCcw className="h-4 w-4" aria-hidden="true" />}Reactivar</Button>}{!eu && !contaGlobal(u) && <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" disabled={busy === u.id} title="Excluir a conta de acesso e o perfil" aria-label={`Excluir ${u.full_name || u.email}`} onClick={() => setConfirmar({ t: 'Excluir utilizador', m: `Excluir ${u.full_name || u.email} (${u.email})? A conta da Universidade é removida. O histórico de formação (matrículas, certificados) mantém-se associado ao email. Para uma suspensão temporária use «Revogar».`, f: () => excluir(u), destrutivo: true })}><Trash2 className="h-4 w-4" aria-hidden="true" /></Button>}</div></TableCell>}
+                    {admin && <TableCell className="text-right"><div className="flex justify-end gap-1.5"><Button size="sm" variant="outline" onClick={() => setEditarDe(u)} title="Editar nome e telefone"><Pencil className="h-4 w-4" aria-hidden="true" />Editar</Button>{!eu && <Button size="sm" variant="outline" onClick={() => setPerfisDe(u)} title="Perfis da Universidade (formando, instrutor, perfis próprios)"><UserCog className="h-4 w-4" aria-hidden="true" />Perfis</Button>}{eu || contaGlobal(u) ? <span className="self-center text-xs text-slate-400" title="Conta global (acesso total)"><ShieldCheck className="inline h-4 w-4" aria-hidden="true" /></span> : u.acesso_uc === 'sem_conta' ? <span className="self-center text-xs text-slate-400" title="Sem conta na Universidade: use «Convidar»">—</span> : (u.acesso_uc ? u.acesso_uc === 'activo' : u.status === 'ativo') ? <Button size="sm" variant="outline" className="text-red-600" disabled={busy === u.id} onClick={() => setConfirmar({ t: 'Revogar acesso', m: `Revogar o acesso de ${u.email}? Deixa de conseguir entrar na Universidade até ser reactivado.`, f: () => accao('revogar', { user_id: u.id }, 'Acesso revogado'), destrutivo: true })}>{busy === u.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Ban className="h-4 w-4" aria-hidden="true" />}Revogar</Button> : <Button size="sm" variant="outline" disabled={busy === u.id} onClick={() => accao('reativar', { user_id: u.id }, 'Acesso reactivado')}>{busy === u.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <RotateCcw className="h-4 w-4" aria-hidden="true" />}Reactivar</Button>}{!eu && !contaGlobal(u) && <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" disabled={busy === u.id} title="Excluir a conta de acesso e o perfil" aria-label={`Excluir ${u.full_name || u.email}`} onClick={() => setConfirmar({ t: 'Excluir utilizador', m: `Excluir ${u.full_name || u.email} (${u.email})? A conta da Universidade é removida. O histórico de formação (matrículas, certificados) mantém-se associado ao email. Para uma suspensão temporária use «Revogar».`, f: () => excluir(u), destrutivo: true })}><Trash2 className="h-4 w-4" aria-hidden="true" /></Button>}</div></TableCell>}
                   </TableRow>
                 ); })}</TableBody>
               </Table></div>
@@ -366,7 +520,7 @@ export default function PortalAcessos() {
           {!admin && <p className="text-xs text-slate-500">Revogar e reactivar acessos é reservado a administradores.</p>}
         </TabsContent>
 
-        <TabsContent value="perfis" className="mt-4"><PerfisPaginas admin={admin} actor={user} /></TabsContent>
+        <TabsContent value="perfis" className="mt-4"><PerfisPaginas admin={admin} actor={user} utilizadores={data?.utilizadores || []} /></TabsContent>
       </Tabs>
 
       {aprovar && <DialogAprovar pedido={aprovar} admin={admin} cursosById={cursosById} onFechar={() => setAprovar(null)} onFeito={(r) => { setAprovar(null); setResultado(r); if (r?.inscritos) toast({ title: `Inscrito(a) em ${r.inscritos} curso(s) de interesse` }); refrescar(); }} />}

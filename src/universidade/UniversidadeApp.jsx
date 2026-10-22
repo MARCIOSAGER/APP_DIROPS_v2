@@ -10,6 +10,7 @@ import LoadingWatchdog from '@/components/shared/LoadingWatchdog';
 import { useAuth } from '@/lib/AuthContext';
 import { PORTAL_BASE } from '@/lib/universidade';
 import PortalLayout, { ehGestor, sairDoPortal, PaginaGestao, usePodeVer } from './PortalLayout';
+import { usePermissoesPortal } from './hooks';
 
 const Formacao = lazy(() => import('@/pages/Formacao'));
 const GestaoFormacao = lazy(() => import('@/pages/GestaoFormacao'));
@@ -43,7 +44,10 @@ function Permitido({ pagina, children }) {
 }
 
 function Gestor({ user, children }) {
+  // subscreve as permissões: os perfis próprios de nível instrutor só se conhecem quando a tabela carrega
+  const { isLoading } = usePermissoesPortal();
   if (ehGestor(user)) return children;
+  if (isLoading) return <Carregar />;
   return (
     <Card className="mx-auto max-w-lg dark:border-slate-800 dark:bg-slate-900"><CardContent className="flex flex-col items-center gap-3 py-12 text-center">
       <ShieldAlert className="h-8 w-8 text-amber-500" aria-hidden="true" />
