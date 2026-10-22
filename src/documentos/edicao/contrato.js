@@ -62,6 +62,8 @@
  *                    A tabela-fotos não tem legenda própria (attrs.legenda é ignorada e não numera «Tabela N»).
  *  - image          attrs.src (data:image/... base64 ou URL), attrs.alt?, attrs.title?, attrs.width? ('100%' ou px),
  *                    attrs.legenda?: string → «Figura N — legenda» POR BAIXO da imagem (numeração automática).
+ *                    Só num modelo-mestre (extras.mestre = true): attrs.src = '{{imagem.<nome>}}' → imagem própria de
+ *                    cada aeroporto (extras.imagensLocais[ICAO][nome]), resolvida ao gerar (ver mestres.js).
  *  - pageBreak       { type: 'pageBreak' } (bloco, sem conteúdo) → quebra de página.
  *  - horizontalRule, hardBreak, text.
  *  Marcas: bold, italic, underline.
@@ -129,6 +131,8 @@ export const ROTULO_CAMPO = {
 const RE_DATA = /^\d{4}-\d{2}-\d{2}/;
 const RE_ICAO = /^[A-Z]{4}$/;
 const RE_IMG_SRC = /^(data:image\/(png|jpe?g|gif|webp);base64,|https?:\/\/|\/)/i;
+/** Imagem local de um modelo-mestre: '{{imagem.<nome>}}' (grupo 1 = nome). */
+export const RE_IMAGEM_LOCAL = /^\{\{\s*imagem\.([\w-]+)\s*\}\}$/;
 
 /** Documento ProseMirror vazio (um parágrafo vazio). */
 export const docVazio = () => ({ type: 'doc', content: [{ type: 'paragraph' }] });
@@ -287,7 +291,7 @@ function validarGaleria(no, caminho, avisos) {
   }));
 }
 
-function validarNo(no, caminho, erros, avisos = [], nivelLista = 0) {
+function validarNo(no, caminho, erros, avisos = [], nivelLista = 0, ctx = {}) {
   if (!no || typeof no !== 'object' || typeof no.type !== 'string') { erros.push(`${caminho}: nó inválido`); return; }
   if (!NOS_PERMITIDOS.includes(no.type)) { erros.push(`${caminho}: nó «${no.type}» não é permitido`); return; }
   if (no.type === 'paragraph' || no.type === 'heading') {
@@ -317,7 +321,9 @@ function validarNo(no, caminho, erros, avisos = [], nivelLista = 0) {
   }
   if (no.type === 'image') {
     const src = String(no.attrs?.src || '');
-    if (!RE_IMG_SRC.test(src)) erros.push(`${caminho}: imagem sem origem válida (data: URL de imagem ou URL do armazenamento)`);
+    if (RE_IMAGEM_LOCAL.test(src.trim())) {
+      if (!ctx.mestre) erros.push(`${caminho}: imagem local «${src.trim()}» por resolver (só é permitida num modelo-mestre)`);
+    } else if (!RE_IMG_SRC.test(src)) erros.push(`${caminho}: imagem sem origem válida (data: URL de imagem ou URL do armazenamento)`);
   }
   if (no.type === 'text') {
     if (typeof no.text !== 'string') erros.push(`${caminho}: texto inválido`);
@@ -327,7 +333,7 @@ function validarNo(no, caminho, erros, avisos = [], nivelLista = 0) {
   }
   if (no.content !== undefined) {
     if (!Array.isArray(no.content)) { erros.push(`${caminho}: content tem de ser uma lista`); return; }
-    no.content.forEach((f, i) => validarNo(f, `${caminho}/${f?.type || i}[${i}]`, erros, avisos, nivelLista));
+    no.content.forEach((f, i) => validarNo(f, `${caminho}/${f?.type || i}[${i}]`, erros, avisos, nivelLista, ctx));
   }
 }
 
@@ -367,7 +373,7 @@ export function validarDocumentoEstruturado(doc, { estrito = false } = {}) {
       if (!s.chave) erros.push(`${onde}: sem chave`);
       if (!String(s.titulo || '').trim()) erros.push(`${onde}: sem título`);
       if (!s.conteudo || s.conteudo.type !== 'doc') erros.push(`${onde}: conteúdo tem de ser um documento ProseMirror (type 'doc')`);
-      else validarNo(s.conteudo, `${onde}(${s.chave || i})`, erros, avisos);
+      else validarNo(s.conteudo, `${onde}(${s.chave || i})`, erros, avisos, 0, { mestre: doc.extras?.mestre === true });
     });
     if (estrito) for (const s of seccoesObrigatoriasEmFalta(doc)) erros.push(`Secção obrigatória por preencher: ${s.titulo}`);
   }

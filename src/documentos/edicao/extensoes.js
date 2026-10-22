@@ -11,7 +11,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 import { NodeSelection } from '@tiptap/pm/state';
-import { ALINHAMENTOS, TIPOS_CAIXA, NIVEIS_LISTA_MAX, ESTILOS_TABELA, novaGaleria } from './contrato';
+import { ALINHAMENTOS, TIPOS_CAIXA, NIVEIS_LISTA_MAX, ESTILOS_TABELA, novaGaleria, RE_IMAGEM_LOCAL } from './contrato';
 
 const textoOuNulo = (v) => { const t = String(v ?? '').trim(); return t || null; };
 
@@ -105,7 +105,13 @@ export const ImagemContrato = Image.extend({
     ];
   },
   renderHTML({ node, HTMLAttributes }) {
-    const img = ['img', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+    // imagem própria de cada aeroporto num modelo-mestre ({{imagem.<nome>}}): moldura tracejada com o nome
+    const local = RE_IMAGEM_LOCAL.exec(String(node.attrs.src || '').trim());
+    const extra = local ? {
+      alt: `Imagem própria de cada aeroporto: ${local[1]}`, 'data-imagem-local': local[1],
+      style: `display:block;margin-left:auto;margin-right:auto;min-height:56px;padding:12px;border:2px dashed #94a3b8;border-radius:6px;color:#475569;font-size:13px;text-align:center;background:#f8fafc`,
+    } : {};
+    const img = ['img', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, extra)];
     const legenda = textoOuNulo(node.attrs.legenda);
     if (!legenda) return img;
     return ['figure', { class: 'gd-figura', 'data-legenda': '' }, img, ['figcaption', {}, legenda]];

@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { validarDocumentoEstruturado } from '../../src/documentos/edicao/contrato.js';
-import { camposUsados, alvosDoMestre } from '../../src/documentos/edicao/mestres.js';
+import { camposUsados, alvosDoMestre, imagensLocaisUsadas } from '../../src/documentos/edicao/mestres.js';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 export const ELABORADOR = 'oaeroportos@sga.co.ao';
@@ -55,6 +55,8 @@ export function normalizarMestre(json, nomeFicheiro = '') {
     const vl = ex.valoresLocais?.[a.icao] || {};
     const falta = locais.filter(n => !String(vl[n] ?? '').trim());
     if (falta.length) avisos.push(`${a.icao}: sem valor para ${falta.map(n => `local.${n}`).join(', ')}`);
+    const semImg = imagensLocaisUsadas(conteudo).filter(n => !ex.imagensLocais?.[a.icao]?.[n]);
+    if (semImg.length) avisos.push(`${a.icao}: sem imagem ${semImg.join(', ')} (sai do documento gerado)`);
   }
   return { chave, conteudo, problemas, avisos };
 }

@@ -10,6 +10,18 @@
 //   Tabela: legenda        (opcional) antes de uma tabela «| a | b |» — a 1.ª linha é o cabeçalho; «<br>» = quebra
 //   ---pagina              quebra de página
 //   **negrito**, *itálico*; [justify]/[center]/[right] no início de um parágrafo = alinhamento
+//
+// Imagens (ficheiros em tools/mestres/imagens/<chave>/…, FORA do Git; extraídas por extrair-imagens.py):
+//   ![legenda](imagem.<nome>){60%}   imagem PRÓPRIA de cada aeroporto: src = '{{imagem.<nome>}}' no mestre e o ficheiro
+//                                    imagens/<chave>/<ICAO>/<nome>.jpg vai para extras.imagensLocais[ICAO][nome]
+//                                    (data URL). Ao gerar, aeroporto sem esse ficheiro = imagem (e legenda) fora.
+//   ![legenda](comum.<nome>){60%}    imagem igual para todos: imagens/<chave>/comum/<nome>.jpg embutida no mestre.
+//   A legenda (pode ter {{campos}}) é opcional («![](…)» = sem legenda, sem número de figura); {largura} é opcional
+//   (25%…100% ou px). Uma linha só com a imagem = bloco image.
+//   Fotos: 2                         galeria «Fotos lado a lado» (2 ou 3 por linha; omisso = até 3): as linhas «![…](…)»
+//                                    seguintes (até uma linha em branco) são as fotos, uma por célula.
+//   Numa tabela, uma célula «![](comum.x)» leva a imagem em vez de texto.
+//   Tabela: legenda [larguras 230/260/150]   larguras das colunas (px do editor; proporções no PDF/Word).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,7 +53,37 @@ function para(t, attrs) {
 }
 
 const RE_ITEM = /^( *)(-|\d+[.)]|[a-z]\))\s+(.*)$/;
-const RE_ESPECIAL = /^(#{2,4}\s|>|\||Tabela:|---pagina)/;
+const RE_ESPECIAL = /^(#{2,4}\s|>|\||Tabela:|---pagina|Fotos:|!\[)/;
+const RE_IMAGEM = /^!\[([^\]]*)\]\((imagem|comum)\.([\w-]+)\)(?:\{([^}]+)\})?\s*$/;
+
+/** Contexto da construção de um mestre (pasta das imagens e o que se usou). */
+let CTX = { dirImagens: null, usadasLocais: new Set(), usadasComuns: new Set() };
+
+const dataUrl = (ficheiro) => `data:image/${/\.png$/i.test(ficheiro) ? 'png' : 'jpeg'};base64,${fs.readFileSync(ficheiro).toString('base64')}`;
+function ficheiroImagem(pasta, nome) {
+  for (const ext of ['.jpg', '.jpeg', '.png']) { const p = path.join(pasta, nome + ext); if (fs.existsSync(p)) return p; }
+  return null;
+}
+
+function noImagem(linha) {
+  const m = RE_IMAGEM.exec(linha.trim());
+  if (!m) throw new Error(`imagem mal escrita: «${linha}»`);
+  const [, legenda, tipo, nome, largura] = m;
+  let src;
+  if (tipo === 'imagem') { src = `{{imagem.${nome}}}`; CTX.usadasLocais.add(nome); }
+  else {
+    const fic = CTX.dirImagens && ficheiroImagem(path.join(CTX.dirImagens, 'comum'), nome);
+    if (!fic) throw new Error(`falta a imagem comum ${nome} (imagens/<chave>/comum/${nome}.jpg)`);
+    src = dataUrl(fic);
+    CTX.usadasComuns.add(nome);
+  }
+  const attrs = { src };
+  if (largura) attrs.width = largura.trim();
+  if (legenda.trim()) attrs.legenda = legenda.trim();
+  return { type: 'image', attrs };
+}
+
+const conteudoCelula = (c) => (RE_IMAGEM.test(c.trim()) ? [noImagem(c)] : [para(c)]);
 
 function montarLista(itens, nivel, pos) {
   const listas = [];
@@ -82,15 +124,36 @@ function parseBlocos(linhas) {
       blocos.push({ type: 'blockquote', attrs: { tipo: m[1] }, content: ps.map(p => para(p)) });
       continue;
     }
+    if (/^!\[/.test(l)) { blocos.push(noImagem(l)); i++; continue; }
+    if ((m = /^Fotos:\s*(\d)?\s*$/.exec(l))) {
+      i++;
+      const fotos = [];
+      while (i < linhas.length && /^!\[/.test(linhas[i])) { fotos.push(noImagem(linhas[i])); i++; }
+      const cols = Number(m[1]) || Math.min(3, fotos.length);
+      const rows = [];
+      for (let k = 0; k < fotos.length; k += cols) {
+        const cels = fotos.slice(k, k + cols).map(f => ({ type: 'tableCell', content: [f, { type: 'paragraph' }] }));
+        while (cels.length < cols) cels.push({ type: 'tableCell', content: [{ type: 'paragraph' }] });
+        rows.push({ type: 'tableRow', content: cels });
+      }
+      blocos.push({ type: 'table', attrs: { estilo: 'fotos' }, content: rows });
+      continue;
+    }
     if (/^Tabela:/.test(l) || /^\|/.test(l)) {
       let legenda = null;
-      if (/^Tabela:/.test(l)) { legenda = l.replace(/^Tabela:\s*/, '').trim(); i++; }
+      let larguras = null;
+      if (/^Tabela:/.test(l)) {
+        legenda = l.replace(/^Tabela:\s*/, '').trim();
+        const ml = /\s*\[larguras ([\d/]+)\]$/.exec(legenda);
+        if (ml) { larguras = ml[1].split('/').map(Number); legenda = legenda.slice(0, ml.index).trim(); }
+        i++;
+      }
       const rows = [];
       while (i < linhas.length && /^\|/.test(linhas[i])) {
         rows.push(linhas[i].trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim()));
         i++;
       }
-      const t = { type: 'table', content: rows.map((r, k) => ({ type: 'tableRow', content: r.map(c => ({ type: k === 0 ? 'tableHeader' : 'tableCell', content: [para(c)] })) })) };
+      const t = { type: 'table', content: rows.map((r, k) => ({ type: 'tableRow', content: r.map((c, ci) => ({ type: k === 0 ? 'tableHeader' : 'tableCell', ...(larguras?.[ci] ? { attrs: { colwidth: [larguras[ci]] } } : {}), content: k === 0 ? [para(c)] : conteudoCelula(c) })) })) };
       if (legenda) t.attrs = { legenda };
       blocos.push(t);
       continue;
@@ -117,8 +180,15 @@ function parseBlocos(linhas) {
   return blocos;
 }
 
-export function construir(fonte, modelos) {
+/**
+ * @param {string} fonte
+ * @param {Object[]} modelos
+ * @param {{ dirImagens?: string }} [opcoes]  pasta imagens/<chave> (omissa = tools/mestres/imagens/<chave>)
+ * O resultado traz __imagens { locais, comuns, faltam } (informação; o script tira-o antes de gravar).
+ */
+export function construir(fonte, modelos, opcoes = {}) {
   const meta = JSON.parse(/<<<META([\s\S]*?)META>>>/.exec(fonte)[1]);
+  CTX = { dirImagens: opcoes.dirImagens || path.join(AQUI, 'imagens', meta.chave), usadasLocais: new Set(), usadasComuns: new Set() };
   const corpo = fonte.replace(/<<<META[\s\S]*?META>>>/, '').replace(/\r/g, '');
   const partes = corpo.split(/^# /m).slice(1);
   const modelo = modelos.find(m => m.classe_codigo === meta.modelo);
@@ -133,6 +203,20 @@ export function construir(fonte, modelos) {
   });
   for (const [chave, sm] of doModelo) if (sm.obrigatoria && !seccoes.some(s => s.chave === chave)) throw new Error(`${meta.chave}: falta a secção obrigatória ${chave}`);
   const { titulo, modelo: mod, revisao, data, classificacao, ...extras } = meta;
+  // imagens próprias de cada aeroporto-alvo (só as usadas no texto)
+  const faltam = [];
+  if (CTX.usadasLocais.size) {
+    const imagensLocais = {};
+    for (const a of meta.alvos || []) {
+      const porAero = {};
+      for (const nome of CTX.usadasLocais) {
+        const fic = ficheiroImagem(path.join(CTX.dirImagens, a.icao), nome);
+        if (fic) porAero[nome] = dataUrl(fic); else faltam.push(`${a.icao}:${nome}`);
+      }
+      imagensLocais[a.icao] = porAero;
+    }
+    extras.imagensLocais = imagensLocais;
+  }
   return {
     schema: 1,
     modelo: mod,
@@ -144,6 +228,7 @@ export function construir(fonte, modelos) {
     },
     seccoes,
     historico: [],
+    __imagens: { locais: [...CTX.usadasLocais], comuns: [...CTX.usadasComuns], faltam },
     extras: {
       mestre: true,
       elaboradoEmail: 'oaeroportos@sga.co.ao', verificadoEmail: 'cpascoal@sga.co.ao', aprovadoEmail: '',
@@ -158,11 +243,15 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const dir = path.join(AQUI, 'fontes');
   let erro = false;
   for (const f of fs.readdirSync(dir).filter(n => n.endsWith('.md')).sort()) {
-    const doc = construir(fs.readFileSync(path.join(dir, f), 'utf8'), MODELOS_PADRAO);
+    const { __imagens: im, ...doc } = construir(fs.readFileSync(path.join(dir, f), 'utf8'), MODELOS_PADRAO);
     const v = validarDocumentoEstruturado(doc, { estrito: true });
     const destino = path.join(AQUI, `mestre-${doc.extras.chave}.json`);
-    fs.writeFileSync(destino, JSON.stringify(doc, null, 1) + '\n');
-    console.log(`${v.valido ? 'OK  ' : 'ERRO'} ${path.basename(destino)}  secções=${doc.seccoes.length}${v.erros.length ? '  ' + v.erros.join('; ') : ''}${v.avisos.length ? '  avisos: ' + v.avisos.join('; ') : ''}`);
+    const json = JSON.stringify(doc, null, 1) + '\n';
+    fs.writeFileSync(destino, json);
+    const kb = (n) => `${Math.round(n / 1024)} KB`;
+    const tamLocais = JSON.stringify(doc.extras.imagensLocais || {}).length;
+    console.log(`${v.valido ? 'OK  ' : 'ERRO'} ${path.basename(destino)}  ${kb(Buffer.byteLength(json))}  secções=${doc.seccoes.length}${v.erros.length ? '  ' + v.erros.join('; ') : ''}${v.avisos.length ? '  avisos: ' + v.avisos.join('; ') : ''}`);
+    if (im.locais.length || im.comuns.length) console.log(`     imagens: ${im.comuns.length} comuns, ${im.locais.length} locais (${im.locais.join(', ')}; ${kb(tamLocais)} em extras.imagensLocais)${im.faltam.length ? '  sem imagem: ' + im.faltam.join(', ') : ''}`);
     if (!v.valido) erro = true;
   }
   if (erro) process.exit(1);

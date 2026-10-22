@@ -11,7 +11,13 @@
 //   {{aeroporto.nome}} {{aeroporto.icao}} {{aeroporto.iata}} {{aeroporto.cidade}}
 //   {{aeroporto.director}} {{aeroporto.director_cargo}} {{documento.numero}}
 //   {{local.<nome>}}  → extras.valoresLocais[icao][nome]
-import { proximaRevisao, hojeISO } from './contrato.js';
+//
+// Imagens próprias de cada aeroporto: um nó image com attrs.src = '{{imagem.<nome>}}' recebe a imagem
+// extras.imagensLocais[icao][nome] (data URL JPEG/PNG). Se o aeroporto não tiver essa imagem, o nó (e a sua legenda)
+// sai do documento, com o aviso «sem imagem <nome> para <ICAO>»; um título que fique sem nada por baixo (só tinha
+// imagens que saíram) sai também. Numa galeria «Fotos lado a lado» a célula sem imagem fica vazia, as linhas vazias
+// saem e as colunas vazias no fim encolhem (galeria sem nenhuma foto sai toda).
+import { proximaRevisao, hojeISO, RE_IMAGEM_LOCAL, ehTabelaFotos } from './contrato.js';
 
 export const CAMPOS_AEROPORTO = [
   { campo: 'aeroporto.nome', rotulo: 'Nome do aeroporto' },
@@ -112,17 +118,142 @@ function percorrer(v, fn, chave) {
   return v;
 }
 
+// ─── Imagens locais ({{imagem.<nome>}}) ─────────────────────────────
+
+const RE_SRC_DATA = /^data:image\/(png|jpe?g|gif|webp);base64,/i;
+const BLOCOS_COM_CONTEUDO = ['doc', 'tableCell', 'tableHeader', 'listItem', 'blockquote'];
+
+/** Nome da imagem local de um nó image ('{{imagem.x}}' → 'x'), ou null. */
+export const imagemLocalDoNo = (no) => (no?.type === 'image' ? (RE_IMAGEM_LOCAL.exec(String(no.attrs?.src || '').trim())?.[1] || null) : null);
+
+/** data URL de uma entrada de extras.imagensLocais[icao] (texto, ou { src }), ou null. */
+function srcDaImagem(v) {
+  const src = typeof v === 'string' ? v : v && typeof v === 'object' ? v.src : null;
+  return typeof src === 'string' && RE_SRC_DATA.test(src.trim()) ? src.trim() : null;
+}
+
+/** Nomes das imagens locais usadas no documento (sem repetir, pela ordem em que aparecem). */
+export function imagensLocaisUsadas(doc) {
+  const s = new Set();
+  const ver = (n) => {
+    if (!n || typeof n !== 'object') return;
+    if (Array.isArray(n)) { n.forEach(ver); return; }
+    const nome = imagemLocalDoNo(n);
+    if (nome) s.add(nome);
+    if (Array.isArray(n.content)) n.content.forEach(ver);
+  };
+  for (const sec of doc?.seccoes || []) ver(sec?.conteudo);
+  if (doc?.type === 'doc') ver(doc);
+  return [...s];
+}
+
+const contaImagens = (n) => (!n || typeof n !== 'object' ? 0 : (n.type === 'image' ? 1 : 0) + (Array.isArray(n.content) ? n.content.reduce((a, f) => a + contaImagens(f), 0) : 0));
+const temTexto = (n) => !!n && typeof n === 'object' && ((n.type === 'text' && String(n.text || '').trim() !== '') || (Array.isArray(n.content) && n.content.some(temTexto)));
+const celulaVazia = (c) => contaImagens(c) === 0 && !temTexto(c);
+const esvaziarCelula = (c) => ({ ...c, content: [{ type: 'paragraph' }] });
+
+/** Galeria depois de resolver as imagens: células sem foto vazias, linhas vazias fora, colunas vazias no fim fora. */
+function galeriaResolvida(no, ctx) {
+  let mudou = false;
+  let linhas = (no.content || []).map((r) => {
+    if (r?.type !== 'tableRow' || !Array.isArray(r.content)) return r;
+    return {
+      ...r,
+      content: r.content.map((cel) => {
+        const antes = contaImagens(cel);
+        const nova = resolverNo(cel, ctx);
+        if (antes > 0 && contaImagens(nova) < antes) { mudou = true; return contaImagens(nova) === 0 ? esvaziarCelula(cel) : nova; }
+        return nova;
+      }),
+    };
+  });
+  if (!mudou) return { ...no, content: linhas };
+  const ehLinha = (r) => r?.type === 'tableRow' && Array.isArray(r.content);
+  linhas = linhas.filter((r) => !ehLinha(r) || !r.content.every(celulaVazia));
+  const rs = linhas.filter(ehLinha);
+  if (!rs.length) return null;
+  // encolhe as colunas do fim que estão vazias em todas as linhas
+  while (rs.every((r) => r.content.length > 1 && celulaVazia(r.content[r.content.length - 1]))) {
+    rs.forEach((r) => { r.content = r.content.slice(0, -1); });
+  }
+  return { ...no, content: linhas };
+}
+
+/** Tira os títulos que ficaram sem nada por baixo porque tudo o que tinham (imagens) saiu. */
+function semTitulosOrfaos(entradas) {
+  for (let nivel = 6; nivel >= 1; nivel--) {
+    entradas.forEach((e, i) => {
+      if (e.fora || e.no?.type !== 'heading' || Number(e.no.attrs?.level) !== nivel) return;
+      let j = i + 1;
+      while (j < entradas.length && !(entradas[j].no?.type === 'heading' && !entradas[j].fora && Number(entradas[j].no.attrs?.level) <= nivel)) j++;
+      const debaixo = entradas.slice(i + 1, j);
+      if (debaixo.length && debaixo.every((x) => x.fora) && debaixo.some((x) => x.saiuImagem)) { e.fora = true; e.saiuImagem = true; }
+    });
+  }
+  return entradas.filter((e) => !e.fora).map((e) => e.no);
+}
+
+/** Resolve as imagens locais de um nó; devolve o nó novo ou null (sai do documento). */
+function resolverNo(no, ctx) {
+  if (!no || typeof no !== 'object') return no;
+  const nome = imagemLocalDoNo(no);
+  if (nome) {
+    const src = srcDaImagem(ctx.imagens?.[nome]);
+    if (src) return { ...no, attrs: { ...no.attrs, src } };
+    ctx.emFalta.add(nome);
+    return null;
+  }
+  if (ehTabelaFotos(no)) return galeriaResolvida(no, ctx);
+  if (!Array.isArray(no.content) || !contaImagens(no)) return no;
+  const entradas = no.content.map((f) => {
+    const r = resolverNo(f, ctx);
+    return r === null ? { no: f, fora: true, saiuImagem: contaImagens(f) > 0 } : { no: r, fora: false };
+  });
+  if (!entradas.some((e) => e.fora)) return { ...no, content: entradas.map((e) => e.no) };
+  const content = semTitulosOrfaos(entradas);
+  if (content.length) return { ...no, content };
+  if (no.type === 'tableRow') return { ...no, content: no.content.map(esvaziarCelula) };
+  return BLOCOS_COM_CONTEUDO.includes(no.type) ? { ...no, content: [{ type: 'paragraph' }] } : null;
+}
+
+/**
+ * Põe as imagens locais ({{imagem.<nome>}}) de UM aeroporto no documento (secções ou doc ProseMirror).
+ * @param {Object} imagens  { nome: dataURL | { src } } — normalmente extras.imagensLocais[icao]
+ * @returns {{ doc: Object, emFalta: string[], avisos: string[] }}  emFalta = nomes sem imagem (os nós saíram)
+ */
+export function resolverImagensLocais(doc, imagens = {}, icao = '') {
+  const ctx = { imagens: imagens || {}, emFalta: new Set() };
+  const vazio = () => ({ type: 'doc', content: [{ type: 'paragraph' }] });
+  let novo = doc;
+  if (doc && Array.isArray(doc.seccoes)) {
+    novo = { ...doc, seccoes: doc.seccoes.map((s) => (s?.conteudo ? { ...s, conteudo: resolverNo(s.conteudo, ctx) || vazio() } : s)) };
+  } else if (doc?.type === 'doc') novo = resolverNo(doc, ctx) || vazio();
+  const emFalta = [...ctx.emFalta];
+  return { doc: novo, emFalta, avisos: emFalta.map((n) => `sem imagem ${n} para ${icao || '?'}`) };
+}
+
 /**
  * Cópia do documento com os {{…}} substituídos em textos, títulos, células, legendas, alt/title das imagens,
  * cabeçalho e histórico. `extras` não é tocado. Campos sem valor ficam «[falta: campo]».
- * @returns {{ doc: Object, emFalta: string[], avisos: string[] }}
+ * As imagens locais ({{imagem.<nome>}} em attrs.src) resolvem-se primeiro, com `opcoes.imagens` ou
+ * extras.imagensLocais[icao] (icao = opcoes.icao, senão valores['aeroporto.icao'], senão cabecalho.aeroporto);
+ * as que faltam saem do documento (ver resolverImagensLocais) e a legenda delas já não conta para os campos em falta.
+ * @returns {{ doc: Object, emFalta: string[], avisos: string[], imagensEmFalta: string[] }}
  */
-export function substituirCampos(doc, valores = {}) {
+export function substituirCampos(doc, valores = {}, opcoes = {}) {
   const emFalta = new Set();
-  const novo = percorrer(doc, (s) => (s.includes('{{') ? substituirTexto(s, valores || {}, emFalta) : s));
+  const cabIcao = String(doc?.cabecalho?.aeroporto || '').trim().toUpperCase();
+  const icao = String(opcoes.icao || valores?.['aeroporto.icao'] || (/^[A-Z]{4}$/.test(cabIcao) ? cabIcao : '')).trim().toUpperCase();
+  let base = doc;
+  let img = { emFalta: [], avisos: [] };
+  if (imagensLocaisUsadas(doc).length) {
+    img = resolverImagensLocais(doc, opcoes.imagens || doc?.extras?.imagensLocais?.[icao] || {}, icao);
+    base = img.doc;
+  }
+  const novo = percorrer(base, (s) => (s.includes('{{') ? substituirTexto(s, valores || {}, emFalta) : s));
   if (doc && doc.extras !== undefined) novo.extras = doc.extras;
   const lista = [...emFalta];
-  return { doc: novo, emFalta: lista, avisos: lista.map(c => `Campo sem valor: ${c}`) };
+  return { doc: novo, emFalta: lista, avisos: [...lista.map(c => `Campo sem valor: ${c}`), ...img.avisos], imagensEmFalta: img.emFalta };
 }
 
 /** Campos {{…}} usados no documento (sem repetir, pela ordem em que aparecem). `extras` não conta. */
@@ -171,7 +302,7 @@ export function revisaoParaAlvo({ alvo, documento, ultimaVersao, rascunhoExisten
 export const descricaoPadronizacao = (tituloMestre) => `Padronização a partir do modelo-mestre ${String(tituloMestre || '').trim() || 'sem título'}`.trim();
 
 /** Extras do mestre que não passam para os rascunhos gerados. */
-const EXTRAS_SO_DO_MESTRE = ['mestre', 'alvos', 'diferencas', 'valoresLocais', 'chave', 'documentoId', 'pastaId'];
+const EXTRAS_SO_DO_MESTRE = ['mestre', 'alvos', 'diferencas', 'valoresLocais', 'imagensLocais', 'chave', 'documentoId', 'pastaId'];
 
 /**
  * Conteúdo do rascunho estruturado de UM alvo, a partir do mestre.
@@ -226,7 +357,7 @@ export function prepararParaAeroporto(mestre, alvo, aeroporto, responsaveis, doc
     },
     historico,
   };
-  const { doc, emFalta, avisos: avisosCampos } = substituirCampos(semSubst, valores);
+  const { doc, emFalta, avisos: avisosCampos } = substituirCampos(semSubst, valores, { icao });
 
   const extras = Object.fromEntries(Object.entries(exM).filter(([k]) => !EXTRAS_SO_DO_MESTRE.includes(k)));
   doc.extras = {
